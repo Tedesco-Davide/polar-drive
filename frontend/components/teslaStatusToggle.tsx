@@ -32,10 +32,13 @@ export default function TeslaStatusToggle({
 
     try {
       setLoading(true);
-      await axios.put(`${API_BASE_URL}/api/ClientTeslaVehicles/${id}/status`, {
-        isActive: newIsActive,
-        isFetching: newIsFetching,
-      });
+      await axios.patch(
+        `${API_BASE_URL}/api/ClientTeslaVehicles/${id}/status`,
+        {
+          isActive: newIsActive,
+          isFetching: newIsFetching,
+        }
+      );
       onStatusChange(newIsActive, newIsFetching);
     } catch (error) {
       console.error("Errore aggiornamento stato Tesla:", error);
