@@ -1,0 +1,2 @@
+import i18nextConfig from "./next-i18next.config";
+export default i18nextConfig;

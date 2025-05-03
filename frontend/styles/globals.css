@@ -1,0 +1,59 @@
+@import "./fonts.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  transition: background-color 0.5s ease, color 0.5s ease;
+  scroll-behavior: smooth;
+}
+
+html {
+  scroll-padding-top: 64px;
+}
+
+body {
+  @apply font-sans antialiased bg-articWhite text-polarNight dark:bg-polarNight dark:text-articWhite;
+}
+
+.note-modal {
+  margin-left: 0px !important;
+  margin-right: 0px !important;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 9999px;
+  transform: scale(0);
+  animation: ripple 600ms linear;
+  pointer-events: none;
+  z-index: 10;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.input {
+  @apply p-2 rounded border border-gray-300 dark:border-gray-600 bg-softWhite dark:bg-polarNight text-polarNight dark:text-softWhite appearance-none cursor-text;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+@layer components {
+  .active-fetching-checkbox {
+    @apply rounded w-[150px] px-[8px] pl-[5px] h-[32px] text-[16px] appearance-none cursor-pointer font-bold border hover:bg-blue-600 text-softWhite;
+
+    /* colore testo base + hover light */
+    @apply text-gray-700 dark:text-softWhite hover:text-softWhite;
+
+    /* testo icona (contenuto pseudo-elementi) */
+    @apply before:block before:text-center before:text-[18px] before:leading-[30px] before:text-gray-700 dark:before:text-softWhite hover:before:text-softWhite;
+
+    /* stile quando checked */
+    @apply checked:before:block checked:before:text-center checked:before:text-[19px] checked:before:leading-[30px] checked:font-bold;
+  }
+}
