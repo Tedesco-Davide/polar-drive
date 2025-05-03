@@ -1,0 +1,142 @@
+#################################################################################################################################################################
+
+########## GENERICO 
+
+MINDSET => Raccolgo, salvo, archivio. Tutto ciò che non è necessario per motivi legali o fiscali, lo ignoro."
+RISULTATO => Un business snello, difendibile, scalabile, profittevole
+SAREBBE? => Spese minime,
+	    Nessuna complicazione da gestire nel tempo, Massima robustezza legale/fiscale, 
+            Scalabilità lineare: ogni nuovo cliente = 1 riga in 3 tabelle, 1 cartella dati, 0 overhead
+
+#################################################################################################################################################################
+
+##### IMPLEMENTAZIONE BUSINESS
+
+- MODIFICA DELL'OGGETTO SOCIALE DELLO STATUTO AZIENDALE DELL'AZIENDA ADERENTE
+non è un cambiamento drastico, ma una piccola estensione dell’oggetto sociale, che è una cosa abbastanza comune e poco costosa da fare, specialmente per una S.r.l. o S.p.A.
+"…nonché la fornitura di servizi digitali e analisi dati in collaborazione con partner tecnologici."
+costo: Piccola spesa per la modifica statutaria (notaio + CCIAA). In alcuni casi una comunicazione all’Agenzia delle Entrate.
+Necessità di formalizzare la partnership con te (tramite un contratto commerciale o convenzione).
+
+##### FLOW BUSINESS
+- Step by step come funziona l'onboarding. Esempio =>
+Tutto avviene via:
+PAGINA /admin => per onboarding
+SMS per abilitazione DEMO
+Email / PEC manuale per contratti
+
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+
+########## TUTELA LEGALE
+
+Anonimizzazione efficace ai fini GDPR. Il tutto robusto, efficiente e GDPR-proof =>
+
+1. vin (Vehicle Identification Number)
+È un identificativo univoco, paragonabile a un codice fiscale dell’auto.
+Deve assolutamente essere rimosso, perché collegabile direttamente a una persona giuridica o fisica tramite PRA o altri database.
+
+2. vehicle_id
+È un identificatore interno di Tesla.
+Anche se non è leggibile pubblicamente, va comunque rimosso per ridurre al minimo il rischio di re-identificazione.
+
+3. drive_state.latitude e drive_state.longitude
+Le coordinate geografiche precise sono considerate dati personali dal GDPR.
+Arrotondandole a una cifra decimale (es. da 45.4642 a 45.4), riduci la precisione a decine di km, rendendo impossibile identificare una casa o sede.
+Questo soddisfa i criteri di pseudonimizzazione forte o anonimizzazione a fini commerciali.
+
+Tutti gli altri dati raccolti dalla Tesla Fleet API =>
+
+✅ non contengono dati personali
+✅ non sono identificativi o riconducibili a una persona specifica una volta rimosso il VIN
+✅ sono quindi legalmente rivendibili come dati aggregati o di utilizzo
+
+🧩 Conclusione: GDPR-proof ✅
+Il tuo processo è difendibile, trasparente, documentabile e rispetta:
+Il GDPR (art. 5, 6, 25, 32, 35)
+Il principio di minimizzazione e data protection by design
+Il contratto Tesla Fleet API (§9, §5.6.17, §9.3.6)
+
+###
+
+
+🔐 1. Data breach / violazioni GDPR
+Rischio: se i dati raccolti da PolarDrive vengono violati, leakati o gestiti male → la responsabilità è tua, come Data Controller (contratto Tesla §9.3.1 e seguenti)​Fleet-API-Agreement-EN.
+
+TUTELA:
+Formalizza un DPIA (Data Protection Impact Assessment)
+Stendi un piano interno di risposta a incidenti di sicurezza
+Può essere un documento semplice ma ben scritto, che:
+identifica rischi e impatti
+elenca contromisure tecniche e organizzative
+descrive cosa fare in caso di incidente (es. chi avvisa chi, quando e come)
+
+###
+
+📁 2. Disdetta PolarDrive + cliente senza Tesla
+Rischio: se il cliente disdice e poi viene controllato dopo 2 anni, non ha più accesso ai PDF difensivi, e potrebbe scaricare la responsabilità su di te.
+
+TUTELA + RICAVO:
+Offri servizio “Archiviazione Legale PolarDrive” a 30 €/anno
+Conservi i PDF
+Fornisci su PEC su richiesta
+Usi clausola chiara che esclude ogni obbligo se il cliente non acquista il servizio
+
+###
+
+Interpello agenzia delle entrate non necessario.
+
+La clausola di esclusività (vendita verso MIAAZIENDA da parte di AZIENDACLIENTE)
+NON crea alcun dubbio fiscale all’Agenzia delle Entrate, se chiaramente motivata e temporanea, anzi, 
+rafforza la coerenza economica e commerciale della struttura complessiva proposta.
+
+Il prezzo dei report non deve essere palesemente gonfiato (evita contestazioni sulla congruità).
+Il prezzo dei report non deve essere simbolico (evita contestazioni sul valore reale).
+
+Deve esserci una ragione commerciale reale, logica e documentabile per cui MIAAZIENDA vuole l’esclusività:
+Protezione commerciale (es. EVOTESLA non vuole che la concorrenza acquisti gli stessi report).
+Esclusività dei dati analizzati (EVOTESLA proprietaria esclusiva dati grezzi).
+Valore aggiunto dei report garantito dall'esclusività (unicità sul mercato).
+
+###
+
+L'azienda si tutela indicando che non offre consulenza fiscale
+"Il calcolo è una stima basata su dati dichiarati dal cliente. L’effettiva applicazione del beneficio dipende dalle condizioni specifiche del contribuente, 
+dalla normativa vigente e dalle verifiche dell’Amministrazione Finanziaria." 
+
+"Clausola di limitazione responsabilità fiscale"
+
+"Clausola che conferma che EVOTESLA è uno strumento tecnico di supporto, non sostitutivo al parere del commercialista"
+
+Tu non vendi “un benefit fiscale”, ma la prova concreta e certificata per ottenerlo
+
+Giustifichi pricing elevato in modo pulito e difendibile
+
+#################################################################################################################################################################
+
+########## CHITCHAT DA IMPLEMENTARE
+
+Calcolo tecnico previsionale
+"Il compenso pattuito è calcolato in misura proporzionale al vantaggio fiscale stimato, come da report tecnico allegato, secondo normativa vigente."
+
+La fee è proporzionale al vantaggio stimato, ma fissa.
+"Il corrispettivo complessivo è pari al 70% del vantaggio fiscale stimato"
+
+#################################################################################################################################################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

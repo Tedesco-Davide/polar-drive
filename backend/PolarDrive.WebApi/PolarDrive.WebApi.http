@@ -1,0 +1,6 @@
+@PolarDrive.WebApi_HostAddress = http://localhost:5299
+
+GET {{PolarDrive.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

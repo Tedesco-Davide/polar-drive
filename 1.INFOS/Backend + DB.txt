@@ -1,0 +1,561 @@
+#################################################################################################################################################################
+
+##### SVILUPPO BACKEND (VPS NETCUP)
+
+#################################################################################################################################################################
+
+1) .NET 10 (API REST)
+2) CRUD utenti + gestione consensi/token
+3) Logging attività utenti / veicoli Tesla
+4) Integrazione Tesla Fleet API (token, chiamate, caching, gestione errori) 
+5) Test API (Postman o Swagger UI)
+6) Database: SQLite (con Entity Framework)
+7) TWILIO (O ALTERNATIVA) PER RICEZIONE SMS (FUNZIONE DEMO)
+8) VALUTARE STAMPA PDF: PAGINA 1 = TOOL AI PER DIFFERENZIARE | ALTRE PAGINE = STANDARD | PAGINA 3 = OUTAGE | PAGINA 4 = FLEET API OFFLINE
+
+#################################################################################################################################################################
+
+##### DEPLOY BACKEND (VPS NETCUP)
+
+#################################################################################################################################################################
+
+1) Docker Compose
+2) Gestione semplificata di: API + DB + CLI tools
+3) Nginx reverse proxy + HTTPS
+4) Espone il backend su https://api.datapolar.ai
+5) Usa Certbot per Let's Encrypt SS
+
+#################################################################################################################################################################
+
+##### ENTITA' DB + SEQUENZA DI CREAZIONE
+
+#################################################################################################################################################################
+
+1.  ClientCompanies                      --> radice
+2.  ClientConsents                       --> consenso firmato, ora FK anche verso ClientCompanies
+3.  ClientTeslaVehicles                  --> richiede ClientCompanies
+4.  TeslaWorkflows                       --> richiede ClientTeslaVehicles
+5.  TeslaWorkflowEvents                  --> richiede ClientTeslaVehicles
+6.  Trigger trg_log_workflow_update      --> dopo Workflows + Events
+8.  PdfReports                           --> FK verso ClientTeslaVehicles (e ClientCompanies)
+9.  TeslaVehicleData
+    DemoSmsEvents
+    OutagePeriods
+    AnonymizedTeslaVehicleData
+10. ClientTeslaTokens                    --> FK verso ClientTeslaVehicles
+11. vw_ClientFullProfile                 --> ultima, aggrega tutto
+
+################################################################################################################################################################# 
+
+1.  ClientCompanies                      – Aziende clienti (una riga per ogni azienda, anche se ha 10 Tesla) (includere sia una colonna per email, che per PEC)
+2.  ClientConsents                       – Consenso firmato del legale rappresentante, associato all’azienda (ed alla singola Tesla)
+3.  ClientTeslaVehicles                  – Veicoli Tesla associati: ogni Tesla con riferimento all’azienda
+3.1 TeslaWorkflows                       – Sintesi operativa sempre 1‑a‑1 con la Tesla (stato corrente)
+3.2 TeslaWorkflowEvents                  – Storico di tutte le transizioni, traccia completa
+3.3 TRIGGER trg_log_workflow_update      – Trigger che popola lo storico eventi
+4.  PdfReports                           – Report PDF rivenduti dal cliente a DATAPOLAR
+5.  TeslaVehicleData                     – Dump orari completi dei dati API
+6.  DemoSmsEvents                        – Eventi DEMO via SMS (auditabile, difendibile, semplice da gestire)
+7.  AnonymizedTeslaVehicleData           – Dati anonimizzati di default => Dump già anonimizzati e rivendibili
+8.  OutagePeriods                        – Outage veri, autonomi, pronti per il PDF - Tracciare quando l’accesso a livello di API Tesla globale fallisce
+10. ClientTeslaTokens                    – Salvare per ogni Tesla la coppia token, traccia scadenze, automatizza rinnovi
+11. vw_ClientFullProfile                 – View di “profilo cliente” (Alcune Info + TeslaWorkflowEvents)
+
+#################################################################################################################################################################
+
+##### SVILUPPO DB
+
+#################################################################################################################################################################
+
+ClientCompanies – Aziende clienti
+
+CREATE TABLE ClientCompanies (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    VatNumber TEXT NOT NULL UNIQUE,
+    Name TEXT NOT NULL,
+    Address TEXT,
+    Email TEXT NOT NULL UNIQUE,
+    PecAddress TEXT UNIQUE,
+    LandlineNumber TEXT,
+    ReferentName TEXT,
+    ReferentMobileNumber TEXT,
+    ReferentEmail TEXT,
+    ReferentPecAddress TEXT,
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+#################################################################################################################################################################
+
+ClientTeslaVehicles – Veicoli Tesla associati
+
+CREATE TABLE ClientTeslaVehicles (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ClientCompanyId INTEGER NOT NULL,
+    Vin TEXT NOT NULL UNIQUE,
+    Model TEXT NOT NULL,
+    Trim TEXT,
+    Color TEXT,
+    IsActiveFlag BOOLEAN NOT NULL DEFAULT TRUE, 	-- Stato contrattuale attuale
+    IsFetchingDataFlag BOOLEAN NOT NULL DEFAULT TRUE, 	-- Stato trasmissione dati
+    FirstActivationAt DATETIME,             	 	-- Data prima attivazione del servizio
+    LastDeactivationAt DATETIME,            	 	-- Data ultima disattivazione (sospensione o cessazione)
+    LastFetchingDataAt DATETIME,            	 	-- Data ultima acquisizione dati (cliente ha inviato consenso scritto PDF)
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (ClientCompanyId) REFERENCES ClientCompanies(Id)
+);
+
+CREATE INDEX idx_vehicle_vin ON ClientTeslaVehicles(Vin);
+
+#################################################################################################################################################################
+
+TeslaWorkflows - Sintesi operativa sempre 1‑a‑1 con la Tesla (stato corrente)
+
+CREATE TABLE TeslaWorkflows (
+    TeslaVehicleId      INTEGER PRIMARY KEY,
+    IsActiveFlag        BOOLEAN NOT NULL DEFAULT 1,   -- contratto attivo
+    IsFetchingDataFlag  BOOLEAN NOT NULL DEFAULT 1,   -- raccolta dati
+    LastStatusChangeAt  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (TeslaVehicleId) REFERENCES ClientTeslaVehicles(Id)
+);
+
+#################################################################################################################################################################
+
+TeslaWorkflowEvents - Storico di tutte le transizioni, traccia completa
+
+CREATE TABLE TeslaWorkflowEvents (
+    Id             INTEGER  PRIMARY KEY AUTOINCREMENT,
+    TeslaVehicleId INTEGER  NOT NULL,
+    FieldChanged   TEXT     NOT NULL    -- 'IsActiveFlag' | 'FetchDataFlag'
+                   CHECK (FieldChanged IN ('IsActiveFlag','FetchDataFlag')),
+    OldValue       INTEGER  NOT NULL,   -- 0 o 1
+    NewValue       INTEGER  NOT NULL,   -- 0 o 1
+    EventTimestamp DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (TeslaVehicleId) REFERENCES ClientTeslaVehicles(Id)
+);
+
+#################################################################################################################################################################
+
+TRIGGER CHE POPOLA LO STORICO
+
+CREATE TRIGGER IF NOT EXISTS trg_log_workflow_update
+AFTER UPDATE ON TeslaWorkflows
+FOR EACH ROW
+BEGIN
+    INSERT INTO TeslaWorkflowEvents
+          (TeslaVehicleId, FieldChanged, OldValue, NewValue, EventTimestamp)
+    SELECT NEW.TeslaVehicleId,
+           'IsActiveFlag',
+           OLD.IsActiveFlag,
+           NEW.IsActiveFlag,
+           CURRENT_TIMESTAMP
+    WHERE OLD.IsActiveFlag <> NEW.IsActiveFlag;
+
+    INSERT INTO TeslaWorkflowEvents
+          (TeslaVehicleId, FieldChanged, OldValue, NewValue, EventTimestamp)
+    SELECT NEW.TeslaVehicleId,
+           'FetchDataFlag',
+           OLD.FetchDataFlag,
+           NEW.FetchDataFlag,
+           CURRENT_TIMESTAMP
+    WHERE OLD.FetchDataFlag <> NEW.FetchDataFlag;
+END;
+
+#################################################################################################################################################################
+
+ClientConsents – ZIP consenso legale rappresentante
+
+CREATE TABLE ClientConsents (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ClientCompanyId INTEGER NOT NULL,
+    TeslaVehicleId INTEGER NOT NULL,
+    UploadDate DATETIME NOT NULL,
+    ZipFilePath TEXT NOT NULL,
+    ConsentHash TEXT NOT NULL,
+    ConsentType TEXT NOT NULL CHECK (ConsentType IN (
+        'Consent Activation',
+        'Consent Deactivation',
+        'Consent Stop Data Fetching',
+        'Consent Reactivation'
+    )),
+    Notes TEXT DEFAULT '',
+    FOREIGN KEY (ClientCompanyId) REFERENCES ClientCompanies(Id),
+    FOREIGN KEY (TeslaVehicleId) REFERENCES ClientTeslaVehicles(Id)
+);
+
+#################################################################################################################################################################
+
+PdfReports – Report PDF rivenduti dal cliente a DATAPOLAR
+
+CREATE TABLE PdfReports (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ReportPeriodStart DATETIME NOT NULL,
+    ReportPeriodEnd DATETIME NOT NULL,
+    PdfFilePath TEXT NOT NULL,
+    GeneratedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CompanyVatNumber TEXT NOT NULL,
+    CompanyName TEXT NOT NULL,
+    VehicleVin TEXT NOT NULL,
+    VehicleDisplayName TEXT NOT NULL,
+    Notes TEXT DEFAULT ''
+);
+
+#################################################################################################################################################################
+
+TeslaVehicleData – Dump orari completi dei dati API
+
+CREATE TABLE TeslaVehicleData (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    TeslaVehicleId INTEGER NOT NULL,
+    Timestamp DATETIME NOT NULL,
+    RawJson TEXT NOT NULL, -- dump grezzo completo
+    FOREIGN KEY (TeslaVehicleId) REFERENCES ClientTeslaVehicles(Id)
+);
+
+#################################################################################################################################################################s
+
+DemoSmsEvents – Eventi DEMO
+
+CREATE TABLE DemoSmsEvents (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    TeslaVehicleId INTEGER NOT NULL,
+    ReceivedAt DATETIME NOT NULL,
+    MessageContent TEXT NOT NULL,
+    ParsedCommand TEXT CHECK (ParsedCommand IN ('DEMO_ON', 'DEMO_OFF')) NOT NULL,
+    FOREIGN KEY (TeslaVehicleId) REFERENCES ClientTeslaVehicles(Id)
+);
+
+#################################################################################################################################################################
+
+AnonymizedTeslaVehicleData – Dump già anonimizzati e rivendibili
+
+CREATE TABLE AnonymizedTeslaVehicleData (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    OriginalDataId INTEGER NOT NULL, -- link alla riga raw originale
+    Timestamp DATETIME NOT NULL,
+    TeslaVehicleId INTEGER NOT NULL,
+    AnonymizedJson TEXT NOT NULL,
+    FOREIGN KEY (OriginalDataId) REFERENCES TeslaVehicleData(Id),
+    FOREIGN KEY (TeslaVehicleId) REFERENCES ClientTeslaVehicles(Id)
+);
+
+-- Indice che impedisce duplicati sulla stessa riga Tesla grezza
+CREATE UNIQUE INDEX idx_unique_original ON AnonymizedTeslaVehicleData (OriginalDataId);
+
+#################################################################################################################################################################
+
+OutagePeriods – Outage veri, autonomi, pronti per il PDF – Tracciare quando l’accesso a livello di API Tesla globale fallisce
+
+CREATE TABLE OutagePeriods (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    AutoDetected BOOLEAN NOT NULL DEFAULT TRUE, -- true se auto rilevato, false se inserito manualmente
+    OutageType TEXT NOT NULL CHECK(OutageType IN ('Outage Veichle', 'Outage Fleet Api')),
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    OutageStart DATETIME NOT NULL,
+    OutageEnd DATETIME, -- può essere NULL se ancora in corso
+    TeslaVehicleId INTEGER, -- NON SEMPRE presente, perché OUTAGE potrebbe essere generico e globale
+    ClientCompanyId INTEGER, -- NON SEMPRE presente, perché OUTAGE potrebbe essere generico e globale
+    ZipFilePath TEXT,
+    Notes TEXT DEFAULT '',
+    FOREIGN KEY (TeslaVehicleId) REFERENCES ClientTeslaVehicles(Id),
+    FOREIGN KEY (ClientCompanyId) REFERENCES ClientCompanies(Id)
+);
+
+CREATE INDEX idx_outage_active_vehicle ON OutagePeriods (TeslaVehicleId, OutageEnd)
+WHERE OutageType = 'Outage Veichle';
+
+#################################################################################################################################################################
+
+ClientTeslaTokens: Salvare per ogni Tesla (o account Tesla cliente) la coppia token, traccia scadenze, automatizzare rinnovi e validazioni
+
+CREATE TABLE ClientTeslaTokens (
+    Id INTEGER PRIMARY KEY AUTOINCREMENT,
+    TeslaVehicleId INTEGER NOT NULL UNIQUE,
+    AccessToken TEXT NOT NULL,
+    RefreshToken TEXT NOT NULL,
+    AccessTokenExpiresAt DATETIME NOT NULL,
+    RefreshTokenExpiresAt DATETIME, -- opzionale, per tracciamento interno
+    CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UpdatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (TeslaVehicleId) REFERENCES ClientTeslaVehicles(Id)
+);
+
+CREATE INDEX idx_tokens_vehicle_exp ON ClientTeslaTokens(TeslaVehicleId, AccessTokenExpiresAt);
+
+#################################################################################################################################################################
+
+vw_ClientFullProfile - View di “profilo cliente” (Alcune Info + TeslaWorkflowEvents)
+
+CREATE VIEW IF NOT EXISTS vw_ClientFullProfile AS
+SELECT
+    cc.Id                    AS CompanyId,
+    cc.VatNumber,
+    cc.Name,
+    cc.Address,
+    cc.Email,
+    cc.PecAddress,
+
+    tv.Id                    AS TeslaVehicleId,
+    tv.Vin,
+    tv.Model,
+    tw.IsActiveFlag          AS WorkflowStatus,
+    tw.IsFetchingDataFlag    AS DataCollectionFlag,
+    tw.LastStatusChangeAt,
+
+    ev.FieldChanged          AS EventType,
+    ev.EventTimestamp
+
+FROM   ClientCompanies cc
+JOIN   ClientTeslaVehicles tv  ON tv.ClientCompanyId = cc.Id
+JOIN   TeslaWorkflows tw       ON tw.TeslaVehicleId  = tv.Id
+LEFT   JOIN TeslaWorkflowEvents ev ON ev.TeslaVehicleId = tv.Id;
+
+#################################################################################################################################################################
+
+##### SVILUPPO BACKEND - RICEZIONE JSON CONTENENTE I DATI IN FORM
+
+📦 Web API necessarie (minime e chiare)
+Ecco l'elenco delle Web API che ha senso creare, basato sulle tue tabelle:
+
+✅ 1. ClientCompaniesController
+Gestisce: le aziende clienti
+POST / PUT / DELETE / GET
+Validazioni: partita IVA, nome univoco, ecc.
+
+✅ 2. ClientTeslaVehiclesController
+Gestisce: i veicoli Tesla associati alle aziende
+Controlla coerenza IsActive, IsFetching, date
+Relazione con ClientCompanies
+
+✅ 3. ClientConsentsController
+Gestisce: i consensi firmati PDF
+GET solo per visione, POST per caricare nuovi
+Nessuna modifica o delete
+
+✅ 4. PdfReportsController
+Gestisce: i PDF generati dai dati Tesla
+GET solo in lettura, eventualmente download
+Nessuna creazione manuale
+
+✅ 5. TeslaVehicleDataController
+(opzionale, solo per debug)
+Visualizza gli orari raw da Tesla (se vuoi esportarli, testare…)
+
+✅ 6. PolarDriveLogsController
+(opzionale, solo admin/dev)
+Endpoint GET per vedere i log tecnici
+Nessun endpoint di creazione: i log vengono generati automaticamente
+
+#################################################################################################################################################################
+
+DOWNLOAD PDF A RUNTIME (SENZA SALVARE TUTTI I PDF SULLA MACCHINA)
+
+🧠 Strategia: Generazione PDF “on-demand” a runtime
+✅ Vantaggi:
+Nessun salvataggio su disco: zero file permanenti = meno manutenzione
+Risparmi spazio e I/O
+Puoi sempre rigenerare lo stesso file identico, essendo deterministico (dati + layout PDF = output fisso)
+Ogni download produce un file nuovo, solo se serve
+📁 Dal punto di vista utente:
+A video viene segnato come generato → perché tu sai che i dati ci sono e sarebbe identico ogni volta
+👉 Ma il file esiste solo nel momento del click
+🧱 Conclusione
+✅ Sì, puoi fare tutto on-demand a runtime
+✅ È fiscalmente legittimo se i dati sono archiviati
+✅ È efficiente, pulito e scalabile
+✅ È perfettamente compatibile col mindset PolarDrive
+
+Se vuoi ti scrivo il controller ReportsController.cs pronto per .NET che genera tutto a memoria e lo restituisce 👇
+Scrivimi solo: “vai col controller runtime” 
+
+#################################################################################################################################################################
+
+🚀 Se vuoi davvero multiutente, stabilità e sicurezza, la soluzione ideale è:
+Sul VPS Netcup metti una mini API in .NET
+L’API inserisce i dati nel DB in modo sicuro
+
+🔧 1. Cifratura lato codice (applicativo C#)
+🔐 È in linea con quanto dichiarato nel dossier: cifratura AES-256 a riposo.
+SQLite con SQLCipher in .NET 10 =>
+La chiave resta fuori dal database, quindi se il DB viene rubato, i dati restano illeggibili
+
+#################################################################################################################################################################
+
+##### SVILUPPO GMAIL DEPLOYMENT SCRIPT REDIRECT MAILING (KEEP INFO)
+
+1) ID IMPLEMENTAZIONE = AKfycbxdP69YvO6rR07u7GEojGRDg-oJwoyn6QbKX6PLPyD6GP_wYMcptPxsKKC7nwJERQGC
+2) Applicazione web URL (ID pubblico) = https://script.google.com/macros/s/AKfycbxdP69YvO6rR07u7GEojGRDg-oJwoyn6QbKX6PLPyD6GP_wYMcptPxsKKC7nwJERQGC/exec
+3) Raccolta URL => https://script.google.com/macros/library/d/1UuUzqgBDYrpkFRM8MlPjfNbb2fuHQlnQ2W1ZR1w3mP4Dsw9dGkDg15tB/3
+   (Per permettere ad altri gruppi e persone di utilizzare questo progetto come una raccolta, condividilo con loro.)
+
+#################################################################################################################################################################
+
+##### SVILUPPO DB (.EXE PER CREAZIONE RIGHE ANONIMIZZATE DA RIGHE ESISTENTI)
+
+POPOLARE IL CAMPO AnonymizedJson DI AnonymizedTeslaVehicleData =>
+UTILIZZARE UN CLI (FILE .EXE) DA UTILIZZARE UNA TANTUM, SOLO QUANDO SI VUOLE POPOLARE LA TABELLA, PER ESPORTARE IL DATI =>
+RISULTATO:
+- Lanci il .exe quando vuoi
+- Nessun duplicato
+- Messaggio chiaro in console su cosa è stato processato vs saltato
+- Il tutto robusto, efficiente e GDPR-proof
+- Funziona con DB interamente cifrato
+- Il database resta inaccessibile a chiunque non abbia la password
+
+using System;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+using Dapper;
+using Microsoft.Data.Sqlite;
+using SQLitePCL;
+
+namespace DatPolarAnonymizerCli
+{
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            // Inizializza SQLCipher
+            Raw.SetProvider(new SQLite3Provider_sqlcipher());
+            Batteries_V2.Init();
+
+            // Leggi la password da variabile d'ambiente
+            var aesKey = Environment.GetEnvironmentVariable("POLARDRIVE_AES_KEY");
+            if (string.IsNullOrWhiteSpace(aesKey))
+            {
+                Console.WriteLine("❌ Errore: variabile POLARDRIVE_AES_KEY non impostata.");
+                return;
+            }
+
+            string connStr = $"Data Source=datapolar.db;Password={aesKey}";
+
+            using var connection = new SqliteConnection(connStr);
+            connection.Open();
+
+            var rows = connection.Query("SELECT Id, TeslaVehicleId, Timestamp, RawJson FROM TeslaVehicleData");
+
+            foreach (var row in rows)
+            {
+                string anonJson = AnonymizeJson(row.RawJson);
+
+                int affected = connection.Execute("""
+                    INSERT OR IGNORE INTO AnonymizedTeslaVehicleData 
+                    (OriginalDataId, Timestamp, TeslaVehicleId, AnonymizedJson)
+                    VALUES (@OriginalDataId, @Timestamp, @TeslaVehicleId, @AnonymizedJson)
+                """, new
+                {
+                    OriginalDataId = row.Id,
+                    Timestamp = row.Timestamp,
+                    TeslaVehicleId = row.TeslaVehicleId,
+                    AnonymizedJson = anonJson
+                });
+
+                if (affected > 0)
+                    Console.WriteLine($"✔ Anonimizzato ID {row.Id}");
+                else
+                    Console.WriteLine($"⏭ Già presente, salto ID {row.Id}");
+            }
+
+            Console.WriteLine("🟢 Completato.");
+        }
+
+        static string AnonymizeJson(string rawJson)
+        {
+            var json = JsonNode.Parse(rawJson);
+
+            json?.AsObject().Remove("vin");
+            json?.AsObject().Remove("vehicle_id");
+
+            var driveState = json?["drive_state"] as JsonObject;
+            if (driveState != null)
+            {
+                if (driveState["latitude"] is JsonValue lat)
+                    driveState["latitude"] = Math.Round(lat.GetValue<double>(), 1);
+
+                if (driveState["longitude"] is JsonValue lon)
+                    driveState["longitude"] = Math.Round(lon.GetValue<double>(), 1);
+            }
+
+            return json?.ToJsonString(new JsonSerializerOptions { WriteIndented = false }) ?? "{}";
+        }
+    }
+}
+
+#################################################################################################################################################################
+
+##### FUNZIONE DEMO
+
+Ogni SMS ricevuto con DEMO (anche solo testo libero) viene registrato come DEMO_ON
+Durata della modalità DEMO: 4 ore dal timestamp di ricezione (ReceivedAt)
+Durante quelle 4 ore 
+=> Ogni riga salvata in TeslaVehicleData riceve is_demo = true
+=> Verrà segnalata nei report PDF come uso non aziendale (es. amici, parenti)
+Dopo 4 ore, si ritorna a is_demo = false in automatico
+Nessuna disattivazione manuale necessaria
+
+#################################################################################################################################################################
+
+##### SITUAZIONE OUTAGE
+
+Sistema con soglia di "tolleranza outage"
+Ad es: 10 giorni → richiedi PEC
+Ma se il blackout dura > 30 giorni consecutivi, e non arriva PEC → triggeri azione automatica
+Azione automatica: termini il contratto unilateralmente
+Per tutelarti, puoi applicare clausola di cessazione automatica o warning PEC come da contratto PolarDrive.
+Ma non basta interrompere il servizio => bisogno di proteggersi retroattivamente, per quei 3 mesi già loggati.
+ 3. Flag di non-difendibilità fiscale nel report (PDF)
+Nei PDF mensili, inserisci una frase automatica tipo:
+⚠️ Il veicolo è risultato inattivo per più di 30 giorni consecutivi, senza alcuna dichiarazione del cliente.
+In assenza di giustificazioni, il periodo potrebbe non essere fiscalmente deducibile al 100%.
+PolarDrive ha notificato formalmente la situazione al cliente in data 01/10/2025.
+✅ 4. E se poi scattano 2-3 mesi di outage?
+📁 Continui comunque a salvare i OutagePeriods
+🛑 Ma non generi più report deducibili 📨 E magari mandi PEC tu stesso
+
+#################################################################################################################################################################
+
+##### SITUAZIONE TOKENS
+
+🔐 Considerazioni di sicurezza
+Cifra AccessToken e RefreshToken a riposo (es. AES256)
+Aggiorna UpdatedAt ogni volta che fai un refresh
+Non loggare mai i token in chiaro
+Mai esporli in API o log di errore
+
+AccessToken	ogni 8h (o quando necessario)
+RefreshToken	ogni volta che ne ottieni uno nuovo (è incluso nel refresh flow)
+AccessTokenExpiresAt	valore restituito da Tesla nel token refresh (es. now + 8h)
+RefreshTokenExpiresAt	opzionale (di solito now + 45 giorni)
+
+Così il tuo backend sa SEMPRE:
+se è ora di rinnovare l’access token
+se un token è scaduto
+se deve notificare l’amministratore
+se deve fare logout completo o rigenerazione manuale
+
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+#################################################################################################################################################################
+
+TESLA VIN MOCK: 5Y12365848Z411439
+MOCK ACCESS TOKEN: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3RBY2NvdW50IiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+MOCK REFRESH TOKEN: r3fr3sh-t0k3n.mock.eyJpc3MiOiJ0ZXNsYSIsInVzZXIiOiIxMjMiLCJleHAiOjMwMDAwfQabcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+IMPLEMENTARE LOADER.
+
+NEXT GPT:
+
+
+
+
+
+
+
+
+
