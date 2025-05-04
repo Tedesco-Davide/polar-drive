@@ -24,8 +24,8 @@ Console.WriteLine("Popolamento DB con mock reali...");
 var companies = new[]
 {
     new { Name = "Paninoteca Rossi S.r.l.", PIVA = "63123456789", Email = "info@paninotecarossi.it", VIN = "5YJ3E1EA7KF317001", Model = "Model 3", IsActive = true, IsFetching = true },
-    new { Name = "Studio Legale Verdi", PIVA = "78987654321", Email = "contatti@studioverdi.it", VIN = "5YJSA1E26HF000199", Model = "Model S", IsActive = false, IsFetching = true },
-    new { Name = "TechZone S.p.A.", PIVA = "44543216789", Email = "support@techzone.it", VIN = "5YJXCDE45GF011123", Model = "Model X", IsActive = false, IsFetching = false },
+    new { Name = "Studio Legale Verdi", PIVA = "78987654321", Email = "contatti@studioverdi.it", VIN = "5YJSA1E26HF000199", Model = "Model S", IsActive = true, IsFetching = true },
+    new { Name = "TechZone S.p.A.", PIVA = "44543216789", Email = "support@techzone.it", VIN = "5YJXCDE45GF011123", Model = "Model X", IsActive = true, IsFetching = true },
     new { Name = "Farmacia Centrale S.n.c.", PIVA = "56135792468", Email = "info@farmaciacentrale.it", VIN = "5YJYGDEE0MF005555", Model = "Model 3", IsActive = true, IsFetching = true },
     new { Name = "Alfa Costruzioni S.r.l.", PIVA = "75112358132", Email = "segreteria@alfacostruzioni.it", VIN = "7SAYGDEE9PF123999", Model = "Model Y", IsActive = true, IsFetching = true },
     new { Name = "Gamma Energia s.n.c.", PIVA = "72192837465", Email = "contatti@gammaenergia.it", VIN = "5YJ3E1EA2HF001234", Model = "Model Y", IsActive = true, IsFetching = true },

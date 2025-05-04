@@ -5,8 +5,8 @@ export interface ClientTeslaVehicle {
   model: string;
   trim: string;
   color: string;
-  isActiveFlag: boolean;
-  isFetchingDataFlag: boolean;
+  isActive: boolean;
+  isFetching: boolean;
   firstActivationAt: string;
   lastDeactivationAt: string | null;
   lastFetchingDataAt: string | null;
@@ -14,8 +14,8 @@ export interface ClientTeslaVehicle {
 
 export interface TeslaWorkflow {
   teslaVehicleId: number;
-  isActiveFlag: boolean;
-  isFetchingDataFlag: boolean;
+  isActive: boolean;
+  isFetching: boolean;
   lastStatusChangeAt: string;
 }
 

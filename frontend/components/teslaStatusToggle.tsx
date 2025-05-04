@@ -20,14 +20,47 @@ export default function TeslaStatusToggle({
   const [loading, setLoading] = useState(false);
 
   const toggleStatus = async () => {
-    const newIsActive = field === "IsActive" ? !isActive : isActive;
-    const newIsFetching = field === "IsFetching" ? !isFetching : isFetching;
+    let newIsActive = isActive;
+    let newIsFetching = isFetching;
 
-    if (newIsActive && !newIsFetching) {
-      alert(
-        "Un veicolo attivo deve anche essere in stato di acquisizione dati."
-      );
-      return;
+    if (field === "IsActive") {
+      if (isActive) {
+        const confirm = window.confirm(
+          "Sei sicuro di voler passare questa tesla in stato NotActive? Premi conferma per confermare."
+        );
+        if (!confirm) return;
+        newIsActive = false;
+      } else {
+        const confirm = window.confirm(
+          "Stato tesla verificato a NotActive e NotFetching. Sei sicuro di voler riattivare questa tesla? Questo comporterà il ripristino dello stato ad Active, nonché il ripristino dell'acquisizione dati con cambio stato a Fetching. Premi conferma per confermare."
+        );
+        if (!confirm) return;
+        newIsActive = true;
+        newIsFetching = true;
+      }
+    }
+
+    if (field === "IsFetching") {
+      if (isFetching && isActive) {
+        alert(
+          "Non è possibile disattivare l'acquisizione Dati, per una tesla in stato Active."
+        );
+        return;
+      }
+      if (isFetching && !isActive) {
+        const confirm = window.confirm(
+          "Stato tesla verificato a NotActive. Sei sicuro di voler disattivare l'acquisizione Dati per questa tesla e portare lo stato a NotFetching? Premi conferma per confermare."
+        );
+        if (!confirm) return;
+        newIsFetching = false;
+      }
+      if (!isFetching && !isActive) {
+        const confirm = window.confirm(
+          "Acquisizione Dati per questa tesla verificato a NotFetching. Sei sicuro di voler riattivare l'acquisizione Dati e riportare lo stato a Fetching? Premi conferma per confermare."
+        );
+        if (!confirm) return;
+        newIsFetching = true;
+      }
     }
 
     try {
@@ -54,13 +87,13 @@ export default function TeslaStatusToggle({
         ? "✅ Active"
         : "🛑 NotActive"
       : isFetching
-      ? "✅ Fetching"
-      : "🛑 NotFetching";
+      ? "📡 Fetching"
+      : "⛔ NotFetching";
 
   return (
     <button
       type="button"
-      className={`active-fetching-checkbox`}
+      className="active-fetching-checkbox"
       disabled={loading}
       onClick={toggleStatus}
     >

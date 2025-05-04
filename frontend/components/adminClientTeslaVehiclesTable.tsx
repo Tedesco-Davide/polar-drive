@@ -52,12 +52,8 @@ export default function AdminClientTeslaVehiclesTable({ vehicles, t }: Props) {
             <th className="p-4">{t("admin.clientTeslaVehicle.model")}</th>
             <th className="p-4">{t("admin.clientTeslaVehicle.trim")}</th>
             <th className="p-4">{t("admin.clientTeslaVehicle.color")}</th>
-            <th className="p-4">
-              {t("admin.clientTeslaVehicle.isActiveFlag")}
-            </th>
-            <th className="p-4">
-              {t("admin.clientTeslaVehicle.isFetchingDataFlag")}
-            </th>
+            <th className="p-4">{t("admin.clientTeslaVehicle.isActive")}</th>
+            <th className="p-4">{t("admin.clientTeslaVehicle.isFetching")}</th>
             <th className="p-4">
               {t("admin.clientTeslaVehicle.firstActivationAt")}
             </th>
@@ -88,11 +84,9 @@ export default function AdminClientTeslaVehiclesTable({ vehicles, t }: Props) {
               <td className="p-4">{vehicle.model}</td>
               <td className="p-4">{vehicle.trim}</td>
               <td className="p-4">{vehicle.color}</td>
+              <td className="p-4 text-2xl">{vehicle.isActive ? "✅" : "🛑"}</td>
               <td className="p-4 text-2xl">
-                {vehicle.isActiveFlag ? "✅" : "🛑"}
-              </td>
-              <td className="p-4 text-2xl">
-                {vehicle.isFetchingDataFlag ? "✅" : "🛑"}
+                {vehicle.isFetching ? "✅" : "🛑"}
               </td>
               <td className="p-4">
                 {formatDateToDisplay(vehicle.firstActivationAt)}

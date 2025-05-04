@@ -104,21 +104,19 @@ export default function AdminClientTeslaVehicleEditForm({
         {/* Read-only visualizzazione stati attivazione */}
         <div className="flex items-center gap-2">
           <span className="text-2xl text-gray-600 dark:text-gray-300">
-            {t("admin.clientTeslaVehicle.isActiveFlag")}
+            {t("admin.clientTeslaVehicle.isActive")}
           </span>
           <span className="text-2xl">
-            {formData.isActiveFlag
-              ? `✅ ${t("admin.yes")}`
-              : `🛑 ${t("admin.no")}`}
+            {formData.isActive ? `✅ ${t("admin.yes")}` : `🛑 ${t("admin.no")}`}
           </span>
         </div>
 
         <div className="flex items-center gap-2">
           <span className="text-2xl text-gray-600 dark:text-gray-300">
-            {t("admin.clientTeslaVehicle.isFetchingDataFlag")}
+            {t("admin.clientTeslaVehicle.isFetching")}
           </span>
           <span className="text-2xl">
-            {formData.isFetchingDataFlag
+            {formData.isFetching
               ? `✅ ${t("admin.yes")}`
               : `🛑 ${t("admin.no")}`}
           </span>

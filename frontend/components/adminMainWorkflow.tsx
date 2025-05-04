@@ -72,10 +72,10 @@ export default function AdminMainWorkflow() {
             uploadDate: entry.firstActivationAt ?? "",
             model: entry.model ?? "",
             teslaVehicleVIN: entry.vin ?? "",
-            accessToken: "", // opzionale
-            refreshToken: "", // opzionale
-            isTeslaActive: entry.isActiveFlag ?? false,
-            isTeslaFetchingData: entry.isFetchingDataFlag ?? false,
+            accessToken: "",
+            refreshToken: "",
+            isTeslaActive: entry.isActive,
+            isTeslaFetchingData: entry.isFetching,
           }))
         );
         setCurrentPage(1);
@@ -267,7 +267,7 @@ export default function AdminMainWorkflow() {
         <tbody>
           {currentPageData.map((entry, index) => (
             <tr
-              key={index}
+              key={entry.id}
               className="border-b border-gray-300 dark:border-gray-600"
             >
               <td className="p-4 space-x-2 inline-flex">
@@ -295,7 +295,7 @@ export default function AdminMainWorkflow() {
                   id={entry.id}
                   isActive={entry.isTeslaActive}
                   isFetching={entry.isTeslaFetchingData}
-                  field="IsActive" // 👈 nuovo
+                  field="IsActive"
                   onStatusChange={(newIsActive, newIsFetching) => {
                     const updated = [...workflowData];
                     updated[index].isTeslaActive = newIsActive;
@@ -309,7 +309,7 @@ export default function AdminMainWorkflow() {
                   id={entry.id}
                   isActive={entry.isTeslaActive}
                   isFetching={entry.isTeslaFetchingData}
-                  field="IsFetching" // 👈 nuovo
+                  field="IsFetching"
                   onStatusChange={(newIsActive, newIsFetching) => {
                     const updated = [...workflowData];
                     updated[index].isTeslaActive = newIsActive;
