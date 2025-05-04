@@ -28,8 +28,13 @@ builder.Services.AddCors(options =>
 });
 
 // Aggiungi il DbContext
+var basePath = AppContext.BaseDirectory;
+var relativePath = Path.Combine("..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db");
+var dbPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
+Console.WriteLine("Sto usando il DB per Web API: " + dbPath);
+
 builder.Services.AddDbContext<PolarDriveDbContext>(options =>
-    options.UseSqlite("Data Source=datapolar.db")
+    options.UseSqlite($"Data Source={dbPath}")
 );
 
 var app = builder.Build();

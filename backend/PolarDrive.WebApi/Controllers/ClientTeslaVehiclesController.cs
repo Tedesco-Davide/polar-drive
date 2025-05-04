@@ -11,22 +11,32 @@ namespace PolarDrive.WebApi.Controllers;
 public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ClientTeslaVehicleDTO>>> Get()
+    public async Task<ActionResult<IEnumerable<AdminWorkflowExtendedDTO>>> Get()
     {
-        var rawItems = await db.ClientTeslaVehicles.ToListAsync();
+        var rawItems = await db.ClientTeslaVehicles
+            .Include(v => v.ClientCompany)
+            .ToListAsync();
 
-        var items = rawItems.Select(v => new ClientTeslaVehicleDTO
+        var items = rawItems.Select(v => new AdminWorkflowExtendedDTO
         {
             Id = v.Id,
-            ClientCompanyId = v.ClientCompanyId,
             Vin = v.Vin,
             Model = v.Model,
-            Trim = v.Trim,
-            Color = v.Color,
+            Trim = v.Trim ?? "",
+            Color = v.Color ?? "",
             IsActive = v.IsActiveFlag,
             IsFetching = v.IsFetchingDataFlag,
             FirstActivationAt = v.FirstActivationAt?.ToString("dd/MM/yyyy"),
-            LastDeactivationAt = v.LastDeactivationAt?.ToString("dd/MM/yyyy")
+            LastDeactivationAt = v.LastDeactivationAt?.ToString("dd/MM/yyyy"),
+            ClientCompany = new ClientCompanyDTO
+            {
+                Id = v.ClientCompany!.Id,
+                VatNumber = v.ClientCompany.VatNumber,
+                Name = v.ClientCompany.Name,
+                ReferentName = v.ClientCompany.ReferentName,
+                ReferentMobileNumber = v.ClientCompany.ReferentMobileNumber,
+                ReferentEmail = v.ClientCompany.ReferentEmail
+            }
         }).ToList();
 
         return Ok(items);

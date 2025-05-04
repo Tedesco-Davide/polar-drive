@@ -4,6 +4,7 @@ import { FileArchive, UserSearch } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { adminWorkflowTypesInputForm } from "@/types/adminWorkflowTypes";
+import { ClientTeslaVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
 import { parseISO, isAfter, isValid } from "date-fns";
 import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
@@ -56,10 +57,27 @@ export default function AdminMainWorkflow() {
   } = usePagination<WorkflowRow>(filteredData, 5);
 
   useEffect(() => {
-    fetch("/api/mock-adminmainworkflow")
+    fetch("https://localhost:5041/api/ClientTeslaVehicles")
       .then((res) => res.json())
-      .then((data) => {
-        setWorkflowData(data);
+      .then((data: ClientTeslaVehicleWithCompany[]) => {
+        setWorkflowData(
+          data.map((entry) => ({
+            id: entry.id,
+            companyVatNumber: entry.clientCompany?.vatNumber ?? "",
+            companyName: entry.clientCompany?.name ?? "",
+            referentName: entry.clientCompany?.referentName ?? "",
+            referentMobile: entry.clientCompany?.referentMobileNumber ?? "",
+            referentEmail: entry.clientCompany?.referentEmail ?? "",
+            zipFilePath: "",
+            uploadDate: entry.firstActivationAt ?? "",
+            model: entry.model ?? "",
+            teslaVehicleVIN: entry.vin ?? "",
+            accessToken: "", // opzionale
+            refreshToken: "", // opzionale
+            isTeslaActive: entry.isActiveFlag ?? false,
+            isTeslaFetchingData: entry.isFetchingDataFlag ?? false,
+          }))
+        );
         setCurrentPage(1);
       })
       .catch((err) => {

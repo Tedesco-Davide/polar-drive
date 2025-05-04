@@ -1,6 +1,6 @@
 export interface ClientCompany {
   id: number;
-  companyVatNumber: string;
+  vatNumber: string;
   name: string;
   address: string;
   email: string;
