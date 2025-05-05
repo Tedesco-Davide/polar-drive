@@ -1,6 +1,7 @@
-import axios from "axios";
 import { useState } from "react";
 import { API_BASE_URL } from "@/utils/api";
+import { useTranslation } from "next-i18next";
+import axios from "axios";
 
 type Props = {
   id: number;
@@ -18,6 +19,7 @@ export default function TeslaStatusToggle({
   onStatusChange,
 }: Props) {
   const [loading, setLoading] = useState(false);
+  const { t } = useTranslation("");
 
   const toggleStatus = async () => {
     let newIsActive = isActive;
@@ -26,13 +28,13 @@ export default function TeslaStatusToggle({
     if (field === "IsActive") {
       if (isActive) {
         const confirm = window.confirm(
-          "Sei sicuro di voler passare questa tesla in stato NotActive? Premi conferma per confermare."
+          t("admin.teslaStatusToggle.confirmAction.toNotActive")
         );
         if (!confirm) return;
         newIsActive = false;
       } else {
         const confirm = window.confirm(
-          "Stato tesla verificato a NotActive e NotFetching. Sei sicuro di voler riattivare questa tesla? Questo comporterà il ripristino dello stato ad Active, nonché il ripristino dell'acquisizione dati con cambio stato a Fetching. Premi conferma per confermare."
+          t("admin.teslaStatusToggle.confirmAction.backToActiveAndFetching")
         );
         if (!confirm) return;
         newIsActive = true;
@@ -43,20 +45,20 @@ export default function TeslaStatusToggle({
     if (field === "IsFetching") {
       if (isFetching && isActive) {
         alert(
-          "Non è possibile disattivare l'acquisizione Dati, per una tesla in stato Active."
+          t("admin.teslaStatusToggle.confirmAction.toNotFetchingFromActive")
         );
         return;
       }
       if (isFetching && !isActive) {
         const confirm = window.confirm(
-          "Stato tesla verificato a NotActive. Sei sicuro di voler disattivare l'acquisizione Dati per questa tesla e portare lo stato a NotFetching? Premi conferma per confermare."
+          t("admin.teslaStatusToggle.confirmAction.toNotFetchingFromNotActive")
         );
         if (!confirm) return;
         newIsFetching = false;
       }
       if (!isFetching && !isActive) {
         const confirm = window.confirm(
-          "Acquisizione Dati per questa tesla verificato a NotFetching. Sei sicuro di voler riattivare l'acquisizione Dati e riportare lo stato a Fetching? Premi conferma per confermare."
+          t("admin.teslaStatusToggle.confirmAction.toFetchingFromNotFetching")
         );
         if (!confirm) return;
         newIsFetching = true;
@@ -74,8 +76,8 @@ export default function TeslaStatusToggle({
       );
       onStatusChange(newIsActive, newIsFetching);
     } catch (error) {
-      console.error("Errore aggiornamento stato Tesla:", error);
-      alert("Errore nel salvataggio. Riprova.");
+      console.error(t("admin.teslaStatusToggle.confirmAction.error"), error);
+      alert(t("admin.teslaStatusToggle.confirmAction.error") + "\n" + error);
     } finally {
       setLoading(false);
     }
