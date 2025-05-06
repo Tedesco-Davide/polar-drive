@@ -8,6 +8,7 @@ import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import { PdfReport } from "@/types/reportInterfaces";
+import { API_BASE_URL } from "@/utils/api";
 import AdminLoader from "@/components/adminLoader";
 import AdminClientTeslaVehiclesTable from "@/components/adminClientTeslaVehiclesTable";
 import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
@@ -50,12 +51,13 @@ export default function AdminDashboard() {
       try {
         const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
           await Promise.all([
-            fetch("/api/mock-clientcompanies"),
+            fetch(`${API_BASE_URL}/api/ClientCompanies`),
             fetch("/api/mock-vehicles"),
             fetch("/api/mock-clientconsents"),
             fetch("/api/mock-outageperiods"),
             fetch("/api/mock-pdfreports"),
           ]);
+
         const [
           clientsData,
           vehiclesData,
@@ -69,6 +71,7 @@ export default function AdminDashboard() {
           outagesRes.json(),
           reportsRes.json(),
         ]);
+
         setClients(clientsData);
         setVehicles(vehiclesData);
         setClientConsents(consentsData);
@@ -80,6 +83,7 @@ export default function AdminDashboard() {
         setLoading(false);
       }
     };
+
     fetchAll();
   }, []);
 

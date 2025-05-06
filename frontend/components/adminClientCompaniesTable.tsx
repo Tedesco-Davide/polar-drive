@@ -1,24 +1,33 @@
+import { useState, useEffect } from "react";
 import { Pencil } from "lucide-react";
 import { TFunction } from "i18next";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
-import { useState } from "react";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import EditModal from "@/components/adminEditModal";
 import AdminClientCompanyEditForm from "@/components/adminClientCompanyEditForm";
+import AdminLoader from "@/components/adminLoader";
 
 type Props = {
-  clients: ClientCompany[];
   t: TFunction;
+  clients: ClientCompany[];
 };
 
-export default function AdminClientCompaniesTable({ clients, t }: Props) {
+export default function AdminClientCompaniesTable({ t, clients }: Props) {
+  const [loading, setLoading] = useState(true);
+  const [clientData, setClientData] = useState<ClientCompany[]>([]);
+
+  useEffect(() => {
+    setClientData(clients);
+    setLoading(false);
+  }, [clients]);
+
   const { query, setQuery, filteredData } = useSearchFilter<ClientCompany>(
-    clients,
+    clientData,
     [
-      "companyVatNumber",
+      "vatNumber",
       "name",
       "address",
       "email",
@@ -50,6 +59,8 @@ export default function AdminClientCompaniesTable({ clients, t }: Props) {
 
   return (
     <div>
+      {loading && <AdminLoader />}
+
       <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite mb-12">
         {t("admin.clientCompany.tableHeader")}
       </h1>
@@ -85,7 +96,7 @@ export default function AdminClientCompaniesTable({ clients, t }: Props) {
                   <Pencil size={16} />
                 </button>
               </td>
-              <td className="p-4">{client.companyVatNumber}</td>
+              <td className="p-4">{client.vatNumber}</td>
               <td className="p-4">{client.name}</td>
               <td className="p-4">{client.referentName}</td>
               <td className="p-4">{client.referentMobileNumber}</td>
