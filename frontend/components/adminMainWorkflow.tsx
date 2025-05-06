@@ -6,6 +6,7 @@ import { useSearchFilter } from "@/utils/useSearchFilter";
 import { adminWorkflowTypesInputForm } from "@/types/adminWorkflowTypes";
 import { ClientTeslaVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
 import { parseISO, isAfter, isValid } from "date-fns";
+import AdminLoader from "@/components/adminLoader";
 import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
 import PaginationControls from "@/components/paginationControls";
@@ -36,6 +37,7 @@ export default function AdminMainWorkflow() {
 
   const [workflowData, setWorkflowData] = useState<WorkflowRow[]>([]);
   const [showForm, setShowForm] = useState(false);
+  const [isStatusChanging, setIsStatusChanging] = useState(false);
   const { t } = useTranslation("");
   const { query, setQuery, filteredData } = useSearchFilter<WorkflowRow>(
     workflowData,
@@ -57,6 +59,7 @@ export default function AdminMainWorkflow() {
   } = usePagination<WorkflowRow>(filteredData, 5);
 
   useEffect(() => {
+    setIsStatusChanging(true);
     fetch("https://localhost:5041/api/ClientTeslaVehicles")
       .then((res) => res.json())
       .then((data: ClientTeslaVehicleWithCompany[]) => {
@@ -82,6 +85,9 @@ export default function AdminMainWorkflow() {
       })
       .catch((err) => {
         console.error("API error (admin main workflow):", err);
+      })
+      .finally(() => {
+        setIsStatusChanging(false);
       });
   }, []);
 
@@ -215,6 +221,7 @@ export default function AdminMainWorkflow() {
 
   return (
     <div>
+      {isStatusChanging && <AdminLoader />}
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl  font-bold text-polarNight dark:text-softWhite">
           {t("admin.mainWorkflow.tableHeader")}
@@ -302,6 +309,7 @@ export default function AdminMainWorkflow() {
                     updated[index].isTeslaFetchingData = newIsFetching;
                     setWorkflowData(updated);
                   }}
+                  setLoading={setIsStatusChanging}
                 />
               </td>
               <td className="p-4 align-middle">
@@ -316,6 +324,7 @@ export default function AdminMainWorkflow() {
                     updated[index].isTeslaFetchingData = newIsFetching;
                     setWorkflowData(updated);
                   }}
+                  setLoading={setIsStatusChanging}
                 />
               </td>
               <td className="p-4">{entry.companyName}</td>

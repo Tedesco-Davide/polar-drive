@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { API_BASE_URL } from "@/utils/api";
 import { useTranslation } from "next-i18next";
 import axios from "axios";
@@ -9,6 +8,7 @@ type Props = {
   isFetching: boolean;
   field: "IsActive" | "IsFetching";
   onStatusChange: (newIsActive: boolean, newIsFetching: boolean) => void;
+  setLoading: (value: boolean) => void;
 };
 
 export default function TeslaStatusToggle({
@@ -17,8 +17,8 @@ export default function TeslaStatusToggle({
   isFetching,
   field,
   onStatusChange,
+  setLoading,
 }: Props) {
-  const [loading, setLoading] = useState(false);
   const { t } = useTranslation("");
 
   const toggleStatus = async () => {
@@ -96,7 +96,6 @@ export default function TeslaStatusToggle({
     <button
       type="button"
       className="active-fetching-checkbox"
-      disabled={loading}
       onClick={toggleStatus}
     >
       {label}
