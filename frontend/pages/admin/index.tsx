@@ -9,6 +9,8 @@ import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import { PdfReport } from "@/types/reportInterfaces";
 import { API_BASE_URL } from "@/utils/api";
+import { WorkflowRow } from "@/types/adminWorkflowTypes";
+import { ClientTeslaVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
 import AdminLoader from "@/components/adminLoader";
 import AdminClientTeslaVehiclesTable from "@/components/adminClientTeslaVehiclesTable";
 import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
@@ -25,7 +27,7 @@ export default function AdminDashboard() {
 
   type AdminTab = "PolarDrive" | "ComingSoon";
   const [activeTab, setActiveTab] = useState<AdminTab>("PolarDrive");
-
+  const [workflowData, setWorkflowData] = useState<WorkflowRow[]>([]);
   const [clients, setClients] = useState<ClientCompany[]>([]);
   const [vehicles, setVehicles] = useState<ClientTeslaVehicle[]>([]);
   const [clientConsents, setClientConsents] = useState<ClientConsent[]>([]);
@@ -35,6 +37,38 @@ export default function AdminDashboard() {
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
   const { t } = useTranslation("common");
+
+  const refreshWorkflowData = async () => {
+    try {
+      const res = await fetch("https://localhost:5041/api/ClientTeslaVehicles");
+      const data: ClientTeslaVehicleWithCompany[] = await res.json();
+
+      setWorkflowData(
+        data.map((entry) => ({
+          id: entry.id,
+          companyVatNumber: entry.clientCompany?.vatNumber ?? "",
+          companyName: entry.clientCompany?.name ?? "",
+          referentName: entry.clientCompany?.referentName ?? "",
+          referentMobile: entry.clientCompany?.referentMobileNumber ?? "",
+          referentEmail: entry.clientCompany?.referentEmail ?? "",
+          zipFilePath: "",
+          uploadDate: entry.firstActivationAt ?? "",
+          model: entry.model ?? "",
+          teslaVehicleVIN: entry.vin ?? "",
+          accessToken: "",
+          refreshToken: "",
+          isTeslaActive: entry.isActive,
+          isTeslaFetchingData: entry.isFetching,
+        }))
+      );
+    } catch (err) {
+      console.error("Errore durante il fetch del workflow:", err);
+    }
+  };
+
+  useEffect(() => {
+    refreshWorkflowData();
+  }, []);
 
   useEffect(() => {
     if (!FAKE_AUTH) {
@@ -156,8 +190,15 @@ export default function AdminDashboard() {
                 {activeTab === "PolarDrive" && (
                   <div className="overflow-x-auto">
                     <div className="mx-auto space-y-12 min-w-fit mb-12">
-                      <AdminMainWorkflow />
-                      <AdminClientCompaniesTable clients={clients} t={t} />
+                      <AdminMainWorkflow
+                        workflowData={workflowData}
+                        refreshWorkflowData={refreshWorkflowData}
+                      />
+                      <AdminClientCompaniesTable
+                        clients={clients}
+                        t={t}
+                        refreshWorkflowData={refreshWorkflowData}
+                      />
                       <AdminClientTeslaVehiclesTable
                         vehicles={vehicles}
                         t={t}

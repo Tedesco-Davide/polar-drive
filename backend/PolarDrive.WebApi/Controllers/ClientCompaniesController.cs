@@ -70,4 +70,30 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         return NoContent();
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Put(int id, [FromBody] ClientCompanyDTO updated)
+    {
+        if (id != updated.Id)
+            return BadRequest("ID mismatch.");
+
+        var existing = await db.ClientCompanies.FindAsync(id);
+        if (existing == null)
+            return NotFound();
+
+        // Aggiorna i campi
+        existing.Name = updated.Name;
+        existing.VatNumber = updated.VatNumber;
+        existing.Address = updated.Address;
+        existing.Email = updated.Email;
+        existing.PecAddress = updated.PecAddress;
+        existing.ReferentName = updated.ReferentName;
+        existing.ReferentEmail = updated.ReferentEmail;
+        existing.ReferentMobileNumber = updated.ReferentMobileNumber;
+        existing.ReferentPecAddress = updated.ReferentPecAddress;
+        existing.LandlineNumber = updated.LandlineNumber;
+
+        await db.SaveChangesAsync();
+        return Ok();
+    }
 }

@@ -13,9 +13,14 @@ import AdminLoader from "@/components/adminLoader";
 type Props = {
   t: TFunction;
   clients: ClientCompany[];
+  refreshWorkflowData: () => Promise<void>;
 };
 
-export default function AdminClientCompaniesTable({ t, clients }: Props) {
+export default function AdminClientCompaniesTable({
+  t,
+  clients,
+  refreshWorkflowData,
+}: Props) {
   const [loading, setLoading] = useState(true);
   const [clientData, setClientData] = useState<ClientCompany[]>([]);
 
@@ -137,8 +142,12 @@ export default function AdminClientCompaniesTable({ t, clients }: Props) {
             onClose={() => setShowEditModal(false)}
             onSave={(updatedClient: ClientCompany) => {
               console.log("Updated client:", updatedClient);
+              setClientData((prev) =>
+                prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
+              );
               setShowEditModal(false);
             }}
+            refreshWorkflowData={refreshWorkflowData}
             t={t}
           />
         </EditModal>

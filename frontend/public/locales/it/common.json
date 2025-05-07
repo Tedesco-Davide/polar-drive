@@ -72,6 +72,7 @@
   "admin.cancelEditRow": "Chiudi ed anulla modifiche",
   "admin.confirmEditRow": "Salva modifiche",
   "admin.successEditRow": "Riga modificata con successo!",
+  "admin.errorEditRow": "ERRORE: Si è verificato un errore al salvataggio delle modifiche",
   "admin.uploadZipOutageSigned": "Carica consensi firmati (.zip)",
   "admin.openNotesModal": "Apri gestione note",
 

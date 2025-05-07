@@ -3,8 +3,10 @@ import { useTranslation } from "next-i18next";
 import { FileArchive, UserSearch } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
-import { adminWorkflowTypesInputForm } from "@/types/adminWorkflowTypes";
-import { ClientTeslaVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
+import {
+  adminWorkflowTypesInputForm,
+  WorkflowRow,
+} from "@/types/adminWorkflowTypes";
 import { parseISO, isAfter, isValid } from "date-fns";
 import AdminLoader from "@/components/adminLoader";
 import SearchBar from "@/components/searchBar";
@@ -12,7 +14,13 @@ import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm"
 import PaginationControls from "@/components/paginationControls";
 import TeslaStatusToggle from "./teslaStatusToggle";
 
-export default function AdminMainWorkflow() {
+export default function AdminMainWorkflow({
+  workflowData,
+  refreshWorkflowData,
+}: {
+  workflowData: WorkflowRow[];
+  refreshWorkflowData: () => Promise<void>;
+}) {
   const [formData, setFormData] = useState<adminWorkflowTypesInputForm>({
     companyVatNumber: "",
     companyName: "",
@@ -29,18 +37,19 @@ export default function AdminMainWorkflow() {
     isTeslaFetchingData: true,
   });
 
-  type WorkflowRow = {
-    id: number;
-  } & Omit<adminWorkflowTypesInputForm, "zipFilePath"> & {
-      zipFilePath: string;
-    };
-
-  const [workflowData, setWorkflowData] = useState<WorkflowRow[]>([]);
+  const [internalWorkflowData, setInternalWorkflowData] =
+    useState<WorkflowRow[]>(workflowData);
   const [showForm, setShowForm] = useState(false);
   const [isStatusChanging, setIsStatusChanging] = useState(false);
   const { t } = useTranslation("");
+
+  useEffect(() => {
+    setInternalWorkflowData(workflowData);
+    setCurrentPage(1);
+  }, [workflowData]);
+
   const { query, setQuery, filteredData } = useSearchFilter<WorkflowRow>(
-    workflowData,
+    internalWorkflowData,
     [
       "companyVatNumber",
       "companyName",
@@ -49,6 +58,7 @@ export default function AdminMainWorkflow() {
       "teslaVehicleVIN",
     ]
   );
+
   const {
     currentPage,
     totalPages,
@@ -57,39 +67,6 @@ export default function AdminMainWorkflow() {
     prevPage,
     setCurrentPage,
   } = usePagination<WorkflowRow>(filteredData, 5);
-
-  useEffect(() => {
-    setIsStatusChanging(true);
-    fetch("https://localhost:5041/api/ClientTeslaVehicles")
-      .then((res) => res.json())
-      .then((data: ClientTeslaVehicleWithCompany[]) => {
-        setWorkflowData(
-          data.map((entry) => ({
-            id: entry.id,
-            companyVatNumber: entry.clientCompany?.vatNumber ?? "",
-            companyName: entry.clientCompany?.name ?? "",
-            referentName: entry.clientCompany?.referentName ?? "",
-            referentMobile: entry.clientCompany?.referentMobileNumber ?? "",
-            referentEmail: entry.clientCompany?.referentEmail ?? "",
-            zipFilePath: "",
-            uploadDate: entry.firstActivationAt ?? "",
-            model: entry.model ?? "",
-            teslaVehicleVIN: entry.vin ?? "",
-            accessToken: "",
-            refreshToken: "",
-            isTeslaActive: entry.isActive,
-            isTeslaFetchingData: entry.isFetching,
-          }))
-        );
-        setCurrentPage(1);
-      })
-      .catch((err) => {
-        console.error("API error (admin main workflow):", err);
-      })
-      .finally(() => {
-        setIsStatusChanging(false);
-      });
-  }, []);
 
   const handleSubmit = async () => {
     const requiredFields: (keyof adminWorkflowTypesInputForm)[] = [
@@ -186,7 +163,7 @@ export default function AdminMainWorkflow() {
         : "";
 
     // ✅ 2. Aggiungi ai dati di tabella
-    setWorkflowData((prev) => [
+    setInternalWorkflowData((prev) => [
       ...prev,
       {
         id: Date.now(), // 👈 ID temporaneo generato via timestamp
@@ -198,6 +175,7 @@ export default function AdminMainWorkflow() {
 
     // ✅ 3. Mostra alert di successo
     alert(t("admin.mainWorkflow.button.successAddNewTesla"));
+    await refreshWorkflowData();
 
     // ✅ 4. Reset del form
     setFormData({
@@ -307,7 +285,7 @@ export default function AdminMainWorkflow() {
                     const updated = [...workflowData];
                     updated[index].isTeslaActive = newIsActive;
                     updated[index].isTeslaFetchingData = newIsFetching;
-                    setWorkflowData(updated);
+                    setInternalWorkflowData(updated);
                   }}
                   setLoading={setIsStatusChanging}
                 />
@@ -322,7 +300,7 @@ export default function AdminMainWorkflow() {
                     const updated = [...workflowData];
                     updated[index].isTeslaActive = newIsActive;
                     updated[index].isTeslaFetchingData = newIsFetching;
-                    setWorkflowData(updated);
+                    setInternalWorkflowData(updated);
                   }}
                   setLoading={setIsStatusChanging}
                 />

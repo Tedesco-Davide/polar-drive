@@ -72,6 +72,7 @@
   "admin.cancelEditRow": "Close edit and undo changes",
   "admin.confirmEditRow": "Save changes",
   "admin.successEditRow": "Row updated successfully!",
+  "admin.errorEditRow": "ERROR: There was an error while trying to update the row",
   "admin.uploadZipOutageSigned": "Upload signed consents (.zip)",
   "admin.openNotesModal": "Open notes management",
 

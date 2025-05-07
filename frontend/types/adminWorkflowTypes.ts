@@ -13,3 +13,10 @@ export type adminWorkflowTypesInputForm = {
   isTeslaActive: boolean;
   isTeslaFetchingData: boolean;
 };
+
+type InputWithoutFile = Omit<adminWorkflowTypesInputForm, "zipFilePath">;
+
+export type WorkflowRow = InputWithoutFile & {
+  id: number;
+  zipFilePath: string;
+};

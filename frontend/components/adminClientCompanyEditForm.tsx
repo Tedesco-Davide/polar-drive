@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { TFunction } from "i18next";
+import { API_BASE_URL } from "@/utils/api";
 
 type Props = {
   client: ClientCompany;
   onClose: () => void;
   onSave: (updatedClient: ClientCompany) => void;
+  refreshWorkflowData: () => Promise<void>;
   t: TFunction;
 };
 
@@ -13,6 +15,7 @@ export default function AdminClientCompanyEditForm({
   client,
   onClose,
   onSave,
+  refreshWorkflowData,
   t,
 }: Props) {
   const [formData, setFormData] = useState<ClientCompany>(client);
@@ -22,12 +25,12 @@ export default function AdminClientCompanyEditForm({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const isEmailValid = (email: string) =>
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
     // ✅ Partita IVA
-    if (!/^[0-9]{11}$/.test(formData.companyVatNumber.trim())) {
+    if (!/^[0-9]{11}$/.test(formData.vatNumber.trim())) {
       alert(t("admin.validation.invalidVat"));
       return;
     }
@@ -86,8 +89,30 @@ export default function AdminClientCompanyEditForm({
       return;
     }
 
-    // ✅ Successo
-    alert(t("admin.successEditRow"));
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/ClientCompanies/${formData.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Errore nel salvataggio");
+      }
+
+      // ✅ Successo
+      alert(t("admin.successEditRow"));
+      onSave(formData);
+      await refreshWorkflowData();
+    } catch (error) {
+      console.error("Errore durante la chiamata API:", error);
+      alert(t("admin.errorEditRow"));
+    }
 
     onSave(formData);
   };
@@ -103,14 +128,14 @@ export default function AdminClientCompanyEditForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientCompany.companyVatNumber")}
+            {t("admin.clientCompany.vatNumber")}
           </span>
           <input
             maxLength={11}
             pattern="[0-9]*"
             inputMode="numeric"
-            name="companyVatNumber"
-            value={formData.companyVatNumber}
+            name="vatNumber"
+            value={formData.vatNumber}
             onChange={handleChange}
             className="input"
           />
