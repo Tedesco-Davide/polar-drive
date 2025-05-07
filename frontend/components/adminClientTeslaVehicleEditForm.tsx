@@ -1,12 +1,14 @@
 import { useState } from "react";
 import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
 import { TFunction } from "i18next";
+import axios from "axios";
 
 type Props = {
   vehicle: ClientTeslaVehicle;
   onClose: () => void;
   onSave: (updatedVehicle: ClientTeslaVehicle) => void;
   t: TFunction;
+  refreshWorkflowData: () => Promise<void>;
 };
 
 export default function AdminClientTeslaVehicleEditForm({
@@ -14,6 +16,7 @@ export default function AdminClientTeslaVehicleEditForm({
   onClose,
   onSave,
   t,
+  refreshWorkflowData,
 }: Props) {
   const [formData, setFormData] = useState<ClientTeslaVehicle>(vehicle);
 
@@ -27,7 +30,7 @@ export default function AdminClientTeslaVehicleEditForm({
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
 
     if (!vinRegex.test(formData.vin.trim())) {
@@ -40,8 +43,19 @@ export default function AdminClientTeslaVehicleEditForm({
       return;
     }
 
-    alert(t("admin.successEditRow"));
-    onSave(formData);
+    try {
+      await axios.put(`/api/ClientTeslaVehicles/${formData.id}`, formData);
+
+      // 🔄 Aggiorna la tabella Gestione principale workflow
+      await refreshWorkflowData();
+
+      alert(t("admin.successEditRow"));
+      onSave(formData);
+      onClose();
+    } catch (error) {
+      console.error("Errore durante la chiamata API:", error);
+      alert(t("admin.errorEditRow"));
+    }
   };
 
   return (

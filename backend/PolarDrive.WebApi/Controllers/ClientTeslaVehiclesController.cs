@@ -96,4 +96,30 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
         return DateTime.TryParseExact(date, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var d)
             ? d : null;
     }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Put(int id, [FromBody] ClientTeslaVehicleDTO dto)
+    {
+        var vehicle = await db.ClientTeslaVehicles.FindAsync(id);
+        if (vehicle == null)
+            return NotFound("Veicolo non trovato.");
+
+        if (dto.IsActive && !dto.IsFetching)
+            return BadRequest("Un veicolo attivo deve anche essere in stato di acquisizione dati.");
+
+        if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
+            return NotFound("Azienda cliente non trovata.");
+
+        vehicle.Vin = dto.Vin;
+        vehicle.Model = dto.Model;
+        vehicle.Trim = dto.Trim;
+        vehicle.Color = dto.Color;
+        vehicle.IsActiveFlag = dto.IsActive;
+        vehicle.IsFetchingDataFlag = dto.IsFetching;
+        vehicle.FirstActivationAt = ParseDate(dto.FirstActivationAt);
+        vehicle.LastDeactivationAt = ParseDate(dto.LastDeactivationAt);
+
+        await db.SaveChangesAsync();
+        return NoContent();
+    }
 }

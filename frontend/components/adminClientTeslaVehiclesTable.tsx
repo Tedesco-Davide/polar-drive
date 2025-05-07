@@ -12,10 +12,15 @@ import AdminClientTeslaVehicleEditForm from "@/components/adminClientTeslaVehicl
 
 type Props = {
   vehicles: ClientTeslaVehicle[];
+  refreshWorkflowData: () => Promise<void>;
   t: TFunction;
 };
 
-export default function AdminClientTeslaVehiclesTable({ vehicles, t }: Props) {
+export default function AdminClientTeslaVehiclesTable({
+  vehicles,
+  refreshWorkflowData,
+  t,
+}: Props) {
   const { query, setQuery, filteredData } = useSearchFilter<ClientTeslaVehicle>(
     vehicles,
     ["vin", "model", "trim", "color"]
@@ -133,6 +138,7 @@ export default function AdminClientTeslaVehiclesTable({ vehicles, t }: Props) {
               console.log("Updated vehicle:", updatedVehicle);
               setShowEditModal(false);
             }}
+            refreshWorkflowData={refreshWorkflowData}
             t={t}
           />
         </EditModal>

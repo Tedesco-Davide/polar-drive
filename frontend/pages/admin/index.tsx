@@ -202,6 +202,7 @@ export default function AdminDashboard() {
                       <AdminClientTeslaVehiclesTable
                         vehicles={vehicles}
                         t={t}
+                        refreshWorkflowData={refreshWorkflowData}
                       />
                       <AdminClientConsents consents={clientConsents} t={t} />
                       <AdminOutagePeriodsTable outages={outagePeriods} t={t} />
