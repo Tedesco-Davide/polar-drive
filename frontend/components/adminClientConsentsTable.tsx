@@ -243,7 +243,12 @@ export default function AdminClientConsents({ t, consents }: Props) {
                 <button
                   className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                   title={t("admin.mainWorkflow.button.singleZipConsent")}
-                  onClick={() => window.open(consent.zipFilePath, "_blank")}
+                  onClick={() =>
+                    window.open(
+                      `${API_BASE_URL}/api/ClientConsents/${consent.id}/download`,
+                      "_blank"
+                    )
+                  }
                 >
                   <FileArchive size={16} />
                 </button>

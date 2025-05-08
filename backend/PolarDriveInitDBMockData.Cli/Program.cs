@@ -89,7 +89,7 @@ for (int i = 0; i < companyList.Length; i++)
         ClientCompanyId = companyList[i].Id,
         TeslaVehicleId = vehicleList[i].Id,
         UploadDate = new DateTime(2024, 3, 12).AddDays(i * 2),
-        ZipFilePath = $"pdfs/consents/consent_{companyList[i].Name.ToLower().Replace(" ", "_").Replace(".", "").Replace(",", "").Replace("à", "a")}.pdf",
+        ZipFilePath = $"pdfs/consents/{vehicleList[i].Vin}.zip",
         ConsentHash = $"mockhash{i + 1:D2}abcdef0123456789{i + 1:D2}",
         ConsentType = consentTypes[i % consentTypes.Length]
     });

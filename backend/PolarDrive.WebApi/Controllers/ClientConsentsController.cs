@@ -9,7 +9,7 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ClientConsentsController(PolarDriveDbContext db) : ControllerBase
+public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ClientConsentDTO>>> Get()
@@ -74,7 +74,29 @@ public class ClientConsentsController(PolarDriveDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         return NoContent();
-}   
+    }   
+
+    [HttpGet("{id}/download")]
+    public async Task<IActionResult> DownloadZip(int id)
+    {
+        var consent = await db.ClientConsents.FindAsync(id);
+        if (consent == null)
+            return NotFound("Consenso non trovato.");
+
+        if (string.IsNullOrWhiteSpace(env.WebRootPath))
+            return StatusCode(500, "WebRootPath non configurato.");
+
+        var fullPath = Path.Combine(env.WebRootPath, consent.ZipFilePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
+
+        if (!System.IO.File.Exists(fullPath))
+            return NotFound("File ZIP non trovato sul server.");
+
+        var fileName = Path.GetFileName(fullPath);
+        var contentType = "application/zip";
+
+        var fileBytes = await System.IO.File.ReadAllBytesAsync(fullPath);
+        return File(fileBytes, contentType, fileName);
+    }
 
     private static DateTime ParseDate(string date)
     {
