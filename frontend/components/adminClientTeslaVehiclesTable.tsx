@@ -3,7 +3,7 @@ import { TFunction } from "i18next";
 import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatDateToDisplay } from "@/utils/date";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -21,8 +21,9 @@ export default function AdminClientTeslaVehiclesTable({
   refreshWorkflowData,
   t,
 }: Props) {
+  const [vehicleData, setVehicleData] = useState<ClientTeslaVehicle[]>([]);
   const { query, setQuery, filteredData } = useSearchFilter<ClientTeslaVehicle>(
-    vehicles,
+    vehicleData,
     ["vin", "model", "trim", "color"]
   );
 
@@ -38,6 +39,10 @@ export default function AdminClientTeslaVehiclesTable({
   const [selectedVehicle, setSelectedVehicle] =
     useState<ClientTeslaVehicle | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  useEffect(() => {
+    setVehicleData(vehicles);
+  }, [vehicles]);
 
   const handleEditClick = (vehicle: ClientTeslaVehicle) => {
     setSelectedVehicle(vehicle);
@@ -134,8 +139,13 @@ export default function AdminClientTeslaVehiclesTable({
           <AdminClientTeslaVehicleEditForm
             vehicle={selectedVehicle}
             onClose={() => setShowEditModal(false)}
-            onSave={(updatedVehicle: ClientTeslaVehicle) => {
-              console.log("Updated vehicle:", updatedVehicle);
+            onSave={async (updatedVehicle: ClientTeslaVehicle) => {
+              setVehicleData((prev) =>
+                prev.map((v) =>
+                  v.id === updatedVehicle.id ? updatedVehicle : v
+                )
+              );
+              await refreshWorkflowData();
               setShowEditModal(false);
             }}
             refreshWorkflowData={refreshWorkflowData}
