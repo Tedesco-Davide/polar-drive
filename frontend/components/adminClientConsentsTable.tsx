@@ -1,6 +1,5 @@
 import { TFunction } from "i18next";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
-import { ClientConsentFormData } from "@/types/clientConsentType";
 import { FileArchive } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
@@ -13,6 +12,7 @@ import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import Chip from "@/components/chip";
 import AdminClientConsentAddForm from "./adminClientConsentAddForm";
+import { API_BASE_URL } from "@/utils/api";
 
 type Props = {
   t: TFunction;
@@ -65,26 +65,27 @@ export default function AdminClientConsents({ t, consents }: Props) {
 
   const [showForm, setShowForm] = useState(false);
 
-  const [formData, setFormData] = useState<ClientConsentFormData>({
+  const [formData, setFormData] = useState<ClientConsent>({
     id: 0,
     clientCompanyId: 0,
     teslaVehicleId: 0,
     uploadDate: "",
-    zipFilePath: new File([""], ""),
+    zipFilePath: "",
     consentHash: "",
     consentType: "Consent Activation",
     companyVatNumber: "",
     teslaVehicleVIN: "",
+    notes: "",
   });
 
   const handleSubmit = async () => {
-    const requiredFields: (keyof ClientConsentFormData)[] = [
+    const requiredFields = [
       "consentType",
       "teslaVehicleVIN",
       "companyVatNumber",
       "uploadDate",
       "zipFilePath",
-    ];
+    ] as const;
 
     const validConsentTypes = new Set([
       "Consent Deactivation",
@@ -94,11 +95,7 @@ export default function AdminClientConsents({ t, consents }: Props) {
 
     const missing = requiredFields.filter((f) => {
       if (f === "zipFilePath") {
-        return (
-          !(formData.zipFilePath instanceof File) ||
-          formData.zipFilePath.name.trim() === "" ||
-          formData.zipFilePath.size === 0
-        );
+        return !formData.zipFilePath || formData.zipFilePath.trim() === "";
       }
       if (f === "consentType") {
         return !validConsentTypes.has(formData.consentType);
@@ -137,29 +134,53 @@ export default function AdminClientConsents({ t, consents }: Props) {
     }
 
     const dummyHash = Math.random().toString(36).substring(2, 10).toUpperCase();
-    const pdfFileUrl =
-      formData.zipFilePath instanceof File
-        ? URL.createObjectURL(formData.zipFilePath)
-        : "";
 
-    setLocalConsents((prev) => [
-      ...prev,
-      {
-        ...formData,
-        zipFilePath: pdfFileUrl,
-        consentHash: dummyHash,
-      },
-    ]);
-    setCurrentPage(1);
+    const formPayload = {
+      clientCompanyId: formData.clientCompanyId,
+      teslaVehicleId: formData.teslaVehicleId,
+      uploadDate: formData.uploadDate,
+      zipFilePath: `/pdfs/consents/${formData.teslaVehicleVIN}.pdf`,
+      consentHash: dummyHash,
+      consentType: formData.consentType,
+      notes: formData.notes ?? "",
+    };
 
-    alert(t("admin.clientConsents.successAddNewConsent"));
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ClientConsents`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formPayload),
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore nella creazione del consenso");
+      }
+
+      const newId = await response.json();
+
+      setLocalConsents((prev) => [
+        ...prev,
+        {
+          ...formPayload,
+          id: newId,
+          companyVatNumber: formData.companyVatNumber,
+          teslaVehicleVIN: formData.teslaVehicleVIN,
+        },
+      ]);
+
+      setCurrentPage(1);
+      alert(t("admin.clientConsents.successAddNewConsent"));
+    } catch (err) {
+      console.error("Errore POST consenso:", err);
+      alert("Errore nel salvataggio del consenso.");
+    }
 
     setFormData({
       id: 0,
       clientCompanyId: 0,
       teslaVehicleId: 0,
       uploadDate: "",
-      zipFilePath: new File([""], ""),
+      zipFilePath: "",
       consentHash: "",
       consentType: "Consent Activation",
       companyVatNumber: "",
@@ -239,15 +260,28 @@ export default function AdminClientConsents({ t, consents }: Props) {
                     isOpen={!!selectedConsentForNotes}
                     title={t("admin.clientConsents.notes.modalTitle")}
                     notesField="notes"
-                    onSave={(updated) => {
-                      setLocalConsents((prev) =>
-                        prev.map((c) =>
-                          c.consentHash === updated.consentHash
-                            ? { ...c, notes: updated.notes }
-                            : c
-                        )
-                      );
-                      setSelectedConsentForNotes(null);
+                    onSave={async (updated) => {
+                      try {
+                        await fetch(
+                          `${API_BASE_URL}/api/ClientConsents/${updated.id}/notes`,
+                          {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ notes: updated.notes }),
+                          }
+                        );
+                        setLocalConsents((prev) =>
+                          prev.map((c) =>
+                            c.id === updated.id
+                              ? { ...c, notes: updated.notes }
+                              : c
+                          )
+                        );
+                        setSelectedConsentForNotes(null);
+                      } catch (err) {
+                        console.error("Errore aggiornamento note:", err);
+                        alert("Errore durante il salvataggio delle note.");
+                      }
                     }}
                     onClose={() => setSelectedConsentForNotes(null)}
                     t={t}

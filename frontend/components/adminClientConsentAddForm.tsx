@@ -1,12 +1,12 @@
 import { TFunction } from "i18next";
-import { ClientConsentFormData } from "@/types/clientConsentType";
 import { formatDateToSave } from "@/utils/date";
+import { ClientConsent } from "@/types/clientConsentInterfaces";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 type Props = {
-  formData: ClientConsentFormData;
-  setFormData: React.Dispatch<React.SetStateAction<ClientConsentFormData>>;
+  formData: ClientConsent;
+  setFormData: React.Dispatch<React.SetStateAction<ClientConsent>>;
   onSubmit: () => void;
   t: TFunction;
 };
@@ -20,35 +20,10 @@ export default function AdminClientConsentAddForm({
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value, files } = e.target as HTMLInputElement;
-
-    if (name === "zipFilePath" && files?.[0]) {
-      const file = files[0];
-      const allowedTypes = ["application/zip", "application/x-zip-compressed"];
-      const maxSize = 20 * 1024 * 1024;
-
-      if (!allowedTypes.includes(file.type)) {
-        alert(t("admin.validation.invalidZipType"));
-        e.target.value = "";
-        return;
-      }
-
-      if (file.size > maxSize) {
-        alert(t("admin.mainWorkflow.validation.zipTooLarge"));
-        e.target.value = "";
-        return;
-      }
-
-      setFormData({
-        ...formData,
-        zipFilePath: file,
-      });
-      return;
-    }
-
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: files ? files[0] : value,
+      [name]: value,
     });
   };
 
@@ -132,7 +107,7 @@ export default function AdminClientConsentAddForm({
           </span>
           <input
             name="zipFilePath"
-            type="file"
+            value={formData.zipFilePath}
             onChange={handleChange}
             className="input text-[12px]"
           />

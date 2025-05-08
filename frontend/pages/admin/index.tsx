@@ -87,7 +87,7 @@ export default function AdminDashboard() {
           await Promise.all([
             fetch(`${API_BASE_URL}/api/ClientCompanies`),
             fetch(`${API_BASE_URL}/api/ClientTeslaVehicles`),
-            fetch("/api/mock-clientconsents"),
+            fetch(`${API_BASE_URL}/api/ClientConsents`),
             fetch("/api/mock-outageperiods"),
             fetch("/api/mock-pdfreports"),
           ]);
