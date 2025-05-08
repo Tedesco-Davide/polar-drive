@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
 import { TFunction } from "i18next";
 import axios from "axios";
+import { API_BASE_URL } from "@/utils/api";
 
 type Props = {
   vehicle: ClientTeslaVehicle;
@@ -31,6 +32,7 @@ export default function AdminClientTeslaVehicleEditForm({
   };
 
   const handleSubmit = async () => {
+    console.log("formData.id:", formData.id);
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
 
     if (!vinRegex.test(formData.vin.trim())) {
@@ -44,7 +46,10 @@ export default function AdminClientTeslaVehicleEditForm({
     }
 
     try {
-      await axios.put(`/api/ClientTeslaVehicles/${formData.id}`, formData);
+      await axios.put(
+        `${API_BASE_URL}/api/ClientTeslaVehicles/${formData.id}`,
+        formData
+      );
 
       // 🔄 Aggiorna la tabella Gestione principale workflow
       await refreshWorkflowData();

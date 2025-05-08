@@ -86,28 +86,35 @@ export default function AdminDashboard() {
         const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
           await Promise.all([
             fetch(`${API_BASE_URL}/api/ClientCompanies`),
-            fetch("/api/mock-vehicles"),
+            fetch(`${API_BASE_URL}/api/ClientTeslaVehicles`),
             fetch("/api/mock-clientconsents"),
             fetch("/api/mock-outageperiods"),
             fetch("/api/mock-pdfreports"),
           ]);
 
-        const [
-          clientsData,
-          vehiclesData,
-          consentsData,
-          outagesData,
-          reportsData,
-        ] = await Promise.all([
-          clientsRes.json(),
-          vehiclesRes.json(),
-          consentsRes.json(),
-          outagesRes.json(),
-          reportsRes.json(),
-        ]);
+        const clientsData: ClientCompany[] = await clientsRes.json();
+        const vehiclesData: ClientTeslaVehicleWithCompany[] =
+          await vehiclesRes.json();
+        const consentsData: ClientConsent[] = await consentsRes.json();
+        const outagesData: OutagePeriod[] = await outagesRes.json();
+        const reportsData: PdfReport[] = await reportsRes.json();
 
         setClients(clientsData);
-        setVehicles(vehiclesData);
+        setVehicles(
+          vehiclesData.map((entry) => ({
+            id: entry.id,
+            clientCompanyId: entry.clientCompany?.id ?? 0,
+            vin: entry.vin,
+            model: entry.model,
+            trim: entry.trim ?? "",
+            color: entry.color ?? "",
+            isActive: entry.isActive,
+            isFetching: entry.isFetching,
+            firstActivationAt: entry.firstActivationAt ?? "",
+            lastDeactivationAt: entry.lastDeactivationAt ?? null,
+            lastFetchingDataAt: entry.lastFetchingDataAt ?? null,
+          }))
+        );
         setClientConsents(consentsData);
         setOutagePeriods(outagesData);
         setPdfReports(reportsData);
