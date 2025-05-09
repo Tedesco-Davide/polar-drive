@@ -24,24 +24,20 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         [FromForm] IFormFile zipFile
     )
     {
-
-        Console.WriteLine($"[UPLOAD ZIP] Start upload");
-        Console.WriteLine($"ClientCompanyId: {clientCompanyId}");
-        Console.WriteLine($"TeslaVehicleId: {teslaVehicleId}");
-        Console.WriteLine($"ConsentType: {consentType}");
-        Console.WriteLine($"UploadDate: {uploadDate}");
-        Console.WriteLine($"CompanyVatNumber: {companyVatNumber}");
-        Console.WriteLine($"TeslaVehicleVIN: {teslaVehicleVIN}");
-        Console.WriteLine($"ZIP File: {zipFile?.FileName} | Size: {zipFile?.Length}");
-
         if (zipFile == null || zipFile.Length == 0)
             return BadRequest("File ZIP mancante.");
 
         if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
             return BadRequest("Formato non valido. Serve un file .zip");
 
-        using (var archive = new ZipArchive(zipFile.OpenReadStream()))
+        // 🔄 Carica tutto il file ZIP in memoria
+        using var memoryStream = new MemoryStream();
+        await zipFile.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
+
+        try
         {
+            using var archive = new ZipArchive(memoryStream, ZipArchiveMode.Read, leaveOpen: true);
             bool containsPdf = archive.Entries.Any(entry =>
                 Path.GetExtension(entry.FullName).Equals(".pdf", StringComparison.OrdinalIgnoreCase)
                 && !entry.FullName.EndsWith("/")
@@ -49,6 +45,10 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
 
             if (!containsPdf)
                 return BadRequest("Il file ZIP deve contenere almeno un file PDF.");
+        }
+        catch (InvalidDataException)
+        {
+            return BadRequest("Il file ZIP è danneggiato o non valido.");
         }
 
         // 🔍 Validazione logica di coerenza
@@ -62,15 +62,12 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
 
         // 🔐 SHA256
         string hash;
-        // Leggi tutto il contenuto del file ZIP in memoria UNA SOLA VOLTA
-        using var memoryStream = new MemoryStream();
-        await zipFile.CopyToAsync(memoryStream);
+        
+        // Calcola SHA256 direttamente dal memoryStream già pieno
         memoryStream.Position = 0;
-
-        // Calcola SHA256
         using var sha = SHA256.Create();
         var hashBytes = await sha.ComputeHashAsync(memoryStream);
-        hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+        hash = Convert.ToHexStringLower(hashBytes);
 
         // Reset posizione per salvataggio file
         memoryStream.Position = 0;

@@ -211,7 +211,17 @@ export default function AdminDashboard() {
                         t={t}
                         refreshWorkflowData={refreshWorkflowData}
                       />
-                      <AdminClientConsents consents={clientConsents} t={t} />
+                      <AdminClientConsents
+                        consents={clientConsents}
+                        t={t}
+                        refreshClientConsents={async () => {
+                          const res = await fetch(
+                            `${API_BASE_URL}/api/ClientConsents`
+                          );
+                          const updated = await res.json();
+                          setClientConsents(updated);
+                        }}
+                      />
                       <AdminOutagePeriodsTable outages={outagePeriods} t={t} />
                       <AdminTeslaVehiclesReport reports={pdfReports} t={t} />
                     </div>

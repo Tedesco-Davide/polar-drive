@@ -10,12 +10,14 @@ type Props = {
   formData: ClientConsent;
   setFormData: React.Dispatch<React.SetStateAction<ClientConsent>>;
   t: TFunction;
+  refreshClientConsents: () => Promise<void>;
 };
 
 export default function AdminClientConsentAddForm({
   formData,
   setFormData,
   t,
+  refreshClientConsents,
 }: Props) {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -133,12 +135,9 @@ export default function AdminClientConsentAddForm({
       if (!res.ok)
         throw new Error("Errore durante upload ZIP + salvataggio consenso.");
 
-      const saved = await res.json();
       alert(t("admin.clientConsents.successAddNewConsent"));
 
-      window.dispatchEvent(
-        new CustomEvent("refresh-consents", { detail: saved })
-      );
+      await refreshClientConsents();
 
       setFormData({
         id: 0,
@@ -239,7 +238,6 @@ export default function AdminClientConsentAddForm({
             accept=".zip"
             onChange={handleZipUpload}
             className="input text-[12px]"
-            disabled={formData.teslaVehicleVIN.length !== 17}
           />
         </label>
       </div>

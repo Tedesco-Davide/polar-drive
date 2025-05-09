@@ -16,6 +16,7 @@ import { API_BASE_URL } from "@/utils/api";
 type Props = {
   t: TFunction;
   consents: ClientConsent[];
+  refreshClientConsents: () => Promise<void>;
 };
 
 const getConsentTypeColor = (type: string) => {
@@ -33,7 +34,11 @@ const getConsentTypeColor = (type: string) => {
   }
 };
 
-export default function AdminClientConsents({ t, consents }: Props) {
+export default function AdminClientConsents({
+  t,
+  consents,
+  refreshClientConsents,
+}: Props) {
   const [localConsents, setLocalConsents] = useState<ClientConsent[]>([]);
   const [selectedConsentForNotes, setSelectedConsentForNotes] =
     useState<ClientConsent | null>(null);
@@ -102,6 +107,7 @@ export default function AdminClientConsents({ t, consents }: Props) {
           formData={formData}
           setFormData={setFormData}
           t={t}
+          refreshClientConsents={refreshClientConsents}
         />
       )}
 
