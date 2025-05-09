@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Security.Cryptography;
+using System.Globalization;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -12,7 +13,7 @@ namespace PolarDrive.WebApi.Controllers;
 public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost]
-    [RequestSizeLimit(20 * 1024 * 1024)] // Max 20MB
+    [RequestSizeLimit(20 * 1024 * 1024)]
     public async Task<IActionResult> UploadConsent(
         [FromForm] int clientCompanyId,
         [FromForm] int teslaVehicleId,
@@ -23,14 +24,22 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         [FromForm] IFormFile zipFile
     )
     {
-        // 🔒 Validazioni base
+
+        Console.WriteLine($"[UPLOAD ZIP] Start upload");
+        Console.WriteLine($"ClientCompanyId: {clientCompanyId}");
+        Console.WriteLine($"TeslaVehicleId: {teslaVehicleId}");
+        Console.WriteLine($"ConsentType: {consentType}");
+        Console.WriteLine($"UploadDate: {uploadDate}");
+        Console.WriteLine($"CompanyVatNumber: {companyVatNumber}");
+        Console.WriteLine($"TeslaVehicleVIN: {teslaVehicleVIN}");
+        Console.WriteLine($"ZIP File: {zipFile?.FileName} | Size: {zipFile?.Length}");
+
         if (zipFile == null || zipFile.Length == 0)
             return BadRequest("File ZIP mancante.");
 
         if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
             return BadRequest("Formato non valido. Serve un file .zip");
 
-        // 🔍 Verifica che contenga almeno un PDF
         using (var archive = new ZipArchive(zipFile.OpenReadStream()))
         {
             bool containsPdf = archive.Entries.Any(entry =>
@@ -39,53 +48,53 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
             );
 
             if (!containsPdf)
-            {
                 return BadRequest("Il file ZIP deve contenere almeno un file PDF.");
-            }
         }
 
-        if (!await db.ClientCompanies.AnyAsync(c => c.Id == clientCompanyId))
-            return NotFound("Azienda cliente non trovata.");
+        // 🔍 Validazione logica di coerenza
+        var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == clientCompanyId && c.VatNumber == companyVatNumber);
+        if (company == null)
+            return NotFound("Azienda non trovata o P.IVA errata.");
 
-        if (!await db.ClientTeslaVehicles.AnyAsync(v => v.Id == teslaVehicleId))
-            return NotFound("Veicolo Tesla non trovato.");
+        var vehicle = await db.ClientTeslaVehicles.FirstOrDefaultAsync(v => v.Id == teslaVehicleId && v.Vin == teslaVehicleVIN && v.ClientCompanyId == clientCompanyId);
+        if (vehicle == null)
+            return NotFound("Veicolo Tesla non trovato o non associato all’azienda.");
 
-        // 🔐 Calcolo SHA256 prima di salvare il file
+        // 🔐 SHA256
         string hash;
-        await using var zipStream = zipFile.OpenReadStream();
-        using (var sha = SHA256.Create())
-        {
-            var hashBytes = await sha.ComputeHashAsync(zipStream);
-            hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
-        }
+        // Leggi tutto il contenuto del file ZIP in memoria UNA SOLA VOLTA
+        using var memoryStream = new MemoryStream();
+        await zipFile.CopyToAsync(memoryStream);
+        memoryStream.Position = 0;
 
-        // 🚫 Evita duplicati
+        // Calcola SHA256
+        using var sha = SHA256.Create();
+        var hashBytes = await sha.ComputeHashAsync(memoryStream);
+        hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
+
+        // Reset posizione per salvataggio file
+        memoryStream.Position = 0;
+
         var existingConsent = await db.ClientConsents.FirstOrDefaultAsync(c => c.ConsentHash == hash);
         if (existingConsent != null)
         {
-            return Conflict(new
-            {
-                message = "Un file con lo stesso contenuto è già stato caricato.",
-                existingId = existingConsent.Id
-            });
+            return Conflict(new { message = "File già caricato.", existingId = existingConsent.Id });
         }
 
-        // 📁 Percorso di salvataggio (dopo il controllo duplicato)
+        // 📁 Save ZIP
         var safeVin = teslaVehicleVIN.ToUpper().Trim();
         var zipFolder = Path.Combine(env.WebRootPath ?? "wwwroot", "pdfs", "consents");
+        Directory.CreateDirectory(zipFolder);
         var finalZipPath = Path.Combine(zipFolder, $"{safeVin}.zip");
 
-        Directory.CreateDirectory(zipFolder);
-        zipStream.Position = 0; // Reset stream prima di salvarlo
         await using (var fileStream = new FileStream(finalZipPath, FileMode.Create))
         {
-            await zipStream.CopyToAsync(fileStream);
+            await memoryStream.CopyToAsync(fileStream);
         }
 
-        // 🧠 Parsing data
-        var parsedDate = DateTime.ParseExact(uploadDate, "dd/MM/yyyy", null);
+        if (!DateTime.TryParseExact(uploadDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+            return BadRequest("Formato data firma non valido. Atteso 'yyyy-MM-dd'.");
 
-        // 🧾 Inserimento record nel DB
         var consent = new ClientConsent
         {
             ClientCompanyId = clientCompanyId,
@@ -100,6 +109,15 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         db.ClientConsents.Add(consent);
         await db.SaveChangesAsync();
 
-        return Ok(new { id = consent.Id });
+        return Ok(new
+        {
+            id = consent.Id,
+            consentType,
+            uploadDate = parsedDate.ToString("dd/MM/yyyy"),
+            zipFilePath = consent.ZipFilePath,
+            consentHash = hash,
+            companyVatNumber,
+            teslaVehicleVIN
+        });
     }
 }

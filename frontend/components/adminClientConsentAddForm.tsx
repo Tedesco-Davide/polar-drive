@@ -4,18 +4,17 @@ import { ClientConsent } from "@/types/clientConsentInterfaces";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { API_BASE_URL } from "@/utils/api";
+import { isAfter, isValid, parseISO } from "date-fns";
 
 type Props = {
   formData: ClientConsent;
   setFormData: React.Dispatch<React.SetStateAction<ClientConsent>>;
-  onSubmit: () => void;
   t: TFunction;
 };
 
 export default function AdminClientConsentAddForm({
   formData,
   setFormData,
-  onSubmit,
   t,
 }: Props) {
   const handleChange = (
@@ -28,7 +27,7 @@ export default function AdminClientConsentAddForm({
     });
   };
 
-  const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleZipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -37,33 +36,89 @@ export default function AdminClientConsentAddForm({
       return;
     }
 
-    if (formData.teslaVehicleVIN.length !== 17) {
-      alert("VIN non valido o non compilato. Deve essere lungo 17 caratteri.");
+    setFormData((prev) => ({
+      ...prev,
+      zipFile: file,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    const { companyVatNumber, teslaVehicleVIN, consentType, uploadDate } =
+      formData;
+
+    // Validazione aggregata
+    const requiredFields = [
+      "companyVatNumber",
+      "teslaVehicleVIN",
+      "consentType",
+      "uploadDate",
+    ] as const;
+    const missing = requiredFields.filter((field) => !formData[field]);
+    if (missing.length > 0) {
+      const translatedLabels = missing.map((field) =>
+        t(`admin.clientConsents.${field}`)
+      );
+      alert(t("admin.missingFields") + ": " + translatedLabels.join(", "));
       return;
     }
 
-    if (!/^[0-9]{11}$/.test(formData.companyVatNumber.trim())) {
+    // Validazione consentType accettabile
+    const validConsentTypes = new Set([
+      "Consent Deactivation",
+      "Consent Stop Data Fetching",
+      "Consent Reactivation",
+    ]);
+    if (!validConsentTypes.has(consentType)) {
+      alert("Tipo di consenso non valido per l'inserimento manuale.");
+      return;
+    }
+
+    // Validazione regex VIN / P.IVA
+    if (!/^[0-9]{11}$/.test(companyVatNumber)) {
       alert(t("admin.validation.invalidVat"));
       return;
     }
 
-    if (!formData.clientCompanyId || !formData.teslaVehicleId) {
-      alert(
-        "Completa i dati e clicca su 'Conferma Aggiunta Consenso' per ottenere gli ID."
-      );
+    if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(teslaVehicleVIN)) {
+      alert(t("admin.validation.invalidTeslaVehicleVIN"));
       return;
     }
 
-    const uploadForm = new FormData();
-    uploadForm.append("zipFile", file);
-    uploadForm.append("clientCompanyId", formData.clientCompanyId.toString());
-    uploadForm.append("teslaVehicleId", formData.teslaVehicleId.toString());
-    uploadForm.append("consentType", formData.consentType);
-    uploadForm.append("uploadDate", formData.uploadDate);
-    uploadForm.append("companyVatNumber", formData.companyVatNumber);
-    uploadForm.append("teslaVehicleVIN", formData.teslaVehicleVIN);
+    // Validazione data corretta e non futura
+    const firmaDate = parseISO(uploadDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (!isValid(firmaDate) || isAfter(firmaDate, today)) {
+      alert(t("admin.mainWorkflow.validation.invalidSignatureDate"));
+      return;
+    }
+
+    if (!formData.zipFile) {
+      alert("Devi selezionare un file ZIP valido.");
+      return;
+    }
 
     try {
+      const resolveRes = await fetch(
+        `${API_BASE_URL}/api/ClientConsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${teslaVehicleVIN}`
+      );
+
+      if (!resolveRes.ok) {
+        alert("Impossibile risolvere azienda o veicolo.");
+        return;
+      }
+
+      const { clientCompanyId, teslaVehicleId } = await resolveRes.json();
+
+      const uploadForm = new FormData();
+      uploadForm.append("zipFile", formData.zipFile);
+      uploadForm.append("clientCompanyId", clientCompanyId.toString());
+      uploadForm.append("teslaVehicleId", teslaVehicleId.toString());
+      uploadForm.append("consentType", consentType);
+      uploadForm.append("uploadDate", uploadDate);
+      uploadForm.append("companyVatNumber", companyVatNumber);
+      uploadForm.append("teslaVehicleVIN", teslaVehicleVIN);
+
       const res = await fetch(`${API_BASE_URL}/api/upload-consent-zip`, {
         method: "POST",
         body: uploadForm,
@@ -71,18 +126,36 @@ export default function AdminClientConsentAddForm({
 
       if (res.status === 409) {
         const conflict = await res.json();
-        alert("File già esistente. ID esistente: " + conflict.existingId);
+        alert("File già caricato. ID: " + conflict.existingId);
         return;
       }
 
-      if (!res.ok) throw new Error("Errore durante l’upload del file.");
+      if (!res.ok)
+        throw new Error("Errore durante upload ZIP + salvataggio consenso.");
 
-      await res.json(); // { id: number }
-      const savedPath = `pdfs/consents/${formData.teslaVehicleVIN}.zip`;
-      setFormData({ ...formData, zipFilePath: savedPath });
+      const saved = await res.json();
+      alert(t("admin.clientConsents.successAddNewConsent"));
+
+      window.dispatchEvent(
+        new CustomEvent("refresh-consents", { detail: saved })
+      );
+
+      setFormData({
+        id: 0,
+        clientCompanyId: 0,
+        teslaVehicleId: 0,
+        uploadDate: "",
+        zipFilePath: "",
+        consentHash: "",
+        consentType: "Consent Activation",
+        companyVatNumber: "",
+        teslaVehicleVIN: "",
+        notes: "",
+        zipFile: null,
+      });
     } catch (err) {
-      console.error("Errore upload ZIP:", err);
-      alert("Errore durante il caricamento del file ZIP.");
+      console.error("Errore:", err);
+      alert("Errore durante l’upload del consenso.");
     }
   };
 
@@ -173,7 +246,7 @@ export default function AdminClientConsentAddForm({
 
       <button
         className="mt-6 bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600"
-        onClick={onSubmit}
+        onClick={handleSubmit}
       >
         {t("admin.clientConsents.confirmAddNewConsent")}
       </button>

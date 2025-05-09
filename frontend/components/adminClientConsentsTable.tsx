@@ -5,7 +5,6 @@ import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
-import { parseISO, isAfter, isValid } from "date-fns";
 import { NotebookPen } from "lucide-react";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
@@ -78,130 +77,6 @@ export default function AdminClientConsents({ t, consents }: Props) {
     notes: "",
   });
 
-  const handleSubmit = async () => {
-    const requiredFields = [
-      "consentType",
-      "teslaVehicleVIN",
-      "companyVatNumber",
-      "uploadDate",
-      "zipFilePath",
-    ] as const;
-
-    const validConsentTypes = new Set([
-      "Consent Deactivation",
-      "Consent Stop Data Fetching",
-      "Consent Reactivation",
-    ]);
-
-    const missing = requiredFields.filter((f) => {
-      if (f === "zipFilePath") {
-        return !formData.zipFilePath || formData.zipFilePath.trim() === "";
-      }
-      if (f === "consentType") {
-        return !validConsentTypes.has(formData.consentType);
-      }
-      return !formData[f];
-    });
-
-    if (missing.length > 0) {
-      const translatedLabels = missing.map((field) =>
-        t(`admin.clientConsents.${field}`)
-      );
-      alert(t("admin.missingFields") + ": " + translatedLabels.join(", "));
-      return;
-    }
-
-    // ✅ Validazione VIN Tesla (regex: 17 caratteri alfanumerici, senza I/O/Q)
-    const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
-    if (!vinRegex.test(formData.teslaVehicleVIN)) {
-      alert(t("admin.validation.invalidTeslaVehicleVIN"));
-      return;
-    }
-
-    // ✅ Validazione Partita IVA (regex: 11 cifre)
-    const partitaIVARegex = /^[0-9]{11}$/;
-    if (!partitaIVARegex.test(formData.companyVatNumber)) {
-      alert(t("admin.validation.invalidVat"));
-      return;
-    }
-
-    const firmaDate = parseISO(formData.uploadDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (!isValid(firmaDate) || isAfter(firmaDate, today)) {
-      alert(t("admin.mainWorkflow.validation.invalidSignatureDate"));
-      return;
-    }
-
-    const dummyHash = Math.random().toString(36).substring(2, 10).toUpperCase();
-
-    // 🔍 Risolvi gli ID da Partita IVA + VIN
-    const lookupRes = await fetch(
-      `${API_BASE_URL}/api/ClientConsents/resolve-ids?vatNumber=${formData.companyVatNumber}&vin=${formData.teslaVehicleVIN}`
-    );
-
-    if (!lookupRes.ok) {
-      alert("Impossibile trovare azienda o veicolo corrispondenti.");
-      return;
-    }
-
-    const { clientCompanyId, teslaVehicleId } = await lookupRes.json();
-
-    const formPayload = {
-      clientCompanyId,
-      teslaVehicleId,
-      uploadDate: formData.uploadDate,
-      zipFilePath: `/pdfs/consents/${formData.teslaVehicleVIN}.zip`,
-      consentHash: dummyHash,
-      consentType: formData.consentType,
-      notes: formData.notes ?? "",
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/ClientConsents`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formPayload),
-      });
-
-      if (!response.ok) {
-        throw new Error("Errore nella creazione del consenso");
-      }
-
-      const newId = await response.json();
-
-      setLocalConsents((prev) => [
-        ...prev,
-        {
-          ...formPayload,
-          id: newId,
-          companyVatNumber: formData.companyVatNumber,
-          teslaVehicleVIN: formData.teslaVehicleVIN,
-        },
-      ]);
-
-      setCurrentPage(1);
-      alert(t("admin.clientConsents.successAddNewConsent"));
-    } catch (err) {
-      console.error("Errore POST consenso:", err);
-      alert("Errore nel salvataggio del consenso.");
-    }
-
-    setFormData({
-      id: 0,
-      clientCompanyId: 0,
-      teslaVehicleId: 0,
-      uploadDate: "",
-      zipFilePath: "",
-      consentHash: "",
-      consentType: "Consent Activation",
-      companyVatNumber: "",
-      teslaVehicleVIN: "",
-    });
-
-    setShowForm(false);
-  };
-
   return (
     <div>
       <div className="flex items-center mb-12 space-x-3">
@@ -226,7 +101,6 @@ export default function AdminClientConsents({ t, consents }: Props) {
         <AdminClientConsentAddForm
           formData={formData}
           setFormData={setFormData}
-          onSubmit={handleSubmit}
           t={t}
         />
       )}

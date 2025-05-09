@@ -109,6 +109,9 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         if (vehicle == null)
             return NotFound("Veicolo Tesla non trovato.");
 
+        if (vehicle.ClientCompanyId != company.Id)
+            return BadRequest("Il veicolo non appartiene all’azienda indicata.");
+
         return Ok(new
         {
             clientCompanyId = company.Id,

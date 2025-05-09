@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
 import { TFunction } from "i18next";
-import axios from "axios";
 import { API_BASE_URL } from "@/utils/api";
+import axios from "axios";
 
 type Props = {
   vehicle: ClientTeslaVehicle;
