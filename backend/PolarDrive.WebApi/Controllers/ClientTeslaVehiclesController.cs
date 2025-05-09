@@ -26,8 +26,8 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
             Color = v.Color ?? "",
             IsActive = v.IsActiveFlag,
             IsFetching = v.IsFetchingDataFlag,
-            FirstActivationAt = v.FirstActivationAt?.ToString("dd/MM/yyyy"),
-            LastDeactivationAt = v.LastDeactivationAt?.ToString("dd/MM/yyyy"),
+            FirstActivationAt = v.FirstActivationAt?.ToString("o"),
+            LastDeactivationAt = v.LastDeactivationAt?.ToString("o"),
             ClientCompany = new ClientCompanyDTO
             {
                 Id = v.ClientCompany!.Id,

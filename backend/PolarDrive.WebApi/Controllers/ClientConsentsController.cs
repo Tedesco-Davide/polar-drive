@@ -24,7 +24,7 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
                 CompanyVatNumber = c.ClientCompany!.VatNumber,
                 TeslaVehicleId = c.TeslaVehicleId,
                 TeslaVehicleVIN = c.ClientTeslaVehicle!.Vin,
-                UploadDate = c.UploadDate.ToString("dd/MM/yyyy"),
+                UploadDate = c.UploadDate.ToString("o"),
                 ZipFilePath = c.ZipFilePath,
                 ConsentHash = c.ConsentHash,
                 ConsentType = c.ConsentType,
