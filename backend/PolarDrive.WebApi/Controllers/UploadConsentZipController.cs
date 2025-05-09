@@ -8,7 +8,7 @@ using System.Security.Cryptography;
 namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
-[Route("api/[controller]")]
+[Route("api/upload-consent-zip")]
 public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost]
@@ -50,31 +50,17 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         if (!await db.ClientTeslaVehicles.AnyAsync(v => v.Id == teslaVehicleId))
             return NotFound("Veicolo Tesla non trovato.");
 
-        // 📁 Percorso di salvataggio
-        var safeVin = teslaVehicleVIN.ToUpper().Trim();
-        var zipFolder = Path.Combine(env.WebRootPath ?? "wwwroot", "pdfs", "consents");
-        var finalZipPath = Path.Combine(zipFolder, $"{safeVin}.zip");
-
-        Directory.CreateDirectory(zipFolder); // 🛡️ Garantisce che la cartella esista
-
-        using (var stream = new FileStream(finalZipPath, FileMode.Create))
-        {
-            await zipFile.CopyToAsync(stream);
-        }
-
-        // 🔐 Calcolo SHA256 reale del file
+        // 🔐 Calcolo SHA256 prima di salvare il file
         string hash;
+        await using var zipStream = zipFile.OpenReadStream();
         using (var sha = SHA256.Create())
         {
-            using var stream = zipFile.OpenReadStream();
-            var hashBytes = await sha.ComputeHashAsync(stream);
+            var hashBytes = await sha.ComputeHashAsync(zipStream);
             hash = BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant();
         }
 
-        // 🚫 Evita duplicati: se già esiste un consenso con stesso hash, blocca
-        var existingConsent = await db.ClientConsents
-            .FirstOrDefaultAsync(c => c.ConsentHash == hash);
-
+        // 🚫 Evita duplicati
+        var existingConsent = await db.ClientConsents.FirstOrDefaultAsync(c => c.ConsentHash == hash);
         if (existingConsent != null)
         {
             return Conflict(new
@@ -82,6 +68,18 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
                 message = "Un file con lo stesso contenuto è già stato caricato.",
                 existingId = existingConsent.Id
             });
+        }
+
+        // 📁 Percorso di salvataggio (dopo il controllo duplicato)
+        var safeVin = teslaVehicleVIN.ToUpper().Trim();
+        var zipFolder = Path.Combine(env.WebRootPath ?? "wwwroot", "pdfs", "consents");
+        var finalZipPath = Path.Combine(zipFolder, $"{safeVin}.zip");
+
+        Directory.CreateDirectory(zipFolder);
+        zipStream.Position = 0; // Reset stream prima di salvarlo
+        await using (var fileStream = new FileStream(finalZipPath, FileMode.Create))
+        {
+            await zipStream.CopyToAsync(fileStream);
         }
 
         // 🧠 Parsing data

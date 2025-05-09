@@ -98,6 +98,24 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         return File(fileBytes, contentType, fileName);
     }
 
+    [HttpGet("resolve-ids")]
+    public async Task<IActionResult> ResolveIds([FromQuery] string vatNumber, [FromQuery] string vin)
+    {
+        var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.VatNumber == vatNumber);
+        if (company == null)
+            return NotFound("Azienda non trovata.");
+
+        var vehicle = await db.ClientTeslaVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+        if (vehicle == null)
+            return NotFound("Veicolo Tesla non trovato.");
+
+        return Ok(new
+        {
+            clientCompanyId = company.Id,
+            teslaVehicleId = vehicle.Id
+        });
+    }
+
     private static DateTime ParseDate(string date)
     {
         return DateTime.ParseExact(date, "dd/MM/yyyy", null);

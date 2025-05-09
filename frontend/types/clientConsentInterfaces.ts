@@ -13,4 +13,5 @@ export interface ClientConsent {
   teslaVehicleVIN: string;
   companyVatNumber: string;
   notes?: string;
+  zipFile?: File | null;
 }

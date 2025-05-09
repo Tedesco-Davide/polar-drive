@@ -3,6 +3,7 @@ import { formatDateToSave } from "@/utils/date";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { API_BASE_URL } from "@/utils/api";
 
 type Props = {
   formData: ClientConsent;
@@ -31,25 +32,28 @@ export default function AdminClientConsentAddForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // ✅ Validazione estensione ZIP
     if (!file.name.endsWith(".zip")) {
       alert("Carica un file .zip valido.");
       return;
     }
 
-    // ✅ Validazione VIN (lunghezza esatta 17)
     if (formData.teslaVehicleVIN.length !== 17) {
       alert("VIN non valido o non compilato. Deve essere lungo 17 caratteri.");
       return;
     }
 
-    // ✅ Validazione Partita IVA (esattamente 11 cifre)
     if (!/^[0-9]{11}$/.test(formData.companyVatNumber.trim())) {
       alert(t("admin.validation.invalidVat"));
       return;
     }
 
-    // ✅ Prepara il FormData
+    if (!formData.clientCompanyId || !formData.teslaVehicleId) {
+      alert(
+        "Completa i dati e clicca su 'Conferma Aggiunta Consenso' per ottenere gli ID."
+      );
+      return;
+    }
+
     const uploadForm = new FormData();
     uploadForm.append("zipFile", file);
     uploadForm.append("clientCompanyId", formData.clientCompanyId.toString());
@@ -60,7 +64,7 @@ export default function AdminClientConsentAddForm({
     uploadForm.append("teslaVehicleVIN", formData.teslaVehicleVIN);
 
     try {
-      const res = await fetch("/api/upload-consent-zip", {
+      const res = await fetch(`${API_BASE_URL}/api/upload-consent-zip`, {
         method: "POST",
         body: uploadForm,
       });

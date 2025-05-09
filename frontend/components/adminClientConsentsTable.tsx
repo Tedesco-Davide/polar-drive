@@ -135,11 +135,23 @@ export default function AdminClientConsents({ t, consents }: Props) {
 
     const dummyHash = Math.random().toString(36).substring(2, 10).toUpperCase();
 
+    // 🔍 Risolvi gli ID da Partita IVA + VIN
+    const lookupRes = await fetch(
+      `${API_BASE_URL}/api/ClientConsents/resolve-ids?vatNumber=${formData.companyVatNumber}&vin=${formData.teslaVehicleVIN}`
+    );
+
+    if (!lookupRes.ok) {
+      alert("Impossibile trovare azienda o veicolo corrispondenti.");
+      return;
+    }
+
+    const { clientCompanyId, teslaVehicleId } = await lookupRes.json();
+
     const formPayload = {
-      clientCompanyId: formData.clientCompanyId,
-      teslaVehicleId: formData.teslaVehicleId,
+      clientCompanyId,
+      teslaVehicleId,
       uploadDate: formData.uploadDate,
-      zipFilePath: `/pdfs/consents/${formData.teslaVehicleVIN}.pdf`,
+      zipFilePath: `/pdfs/consents/${formData.teslaVehicleVIN}.zip`,
       consentHash: dummyHash,
       consentType: formData.consentType,
       notes: formData.notes ?? "",
