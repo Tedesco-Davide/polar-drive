@@ -6,12 +6,12 @@ import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
 import { NotebookPen } from "lucide-react";
+import { API_BASE_URL } from "@/utils/api";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import Chip from "@/components/chip";
 import AdminClientConsentAddForm from "./adminClientConsentAddForm";
-import { API_BASE_URL } from "@/utils/api";
 
 type Props = {
   t: TFunction;
@@ -76,7 +76,7 @@ export default function AdminClientConsents({
     uploadDate: "",
     zipFilePath: "",
     consentHash: "",
-    consentType: "Consent Activation",
+    consentType: "",
     companyVatNumber: "",
     teslaVehicleVIN: "",
     notes: "",
@@ -176,8 +176,16 @@ export default function AdminClientConsents({
                         );
                         setSelectedConsentForNotes(null);
                       } catch (err) {
-                        console.error("Errore aggiornamento note:", err);
-                        alert("Errore durante il salvataggio delle note.");
+                        console.error(
+                          t("admin.clientConsents.notes.genericError"),
+                          err
+                        );
+                        alert();
+                        alert(
+                          err instanceof Error
+                            ? err.message
+                            : t("admin.clientConsents.notes.genericError")
+                        );
                       }
                     }}
                     onClose={() => setSelectedConsentForNotes(null)}

@@ -6,6 +6,7 @@ export interface ClientConsent {
   zipFilePath: string;
   consentHash: string;
   consentType:
+    | ""
     | "Consent Activation"
     | "Consent Deactivation"
     | "Consent Stop Data Fetching"

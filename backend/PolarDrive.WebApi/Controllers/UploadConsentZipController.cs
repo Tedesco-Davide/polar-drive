@@ -30,6 +30,17 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
             return BadRequest("Formato non valido. Serve un file .zip");
 
+        // ✅ Validazione tipo consenso
+        var allowedTypes = new[] {
+            "Consent Activation",
+            "Consent Deactivation",
+            "Consent Stop Data Fetching",
+            "Consent Reactivation"
+        };
+
+        if (string.IsNullOrWhiteSpace(consentType) || !allowedTypes.Contains(consentType))
+            return BadRequest("Tipo consenso non valido.");
+
         // 🔄 Carica tutto il file ZIP in memoria
         using var memoryStream = new MemoryStream();
         await zipFile.CopyToAsync(memoryStream);

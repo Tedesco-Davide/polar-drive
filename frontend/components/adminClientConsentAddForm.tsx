@@ -1,10 +1,10 @@
 import { TFunction } from "i18next";
 import { formatDateToSave } from "@/utils/date";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { API_BASE_URL } from "@/utils/api";
 import { isAfter, isValid, parseISO } from "date-fns";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 type Props = {
   formData: ClientConsent;
@@ -34,7 +34,7 @@ export default function AdminClientConsentAddForm({
     if (!file) return;
 
     if (!file.name.endsWith(".zip")) {
-      alert("Carica un file .zip valido.");
+      alert(t("admin.validation.invalidZipType"));
       return;
     }
 
@@ -71,7 +71,7 @@ export default function AdminClientConsentAddForm({
       "Consent Reactivation",
     ]);
     if (!validConsentTypes.has(consentType)) {
-      alert("Tipo di consenso non valido per l'inserimento manuale.");
+      alert(t("admin.clientConsents.validation.consentType"));
       return;
     }
 
@@ -96,7 +96,7 @@ export default function AdminClientConsentAddForm({
     }
 
     if (!formData.zipFile) {
-      alert("Devi selezionare un file ZIP valido.");
+      alert(t("admin.validation.invalidZipTypeRequired"));
       return;
     }
 
@@ -106,7 +106,7 @@ export default function AdminClientConsentAddForm({
       );
 
       if (!resolveRes.ok) {
-        alert("Impossibile risolvere azienda o veicolo.");
+        alert(t("admin.clientConsents.validation.resolveVATandVIN"));
         return;
       }
 
@@ -128,12 +128,22 @@ export default function AdminClientConsentAddForm({
 
       if (res.status === 409) {
         const conflict = await res.json();
-        alert("File già caricato. ID: " + conflict.existingId);
+        alert(
+          t("admin.clientConsents.validation.hashIDalready") +
+            conflict.existingId
+        );
         return;
       }
 
-      if (!res.ok)
-        throw new Error("Errore durante upload ZIP + salvataggio consenso.");
+      if (!res.ok) {
+        const errMsg = await res.text();
+        console.error(
+          t("admin.clientConsents.validation.genericError"),
+          errMsg
+        );
+        alert(errMsg);
+        return;
+      }
 
       alert(t("admin.clientConsents.successAddNewConsent"));
 
@@ -146,15 +156,19 @@ export default function AdminClientConsentAddForm({
         uploadDate: "",
         zipFilePath: "",
         consentHash: "",
-        consentType: "Consent Activation",
+        consentType: "",
         companyVatNumber: "",
         teslaVehicleVIN: "",
         notes: "",
         zipFile: null,
       });
     } catch (err) {
-      console.error("Errore:", err);
-      alert("Errore durante l’upload del consenso.");
+      console.error(t("admin.clientConsents.validation.genericError"), err);
+      alert(
+        err instanceof Error
+          ? err.message
+          : t("admin.clientConsents.validation.genericError")
+      );
     }
   };
 
