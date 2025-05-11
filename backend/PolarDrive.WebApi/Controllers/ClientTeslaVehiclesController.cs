@@ -47,10 +47,10 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
     {
         // Validazione logica: se è attiva, deve anche fare fetch
         if (dto.IsActive && !dto.IsFetching)
-            return BadRequest("Un veicolo attivo deve anche essere in stato di acquisizione dati (IsFetching).");
+            return BadRequest("SERVER ERROR → BAD REQUEST: An Active vehicle must also be in Data Acquisition state (IsFetching)!");
 
         if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
-            return NotFound("Azienda cliente non trovata.");
+            return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
         var entity = new ClientTeslaVehicle
         {
@@ -75,11 +75,11 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
     public async Task<IActionResult> UpdateStatus(int id, [FromBody] TeslaVehicleStatusUpdateDTO dto)
     {
         if (dto.IsActive && !dto.IsFetching)
-            return BadRequest("Un veicolo attivo deve anche essere in stato di acquisizione dati.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: An Active vehicle must also be in Data Acquisition state (IsFetching)!");
 
         var vehicle = await db.ClientTeslaVehicles.FindAsync(id);
         if (vehicle == null)
-            return NotFound("Veicolo non trovato.");
+            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 
         vehicle.IsActiveFlag = dto.IsActive;
         vehicle.IsFetchingDataFlag = dto.IsFetching;
@@ -102,13 +102,13 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
     {
         var vehicle = await db.ClientTeslaVehicles.FindAsync(id);
         if (vehicle == null)
-            return NotFound("Veicolo non trovato.");
+            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 
         if (dto.IsActive && !dto.IsFetching)
-            return BadRequest("Un veicolo attivo deve anche essere in stato di acquisizione dati.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: An Active vehicle must also be in Data Acquisition state (IsFetching)!");
 
         if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
-            return NotFound("Azienda cliente non trovata.");
+            return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
         vehicle.Vin = dto.Vin;
         vehicle.Model = dto.Model;

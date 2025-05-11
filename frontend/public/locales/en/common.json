@@ -73,6 +73,7 @@
   "admin.confirmEditRow": "Save changes",
   "admin.successEditRow": "Row updated successfully!",
   "admin.errorEditRow": "ERROR: There was an error while trying to update the row",
+  "admin.genericApiError": "ERROR: A generic error occurred during the API call: ",
   "admin.uploadZipOutageSigned": "Upload signed consents (.zip)",
   "admin.openNotesModal": "Open notes management",
 
@@ -109,7 +110,7 @@
   "admin.teslaStatusToggle.confirmAction.toNotFetchingFromActive": "It is not allowed to set a Tesla to NotFetching (disable data acquisition) while it is in Active status.",
   "admin.teslaStatusToggle.confirmAction.toNotFetchingFromNotActive": "Tesla status has been verified as NotActive. Do you authorize changing the status to NotFetching (disable data acquisition) for this Tesla? Please ensure that the signed consent .zip files have been uploaded by the customer before proceeding. Press OK to proceed.",
   "admin.teslaStatusToggle.confirmAction.toFetchingFromNotFetching": "Tesla status has been verified as NotFetching. Are you sure you want to change the status to Fetching (enable data acquisition)? Please ensure that the signed consent .zip files have been uploaded by the customer before proceeding. Press OK to proceed.",
-  "admin.teslaStatusToggle.confirmAction.error": "Error while updating Tesla status:",
+  "admin.teslaStatusToggle.confirmAction.error": "Error while updating Tesla status: ",
 
   "admin.clientCompany.tableHeader": "Client Companies",
   "admin.clientCompany.companyVatNumber": "Company VAT",

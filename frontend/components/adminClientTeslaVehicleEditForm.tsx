@@ -57,9 +57,9 @@ export default function AdminClientTeslaVehicleEditForm({
       alert(t("admin.successEditRow"));
       onSave(formData);
       onClose();
-    } catch (error) {
-      console.error("Errore durante la chiamata API:", error);
-      alert(t("admin.errorEditRow"));
+    } catch (err) {
+      console.error(t("admin.genericApiError"), err);
+      alert(err instanceof Error ? err.message : t("admin.genericApiError"));
     }
   };
 

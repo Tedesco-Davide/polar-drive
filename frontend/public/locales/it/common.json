@@ -73,6 +73,7 @@
   "admin.confirmEditRow": "Salva modifiche",
   "admin.successEditRow": "Riga modificata con successo!",
   "admin.errorEditRow": "ERRORE: Si è verificato un errore al salvataggio delle modifiche",
+  "admin.genericApiError": "ERRORE: Si è verificato un errore errore generico durante la chiamata API: ",
   "admin.uploadZipOutageSigned": "Carica consensi firmati (.zip)",
   "admin.openNotesModal": "Apri gestione note",
 
@@ -109,7 +110,7 @@
   "admin.teslaStatusToggle.confirmAction.toNotFetchingFromActive": "Non è possibile cambiare lo stato di una Tesla in NotFetching (disattivazione acquisizione dati) mentre si trova in stato Active",
   "admin.teslaStatusToggle.confirmAction.toNotFetchingFromNotActive": "Stato Tesla verificato a NotActive. Autorizzi all'abilitazione dello stato NotFetching (disattivazione acquisizione dati) per questa Tesla? Assicurarsi di aver caricato i consensi firmati .zip da parte del cliente prima di procedere. Premi OK per confermare",
   "admin.teslaStatusToggle.confirmAction.toFetchingFromNotFetching": "Stato Tesla verificato a NotFetching. Sei sicuro di voler riportare lo stato a Fetching (attivazione acquisizione dati)? Assicurarsi di aver caricato i consensi firmati .zip da parte del cliente prima di procedere. Premi OK per confermare",
-  "admin.teslaStatusToggle.confirmAction.error": "Errore aggiornamento cambio stato Tesla:",
+  "admin.teslaStatusToggle.confirmAction.error": "Errore aggiornamento cambio stato Tesla: ",
 
   "admin.clientCompany.tableHeader": "Aziende Clienti",
   "admin.clientCompany.companyVatNumber": "Partita IVA",

@@ -38,10 +38,10 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
     public async Task<ActionResult> Post([FromBody] ClientConsentDTO dto)
     {
         if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
-            return NotFound("Azienda cliente non trovata.");
+            return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
         if (!await db.ClientTeslaVehicles.AnyAsync(v => v.Id == dto.TeslaVehicleId))
-            return NotFound("Veicolo Tesla non trovato.");
+            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 
         var entity = new ClientConsent
         {
@@ -68,7 +68,7 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
             return NotFound();
 
         if (!body.TryGetProperty("notes", out var notesProp))
-            return BadRequest("Campo 'notes' mancante.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: Notes filed missing!");
 
         entity.Notes = notesProp.GetString() ?? string.Empty;
         await db.SaveChangesAsync();
@@ -81,15 +81,15 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
     {
         var consent = await db.ClientConsents.FindAsync(id);
         if (consent == null)
-            return NotFound("Consenso non trovato.");
+            return NotFound("SERVER ERROR → NOT FOUND: Client Consent not found!");
 
         if (string.IsNullOrWhiteSpace(env.WebRootPath))
-            return StatusCode(500, "WebRootPath non configurato.");
+            return StatusCode(500, "SERVER ERROR → STATUS CODE: WebRootPath not configured!");
 
         var fullPath = Path.Combine(env.WebRootPath, consent.ZipFilePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
 
         if (!System.IO.File.Exists(fullPath))
-            return NotFound("File ZIP non trovato sul server.");
+            return NotFound("SERVER ERROR → NOT FOUND: .zip file not found on the server!");
 
         var fileName = Path.GetFileName(fullPath);
         var contentType = "application/zip";
@@ -103,14 +103,14 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
     {
         var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.VatNumber == vatNumber);
         if (company == null)
-            return NotFound("Azienda non trovata.");
+            return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
         var vehicle = await db.ClientTeslaVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
         if (vehicle == null)
-            return NotFound("Veicolo Tesla non trovato.");
+            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 
         if (vehicle.ClientCompanyId != company.Id)
-            return BadRequest("Il veicolo non appartiene all’azienda indicata.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: This Tesla vehicle does not belong to the company you are trying to associate!");
 
         return Ok(new
         {

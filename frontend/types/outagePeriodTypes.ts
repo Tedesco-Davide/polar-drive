@@ -1,6 +1,6 @@
 export type OutageStatus = "" | "OUTAGE-ONGOING" | "OUTAGE-RESOLVED";
 
-export type OutageType = "" | "Outage Veichle" | "Outage Fleet Api";
+export type OutageType = "" | "Outage Vehicle" | "Outage Fleet Api";
 
 export interface OutageFormData {
   autoDetected: boolean;

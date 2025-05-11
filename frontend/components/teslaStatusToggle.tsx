@@ -75,9 +75,13 @@ export default function TeslaStatusToggle({
         }
       );
       onStatusChange(newIsActive, newIsFetching);
-    } catch (error) {
-      console.error(t("admin.teslaStatusToggle.confirmAction.error"), error);
-      alert(t("admin.teslaStatusToggle.confirmAction.error") + "\n" + error);
+    } catch (err) {
+      console.error(t("admin.teslaStatusToggle.confirmAction.error"), err);
+      alert(
+        err instanceof Error
+          ? err.message
+          : t("admin.teslaStatusToggle.confirmAction.error")
+      );
     } finally {
       setLoading(false);
     }

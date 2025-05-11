@@ -248,7 +248,7 @@ OutagePeriods – Outage veri, autonomi, pronti per il PDF – Tracciare quando 
 CREATE TABLE OutagePeriods (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     AutoDetected BOOLEAN NOT NULL DEFAULT TRUE, -- true se auto rilevato, false se inserito manualmente
-    OutageType TEXT NOT NULL CHECK(OutageType IN ('Outage Veichle', 'Outage Fleet Api')),
+    OutageType TEXT NOT NULL CHECK(OutageType IN ('Outage Vehicle', 'Outage Fleet Api')),
     CreatedAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     OutageStart DATETIME NOT NULL,
     OutageEnd DATETIME, -- può essere NULL se ancora in corso
@@ -261,7 +261,7 @@ CREATE TABLE OutagePeriods (
 );
 
 CREATE INDEX idx_outage_active_vehicle ON OutagePeriods (TeslaVehicleId, OutageEnd)
-WHERE OutageType = 'Outage Veichle';
+WHERE OutageType = 'Outage Vehicle';
 
 #################################################################################################################################################################
 

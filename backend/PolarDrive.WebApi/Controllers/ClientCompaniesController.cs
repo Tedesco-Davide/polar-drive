@@ -36,7 +36,7 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     public async Task<ActionResult> Post([FromBody] ClientCompanyDTO dto)
     {
         if (await db.ClientCompanies.AnyAsync(c => c.VatNumber == dto.VatNumber))
-            return Conflict("Azienda già presente con la stessa partita IVA.");
+            return Conflict("CONFLICT - SERVER ERROR: This company has already been saved, VAT numbher already existing!");
 
         var entity = new ClientCompany
         {
@@ -75,7 +75,7 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     public async Task<IActionResult> Put(int id, [FromBody] ClientCompanyDTO updated)
     {
         if (id != updated.Id)
-            return BadRequest("ID mismatch.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: ID mismatch!");
 
         var existing = await db.ClientCompanies.FindAsync(id);
         if (existing == null)

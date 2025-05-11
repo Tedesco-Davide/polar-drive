@@ -25,10 +25,10 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
     )
     {
         if (zipFile == null || zipFile.Length == 0)
-            return BadRequest("File ZIP mancante.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: File .zip missing!");
 
         if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
-            return BadRequest("Formato non valido. Serve un file .zip");
+            return BadRequest("SERVER ERROR → BAD REQUEST: File type not valid. It must be a .zip!");
 
         // ✅ Validazione tipo consenso
         var allowedTypes = new[] {
@@ -39,7 +39,7 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         };
 
         if (string.IsNullOrWhiteSpace(consentType) || !allowedTypes.Contains(consentType))
-            return BadRequest("Tipo consenso non valido.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: Consent Type not valid!");
 
         // 🔄 Carica tutto il file ZIP in memoria
         using var memoryStream = new MemoryStream();
@@ -55,21 +55,21 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
             );
 
             if (!containsPdf)
-                return BadRequest("Il file ZIP deve contenere almeno un file PDF.");
+                return BadRequest("SERVER ERROR → BAD REQUEST: The .zip file must contain at least a single .pdf file!");
         }
         catch (InvalidDataException)
         {
-            return BadRequest("Il file ZIP è danneggiato o non valido.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: The .zip file is either damaged/broken or not valid!");
         }
 
         // 🔍 Validazione logica di coerenza
         var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == clientCompanyId && c.VatNumber == companyVatNumber);
         if (company == null)
-            return NotFound("Azienda non trovata o P.IVA errata.");
+            return NotFound("SERVER ERROR → NOT FOUND: Company not found or invalid VAT number!");
 
         var vehicle = await db.ClientTeslaVehicles.FirstOrDefaultAsync(v => v.Id == teslaVehicleId && v.Vin == teslaVehicleVIN && v.ClientCompanyId == clientCompanyId);
         if (vehicle == null)
-            return NotFound("Veicolo Tesla non trovato o non associato all’azienda.");
+            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found or not associated with the company!");
 
         // 🔐 SHA256
         string hash;
@@ -86,10 +86,10 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         var existingConsent = await db.ClientConsents.FirstOrDefaultAsync(c => c.ConsentHash == hash);
         if (existingConsent != null)
         {
-            return Conflict(new { message = "File già caricato.", existingId = existingConsent.Id });
+            return Conflict(new { message = "CONFLICT - SERVER ERROR: This file has an existing and validated Hash, therefore has already been uploaded!", existingId = existingConsent.Id });
         }
 
-        // 📁 Save ZIP
+        // 📁 Salva ZIP
         var safeVin = teslaVehicleVIN.ToUpper().Trim();
         var zipFolder = Path.Combine(env.WebRootPath ?? "wwwroot", "pdfs", "consents");
         Directory.CreateDirectory(zipFolder);
@@ -101,7 +101,7 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         }
 
         if (!DateTime.TryParseExact(uploadDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
-            return BadRequest("Formato data firma non valido. Atteso 'yyyy-MM-dd'.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid signature date format. Expected server-side format: 'yyyy-MM-dd'!");
 
         var consent = new ClientConsent
         {

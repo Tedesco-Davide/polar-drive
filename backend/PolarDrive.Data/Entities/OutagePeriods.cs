@@ -8,7 +8,7 @@ public class OutagePeriod
     public bool AutoDetected { get; set; } = true;
 
     [Required]
-    [RegularExpression("Outage Veichle|Outage Fleet Api")]
+    [RegularExpression("Outage Vehicle|Outage Fleet Api")]
     public string OutageType { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -53,9 +53,9 @@ export default function Contacts() {
       } else {
         alert(t("contact.error.send"));
       }
-    } catch (error) {
-      console.error("FORM ERROR: ", error);
-      alert(t("contact.error.send"));
+    } catch (err) {
+      console.error(t("admin.genericApiError"), err);
+      alert(err instanceof Error ? err.message : t("admin.genericApiError"));
     } finally {
       setLoading(false);
     }

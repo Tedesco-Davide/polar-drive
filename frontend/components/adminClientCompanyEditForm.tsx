@@ -109,9 +109,9 @@ export default function AdminClientCompanyEditForm({
       alert(t("admin.successEditRow"));
       onSave(formData);
       await refreshWorkflowData();
-    } catch (error) {
-      console.error("Errore durante la chiamata API:", error);
-      alert(t("admin.errorEditRow"));
+    } catch (err) {
+      console.error(t("admin.genericApiError"), err);
+      alert(err instanceof Error ? err.message : t("admin.genericApiError"));
     }
 
     onSave(formData);

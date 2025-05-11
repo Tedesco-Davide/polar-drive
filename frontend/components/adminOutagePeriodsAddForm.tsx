@@ -109,7 +109,7 @@ export default function AdminOutagePeriodsAddForm({
           >
             <option value="">{t("admin.basicPlaceholder")}</option>{" "}
             {/* 🆕 basicPlaceholder */}
-            <option value="Outage Veichle">Outage Veichle</option>
+            <option value="Outage Vehicle">Outage Vehicle</option>
             <option value="Outage Fleet Api">Outage Fleet Api</option>
           </select>
         </label>
