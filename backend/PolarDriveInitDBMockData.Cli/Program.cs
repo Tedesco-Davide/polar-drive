@@ -1,11 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PolarDrive.Data.DbContexts;
+﻿using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using Microsoft.EntityFrameworkCore;
+using System.IO.Compression;
 
 var basePath = AppContext.BaseDirectory;
-var relativePath = Path.Combine("..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db");
-var dbPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
-Console.WriteLine("Sto usando il DB: " + dbPath);
+var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));
+
+var wwwRoot = Path.Combine(basePath, "..", "..", "..", "..", "PolarDrive.WebApi", "wwwroot", "companies");
 
 var options = new DbContextOptionsBuilder<PolarDriveDbContext>()
     .UseSqlite($"Data Source={dbPath}")
@@ -13,89 +14,79 @@ var options = new DbContextOptionsBuilder<PolarDriveDbContext>()
 
 using var db = new PolarDriveDbContext(options);
 
-// Pulizia iniziale
+// Pulisce tabelle
 db.ClientConsents.RemoveRange(db.ClientConsents);
 db.ClientTeslaVehicles.RemoveRange(db.ClientTeslaVehicles);
 db.ClientCompanies.RemoveRange(db.ClientCompanies);
 await db.SaveChangesAsync();
 
-Console.WriteLine("Popolamento DB con mock reali...");
-
-// Inserimento aziende
-var companyList = new[]
+// Mock aziende
+var companies = new[]
 {
-    new ClientCompany { VatNumber = "63123456789", Name = "Paninoteca Rossi S.r.l.", Address = "Via dei Panini 42, Milano", Email = "info@paninotecarossi.it", PecAddress = "pec@paninotecarossi.it", LandlineNumber = "02123456788", ReferentName = "Luca Rossi", ReferentMobileNumber = "3201234567", ReferentEmail = "luca@paninotecarossi.it", ReferentPecAddress = "" },
-    new ClientCompany { VatNumber = "78987654321", Name = "Studio Legale Verdi", Address = "Corso Venezia 12, Roma", Email = "contatti@studioverdi.it", PecAddress = "studioverdi@pec.it", LandlineNumber = "06445566714", ReferentName = "Chiara Verdi", ReferentMobileNumber = "3471122334", ReferentEmail = "chiara.verdi@studioverdi.it", ReferentPecAddress = "c.verdi@pec.studioverdi.it" },
-    new ClientCompany { VatNumber = "44543216789", Name = "TechZone S.p.A.", Address = "Viale Innovazione 8, Torino", Email = "support@techzone.it", PecAddress = "pec@techzone.it", LandlineNumber = "01177889904", ReferentName = "Marco Bianchi", ReferentMobileNumber = "3359988776", ReferentEmail = "marco.b@techzone.it", ReferentPecAddress = "m.bianchi@pec.techzone.it" },
-    new ClientCompany { VatNumber = "56135792468", Name = "Farmacia Centrale S.n.c.", Address = "Piazza della Salute 2, Firenze", Email = "info@farmaciacentrale.it", PecAddress = "farmaciacentrale@pec.it", LandlineNumber = "05522334456", ReferentName = "Giulia Neri", ReferentMobileNumber = "3281239874", ReferentEmail = "g.neri@farmaciacentrale.it", ReferentPecAddress = "giulia.neri@pec.farmacia.it" },
-    new ClientCompany { VatNumber = "75112358132", Name = "Alfa Costruzioni S.r.l.", Address = "Via del Mattone 100, Bologna", Email = "segreteria@alfacostruzioni.it", PecAddress = "pec@alfacostruzioni.it", LandlineNumber = "05199887783", ReferentName = "Federico Costa", ReferentMobileNumber = "3294455667", ReferentEmail = "f.costa@alfacostruzioni.it", ReferentPecAddress = "federico.costa@pec.alfacostruzioni.it" },
-    new ClientCompany { VatNumber = "72192837465", Name = "Gamma Energia s.n.c.", Address = "Via Solare 15, Napoli", Email = "contatti@gammaenergia.it", PecAddress = "pec@gammaenergia.it", LandlineNumber = "08144556677", ReferentName = "Anna Romano", ReferentMobileNumber = "3402211334", ReferentEmail = "anna@gammaenergia.it", ReferentPecAddress = "a.romano@pec.gammaenergia.it" },
-    new ClientCompany { VatNumber = "92314159265", Name = "Studio Architetti Bassi e Longhi", Address = "Via Architettura 7, Bari", Email = "info@bassilonghi.it", PecAddress = "pec@bassilonghi.it", LandlineNumber = "08033221138", ReferentName = "Leonardo Longhi", ReferentMobileNumber = "3387766554", ReferentEmail = "l.longhi@bassilonghi.it", ReferentPecAddress = "leo.longhi@pec.bassilonghi.it" },
-    new ClientCompany { VatNumber = "82010203040", Name = "Bottega del Caffè di Mario e C.", Address = "Via Cavour 50, Palermo", Email = "bottega@marioecaffe.it", PecAddress = "pec@bottegacaffe.it", LandlineNumber = "09122334401", ReferentName = "Mario Grillo", ReferentMobileNumber = "3315566778", ReferentEmail = "mario@marioecaffe.it", ReferentPecAddress = "m.grillo@pec.bottegacaffe.it" },
-    new ClientCompany { VatNumber = "46001100110", Name = "NextData Analytics S.r.l.", Address = "Via Digitale 3, Trento", Email = "contact@nextdata.it", PecAddress = "pec@nextdata.it", LandlineNumber = "04618877664", ReferentName = "Serena Bellini", ReferentMobileNumber = "3391122445", ReferentEmail = "serena.bellini@nextdata.it", ReferentPecAddress = "s.bellini@pec.nextdata.it" },
-    new ClientCompany { VatNumber = "83999888776", Name = "Autofficina Turbo S.a.s.", Address = "Via del Motore 21, Genova", Email = "turbo@autofficina.it", PecAddress = "pec@autofficina.it", LandlineNumber = "01033445577", ReferentName = "Gabriele Ferro", ReferentMobileNumber = "3489988771", ReferentEmail = "g.ferro@autofficina.it", ReferentPecAddress = "gabriele.ferro@pec.autofficina.it" }
+    new ClientCompany { Name = "Paninoteca Rossi", VatNumber = "IT00000000001" },
+    new ClientCompany { Name = "TechZone", VatNumber = "IT00000000002" },
+    new ClientCompany { Name = "Gamma Energia", VatNumber = "IT00000000003" }
 };
 
-db.ClientCompanies.AddRange(companyList);
+db.ClientCompanies.AddRange(companies);
 await db.SaveChangesAsync();
 
-// Inserimento veicoli
-var teslaList = new[]
+// Mock Tesla e consensi
+int vinCounter = 1;
+foreach (var company in companies)
 {
-    ("5YJ3E1EA7KF317001", "Model 3"),
-    ("5YJSA1E26HF000199", "Model S"),
-    ("5YJXCDE45GF011123", "Model X"),
-    ("5YJYGDEE0MF005555", "Model 3"),
-    ("7SAYGDEE9PF123999", "Model Y"),
-    ("5YJ3E1EA2HF001234", "Model Y"),
-    ("5YJSA1E20FF000777", "Model 3"),
-    ("LRWYGDEE7PC888888", "Model S"),
-    ("5YJXCDE23JF055432", "Model Y"),
-    ("5YJSA1E26HF000101", "Model X")
-};
+    var companyDir = Path.Combine(wwwRoot, $"company-{company.Id}");
+    var consentsDir = Path.Combine(companyDir, "consents-zip");
+    var historyDir = Path.Combine(companyDir, "history-pdf");
+    var reportsDir = Path.Combine(companyDir, "reports-pdf");
 
-var vehicleList = new List<ClientTeslaVehicle>();
+    Directory.CreateDirectory(consentsDir);
+    Directory.CreateDirectory(historyDir);
+    Directory.CreateDirectory(reportsDir);
 
-for (int i = 0; i < teslaList.Length; i++)
-{
+    // Crea PDF finti
+    for (int i = 1; i <= 2; i++)
+    {
+        await File.WriteAllTextAsync(Path.Combine(historyDir, $"history_{i}.pdf"), "%PDF-1.4\n%empty history\n%%EOF");
+        await File.WriteAllTextAsync(Path.Combine(reportsDir, $"report_{i}.pdf"), "%PDF-1.4\n%empty report\n%%EOF");
+
+        var consentZipPath = Path.Combine(consentsDir, $"consent_{i}.zip");
+        using (var zip = ZipFile.Open(consentZipPath, ZipArchiveMode.Create))
+        {
+            var entry = zip.CreateEntry($"consent_{i}.pdf");
+            using var entryStream = entry.Open();
+            using var writer = new StreamWriter(entryStream);
+            await writer.WriteAsync("%PDF-1.4\n%empty consent\n%%EOF");
+        }
+    }
+
+    // Mock Tesla associata
+    var vin = $"5YJMOCKEDVIN{vinCounter++:000}";
     var vehicle = new ClientTeslaVehicle
     {
-        ClientCompanyId = companyList[i].Id,
-        Vin = teslaList[i].Item1,
-        Model = teslaList[i].Item2,
+        ClientCompanyId = company.Id,
+        Vin = vin,
+        Model = "Model 3",
         IsActiveFlag = true,
         IsFetchingDataFlag = true,
-        FirstActivationAt = DateTime.UtcNow
+        FirstActivationAt = DateTime.Today
     };
-    vehicleList.Add(vehicle);
-}
+    db.ClientTeslaVehicles.Add(vehicle);
+    await db.SaveChangesAsync();
 
-db.ClientTeslaVehicles.AddRange(vehicleList);
-await db.SaveChangesAsync();
-
-// Inserimento consensi mock
-var consentTypes = new[] {
-    "Consent Activation",
-    "Consent Deactivation",
-    "Consent Stop Data Fetching",
-    "Consent Reactivation"
-};
-
-var consentList = new List<ClientConsent>();
-for (int i = 0; i < companyList.Length; i++)
-{
-    consentList.Add(new ClientConsent
+    // Mock consenso
+    var consent = new ClientConsent
     {
-        ClientCompanyId = companyList[i].Id,
-        TeslaVehicleId = vehicleList[i].Id,
-        UploadDate = new DateTime(2024, 3, 12).AddDays(i * 2),
-        ZipFilePath = $"pdfs/consents/{vehicleList[i].Vin}.zip",
-        ConsentHash = $"mockhash{i + 1:D2}abcdef0123456789{i + 1:D2}",
-        ConsentType = consentTypes[i % consentTypes.Length]
-    });
+        ClientCompanyId = company.Id,
+        TeslaVehicleId = vehicle.Id,
+        ConsentType = "Consent Activation",
+        UploadDate = DateTime.Today,
+        ZipFilePath = Path.Combine(consentsDir, "consent_1.zip"),
+        ConsentHash = $"mockhash-{company.Id}-abc123",
+        Notes = "Mock consent"
+    };
+    db.ClientConsents.Add(consent);
+    await db.SaveChangesAsync();
 }
 
-db.ClientConsents.AddRange(consentList);
-await db.SaveChangesAsync();
-
-Console.WriteLine("✅ Mock inseriti con successo!");
+Console.WriteLine("✅ Dati mock e file fisici generati con successo.");
