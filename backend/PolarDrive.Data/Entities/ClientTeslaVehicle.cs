@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace PolarDrive.Data.Entities;
 
 public class ClientTeslaVehicle
@@ -27,4 +29,10 @@ public class ClientTeslaVehicle
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     
     public ClientCompany? ClientCompany { get; set; }
+
+    [JsonIgnore]
+    public string? AccessToken { get; set; }
+
+    [JsonIgnore]
+    public string? RefreshToken { get; set; }
 }

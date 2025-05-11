@@ -62,7 +62,8 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
             IsActiveFlag = dto.IsActive,
             IsFetchingDataFlag = dto.IsFetching,
             FirstActivationAt = ParseDate(dto.FirstActivationAt),
-            LastDeactivationAt = ParseDate(dto.LastDeactivationAt)
+            LastDeactivationAt = ParseDate(dto.LastDeactivationAt),
+            CreatedAt = DateTime.UtcNow
         };
 
         db.ClientTeslaVehicles.Add(entity);
