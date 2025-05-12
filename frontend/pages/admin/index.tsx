@@ -85,9 +85,9 @@ export default function AdminDashboard() {
       try {
         const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
           await Promise.all([
-            fetch(`${API_BASE_URL}/api/ClientCompanies`),
-            fetch(`${API_BASE_URL}/api/ClientTeslaVehicles`),
-            fetch(`${API_BASE_URL}/api/ClientConsents`),
+            fetch(`${API_BASE_URL}/api/clientcompanies`),
+            fetch(`${API_BASE_URL}/api/clientteslavehicles`),
+            fetch(`${API_BASE_URL}/api/clientconsents`),
             fetch("/api/mock-outageperiods"),
             fetch("/api/mock-pdfreports"),
           ]);

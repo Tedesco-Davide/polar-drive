@@ -10,10 +10,9 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UploadConsentController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
+public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost]
-    [RequestSizeLimit(20 * 1024 * 1024)]
     public async Task<IActionResult> UploadConsent(
         [FromForm] int clientCompanyId,
         [FromForm] int teslaVehicleId,

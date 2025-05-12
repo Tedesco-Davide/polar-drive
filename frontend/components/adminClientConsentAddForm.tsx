@@ -121,7 +121,7 @@ export default function AdminClientConsentAddForm({
       uploadForm.append("companyVatNumber", companyVatNumber);
       uploadForm.append("teslaVehicleVIN", teslaVehicleVIN);
 
-      const res = await fetch(`${API_BASE_URL}/api/UploadConsent`, {
+      const res = await fetch(`${API_BASE_URL}/api/uploadconsentzip`, {
         method: "POST",
         body: uploadForm,
       });
