@@ -137,33 +137,41 @@ export default function AdminClientTeslaVehicleEditForm({
           />
         </label>
 
-        {/* Read-only visualizzazione stati attivazione */}
-        <div className="flex items-center gap-2">
-          <span className="text-2xl text-gray-600 dark:text-gray-300">
-            {t("admin.clientTeslaVehicle.isActive")}
-          </span>
-          <span className="text-2xl">
-            {formData.isActive ? `✅ ${t("admin.yes")}` : `🛑 ${t("admin.no")}`}
-          </span>
+        {/* ✅ Blocchi read-only in riga completa */}
+        <label className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 col-span-full px-1">
+          <div className="flex items-center gap-2">
+            <span className="text-xl text-gray-600 dark:text-gray-300">
+              {t("admin.clientTeslaVehicle.isActive")}
+            </span>
+            <span className="text-xl">
+              {formData.isActive
+                ? `✅ ${t("admin.yes")}`
+                : `🛑 ${t("admin.no")}`}
+            </span>
+          </div>
 
-          <span className="text-2xl text-gray-600 dark:text-gray-300">
-            {t("admin.clientTeslaVehicle.isFetching")}
-          </span>
-          <span className="text-2xl">
-            {formData.isFetching
-              ? `✅ ${t("admin.yes")}`
-              : `🛑 ${t("admin.no")}`}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xl text-gray-600 dark:text-gray-300">
+              {t("admin.clientTeslaVehicle.isFetching")}
+            </span>
+            <span className="text-xl">
+              {formData.isFetching
+                ? `✅ ${t("admin.yes")}`
+                : `🛑 ${t("admin.no")}`}
+            </span>
+          </div>
 
-          <span className="text-2xl text-gray-600 dark:text-gray-300">
-            {t("admin.clientTeslaVehicle.firstActivationAt")}
-          </span>
-          <span className="text-2xl">
-            {formData.firstActivationAt
-              ? formatDateToDisplay(formData.firstActivationAt)
-              : "—"}
-          </span>
-        </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xl text-gray-600 dark:text-gray-300">
+              {t("admin.clientTeslaVehicle.firstActivationAt")}
+            </span>
+            <span className="text-xl">
+              {formData.firstActivationAt
+                ? formatDateToDisplay(formData.firstActivationAt)
+                : "—"}
+            </span>
+          </div>
+        </label>
       </div>
 
       <div className="mt-6 flex md:flex-row flex-col gap-4">
