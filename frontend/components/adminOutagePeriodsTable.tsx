@@ -1,12 +1,13 @@
 import { TFunction } from "i18next";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
-import { FileArchive, HardDriveUpload, NotebookPen } from "lucide-react";
+import { FileArchive, NotebookPen } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useState, useEffect } from "react";
-import { parseISO, isValid, isAfter } from "date-fns";
+import { parseISO } from "date-fns";
 import { OutageFormData } from "@/types/outagePeriodTypes";
 import { formatDateToDisplay } from "@/utils/date";
+import { API_BASE_URL } from "@/utils/api";
 import AdminOutagePeriodsAddForm from "./adminOutagePeriodsAddForm";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -44,13 +45,18 @@ const getOutageDuration = (start: string, end?: string): string => {
 type Props = {
   t: TFunction;
   outages: OutagePeriod[];
+  refreshOutagePeriods: () => Promise<void>;
 };
 
-export default function AdminOutagePeriodsTable({ t, outages }: Props) {
+export default function AdminOutagePeriodsTable({
+  t,
+  outages,
+  refreshOutagePeriods,
+}: Props) {
   const [localOutages, setLocalOutages] = useState<OutagePeriod[]>([]);
   const [showForm, setShowForm] = useState(false);
 
-  const [formData, setFormData] = useState<OutageFormData>({
+  const initialFormData: OutageFormData = {
     autoDetected: false,
     status: "",
     outageType: "",
@@ -59,7 +65,9 @@ export default function AdminOutagePeriodsTable({ t, outages }: Props) {
     companyVatNumber: "",
     vin: "",
     zipFilePath: null,
-  });
+  };
+
+  const [formData, setFormData] = useState<OutageFormData>(initialFormData);
 
   useEffect(() => {
     setLocalOutages(outages);
@@ -81,84 +89,6 @@ export default function AdminOutagePeriodsTable({ t, outages }: Props) {
     prevPage,
     setCurrentPage,
   } = usePagination<OutagePeriod>(filteredData, 5);
-
-  const handleZipUpload = (index: number, file: File) => {
-    if (!file || !file.name.endsWith(".zip")) {
-      alert(t("admin.validation.invalidZipType"));
-      return;
-    }
-
-    const fakeUrl = URL.createObjectURL(file);
-    const updated = [...localOutages];
-    updated[index].zipFilePath = fakeUrl;
-    setLocalOutages(updated);
-  };
-
-  const handleSubmit = () => {
-    if (!formData.outageStart) {
-      alert(t("admin.outagePeriods.validation.startDateRequired"));
-      return;
-    }
-
-    const outageStartDate = parseISO(formData.outageStart);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    if (!isValid(outageStartDate) || isAfter(outageStartDate, today)) {
-      alert(t("admin.outagePeriods.validation.startDateInFuture"));
-      return;
-    }
-
-    if (formData.status === "") {
-      alert(t("admin.outagePeriods.validation.statusRequired"));
-      return;
-    }
-
-    if (formData.outageType === "") {
-      alert(t("admin.outagePeriods.validation.outageTypeRequired"));
-      return;
-    }
-
-    // Se VIN e PIVA sono entrambi vuoti, è un Outage Fleet API generico
-    const isGenericOutage =
-      (!formData.vin || formData.vin.trim() === "") &&
-      (!formData.companyVatNumber || formData.companyVatNumber.trim() === "");
-
-    const newOutage: OutagePeriod = {
-      id: Math.floor(Math.random() * 100000),
-      teslaVehicleId: isGenericOutage ? 0 : 9999,
-      clientCompanyId: isGenericOutage ? 0 : 9999,
-      autoDetected: formData.autoDetected,
-      outageType: formData.outageType,
-      createdAt: formData.outageStart,
-      outageStart: formData.outageStart,
-      outageEnd: formData.outageEnd,
-      vin: formData.vin || "",
-      companyVatNumber: formData.companyVatNumber || "",
-      zipFilePath: formData.zipFilePath
-        ? URL.createObjectURL(formData.zipFilePath)
-        : undefined,
-      notes: "",
-    };
-
-    setLocalOutages((prev) => [newOutage, ...prev]);
-    setCurrentPage(1);
-
-    // ✅ Reset corretto come da stato iniziale
-    setFormData({
-      autoDetected: false,
-      status: "",
-      outageType: "",
-      outageStart: "",
-      outageEnd: undefined,
-      companyVatNumber: "",
-      vin: "",
-      zipFilePath: null,
-    });
-
-    setShowForm(false);
-    alert(t("admin.outagePeriods.successAddNewOutage"));
-  };
 
   return (
     <div>
@@ -184,8 +114,12 @@ export default function AdminOutagePeriodsTable({ t, outages }: Props) {
         <AdminOutagePeriodsAddForm
           formData={formData}
           setFormData={setFormData}
-          onSubmit={handleSubmit}
           t={t}
+          refreshOutagePeriods={refreshOutagePeriods}
+          onSubmitSuccess={() => {
+            setFormData(initialFormData);
+            setShowForm(false);
+          }}
         />
       )}
 
@@ -220,33 +154,19 @@ export default function AdminOutagePeriodsTable({ t, outages }: Props) {
                 className="border-b border-gray-300 dark:border-gray-600"
               >
                 <td className="p-4 space-x-2 inline-flex items-center">
-                  {outage.zipFilePath ? (
+                  {outage.zipFilePath && (
                     <button
                       className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                       title={t("admin.outagePeriods.viewZipOutage")}
-                      onClick={() => window.open(outage.zipFilePath, "_blank")}
+                      onClick={() =>
+                        window.open(
+                          `${API_BASE_URL}/api/outageperiods/${outage.id}/download`,
+                          "_blank"
+                        )
+                      }
                     >
                       <FileArchive size={16} />
                     </button>
-                  ) : (
-                    <label
-                      title={t("admin.outagePeriods.uploadZipOutage")}
-                      className="cursor-pointer p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
-                    >
-                      <HardDriveUpload size={16} />
-                      <input
-                        type="file"
-                        accept=".zip"
-                        className="hidden"
-                        onChange={(e) =>
-                          e.target.files &&
-                          handleZipUpload(
-                            localOutages.findIndex((o) => o.id === outage.id),
-                            e.target.files[0]
-                          )
-                        }
-                      />
-                    </label>
                   )}
                   <button
                     className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"

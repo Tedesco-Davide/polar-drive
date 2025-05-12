@@ -88,7 +88,7 @@ export default function AdminDashboard() {
             fetch(`${API_BASE_URL}/api/clientcompanies`),
             fetch(`${API_BASE_URL}/api/clientteslavehicles`),
             fetch(`${API_BASE_URL}/api/clientconsents`),
-            fetch("/api/mock-outageperiods"),
+            fetch(`${API_BASE_URL}/api/outageperiods`),
             fetch("/api/mock-pdfreports"),
           ]);
 
@@ -216,13 +216,23 @@ export default function AdminDashboard() {
                         t={t}
                         refreshClientConsents={async () => {
                           const res = await fetch(
-                            `${API_BASE_URL}/api/ClientConsents`
+                            `${API_BASE_URL}/api/clientconsents`
                           );
-                          const updated = await res.json();
-                          setClientConsents(updated);
+                          const updatedClientConsents = await res.json();
+                          setClientConsents(updatedClientConsents);
                         }}
                       />
-                      <AdminOutagePeriodsTable outages={outagePeriods} t={t} />
+                      <AdminOutagePeriodsTable
+                        outages={outagePeriods}
+                        t={t}
+                        refreshOutagePeriods={async () => {
+                          const res = await fetch(
+                            `${API_BASE_URL}/api/outageperiods`
+                          );
+                          const updatedOutagePeriods = await res.json();
+                          setOutagePeriods(updatedOutagePeriods);
+                        }}
+                      />
                       <AdminTeslaVehiclesReport reports={pdfReports} t={t} />
                     </div>
                   </div>

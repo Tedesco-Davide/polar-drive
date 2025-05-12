@@ -137,4 +137,99 @@ foreach (var company in companies)
     await db.SaveChangesAsync();
 }
 
+// ─────────────────────────────────────
+// 3.b Crea ZIP mock usati negli outage
+// ─────────────────────────────────────
+var zipsDir = Path.Combine(wwwRoot, "zips-outages");
+Directory.CreateDirectory(zipsDir);
+
+// 1. zips-outages/20250418-rossi-vehicle01.zip
+var zip1Path = Path.Combine(zipsDir, "20250418-rossi-vehicle01.zip");
+if (File.Exists(zip1Path)) File.Delete(zip1Path);
+using (var zip = ZipFile.Open(zip1Path, ZipArchiveMode.Create))
+{
+    var entry = zip.CreateEntry("mock_outage_rossi.pdf");
+    using var stream = entry.Open();
+    using var writer = new StreamWriter(stream);
+    await writer.WriteAsync("%PDF-1.4\n%OUTAGE ZIP Rossi\n%%EOF");
+}
+
+// 2. zips-outages/20250425-manual-fleetapi.zip
+var zip2Path = Path.Combine(zipsDir, "20250425-manual-fleetapi.zip");
+if (File.Exists(zip2Path)) File.Delete(zip2Path);
+using (var zip = ZipFile.Open(zip2Path, ZipArchiveMode.Create))
+{
+    var entry = zip.CreateEntry("manual_fleetapi.pdf");
+    using var stream = entry.Open();
+    using var writer = new StreamWriter(stream);
+    await writer.WriteAsync("%PDF-1.4\n%OUTAGE ZIP FleetApi\n%%EOF");
+}
+
+// ─────────────────────────────────────
+// 4. Inserisce 5 outage mock coerenti
+// ─────────────────────────────────────
+var outages = new List<OutagePeriod>
+{
+    new()
+    {
+        TeslaVehicleId = 1,
+        ClientCompanyId = 1,
+        AutoDetected = true,
+        OutageType = "Outage Vehicle",
+        CreatedAt = DateTime.Parse("2025-04-20T10:30:00Z"),
+        OutageStart = DateTime.Parse("2025-04-18T04:00:00Z"),
+        OutageEnd = DateTime.Parse("2025-04-19T18:00:00Z"),
+        ZipFilePath = "zips-outages/20250418-rossi-vehicle01.zip",
+        Notes = "Rilevato automaticamente, comunicazione PEC non ricevuta."
+    },
+    new()
+    {
+        TeslaVehicleId = 2,
+        ClientCompanyId = 2,
+        AutoDetected = false,
+        OutageType = "Outage Vehicle",
+        CreatedAt = DateTime.Parse("2025-04-21T09:45:00Z"),
+        OutageStart = DateTime.Parse("2025-04-15T00:00:00Z"),
+        OutageEnd = DateTime.Parse("2025-04-20T23:59:00Z"),
+        Notes = "Outage manuale: veicolo in assistenza per aggiornamento batteria."
+    },
+    new()
+    {
+        TeslaVehicleId = 3,
+        ClientCompanyId = 3,
+        AutoDetected = true,
+        OutageType = "Outage Vehicle",
+        CreatedAt = DateTime.Parse("2025-04-24T07:10:00Z"),
+        OutageStart = DateTime.Parse("2025-04-23T22:00:00Z"),
+        OutageEnd = null,
+        Notes = "Inattività in corso: nessun dato da oltre 8 ore."
+    },
+    new()
+    {
+        TeslaVehicleId = null,
+        ClientCompanyId = null,
+        AutoDetected = true,
+        OutageType = "Outage Fleet Api",
+        CreatedAt = DateTime.Parse("2025-04-22T12:00:00Z"),
+        OutageStart = DateTime.Parse("2025-04-22T08:00:00Z"),
+        OutageEnd = DateTime.Parse("2025-04-22T11:30:00Z"),
+        Notes = "API Tesla non rispondeva: HTTP 503 da tutte le richieste."
+    },
+    new()
+    {
+        TeslaVehicleId = null,
+        ClientCompanyId = null,
+        AutoDetected = false,
+        OutageType = "Outage Fleet Api",
+        CreatedAt = DateTime.Parse("2025-04-25T09:00:00Z"),
+        OutageStart = DateTime.Parse("2025-04-25T07:00:00Z"),
+        OutageEnd = null,
+        ZipFilePath = "zips-outages/20250425-manual-fleetapi.zip",
+        Notes = "Inserito manualmente: timeout frequenti da client."
+    },
+};
+
+db.OutagePeriods.AddRange(outages);
+await db.SaveChangesAsync();
+
 Console.WriteLine("✅ Dati mock completi e file fisici generati con successo.");

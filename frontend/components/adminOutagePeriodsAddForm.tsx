@@ -1,21 +1,25 @@
 import { TFunction } from "i18next";
 import { formatDateToSave } from "@/utils/date";
+import { API_BASE_URL } from "@/utils/api";
 import { OutageFormData } from "@/types/outagePeriodTypes";
+import { isAfter, isValid, parseISO } from "date-fns";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 type Props = {
   formData: OutageFormData;
   setFormData: React.Dispatch<React.SetStateAction<OutageFormData>>;
-  onSubmit: () => void;
   t: TFunction;
+  refreshOutagePeriods: () => Promise<void>;
+  onSubmitSuccess: () => void;
 };
 
 export default function AdminOutagePeriodsAddForm({
   formData,
   setFormData,
-  onSubmit,
   t,
+  refreshOutagePeriods,
+  onSubmitSuccess,
 }: Props) {
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -29,34 +33,95 @@ export default function AdminOutagePeriodsAddForm({
         file.type !== "application/x-zip-compressed"
       ) {
         alert(t("admin.validation.invalidZipType"));
-        e.target.value = "";
         return;
       }
       const maxSize = 50 * 1024 * 1024;
       if (file.size > maxSize) {
         alert(t("admin.outagePeriods.validation.zipTooLarge"));
-        e.target.value = "";
         return;
       }
-      setFormData({
-        ...formData,
-        [name]: file,
-      });
+      setFormData({ ...formData, zipFilePath: file });
       return;
     }
 
     if (name === "autoDetected") {
-      setFormData({
-        ...formData,
-        autoDetected: value === "true",
-      });
+      setFormData({ ...formData, autoDetected: value === "true" });
       return;
     }
 
-    setFormData({
-      ...formData,
-      [name]: value,
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleSubmit = async () => {
+    const {
+      status,
+      outageType,
+      outageStart,
+      outageEnd,
+      vin,
+      companyVatNumber,
+      zipFilePath,
+    } = formData;
+
+    // Validazioni base
+    if (!status)
+      return alert(t("admin.outagePeriods.validation.statusRequired"));
+    if (!outageType)
+      return alert(t("admin.outagePeriods.validation.outageTypeRequired"));
+    if (!outageStart)
+      return alert(t("admin.outagePeriods.validation.startDateRequired"));
+
+    const parsedStart = parseISO(outageStart);
+    if (!isValid(parsedStart) || isAfter(parsedStart, new Date()))
+      return alert(t("admin.outagePeriods.validation.startDateInFuture"));
+
+    const isGenericOutage = !vin && !companyVatNumber;
+
+    let clientCompanyId: number | null = null;
+    let teslaVehicleId: number | null = null;
+
+    if (!isGenericOutage) {
+      const resolveRes = await fetch(
+        `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${vin}`
+      );
+      if (!resolveRes.ok) {
+        alert(t("admin.clientConsents.validation.resolveVATandVIN"));
+        return;
+      }
+      const resolved = await resolveRes.json();
+      clientCompanyId = resolved.clientCompanyId;
+      teslaVehicleId = resolved.teslaVehicleId;
+    }
+
+    const payload = new FormData();
+    if (zipFilePath) payload.append("zipFile", zipFilePath);
+    payload.append("outageType", outageType);
+    payload.append("autoDetected", formData.autoDetected ? "true" : "false");
+    payload.append("status", status);
+    payload.append("outageStart", outageStart);
+    if (outageEnd) payload.append("outageEnd", outageEnd);
+    if (vin) payload.append("vin", vin);
+    if (companyVatNumber) payload.append("companyVatNumber", companyVatNumber);
+    if (clientCompanyId !== null)
+      payload.append("clientCompanyId", clientCompanyId.toString());
+    if (teslaVehicleId !== null)
+      payload.append("teslaVehicleId", teslaVehicleId.toString());
+
+    const res = await fetch(`${API_BASE_URL}/api/uploadoutagezip`, {
+      method: "POST",
+      body: payload,
     });
+
+    if (!res.ok) {
+      const errMsg = await res.text();
+      console.error("Upload outage error", errMsg);
+      alert(t("admin.outagePeriods.genericUploadError") + ": " + errMsg);
+      return;
+    }
+
+    alert(t("admin.outagePeriods.successAddNewOutage"));
+    await refreshOutagePeriods();
+    onSubmitSuccess();
   };
 
   return (
@@ -201,7 +266,7 @@ export default function AdminOutagePeriodsAddForm({
       {/* Confirm Button */}
       <button
         className="mt-6 bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600"
-        onClick={onSubmit}
+        onClick={handleSubmit}
       >
         {t("admin.outagePeriods.confirmAddNewOutage")}
       </button>
