@@ -94,8 +94,8 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
 
     private static DateTime? ParseDate(string? date)
     {
-        return DateTime.TryParseExact(date, "dd/MM/yyyy", null, System.Globalization.DateTimeStyles.None, out var d)
-            ? d : null;
+        // ✅ Supporta date ISO
+        return DateTime.TryParse(date, out var d) ? d : null;
     }
 
     [HttpPut("{id}")]

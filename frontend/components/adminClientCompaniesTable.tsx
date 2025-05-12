@@ -74,7 +74,7 @@ export default function AdminClientCompaniesTable({
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">{t("admin.actions")}</th>
-            <th className="p-4">{t("admin.clientCompany.companyVatNumber")}</th>
+            <th className="p-4">{t("admin.clientCompany.vatNumber")}</th>
             <th className="p-4">{t("admin.clientCompany.name")}</th>
             <th className="p-4">{t("admin.clientCompany.referentName")}</th>
             <th className="p-4">{t("admin.clientCompany.referentMobile")}</th>

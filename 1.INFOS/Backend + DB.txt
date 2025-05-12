@@ -59,7 +59,7 @@
 7.  AnonymizedTeslaVehicleData           – Dati anonimizzati di default => Dump già anonimizzati e rivendibili
 8.  OutagePeriods                        – Outage veri, autonomi, pronti per il PDF - Tracciare quando l’accesso a livello di API Tesla globale fallisce
 10. ClientTeslaTokens                    – Salvare per ogni Tesla la coppia token, traccia scadenze, automatizza rinnovi
-11. vw_ClientFullProfile                 – View di “profilo cliente” (Alcune Info + TeslaWorkflowEvents)
+11. vw_ClientFullProfile                 – View di “profilo cliente” (Alcune Info + TeslaWorkflows (attuale) + TeslaWorkflowEvents (storico delle Tesla del cliente))
 
 #################################################################################################################################################################
 

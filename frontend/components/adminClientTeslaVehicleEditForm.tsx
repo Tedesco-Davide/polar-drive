@@ -2,6 +2,8 @@ import { useState } from "react";
 import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
 import { TFunction } from "i18next";
 import { API_BASE_URL } from "@/utils/api";
+import { formatDateToDisplay } from "@/utils/date";
+import { isAfter, isValid, parseISO } from "date-fns";
 import axios from "axios";
 
 type Props = {
@@ -19,12 +21,16 @@ export default function AdminClientTeslaVehicleEditForm({
   t,
   refreshWorkflowData,
 }: Props) {
-  const [formData, setFormData] = useState<ClientTeslaVehicle>(vehicle);
+  const [formData, setFormData] = useState<ClientTeslaVehicle>({
+    ...vehicle,
+    firstActivationAt: vehicle.firstActivationAt ?? "",
+  });
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+    if (name === "firstActivationAt") return;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -43,6 +49,17 @@ export default function AdminClientTeslaVehicleEditForm({
     if (!formData.model.trim()) {
       alert(t("admin.clientTeslaVehicle.validation.modelRequired"));
       return;
+    }
+
+    if (formData.firstActivationAt) {
+      const parsedDate = parseISO(formData.firstActivationAt);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (!isValid(parsedDate) || isAfter(parsedDate, today)) {
+        alert("Data prima attivazione non valida o nel futuro");
+        return;
+      }
     }
 
     try {
@@ -128,9 +145,7 @@ export default function AdminClientTeslaVehicleEditForm({
           <span className="text-2xl">
             {formData.isActive ? `✅ ${t("admin.yes")}` : `🛑 ${t("admin.no")}`}
           </span>
-        </div>
 
-        <div className="flex items-center gap-2">
           <span className="text-2xl text-gray-600 dark:text-gray-300">
             {t("admin.clientTeslaVehicle.isFetching")}
           </span>
@@ -138,6 +153,15 @@ export default function AdminClientTeslaVehicleEditForm({
             {formData.isFetching
               ? `✅ ${t("admin.yes")}`
               : `🛑 ${t("admin.no")}`}
+          </span>
+
+          <span className="text-2xl text-gray-600 dark:text-gray-300">
+            {t("admin.clientTeslaVehicle.firstActivationAt")}
+          </span>
+          <span className="text-2xl">
+            {formData.firstActivationAt
+              ? formatDateToDisplay(formData.firstActivationAt)
+              : "—"}
           </span>
         </div>
       </div>

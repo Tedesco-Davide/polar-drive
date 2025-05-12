@@ -90,12 +90,6 @@ namespace PolarDrive.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("PecAddress")
-                        .IsUnique();
-
                     b.HasIndex("VatNumber")
                         .IsUnique();
 

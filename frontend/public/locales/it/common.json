@@ -113,7 +113,7 @@
   "admin.teslaStatusToggle.confirmAction.error": "Errore aggiornamento cambio stato Tesla: ",
 
   "admin.clientCompany.tableHeader": "Aziende Clienti",
-  "admin.clientCompany.companyVatNumber": "Partita IVA",
+  "admin.clientCompany.vatNumber": "Partita IVA",
   "admin.clientCompany.name": "Nome Azienda",
   "admin.clientCompany.address": "Indirizzo",
   "admin.clientCompany.email": "Email Aziendale",

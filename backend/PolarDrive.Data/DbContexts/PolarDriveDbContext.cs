@@ -25,8 +25,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
         modelBuilder.Entity<ClientCompany>(entity =>
         {
             entity.HasIndex(e => e.VatNumber).IsUnique();
-            entity.HasIndex(e => e.Email).IsUnique();
-            entity.HasIndex(e => e.PecAddress).IsUnique();
         });
         
         modelBuilder.Entity<ClientTeslaVehicle>(entity =>

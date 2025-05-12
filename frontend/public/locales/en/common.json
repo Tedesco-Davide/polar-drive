@@ -113,7 +113,7 @@
   "admin.teslaStatusToggle.confirmAction.error": "Error while updating Tesla status: ",
 
   "admin.clientCompany.tableHeader": "Client Companies",
-  "admin.clientCompany.companyVatNumber": "Company VAT",
+  "admin.clientCompany.vatNumber": "Company VAT",
   "admin.clientCompany.name": "Company Name",
   "admin.clientCompany.address": "Address",
   "admin.clientCompany.email": "Company Email",

@@ -299,18 +299,6 @@ namespace PolarDrive.Data.Migrations
                 column: "TeslaVehicleId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ClientCompanies_Email",
-                table: "ClientCompanies",
-                column: "Email",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ClientCompanies_PecAddress",
-                table: "ClientCompanies",
-                column: "PecAddress",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_ClientCompanies_VatNumber",
                 table: "ClientCompanies",
                 column: "VatNumber",
