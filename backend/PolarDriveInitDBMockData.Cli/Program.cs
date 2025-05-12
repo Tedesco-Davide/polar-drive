@@ -31,7 +31,7 @@ var companies = new[]
     new ClientCompany
     {
         Name = "Paninoteca Rossi",
-        VatNumber = "IT00000000001",
+        VatNumber = "00000000001",
         ReferentName = "Luca Rossi",
         ReferentEmail = "luca@paninotecarossi.com",
         ReferentMobileNumber = "3201234567",
@@ -39,7 +39,7 @@ var companies = new[]
     new ClientCompany
     {
         Name = "TechZone",
-        VatNumber = "IT00000000002",
+        VatNumber = "00000000002",
         ReferentName = "Marco Bianchi",
         ReferentEmail = "marco.b@techzone.it",
         ReferentMobileNumber = "3351234567",
@@ -47,7 +47,7 @@ var companies = new[]
     new ClientCompany
     {
         Name = "Gamma Energia",
-        VatNumber = "IT00000000003",
+        VatNumber = "00000000003",
         ReferentName = "Sara Verdi",
         ReferentEmail = "s.verdi@gammaenergia.it",
         ReferentMobileNumber = "3289876543",

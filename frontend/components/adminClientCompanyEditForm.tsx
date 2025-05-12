@@ -18,7 +18,14 @@ export default function AdminClientCompanyEditForm({
   refreshWorkflowData,
   t,
 }: Props) {
-  const [formData, setFormData] = useState<ClientCompany>(client);
+  const [formData, setFormData] = useState<ClientCompany>({
+    ...client,
+    address: client.address ?? "",
+    email: client.email ?? "",
+    pecAddress: client.pecAddress ?? "",
+    landlineNumber: client.landlineNumber ?? "",
+    referentPecAddress: client.referentPecAddress ?? "",
+  });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -73,8 +80,8 @@ export default function AdminClientCompanyEditForm({
 
     // ✅ PEC aziendale: se presente, deve essere valida
     if (
-      formData.pecAddress.trim() &&
-      !isEmailValid(formData.pecAddress.trim())
+      (formData.pecAddress ?? "").trim() &&
+      !isEmailValid((formData.pecAddress ?? "").trim())
     ) {
       alert(t("admin.validation.invalidCompanyPec"));
       return;

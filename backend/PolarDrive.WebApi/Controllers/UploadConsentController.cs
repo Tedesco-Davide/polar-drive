@@ -9,8 +9,8 @@ using System.Globalization;
 namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
-[Route("api/upload-consent-zip")]
-public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
+[Route("api/[controller]")]
+public class UploadConsentController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
 {
     [HttpPost]
     [RequestSizeLimit(20 * 1024 * 1024)]
