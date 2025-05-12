@@ -91,9 +91,13 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
 
         // 📁 Salva ZIP
         var safeVin = teslaVehicleVIN.ToUpper().Trim();
-        var zipFolder = Path.Combine(env.WebRootPath ?? "wwwroot", "pdfs", "consents");
-        Directory.CreateDirectory(zipFolder);
-        var finalZipPath = Path.Combine(zipFolder, $"{safeVin}.zip");
+        var companyBasePath = Path.Combine(env.WebRootPath ?? "wwwroot", "companies", $"company-{clientCompanyId}");
+        var consentsDir = Path.Combine(companyBasePath, "consents-zip");
+        Directory.CreateDirectory(consentsDir);
+
+        // Evita sovrascrittura con timestamp
+        var zipFilename = $"manual_upload_{safeVin}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
+        var finalZipPath = Path.Combine(consentsDir, zipFilename);
 
         await using (var fileStream = new FileStream(finalZipPath, FileMode.Create))
         {
@@ -108,7 +112,7 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
             ClientCompanyId = clientCompanyId,
             TeslaVehicleId = teslaVehicleId,
             UploadDate = parsedDate,
-            ZipFilePath = $"pdfs/consents/{safeVin}.zip",
+            ZipFilePath = Path.Combine("companies", $"company-{clientCompanyId}", "consents-zip", zipFilename).Replace("\\", "/"),
             ConsentHash = hash,
             ConsentType = consentType,
             Notes = ""
