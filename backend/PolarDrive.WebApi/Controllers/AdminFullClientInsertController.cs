@@ -68,11 +68,23 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 Model = request.TeslaModel,
                 IsActiveFlag = true,
                 IsFetchingDataFlag = true,
-                FirstActivationAt = request.UploadDate,              
-                AccessToken = request.AccessToken,
-                RefreshToken = request.RefreshToken,
+                FirstActivationAt = request.UploadDate
             };
             _dbContext.ClientTeslaVehicles.Add(vehicle);
+            await _dbContext.SaveChangesAsync();
+
+            // 2b. Salva token associato
+            var token = new ClientTeslaToken
+            {
+                TeslaVehicleId = vehicle.Id,
+                AccessToken = request.AccessToken,
+                RefreshToken = request.RefreshToken,
+                AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
+                RefreshTokenExpiresAt = null,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _dbContext.ClientTeslaTokens.Add(token);
             await _dbContext.SaveChangesAsync();
 
             // ─────────────────────

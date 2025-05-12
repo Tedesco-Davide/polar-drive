@@ -14,3 +14,5 @@ backend/**/.vs/
 # SYSTEM
 .DS_Store
 *.user
+backend/PolarDriveInitDB.Cli/datapolar.db-shm
+backend/PolarDriveInitDB.Cli/datapolar.db-wal

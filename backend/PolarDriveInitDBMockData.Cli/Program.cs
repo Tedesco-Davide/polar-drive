@@ -23,9 +23,9 @@ await db.SaveChangesAsync();
 // Mock aziende
 var companies = new[]
 {
-    new ClientCompany { Name = "Paninoteca Rossi", VatNumber = "IT00000000001" },
-    new ClientCompany { Name = "TechZone", VatNumber = "IT00000000002" },
-    new ClientCompany { Name = "Gamma Energia", VatNumber = "IT00000000003" }
+    new ClientCompany { Name = "Paninoteca Rossi", VatNumber = "IT00000000001", Email = "rossi@demo.com" },
+    new ClientCompany { Name = "TechZone", VatNumber = "IT00000000002", Email = "tech@demo.com" },
+    new ClientCompany { Name = "Gamma Energia", VatNumber = "IT00000000003", Email = "gamma@demo.com" }
 };
 
 db.ClientCompanies.AddRange(companies);
