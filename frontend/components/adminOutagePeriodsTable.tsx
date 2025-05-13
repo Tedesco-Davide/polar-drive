@@ -1,6 +1,6 @@
 import { TFunction } from "i18next";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
-import { FileArchive, NotebookPen } from "lucide-react";
+import { FileArchive, HardDriveUpload, NotebookPen } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useState, useEffect } from "react";
@@ -154,7 +154,7 @@ export default function AdminOutagePeriodsTable({
                 className="border-b border-gray-300 dark:border-gray-600"
               >
                 <td className="p-4 space-x-2 inline-flex items-center">
-                  {outage.zipFilePath && (
+                  {outage.zipFilePath ? (
                     <button
                       className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                       title={t("admin.outagePeriods.viewZipOutage")}
@@ -167,7 +167,89 @@ export default function AdminOutagePeriodsTable({
                     >
                       <FileArchive size={16} />
                     </button>
+                  ) : (
+                    <label
+                      title={t("admin.outagePeriods.uploadZipOutage")}
+                      className="cursor-pointer p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
+                    >
+                      <HardDriveUpload size={16} />
+                      <input
+                        type="file"
+                        accept=".zip"
+                        className="hidden"
+                        onChange={async (e) => {
+                          if (!e.target.files?.[0]) return;
+                          const file = e.target.files[0];
+                          if (!file.name.endsWith(".zip")) {
+                            alert(t("admin.validation.invalidZipType"));
+                            return;
+                          }
+
+                          const payload = new FormData();
+                          payload.append("zipFile", file);
+                          payload.append("outageType", outage.outageType);
+                          payload.append(
+                            "autoDetected",
+                            outage.autoDetected ? "true" : "false"
+                          );
+                          payload.append(
+                            "status",
+                            getOutageStatus(
+                              outage.outageStart,
+                              outage.outageEnd
+                            )
+                          );
+                          payload.append(
+                            "outageStart",
+                            outage.outageStart.split("T")[0]
+                          );
+                          if (outage.outageEnd)
+                            payload.append(
+                              "outageEnd",
+                              outage.outageEnd.split("T")[0]
+                            );
+                          if (outage.vin) payload.append("vin", outage.vin);
+                          if (outage.companyVatNumber)
+                            payload.append(
+                              "companyVatNumber",
+                              outage.companyVatNumber
+                            );
+                          if (outage.clientCompanyId)
+                            payload.append(
+                              "clientCompanyId",
+                              outage.clientCompanyId.toString()
+                            );
+                          if (outage.teslaVehicleId)
+                            payload.append(
+                              "teslaVehicleId",
+                              outage.teslaVehicleId.toString()
+                            );
+
+                          const res = await fetch(
+                            `${API_BASE_URL}/api/uploadoutagezip`,
+                            {
+                              method: "POST",
+                              body: payload,
+                            }
+                          );
+
+                          if (!res.ok) {
+                            const errText = await res.text();
+                            alert(
+                              t("admin.outagePeriods.genericUploadError") +
+                                ": " +
+                                errText
+                            );
+                            return;
+                          }
+
+                          alert(t("admin.outagePeriods.successUploadZip"));
+                          await refreshOutagePeriods();
+                        }}
+                      />
+                    </label>
                   )}
+
                   <button
                     className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                     title={t("admin.openNotesModal")}

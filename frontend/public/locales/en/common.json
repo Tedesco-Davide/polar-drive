@@ -169,6 +169,8 @@
   "admin.outagePeriods.confirmAddNewOutage": "Confirm add new Outage",
   "admin.outagePeriods.successAddNewOutage": "Outage successfully added!",
   "admin.outagePeriods.notes.modalTitle": "Managing note for: row in Outages Table",
+  "admin.outagePeriods.genericUploadError": "Upload Outages generic error",
+  "admin.outagePeriods.successUploadZip": ".zip file successfully added to the related Outage!",
 
   "admin.teslaReports.tableHeader": "PDF Reports",
   "admin.teslaReports.reportPeriod": "Reporting period",

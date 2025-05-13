@@ -114,7 +114,7 @@ export default function AdminOutagePeriodsAddForm({
 
     if (!res.ok) {
       const errMsg = await res.text();
-      console.error("Upload outage error", errMsg);
+      console.error(t("admin.outagePeriods.genericUploadError"), errMsg);
       alert(t("admin.outagePeriods.genericUploadError") + ": " + errMsg);
       return;
     }

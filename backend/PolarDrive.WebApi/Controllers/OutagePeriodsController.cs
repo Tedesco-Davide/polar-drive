@@ -11,12 +11,28 @@ namespace PolarDrive.WebApi.Controllers;
 public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<OutagePeriod>>> Get()
+    public async Task<ActionResult<IEnumerable<object>>> Get()
     {
+
         var items = await db.OutagePeriods
             .Include(o => o.ClientCompany)
             .Include(o => o.ClientTeslaVehicle)
             .OrderByDescending(o => o.OutageStart)
+            .Select(o => new
+            {
+                o.Id,
+                o.TeslaVehicleId,
+                o.ClientCompanyId,
+                o.AutoDetected,
+                o.OutageType,
+                o.CreatedAt,
+                o.OutageStart,
+                o.OutageEnd,
+                o.ZipFilePath,
+                o.Notes,
+                vin = o.ClientTeslaVehicle != null ? o.ClientTeslaVehicle.Vin : "",
+                companyVatNumber = o.ClientCompany != null ? o.ClientCompany.VatNumber : ""
+            })
             .ToListAsync();
 
         return Ok(items);

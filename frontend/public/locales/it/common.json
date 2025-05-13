@@ -169,6 +169,8 @@
   "admin.outagePeriods.confirmAddNewOutage": "Conferma aggiunta Outage",
   "admin.outagePeriods.successAddNewOutage": "Outage aggiunto con successo!",
   "admin.outagePeriods.notes.modalTitle": "Gestione nota per: riga in Tabella Outages",
+  "admin.outagePeriods.genericUploadError": "Errore generico per l'Upload Outages",
+  "admin.outagePeriods.successUploadZip": "File .zip aggiunto con successo all'Outage di riferimento!",
 
   "admin.teslaReports.tableHeader": "Reports PDF",
   "admin.teslaReports.reportPeriod": "Periodo di rilevanza",
