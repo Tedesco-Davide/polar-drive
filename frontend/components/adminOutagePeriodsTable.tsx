@@ -78,7 +78,7 @@ export default function AdminOutagePeriodsTable({
 
   const { query, setQuery, filteredData } = useSearchFilter<OutagePeriod>(
     localOutages,
-    ["clientCompanyId", "teslaVehicleId", "outageType", "notes"]
+    ["outageType", "notes", "companyVatNumber", "vin"]
   );
 
   const {
@@ -243,8 +243,9 @@ export default function AdminOutagePeriodsTable({
                             return;
                           }
 
-                          alert(t("admin.outagePeriods.successUploadZip"));
                           await refreshOutagePeriods();
+                          setLocalOutages(outages);
+                          alert(t("admin.outagePeriods.successUploadZip"));
                         }}
                       />
                     </label>

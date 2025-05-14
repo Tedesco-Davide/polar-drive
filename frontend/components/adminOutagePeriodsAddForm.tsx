@@ -113,14 +113,13 @@ export default function AdminOutagePeriodsAddForm({
     });
 
     if (!res.ok) {
-      const errMsg = await res.text();
-      console.error(t("admin.outagePeriods.genericUploadError"), errMsg);
-      alert(t("admin.outagePeriods.genericUploadError") + ": " + errMsg);
+      const errText = await res.text();
+      alert(t("admin.outagePeriods.genericUploadError") + ": " + errText);
       return;
     }
 
-    alert(t("admin.outagePeriods.successAddNewOutage"));
     await refreshOutagePeriods();
+    alert(t("admin.outagePeriods.successUploadZip"));
     onSubmitSuccess();
   };
 

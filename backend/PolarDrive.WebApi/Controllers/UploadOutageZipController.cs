@@ -92,29 +92,53 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
             relativeZipPath = Path.Combine("zips-outages", zipFileName).Replace("\\", "/");
         }
 
-        var outage = new OutagePeriod
-        {
-            OutageType = outageType,
-            CreatedAt = DateTime.UtcNow,
-            OutageStart = parsedStart,
-            OutageEnd = parsedEnd,
-            AutoDetected = autoDetected,
-            ClientCompanyId = clientCompanyId,
-            TeslaVehicleId = teslaVehicleId,
-            ZipFilePath = relativeZipPath,
-            Notes = ""
-        };
+        var existingOutage = await db.OutagePeriods.FirstOrDefaultAsync(o =>
+            o.TeslaVehicleId == teslaVehicleId &&
+            o.ClientCompanyId == clientCompanyId &&
+            o.OutageStart == parsedStart &&
+            o.OutageEnd == parsedEnd
+        );
 
-        db.OutagePeriods.Add(outage);
-        await db.SaveChangesAsync();
-
-        return Ok(new
+        if (existingOutage != null)
         {
-            id = outage.Id,
-            outageType,
-            outageStart = parsedStart.ToString("dd/MM/yyyy"),
-            outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
-            zipFilePath = relativeZipPath
-        });
+            existingOutage.ZipFilePath = relativeZipPath;
+            await db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                id = existingOutage.Id,
+                outageType,
+                outageStart = parsedStart.ToString("dd/MM/yyyy"),
+                outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
+                zipFilePath = relativeZipPath
+            });
+        }
+        else
+        {
+            var outage = new OutagePeriod
+            {
+                OutageType = outageType,
+                CreatedAt = DateTime.UtcNow,
+                OutageStart = parsedStart,
+                OutageEnd = parsedEnd,
+                AutoDetected = autoDetected,
+                ClientCompanyId = clientCompanyId,
+                TeslaVehicleId = teslaVehicleId,
+                ZipFilePath = relativeZipPath,
+                Notes = ""
+            };
+
+            db.OutagePeriods.Add(outage);
+            await db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                id = outage.Id,
+                outageType,
+                outageStart = parsedStart.ToString("dd/MM/yyyy"),
+                outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
+                zipFilePath = relativeZipPath
+            });
+        }
     }
 }

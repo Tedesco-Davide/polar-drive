@@ -16,3 +16,7 @@ backend/**/.vs/
 *.user
 backend/PolarDriveInitDB.Cli/datapolar.db-shm
 backend/PolarDriveInitDB.Cli/datapolar.db-wal
+
+# Ignora contenuti generati runtime in wwwroot
+wwwroot/companies/
+wwwroot/zips-outages/

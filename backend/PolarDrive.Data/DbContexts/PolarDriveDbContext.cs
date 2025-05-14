@@ -112,6 +112,9 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 .WithMany()
                 .HasForeignKey(e => e.ClientCompanyId)
                 .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => new { e.TeslaVehicleId, e.ClientCompanyId, e.OutageStart, e.OutageEnd })
+                .IsUnique();
         });
 
         modelBuilder.Entity<ClientTeslaToken>(entity =>
