@@ -5,11 +5,19 @@ Console.WriteLine("🚀 Starting PolarDrive DB initialization...");
 
 using var db = new PolarDriveDbContextFactory().CreateDbContext(args);
 
-// 1. Applica tutte le migrations (se non già fatte)
-db.Database.Migrate();
-Console.WriteLine("✅ Migrations applied.");
+// 1. Applica tutte le migrations
+// 1.1 MIGRATION DA ABILITARE QUANDO SI ANDRA' IN PRODUZIONE
+// - Quando vorrai tornare a usare le migration (es. per staging o produzione):
+// - Esegui bash: dotnet ef migrations add InitialProductionSchema
+// - Torna a usare: await db.Database.MigrateAsync();
+// Console.WriteLine("✅ Migrations applied.");
 
-// 2. Esegui tutti gli script .sql (trigger, index, view, ecc.)
-DbInitHelper.RunDbInitScripts(db);
+// 1. Check su Delete / Create DB
+await db.Database.EnsureDeletedAsync();
+await db.Database.EnsureCreatedAsync();
+// Console.WriteLine("✅ Create DONE!");
 
-Console.WriteLine("🏁 Done.");
+// 2. Esegui script SQL extra
+await DbInitHelper.RunDbInitScriptsAsync(db);
+
+Console.WriteLine("🏁 Final Initialization Done.");

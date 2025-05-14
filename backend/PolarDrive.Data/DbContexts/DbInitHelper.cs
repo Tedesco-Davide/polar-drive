@@ -4,7 +4,7 @@ namespace PolarDrive.Data.DbContexts;
 
 public static class DbInitHelper
 {
-    public static void RunDbInitScripts(PolarDriveDbContext dbContext)
+    public static async Task RunDbInitScriptsAsync(PolarDriveDbContext dbContext)
     {
         string basePath = AppContext.BaseDirectory;
         string scriptsPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDrive.Data", "DbInitScripts"));
@@ -15,30 +15,28 @@ public static class DbInitHelper
             return;
         }
 
-        var sqlFiles = Directory.GetFiles(scriptsPath, "*.sql").OrderBy(f => f);
+        var sqlFiles = Directory.GetFiles(scriptsPath, "*.sql")
+                                .OrderBy(f => f)
+                                .ToList();
 
         foreach (var file in sqlFiles)
         {
-            string sql = File.ReadAllText(file);
+            string sql = await File.ReadAllTextAsync(file);
             if (!string.IsNullOrWhiteSpace(sql))
             {
                 string fileName = Path.GetFileName(file);
                 try
                 {
-                    dbContext.Database.ExecuteSqlRaw(sql);
+                    await dbContext.Database.ExecuteSqlRawAsync(sql);
                     Console.WriteLine($"✅ Executed: {fileName}");
 
-                    // NON loggare nella tabella log se stai creando proprio la tabella log!
-                    if (!fileName.Contains("PolarDriveLogs", StringComparison.OrdinalIgnoreCase))
-                    {
-                        dbContext.Database.ExecuteSqlRaw(@"
-                            INSERT INTO PolarDriveLogs (Source, Level, Message) 
-                            VALUES ({0}, {1}, {2})",
-                            "InitDB.Cli",
-                            "INFO",
-                            $"Executed script: {fileName}"
-                        );
-                    }
+                    await dbContext.Database.ExecuteSqlRawAsync(@"
+                        INSERT INTO PolarDriveLogs (Source, Level, Message) 
+                        VALUES ({0}, {1}, {2})",
+                        "InitDB.Cli",
+                        "INFO",
+                        $"Executed script: {fileName}"
+                    );
                 }
                 catch (Exception ex)
                 {
@@ -46,22 +44,18 @@ public static class DbInitHelper
 
                     try
                     {
-                        // Tenta il log solo se la tabella esiste già
-                        if (!fileName.Contains("PolarDriveLogs", StringComparison.OrdinalIgnoreCase))
-                        {
-                            dbContext.Database.ExecuteSqlRaw(@"
-                                INSERT INTO PolarDriveLogs (Source, Level, Message, Details) 
-                                VALUES ({0}, {1}, {2}, {3})",
-                                "InitDB.Cli",
-                                "ERROR",
-                                $"Failed to execute: {fileName}",
-                                ex.ToString()
-                            );
-                        }
+                        await dbContext.Database.ExecuteSqlRawAsync(@"
+                            INSERT INTO PolarDriveLogs (Source, Level, Message, Details) 
+                            VALUES ({0}, {1}, {2}, {3})",
+                            "InitDB.Cli",
+                            "ERROR",
+                            $"Failed to execute: {fileName}",
+                            ex.ToString()
+                        );
                     }
                     catch
                     {
-                        // Silenzia eventuali errori secondari di log
+                        // Silenzia errori secondari
                     }
                 }
             }

@@ -16,6 +16,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<AnonymizedTeslaVehicleData> AnonymizedTeslaVehicleData => Set<AnonymizedTeslaVehicleData>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientTeslaToken> ClientTeslaTokens => Set<ClientTeslaToken>();
+    public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -127,6 +128,12 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => e.TeslaVehicleId).IsUnique();
+        });
+
+        modelBuilder.Entity<PolarDriveLog>(entity =>
+        {
+            entity.Property(e => e.Timestamp)
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
     }
