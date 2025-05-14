@@ -92,12 +92,25 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
             relativeZipPath = Path.Combine("zips-outages", zipFileName).Replace("\\", "/");
         }
 
-        var existingOutage = await db.OutagePeriods.FirstOrDefaultAsync(o =>
-            o.TeslaVehicleId == teslaVehicleId &&
-            o.ClientCompanyId == clientCompanyId &&
-            o.OutageStart == parsedStart &&
-            o.OutageEnd == parsedEnd
+        var allOutages = await db.OutagePeriods.ToListAsync();
+
+        var existingOutage = allOutages.FirstOrDefault(o =>
+            o.OutageStart.Date == parsedStart.Date &&
+            o.OutageEnd?.Date == parsedEnd?.Date &&
+            o.OutageType.Trim() == outageType.Trim() &&
+            (
+                (!teslaVehicleId.HasValue && !clientCompanyId.HasValue &&
+                o.TeslaVehicleId == null && o.ClientCompanyId == null)
+                ||
+                (teslaVehicleId.HasValue && clientCompanyId.HasValue &&
+                o.TeslaVehicleId == teslaVehicleId && o.ClientCompanyId == clientCompanyId)
+            )
         );
+
+        if (existingOutage != null && !string.IsNullOrWhiteSpace(existingOutage.ZipFilePath))
+        {
+            return BadRequest("SERVER ERROR → OUTAGE ALREADY HAS A ZIP FILE!");
+        }
 
         if (existingOutage != null)
         {

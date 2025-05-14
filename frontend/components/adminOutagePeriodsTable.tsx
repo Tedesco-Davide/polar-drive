@@ -238,17 +238,16 @@ export default function AdminOutagePeriodsTable({
                               "companyVatNumber",
                               outage.companyVatNumber
                             );
-                          if (outage.clientCompanyId)
+                          if (outage.clientCompanyId != null)
                             payload.append(
                               "clientCompanyId",
                               outage.clientCompanyId.toString()
                             );
-                          if (outage.teslaVehicleId)
+                          if (outage.teslaVehicleId != null)
                             payload.append(
                               "teslaVehicleId",
                               outage.teslaVehicleId.toString()
                             );
-
                           const res = await fetch(
                             `${API_BASE_URL}/api/uploadoutagezip`,
                             {

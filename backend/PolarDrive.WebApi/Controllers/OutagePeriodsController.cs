@@ -41,15 +41,27 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] OutagePeriod outage)
     {
-        if (string.IsNullOrWhiteSpace(outage.OutageType) || 
-            !new[] { "Outage Vehicle", "Outage Fleet Api" }.Contains(outage.OutageType))
-            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage type.");
+        var sanitizedOutageType = outage.OutageType?.Trim();
 
-        if (outage.TeslaVehicleId.HasValue && !await db.ClientTeslaVehicles.AnyAsync(v => v.Id == outage.TeslaVehicleId))
+        if (string.IsNullOrWhiteSpace(sanitizedOutageType) ||
+            !new[] { "Outage Vehicle", "Outage Fleet Api" }.Contains(sanitizedOutageType))
+        {
+            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage type!");
+        }
+
+        outage.OutageType = sanitizedOutageType;
+
+        if (outage.TeslaVehicleId.HasValue &&
+            !await db.ClientTeslaVehicles.AnyAsync(v => v.Id == outage.TeslaVehicleId))
+        {
             return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
+        }
 
-        if (outage.ClientCompanyId.HasValue && !await db.ClientCompanies.AnyAsync(c => c.Id == outage.ClientCompanyId))
+        if (outage.ClientCompanyId.HasValue &&
+            !await db.ClientCompanies.AnyAsync(c => c.Id == outage.ClientCompanyId))
+        {
             return NotFound("SERVER ERROR → NOT FOUND: Client company not found!");
+        }
 
         outage.CreatedAt = DateTime.UtcNow;
 

@@ -171,7 +171,7 @@
   "admin.outagePeriods.notes.modalTitle": "Managing note for: row in Outages Table",
   "admin.outagePeriods.genericUploadError": "Upload Outages generic error",
   "admin.outagePeriods.successUploadZip": ".zip file successfully added to the related Outage!",
-  "admin.outagePeriods.invalidZipTypeRequiredOutages": "You must upload a .zip file, and ensure it contains at least one client generic document in .pdf format",
+  "admin.outagePeriods.invalidZipTypeRequiredOutages": "You must upload a .zip file that contains at least one Outage generic document in .pdf format",
 
   "admin.teslaReports.tableHeader": "PDF Reports",
   "admin.teslaReports.reportPeriod": "Reporting period",
@@ -188,7 +188,7 @@
   "admin.validation.invalidEmail": "Please enter a valid email address",
   "admin.validation.invalidCompanyPec": "Please enter a valid PEC address",
   "admin.validation.invalidLandline": "Please enter a valid landline number",
-  "admin.validation.invalidZipTypeRequiredConsent": "You must upload a .zip file, and ensure it contains at least one client Consent document in .pdf format",
+  "admin.validation.invalidZipTypeRequiredConsent": "You must upload a .zip file that contains at least one client Consent document in .pdf format",
   "admin.validation.invalidZipType": "You've just uploaded something that isn't a .zip file",
   "admin.validation.invalidTeslaVehicleVIN": "Please enter a valid 17-character VIN (excluding letters I, O, Q)",
   "admin.mainWorkflow.validation.invalidSignatureDate": "Please enter a valid signature date that is not in the future",
