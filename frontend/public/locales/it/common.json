@@ -171,6 +171,7 @@
   "admin.outagePeriods.notes.modalTitle": "Gestione nota per: riga in Tabella Outages",
   "admin.outagePeriods.genericUploadError": "Errore generico per l'Upload Outages",
   "admin.outagePeriods.successUploadZip": "File .zip aggiunto con successo all'Outage di riferimento!",
+  "admin.outagePeriods.invalidZipTypeRequiredOutages": "Carica obbligatoriamente un file .zip, ed assicurati che contenga almeno un documento generico in formato .pdf",
 
   "admin.teslaReports.tableHeader": "Reports PDF",
   "admin.teslaReports.reportPeriod": "Periodo di rilevanza",
@@ -187,7 +188,7 @@
   "admin.validation.invalidEmail": "Inserisci un indirizzo email valido",
   "admin.validation.invalidCompanyPec": "Inserisci un indirizzo PEC valido",
   "admin.validation.invalidLandline": "Inserisci un numero fisso valido",
-  "admin.validation.invalidZipTypeRequired": "Carica di un file .zip obbligatoriamente, ed assicurati che contenga almeno un consenso in formato .pdf",
+  "admin.validation.invalidZipTypeRequiredConsent": "Carica obbligatoriamente un file .zip, ed assicurati che contenga almeno un Consenso in formato .pdf",
   "admin.validation.invalidZipType": "Hai appena caricato qualcosa che non è un file .zip.",
   "admin.validation.invalidTeslaVehicleVIN": "Inserisci un VIN valido composto da 17 caratteri (senza lettere I, O, Q)",
   "admin.mainWorkflow.validation.invalidSignatureDate": "Inserisci una data firma valida che non sia futura",

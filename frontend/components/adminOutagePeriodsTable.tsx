@@ -13,6 +13,7 @@ import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import Chip from "@/components/chip";
 import NotesModal from "./notesModal";
+import JSZip from "jszip";
 
 const getOutageStatus = (start: string, end?: string) => {
   return end ? "OUTAGE-RESOLVED" : "OUTAGE-ONGOING";
@@ -45,7 +46,7 @@ const getOutageDuration = (start: string, end?: string): string => {
 type Props = {
   t: TFunction;
   outages: OutagePeriod[];
-  refreshOutagePeriods: () => Promise<void>;
+  refreshOutagePeriods: () => Promise<OutagePeriod[]>;
 };
 
 export default function AdminOutagePeriodsTable({
@@ -178,10 +179,33 @@ export default function AdminOutagePeriodsTable({
                         accept=".zip"
                         className="hidden"
                         onChange={async (e) => {
-                          if (!e.target.files?.[0]) return;
-                          const file = e.target.files[0];
+                          const input = e.target;
+                          if (!input.files?.[0]) return;
+
+                          const file = input.files[0];
+                          input.value = ""; // ✅ forza reset per lo stesso file
+
                           if (!file.name.endsWith(".zip")) {
                             alert(t("admin.validation.invalidZipType"));
+                            return;
+                          }
+
+                          // ⛔ Controlla se contiene almeno un PDF
+                          const arrayBuffer = await file.arrayBuffer();
+                          const zip = new JSZip();
+                          const contents = await zip.loadAsync(arrayBuffer);
+                          const pdfFound = Object.keys(contents.files).some(
+                            (filename) =>
+                              filename.toLowerCase().endsWith(".pdf") &&
+                              !contents.files[filename].dir
+                          );
+
+                          if (!pdfFound) {
+                            alert(
+                              t(
+                                "admin.outagePeriods.invalidZipTypeRequiredOutages"
+                              )
+                            );
                             return;
                           }
 
@@ -243,8 +267,8 @@ export default function AdminOutagePeriodsTable({
                             return;
                           }
 
-                          await refreshOutagePeriods();
-                          setLocalOutages(outages);
+                          const updated = await refreshOutagePeriods();
+                          setLocalOutages(updated);
                           alert(t("admin.outagePeriods.successUploadZip"));
                         }}
                       />

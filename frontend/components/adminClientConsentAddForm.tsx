@@ -96,7 +96,7 @@ export default function AdminClientConsentAddForm({
     }
 
     if (!formData.zipFile) {
-      alert(t("admin.validation.invalidZipTypeRequired"));
+      alert(t("admin.validation.invalidZipTypeRequiredConsent"));
       return;
     }
 

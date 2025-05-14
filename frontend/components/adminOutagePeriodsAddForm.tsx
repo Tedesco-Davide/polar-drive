@@ -3,6 +3,7 @@ import { formatDateToSave } from "@/utils/date";
 import { API_BASE_URL } from "@/utils/api";
 import { OutageFormData } from "@/types/outagePeriodTypes";
 import { isAfter, isValid, parseISO } from "date-fns";
+import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -10,7 +11,7 @@ type Props = {
   formData: OutageFormData;
   setFormData: React.Dispatch<React.SetStateAction<OutageFormData>>;
   t: TFunction;
-  refreshOutagePeriods: () => Promise<void>;
+  refreshOutagePeriods: () => Promise<OutagePeriod[]>;
   onSubmitSuccess: () => void;
 };
 

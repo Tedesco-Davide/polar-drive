@@ -231,6 +231,7 @@ export default function AdminDashboard() {
                           );
                           const updatedOutagePeriods = await res.json();
                           setOutagePeriods(updatedOutagePeriods);
+                          return updatedOutagePeriods;
                         }}
                       />
                       <AdminTeslaVehiclesReport reports={pdfReports} t={t} />
