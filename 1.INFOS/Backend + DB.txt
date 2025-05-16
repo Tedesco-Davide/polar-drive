@@ -509,7 +509,6 @@ In assenza di giustificazioni, il periodo potrebbe non essere fiscalmente deduci
 PolarDrive ha notificato formalmente la situazione al cliente in data 01/10/2025.
 ✅ 4. E se poi scattano 2-3 mesi di outage?
 📁 Continui comunque a salvare i OutagePeriods
-🛑 Ma non generi più report deducibili 📨 E magari mandi PEC tu stesso
 
 #################################################################################################################################################################
 

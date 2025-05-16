@@ -6,6 +6,7 @@ import { isAfter, isValid, parseISO } from "date-fns";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import JSZip from "jszip";
 
 type Props = {
   formData: OutageFormData;
@@ -95,7 +96,26 @@ export default function AdminOutagePeriodsAddForm({
     }
 
     const payload = new FormData();
-    if (zipFilePath) payload.append("zipFile", zipFilePath);
+
+    if (zipFilePath) {
+      // ⛔ Verifica contenuto ZIP (deve avere almeno un PDF)
+      const zipBuffer = await zipFilePath.arrayBuffer();
+      const zip = new JSZip();
+      const contents = await zip.loadAsync(zipBuffer);
+      const pdfFound = Object.keys(contents.files).some(
+        (filename) =>
+          filename.toLowerCase().endsWith(".pdf") &&
+          !contents.files[filename].dir
+      );
+      if (!pdfFound) {
+        alert(t("admin.outagePeriods.invalidZipTypeRequiredOutages"));
+        return;
+      }
+
+      // ✅ Allego al payload solo se valido
+      payload.append("zipFile", zipFilePath);
+    }
+
     payload.append("outageType", outageType);
     payload.append("autoDetected", formData.autoDetected ? "true" : "false");
     payload.append("status", status);
@@ -115,13 +135,18 @@ export default function AdminOutagePeriodsAddForm({
 
     if (!res.ok) {
       const errText = await res.text();
-      alert(t("admin.outagePeriods.genericUploadError") + ": " + errText);
+      console.error("UPLOAD OUTAGE ERROR", {
+        status: res.status,
+        statusText: res.statusText,
+        error: errText,
+      });
+      alert("❌ Errore upload outage:\n" + errText);
       return;
     }
 
     await refreshOutagePeriods();
-    alert(t("admin.outagePeriods.successUploadZip"));
     onSubmitSuccess();
+    setFormData((prev) => ({ ...prev, zipFilePath: null }));
   };
 
   return (
@@ -260,6 +285,11 @@ export default function AdminOutagePeriodsAddForm({
             onChange={handleChange}
             className="input text-[12px]"
           />
+          {formData.zipFilePath && (
+            <p className="text-xs mt-1 text-gray-500 dark:text-gray-400">
+              {formData.zipFilePath.name}
+            </p>
+          )}
         </label>
       </div>
 
