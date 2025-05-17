@@ -39,6 +39,11 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
             parsedEnd = tmpEnd;
         }
 
+        if (status == "OUTAGE-RESOLVED" && parsedEnd is null)
+        {
+            return BadRequest("SERVER ERROR → BAD REQUEST: OUTAGE-RESOLVED requires outageEnd!");
+        }
+
         if (outageType == "Outage Vehicle")
         {
             if (clientCompanyId is null || teslaVehicleId is null)
@@ -107,14 +112,20 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
             )
         );
 
-        if (existingOutage != null && !string.IsNullOrWhiteSpace(existingOutage.ZipFilePath))
-        {
-            return BadRequest("SERVER ERROR → OUTAGE ALREADY HAS A ZIP FILE!");
-        }
-
         if (existingOutage != null)
         {
-            existingOutage.ZipFilePath = relativeZipPath;
+            // Solo se hai inviato un nuovo file, controlla se l'outage ne ha già uno
+            if (zipFile != null && !string.IsNullOrWhiteSpace(existingOutage.ZipFilePath))
+            {
+                return BadRequest("SERVER ERROR → OUTAGE ALREADY HAS A ZIP FILE!");
+            }
+
+            // Se stai caricando un nuovo ZIP e prima era vuoto, aggiorna
+            if (zipFile != null && !string.IsNullOrWhiteSpace(relativeZipPath))
+            {
+                existingOutage.ZipFilePath = relativeZipPath;
+            }
+
             await db.SaveChangesAsync();
 
             return Ok(new
@@ -123,7 +134,8 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
                 outageType,
                 outageStart = parsedStart.ToString("dd/MM/yyyy"),
                 outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
-                zipFilePath = relativeZipPath
+                zipFilePath = existingOutage.ZipFilePath,
+                isNew = false
             });
         }
         else
@@ -150,7 +162,8 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
                 outageType,
                 outageStart = parsedStart.ToString("dd/MM/yyyy"),
                 outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
-                zipFilePath = relativeZipPath
+                zipFilePath = relativeZipPath,
+                isNew = true
             });
         }
     }

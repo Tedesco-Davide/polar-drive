@@ -176,15 +176,12 @@ export default function AdminClientConsents({
                         );
                         setSelectedConsentForNotes(null);
                       } catch (err) {
-                        console.error(
-                          t("admin.clientConsents.notes.genericError"),
-                          err
-                        );
+                        console.error(t("admin.notesGenericError"), err);
                         alert();
                         alert(
                           err instanceof Error
                             ? err.message
-                            : t("admin.clientConsents.notes.genericError")
+                            : t("admin.notesGenericError")
                         );
                       }
                     }}

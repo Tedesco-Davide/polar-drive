@@ -12,3 +12,8 @@ export interface OutageFormData {
   vin?: string;
   zipFilePath?: File | null;
 }
+
+export type UploadOutageResult = {
+  id?: number;
+  isNew?: boolean;
+};

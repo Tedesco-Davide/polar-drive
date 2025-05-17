@@ -76,6 +76,8 @@
   "admin.genericApiError": "ERROR: A generic error occurred during the API call: ",
   "admin.uploadZipOutageSigned": "Upload signed consents (.zip)",
   "admin.openNotesModal": "Open notes management",
+  "admin.notesGenericError": "WARNING! an unhandled error occurred while managing the Notes: ",
+  "admin.resolveVATandVIN": "WARNING! please carefully select the Company (VAT Number) and the relevant Tesla (Tesla VIN), ensuring that they match and are correctly linked to each other",
 
   "admin.mainWorkflow.tableHeader": "Main workflow management",
   "admin.mainWorkflow.labels.companyVatNumber": "Company VAT",
@@ -151,7 +153,6 @@
   "admin.clientConsents.notes.modalPlaceholder": "Remember to click the + icon on the left to add the note. Type something...",
   "admin.clientConsents.notes.addNote": "Add note",
   "admin.clientConsents.notes.deleteNote": "Delete note",
-  "admin.clientConsents.notes.genericError": "WARNING! an unhandled error occurred while managing the Notes: ",
 
   "admin.outagePeriods.tableHeader": "Outages",
   "admin.outagePeriods.autoDetected": "Auto detected?",
@@ -168,8 +169,9 @@
   "admin.outagePeriods.undoAddNewOutage": "Undo add new Outage",
   "admin.outagePeriods.confirmAddNewOutage": "Confirm add new Outage",
   "admin.outagePeriods.successAddNewOutage": "Outage successfully added!",
+  "admin.outagePeriods.addNewOutageExisting": "The outage you are trying to create already exists. If you have uploaded a .zip file, it will be linked to the existing record (only if not already present). Other fields will not be modified",
   "admin.outagePeriods.notes.modalTitle": "Managing note for: row in Outages Table",
-  "admin.outagePeriods.genericUploadError": "Upload Outages generic error",
+  "admin.outagePeriods.genericUploadError": "Upload Outages generic error: ",
   "admin.outagePeriods.successUploadZip": ".zip file successfully added to the related Outage!",
   "admin.outagePeriods.invalidZipTypeRequiredOutages": "You must upload a .zip file that contains at least one Outage generic document in .pdf format",
 
@@ -189,7 +191,7 @@
   "admin.validation.invalidCompanyPec": "Please enter a valid PEC address",
   "admin.validation.invalidLandline": "Please enter a valid landline number",
   "admin.validation.invalidZipTypeRequiredConsent": "You must upload a .zip file that contains at least one client Consent document in .pdf format",
-  "admin.validation.invalidZipType": "You've just uploaded something that isn't a .zip file",
+  "admin.validation.invalidZipType": "You've just uploaded something that isn't a .zip file. Please select again a correct .zip file.",
   "admin.validation.invalidTeslaVehicleVIN": "Please enter a valid 17-character VIN (excluding letters I, O, Q)",
   "admin.mainWorkflow.validation.invalidSignatureDate": "Please enter a valid signature date that is not in the future",
   "admin.mainWorkflow.validation.invalidPdfType": "Please upload a valid PDF file (.pdf format)",
@@ -201,11 +203,14 @@
   "admin.clientConsents.validation.teslaVehicleId": "Please enter a valid Tesla ID",
   "admin.clientConsents.validation.clientCompanyId": "Please enter a valid Company ID",
   "admin.clientConsents.validation.consentType": "Please select a valid Consent Type",
-  "admin.clientConsents.validation.resolveVATandVIN": "WARNING! please carefully select the Company (VAT Number) and the relevant Tesla (Tesla VIN), ensuring that they match and are correctly linked to each other",
   "admin.clientConsents.validation.hashIDalready": "WARNING! the .zip file you are trying to upload contains one or more .pdf documents that have already been imported, identified by a unique Hash. Row ID in the database: ",
   "admin.clientConsents.validation.genericError": "WARNING! an unexpected error occurred: ",
   "admin.outagePeriods.validation.startDateRequired": "Please enter a valid start date",
   "admin.outagePeriods.validation.statusRequired": "Please select a valid status",
   "admin.outagePeriods.validation.outageTypeRequired": "Please select a valid outage type",
-  "admin.outagePeriods.validation.startDateInFuture": "Please enter a valid start date that is not in the future"
+  "admin.outagePeriods.validation.startDateInFuture": "Please enter a valid start date that is not in the future",
+  "admin.outagePeriods.validation.outageEndRequiredForResolved": "OUTAGE-RESOLVED requires an end date to be specified",
+  "admin.outagePeriods.validation.invalidEndDate": "End date is not valid",
+  "admin.outagePeriods.validation.outageEndBeforeStart": "End date cannot be earlier than start date",
+  "admin.outagePeriods.validation.outageEndInFuture": "End date cannot be in the future"
 }

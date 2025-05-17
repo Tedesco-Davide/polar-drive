@@ -51,16 +51,36 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
 
         outage.OutageType = sanitizedOutageType;
 
-        if (outage.TeslaVehicleId.HasValue &&
-            !await db.ClientTeslaVehicles.AnyAsync(v => v.Id == outage.TeslaVehicleId))
+        if (outage.OutageType == "Outage Vehicle")
         {
-            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
-        }
+            if (!outage.ClientCompanyId.HasValue || !outage.TeslaVehicleId.HasValue)
+                return BadRequest("SERVER ERROR → BAD REQUEST: Missing Tesla vehicle or company ID!");
 
-        if (outage.ClientCompanyId.HasValue &&
-            !await db.ClientCompanies.AnyAsync(c => c.Id == outage.ClientCompanyId))
+            var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == outage.ClientCompanyId);
+            if (company == null)
+                return NotFound("SERVER ERROR → NOT FOUND: Client company not found!");
+
+            var vehicle = await db.ClientTeslaVehicles.FirstOrDefaultAsync(v => v.Id == outage.TeslaVehicleId);
+            if (vehicle == null)
+                return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
+
+            if (vehicle.ClientCompanyId != company.Id)
+                return BadRequest("SERVER ERROR → BAD REQUEST: Tesla vehicle does not belong to the specified company!");
+        }
+        else
         {
-            return NotFound("SERVER ERROR → NOT FOUND: Client company not found!");
+            // Se è "Outage Fleet Api", consenti anche null
+            if (outage.TeslaVehicleId.HasValue &&
+                !await db.ClientTeslaVehicles.AnyAsync(v => v.Id == outage.TeslaVehicleId))
+            {
+                return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
+            }
+
+            if (outage.ClientCompanyId.HasValue &&
+                !await db.ClientCompanies.AnyAsync(c => c.Id == outage.ClientCompanyId))
+            {
+                return NotFound("SERVER ERROR → NOT FOUND: Client company not found!");
+            }
         }
 
         outage.CreatedAt = DateTime.UtcNow;

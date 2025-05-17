@@ -338,13 +338,30 @@ export default function AdminOutagePeriodsTable({
           isOpen={!!selectedOutageForNotes}
           title={t("admin.outagePeriods.notes.modalTitle")}
           notesField="notes"
-          onSave={(updated) => {
-            setLocalOutages((prev) =>
-              prev.map((o) =>
-                o.id === updated.id ? { ...o, notes: updated.notes } : o
-              )
-            );
-            setSelectedOutageForNotes(null);
+          onSave={async (updated) => {
+            try {
+              await fetch(
+                `${API_BASE_URL}/api/outageperiods/${updated.id}/notes`,
+                {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ notes: updated.notes }),
+                }
+              );
+              setLocalOutages((prev) =>
+                prev.map((o) =>
+                  o.id === updated.id ? { ...o, notes: updated.notes } : o
+                )
+              );
+              setSelectedOutageForNotes(null);
+            } catch (err) {
+              console.error(t("admin.outagePeriods.notes.genericError"), err);
+              alert(
+                err instanceof Error
+                  ? err.message
+                  : t("admin.outagePeriods.notes.genericError")
+              );
+            }
           }}
           onClose={() => setSelectedOutageForNotes(null)}
           t={t}

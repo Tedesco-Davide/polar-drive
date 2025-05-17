@@ -106,7 +106,7 @@ export default function AdminClientConsentAddForm({
       );
 
       if (!resolveRes.ok) {
-        alert(t("admin.clientConsents.validation.resolveVATandVIN"));
+        alert(t("admin.resolveVATandVIN"));
         return;
       }
 

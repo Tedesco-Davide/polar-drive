@@ -1,7 +1,7 @@
 import { TFunction } from "i18next";
 import { formatDateToSave } from "@/utils/date";
 import { API_BASE_URL } from "@/utils/api";
-import { OutageFormData } from "@/types/outagePeriodTypes";
+import { OutageFormData, UploadOutageResult } from "@/types/outagePeriodTypes";
 import { isAfter, isValid, parseISO } from "date-fns";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import DatePicker from "react-datepicker";
@@ -65,37 +65,72 @@ export default function AdminOutagePeriodsAddForm({
       zipFilePath,
     } = formData;
 
+    const payload = new FormData();
+    const parsedStart = parseISO(outageStart);
+    const isGenericOutage = !vin && !companyVatNumber;
+    let clientCompanyId: number | null = null;
+    let teslaVehicleId: number | null = null;
+
     // Validazioni base
     if (!status)
       return alert(t("admin.outagePeriods.validation.statusRequired"));
+
     if (!outageType)
       return alert(t("admin.outagePeriods.validation.outageTypeRequired"));
+
     if (!outageStart)
       return alert(t("admin.outagePeriods.validation.startDateRequired"));
 
-    const parsedStart = parseISO(outageStart);
+    // ⛔ OUTAGE-RESOLVED richiede anche la data di fine
+    if (status === "OUTAGE-RESOLVED" && !outageEnd) {
+      alert(t("admin.outagePeriods.validation.outageEndRequiredForResolved"));
+      return;
+    }
+
+    // ⛔ END non può essere prima della START
+    if (outageEnd) {
+      const parsedEnd = parseISO(outageEnd);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0); // ✅ rimuove l'orario per confronto coerente
+
+      if (!isValid(parsedEnd)) {
+        alert(t("admin.outagePeriods.validation.invalidEndDate"));
+        return;
+      }
+
+      if (parsedEnd < parsedStart) {
+        alert(t("admin.outagePeriods.validation.outageEndBeforeStart"));
+        return;
+      }
+
+      if (parsedEnd > today) {
+        alert(t("admin.outagePeriods.validation.outageEndInFuture"));
+        return;
+      }
+    }
+
     if (!isValid(parsedStart) || isAfter(parsedStart, new Date()))
       return alert(t("admin.outagePeriods.validation.startDateInFuture"));
 
-    const isGenericOutage = !vin && !companyVatNumber;
-
-    let clientCompanyId: number | null = null;
-    let teslaVehicleId: number | null = null;
+    if (outageType === "Outage Vehicle") {
+      if (!vin || !companyVatNumber) {
+        alert(t("admin.resolveVATandVIN"));
+        return;
+      }
+    }
 
     if (!isGenericOutage) {
       const resolveRes = await fetch(
         `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${vin}`
       );
       if (!resolveRes.ok) {
-        alert(t("admin.clientConsents.validation.resolveVATandVIN"));
+        alert(t("admin.resolveVATandVIN"));
         return;
       }
       const resolved = await resolveRes.json();
       clientCompanyId = resolved.clientCompanyId;
       teslaVehicleId = resolved.teslaVehicleId;
     }
-
-    const payload = new FormData();
 
     if (zipFilePath) {
       // ⛔ Verifica contenuto ZIP (deve avere almeno un PDF)
@@ -133,15 +168,29 @@ export default function AdminOutagePeriodsAddForm({
       body: payload,
     });
 
+    const responseText = await res.text();
+
     if (!res.ok) {
-      const errText = await res.text();
       console.error("UPLOAD OUTAGE ERROR", {
         status: res.status,
         statusText: res.statusText,
-        error: errText,
+        error: responseText,
       });
-      alert("❌ Errore upload outage:\n" + errText);
+      alert(`${t("admin.outagePeriods.genericUploadError")}: ${responseText}`);
       return;
+    }
+
+    let result: UploadOutageResult = {};
+    try {
+      result = JSON.parse(responseText) as UploadOutageResult;
+    } catch (e) {
+      console.warn("Warning: JSON parse failed", e);
+    }
+
+    if (result && result.isNew) {
+      alert(t("admin.outagePeriods.successAddNewOutage"));
+    } else {
+      alert(t("admin.outagePeriods.addNewOutageExisting"));
     }
 
     await refreshOutagePeriods();

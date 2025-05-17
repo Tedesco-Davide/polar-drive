@@ -76,6 +76,8 @@
   "admin.genericApiError": "ERRORE: Si è verificato un errore errore generico durante la chiamata API: ",
   "admin.uploadZipOutageSigned": "Carica consensi firmati (.zip)",
   "admin.openNotesModal": "Apri gestione note",
+  "admin.notesGenericError": "ATTENZIONE! errore generico non gestito per le Note: ",
+  "admin.resolveVATandVIN": "ATTENZIONE! seleziona attentamente l'Azienda (Partita IVA) e la Tesla di interesse (Tesla VIN) assicurandoti che combacino e siano effettivamente collegate tra di loro",
 
   "admin.mainWorkflow.tableHeader": "Gestione principale workflow",
   "admin.mainWorkflow.labels.companyVatNumber": "Partita IVA",
@@ -151,7 +153,6 @@
   "admin.clientConsents.notes.modalPlaceholder": "Ricordati di cliccare sull icona + a sinistra per aggiungere la nota. Scrivi qualcosa...",
   "admin.clientConsents.notes.addNote": "Aggiungi nota",
   "admin.clientConsents.notes.deleteNote": "Cancella nota",
-  "admin.clientConsents.notes.genericError": "ATTENZIONE! errore generico non gestito per le Note: ",
 
   "admin.outagePeriods.tableHeader": "Outages",
   "admin.outagePeriods.autoDetected": "Auto rilevato?",
@@ -168,8 +169,9 @@
   "admin.outagePeriods.undoAddNewOutage": "Annulla aggiunta Outage",
   "admin.outagePeriods.confirmAddNewOutage": "Conferma aggiunta Outage",
   "admin.outagePeriods.successAddNewOutage": "Outage aggiunto con successo!",
+  "admin.outagePeriods.addNewOutageExisting": "L'Outage che stai cercando di creare esiste già. Se hai caricato anche un file .zip, verrà associato alla riga esistente (solo se non già presente). Gli altri campi non verranno modificati",
   "admin.outagePeriods.notes.modalTitle": "Gestione nota per: riga in Tabella Outages",
-  "admin.outagePeriods.genericUploadError": "Errore generico per l'Upload Outages",
+  "admin.outagePeriods.genericUploadError": "Errore generico per l'Upload Outages:",
   "admin.outagePeriods.successUploadZip": "File .zip aggiunto con successo all'Outage di riferimento!",
   "admin.outagePeriods.invalidZipTypeRequiredOutages": "Carica obbligatoriamente un file .zip che contenga almeno un documento generico Outage in formato .pdf",
 
@@ -189,7 +191,7 @@
   "admin.validation.invalidCompanyPec": "Inserisci un indirizzo PEC valido",
   "admin.validation.invalidLandline": "Inserisci un numero fisso valido",
   "admin.validation.invalidZipTypeRequiredConsent": "Carica obbligatoriamente un file .zip che contenga almeno un Consenso in formato .pdf",
-  "admin.validation.invalidZipType": "Hai appena caricato qualcosa che non è un file .zip.",
+  "admin.validation.invalidZipType": "Hai appena caricato qualcosa che non è un file .zip. Per favore seleziona di nuovo un file .zip correttamente.",
   "admin.validation.invalidTeslaVehicleVIN": "Inserisci un VIN valido composto da 17 caratteri (senza lettere I, O, Q)",
   "admin.mainWorkflow.validation.invalidSignatureDate": "Inserisci una data firma valida che non sia futura",
   "admin.mainWorkflow.validation.invalidPdfType": "Carica un file PDF valido (formato .pdf)",
@@ -201,11 +203,14 @@
   "admin.clientConsents.validation.teslaVehicleId": "Inserisci un ID Tesla valido",
   "admin.clientConsents.validation.clientCompanyId": "Inserisci un ID Azienda valido",
   "admin.clientConsents.validation.consentType": "Scegliere obbligatoriamente una Tipo Consenso",
-  "admin.clientConsents.validation.resolveVATandVIN": "ATTENZIONE! seleziona attentamente l'Azienda (Partita IVA) e la Tesla di interesse (Tesla VIN) assicurandoti che combacino e siano effettivamente collegate tra di loro",
   "admin.clientConsents.validation.hashIDalready": "ATTENZIONE! all'interno del file .zip che stai provando ad importare, sono presenti uno o più documenti .pdf già caricati precedentemente, certificati da un Hash univoco. ID riga nel DB: ",
   "admin.clientConsents.validation.genericError": "ATTENZIONE! errore generico non gestito: ",
   "admin.outagePeriods.validation.startDateRequired": "Inserisci una data di inizio valida",
   "admin.outagePeriods.validation.statusRequired": "Seleziona uno stato valido",
   "admin.outagePeriods.validation.outageTypeRequired": "Seleziona una tipologia di interruzione valida",
-  "admin.outagePeriods.validation.startDateInFuture": "Inserisci una data inizio valida che non sia futura"
+  "admin.outagePeriods.validation.startDateInFuture": "Inserisci una data inizio valida che non sia futura",
+  "admin.outagePeriods.validation.outageEndRequiredForResolved": "Per OUTAGE-RESOLVED è obbligatorio inserire anche la data di fine",
+  "admin.outagePeriods.validation.invalidEndDate": "La data di fine non è valida",
+  "admin.outagePeriods.validation.outageEndBeforeStart": "La data di fine non può essere precedente alla data di inizio",
+  "admin.outagePeriods.validation.outageEndAfterToday": "La data di fine non può essere nel futuro"
 }
