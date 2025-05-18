@@ -3,10 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PolarDrive.Data.Entities;
 
-public class TeslaWorkflow
+public class VehicleWorkflow
 {
-    [Key, ForeignKey(nameof(ClientTeslaVehicle))]
-    public int TeslaVehicleId { get; set; }
+    [Key, ForeignKey(nameof(ClientVehicle))]
+    public int VehicleId { get; set; }
 
     public bool IsActiveFlag { get; set; } = true;
 
@@ -14,5 +14,5 @@ public class TeslaWorkflow
 
     public DateTime LastStatusChangeAt { get; set; } = DateTime.UtcNow;
     
-    public ClientTeslaVehicle? ClientTeslaVehicle { get; set; }
+    public ClientVehicle? ClientVehicle { get; set; }
 }

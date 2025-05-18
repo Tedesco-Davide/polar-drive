@@ -5,7 +5,7 @@ public class DemoSmsEvent
 {
     public int Id { get; set; }
 
-    public int TeslaVehicleId { get; set; }
+    public int VehicleId { get; set; }
 
     public DateTime ReceivedAt { get; set; }
 
@@ -15,5 +15,5 @@ public class DemoSmsEvent
     [RegularExpression("DEMO_ON|DEMO_OFF")]
     public string ParsedCommand { get; set; } = string.Empty;
     
-    public ClientTeslaVehicle? ClientTeslaVehicle { get; set; }
+    public ClientVehicle? ClientVehicle { get; set; }
 }

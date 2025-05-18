@@ -1,6 +1,6 @@
 namespace PolarDrive.Data.Entities;
 
-public class AnonymizedTeslaVehicleData
+public class AnonymizedVehicleData
 {
     public int Id { get; set; }
 
@@ -8,11 +8,11 @@ public class AnonymizedTeslaVehicleData
 
     public DateTime Timestamp { get; set; }
 
-    public int TeslaVehicleId { get; set; }
+    public int VehicleId { get; set; }
 
     public string AnonymizedJson { get; set; } = string.Empty;
 
-    public TeslaVehicleData? OriginalData { get; set; }
+    public VehicleData? OriginalData { get; set; }
 
-    public ClientTeslaVehicle? ClientTeslaVehicle { get; set; }
+    public ClientVehicle? ClientVehicle { get; set; }
 }

@@ -43,7 +43,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             }
 
             // Check: se esiste già una Tesla con quel VIN
-            var existingVehicle = await _dbContext.ClientTeslaVehicles
+            var existingVehicle = await _dbContext.ClientVehicles
                 .FirstOrDefaultAsync(v => v.Vin == request.TeslaVIN);
 
             if (existingVehicle != null)
@@ -61,7 +61,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             // ─────────────────────
             // 2. Veicolo Tesla
             // ─────────────────────
-            var vehicle = new ClientTeslaVehicle
+            var vehicle = new ClientVehicle
             {
                 ClientCompanyId = company.Id,
                 Vin = request.TeslaVIN,
@@ -70,13 +70,13 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 IsFetchingDataFlag = true,
                 FirstActivationAt = request.UploadDate
             };
-            _dbContext.ClientTeslaVehicles.Add(vehicle);
+            _dbContext.ClientVehicles.Add(vehicle);
             await _dbContext.SaveChangesAsync();
 
             // 2b. Salva token associato
-            var token = new ClientTeslaToken
+            var token = new ClientToken
             {
-                TeslaVehicleId = vehicle.Id,
+                VehicleId = vehicle.Id,
                 AccessToken = request.AccessToken,
                 RefreshToken = request.RefreshToken,
                 AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
@@ -84,7 +84,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 CreatedAt = DateTime.UtcNow,
                 UpdatedAt = DateTime.UtcNow
             };
-            _dbContext.ClientTeslaTokens.Add(token);
+            _dbContext.ClientTokens.Add(token);
             await _dbContext.SaveChangesAsync();
 
             // ─────────────────────
@@ -151,7 +151,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             var consent = new ClientConsent
             {
                 ClientCompanyId = company.Id,
-                TeslaVehicleId = vehicle.Id,
+                VehicleId = vehicle.Id,
                 ConsentType = "Consent Activation",
                 UploadDate = request.UploadDate,
                 ZipFilePath = zipPath,

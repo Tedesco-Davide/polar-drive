@@ -7,7 +7,7 @@ SELECT
     cc.Email,
     cc.PecAddress,
 
-    tv.Id                    AS TeslaVehicleId,
+    tv.Id                    AS VehicleId,
     tv.Vin,
     tv.Model,
     tw.IsActiveFlag          AS WorkflowStatus,
@@ -18,6 +18,6 @@ SELECT
     ev.EventTimestamp
 
 FROM   ClientCompanies cc
-JOIN   ClientTeslaVehicles tv  ON tv.ClientCompanyId = cc.Id
-JOIN   TeslaWorkflows tw       ON tw.TeslaVehicleId  = tv.Id
-LEFT   JOIN TeslaWorkflowEvents ev ON ev.TeslaVehicleId = tv.Id;
+JOIN   ClientVehicles tv  ON tv.ClientCompanyId = cc.Id
+JOIN   Workflows tw       ON tw.VehicleId  = tv.Id
+LEFT   JOIN WorkflowEvents ev ON ev.VehicleId = tv.Id;

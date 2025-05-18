@@ -66,7 +66,7 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         if (company == null)
             return NotFound("SERVER ERROR → NOT FOUND: Company not found or invalid VAT number!");
 
-        var vehicle = await db.ClientTeslaVehicles.FirstOrDefaultAsync(v => v.Id == teslaVehicleId && v.Vin == teslaVehicleVIN && v.ClientCompanyId == clientCompanyId);
+        var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == teslaVehicleId && v.Vin == teslaVehicleVIN && v.ClientCompanyId == clientCompanyId);
         if (vehicle == null)
             return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found or not associated with the company!");
 
@@ -109,7 +109,7 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         var consent = new ClientConsent
         {
             ClientCompanyId = clientCompanyId,
-            TeslaVehicleId = teslaVehicleId,
+            VehicleId = teslaVehicleId,
             UploadDate = parsedDate,
             ZipFilePath = Path.Combine("companies", $"company-{clientCompanyId}", "consents-zip", zipFilename).Replace("\\", "/"),
             ConsentHash = hash,

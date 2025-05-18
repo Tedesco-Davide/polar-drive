@@ -1,19 +1,19 @@
 CREATE TRIGGER IF NOT EXISTS trg_log_workflow_update
-AFTER UPDATE ON TeslaWorkflows
+AFTER UPDATE ON Workflows
 FOR EACH ROW
 BEGIN
-    INSERT INTO TeslaWorkflowEvents
-          (TeslaVehicleId, FieldChanged, OldValue, NewValue, EventTimestamp)
-    SELECT NEW.TeslaVehicleId,
+    INSERT INTO WorkflowEvents
+          (VehicleId, FieldChanged, OldValue, NewValue, EventTimestamp)
+    SELECT NEW.VehicleId,
            'IsActiveFlag',
            OLD.IsActiveFlag,
            NEW.IsActiveFlag,
            CURRENT_TIMESTAMP
     WHERE OLD.IsActiveFlag <> NEW.IsActiveFlag;
 
-    INSERT INTO TeslaWorkflowEvents
-          (TeslaVehicleId, FieldChanged, OldValue, NewValue, EventTimestamp)
-    SELECT NEW.TeslaVehicleId,
+    INSERT INTO WorkflowEvents
+          (VehicleId, FieldChanged, OldValue, NewValue, EventTimestamp)
+    SELECT NEW.VehicleId,
            'FetchDataFlag',
            OLD.FetchDataFlag,
            NEW.FetchDataFlag,

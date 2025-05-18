@@ -16,14 +16,14 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
     {
         var items = await db.ClientConsents
             .Include(c => c.ClientCompany)
-            .Include(c => c.ClientTeslaVehicle)
+            .Include(c => c.ClientVehicle)
             .Select(c => new ClientConsentDTO
             {
                 Id = c.Id,
                 ClientCompanyId = c.ClientCompanyId,
                 CompanyVatNumber = c.ClientCompany!.VatNumber,
-                TeslaVehicleId = c.TeslaVehicleId,
-                TeslaVehicleVIN = c.ClientTeslaVehicle!.Vin,
+                TeslaVehicleId = c.VehicleId,
+                TeslaVehicleVIN = c.ClientVehicle!.Vin,
                 UploadDate = c.UploadDate.ToString("o"),
                 ZipFilePath = c.ZipFilePath,
                 ConsentHash = c.ConsentHash,
@@ -40,13 +40,13 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
-        if (!await db.ClientTeslaVehicles.AnyAsync(v => v.Id == dto.TeslaVehicleId))
+        if (!await db.ClientVehicles.AnyAsync(v => v.Id == dto.TeslaVehicleId))
             return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 
         var entity = new ClientConsent
         {
             ClientCompanyId = dto.ClientCompanyId,
-            TeslaVehicleId = dto.TeslaVehicleId,
+            VehicleId = dto.TeslaVehicleId,
             UploadDate = ParseDate(dto.UploadDate),
             ZipFilePath = dto.ZipFilePath,
             ConsentHash = dto.ConsentHash,
@@ -105,7 +105,7 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         if (company == null)
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
-        var vehicle = await db.ClientTeslaVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+        var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
         if (vehicle == null)
             return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 

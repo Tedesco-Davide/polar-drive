@@ -1,6 +1,6 @@
 namespace PolarDrive.Data.Entities;
 
-public class ClientTeslaVehicle
+public class ClientVehicle
 {
     public int Id { get; set; }
 

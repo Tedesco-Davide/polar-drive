@@ -1,11 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 namespace PolarDrive.Data.Entities;
 
-public class TeslaWorkflowEvent
+public class VehicleWorkflowEvent
 {
     public int Id { get; set; }
 
-    public int TeslaVehicleId { get; set; }
+    public int VehicleId { get; set; }
 
     [Required]
     [RegularExpression("IsActiveFlag|FetchDataFlag")]
@@ -17,5 +17,5 @@ public class TeslaWorkflowEvent
 
     public DateTime EventTimestamp { get; set; } = DateTime.UtcNow;
     
-    public ClientTeslaVehicle? ClientTeslaVehicle { get; set; }
+    public ClientVehicle? ClientVehicle { get; set; }
 }

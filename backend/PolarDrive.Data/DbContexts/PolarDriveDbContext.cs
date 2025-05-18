@@ -6,16 +6,16 @@ namespace PolarDrive.Data.DbContexts;
 public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) : DbContext(options)
 {
     public DbSet<ClientCompany> ClientCompanies => Set<ClientCompany>();
-    public DbSet<ClientTeslaVehicle> ClientTeslaVehicles => Set<ClientTeslaVehicle>();
-    public DbSet<TeslaWorkflow> TeslaWorkflows => Set<TeslaWorkflow>();
-    public DbSet<TeslaWorkflowEvent> TeslaWorkflowEvents => Set<TeslaWorkflowEvent>();
+    public DbSet<ClientVehicle> ClientVehicles => Set<ClientVehicle>();
+    public DbSet<VehicleWorkflow> VehicleWorkflows => Set<VehicleWorkflow>();
+    public DbSet<VehicleWorkflowEvent> VehicleWorkflowsEvent => Set<VehicleWorkflowEvent>();
     public DbSet<ClientConsent> ClientConsents => Set<ClientConsent>();
     public DbSet<PdfReport> PdfReports => Set<PdfReport>();
-    public DbSet<TeslaVehicleData> TeslaVehicleData => Set<TeslaVehicleData>();
+    public DbSet<VehicleData> VehiclesData => Set<VehicleData>();
     public DbSet<DemoSmsEvent> DemoSmsEvents => Set<DemoSmsEvent>();
-    public DbSet<AnonymizedTeslaVehicleData> AnonymizedTeslaVehicleData => Set<AnonymizedTeslaVehicleData>();
+    public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
-    public DbSet<ClientTeslaToken> ClientTeslaTokens => Set<ClientTeslaToken>();
+    public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -28,7 +28,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
             entity.HasIndex(e => e.VatNumber).IsUnique();
         });
         
-        modelBuilder.Entity<ClientTeslaVehicle>(entity =>
+        modelBuilder.Entity<ClientVehicle>(entity =>
         {
             entity.HasIndex(e => e.Vin).IsUnique();
 
@@ -38,21 +38,21 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
             .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<TeslaWorkflow>(entity =>
+        modelBuilder.Entity<VehicleWorkflow>(entity =>
         {
-            entity.HasKey(e => e.TeslaVehicleId);
+            entity.HasKey(e => e.VehicleId);
 
-            entity.HasOne(e => e.ClientTeslaVehicle)
+            entity.HasOne(e => e.ClientVehicle)
                 .WithOne()
-                .HasForeignKey<TeslaWorkflow>(e => e.TeslaVehicleId)
+                .HasForeignKey<VehicleWorkflow>(e => e.VehicleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<TeslaWorkflowEvent>(entity =>
+        modelBuilder.Entity<VehicleWorkflowEvent>(entity =>
         {
-            entity.HasOne(e => e.ClientTeslaVehicle)
+            entity.HasOne(e => e.ClientVehicle)
                 .WithMany()
-                .HasForeignKey(e => e.TeslaVehicleId)
+                .HasForeignKey(e => e.VehicleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -63,40 +63,40 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 .HasForeignKey(e => e.ClientCompanyId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.ClientTeslaVehicle)
+            entity.HasOne(e => e.ClientVehicle)
                 .WithMany()
-                .HasForeignKey(e => e.TeslaVehicleId)
+                .HasForeignKey(e => e.VehicleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<PdfReport>(entity =>{});
 
-        modelBuilder.Entity<TeslaVehicleData>(entity =>
+        modelBuilder.Entity<VehicleData>(entity =>
         {
-            entity.HasOne(e => e.ClientTeslaVehicle)
+            entity.HasOne(e => e.ClientVehicle)
                 .WithMany()
-                .HasForeignKey(e => e.TeslaVehicleId)
+                .HasForeignKey(e => e.VehicleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<DemoSmsEvent>(entity =>
         {
-            entity.HasOne(e => e.ClientTeslaVehicle)
+            entity.HasOne(e => e.ClientVehicle)
                 .WithMany()
-                .HasForeignKey(e => e.TeslaVehicleId)
+                .HasForeignKey(e => e.VehicleId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<AnonymizedTeslaVehicleData>(entity =>
+        modelBuilder.Entity<AnonymizedVehicleData>(entity =>
         {
             entity.HasOne(e => e.OriginalData)
                 .WithMany()
                 .HasForeignKey(e => e.OriginalDataId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasOne(e => e.ClientTeslaVehicle)
+            entity.HasOne(e => e.ClientVehicle)
                 .WithMany()
-                .HasForeignKey(e => e.TeslaVehicleId)
+                .HasForeignKey(e => e.VehicleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             entity.HasIndex(e => e.OriginalDataId).IsUnique();
@@ -104,9 +104,9 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
         modelBuilder.Entity<OutagePeriod>(entity =>
         {
-            entity.HasOne(e => e.ClientTeslaVehicle)
+            entity.HasOne(e => e.ClientVehicle)
                 .WithMany()
-                .HasForeignKey(e => e.TeslaVehicleId)
+                .HasForeignKey(e => e.VehicleId)
                 .OnDelete(DeleteBehavior.SetNull);
 
             entity.HasOne(e => e.ClientCompany)
@@ -114,20 +114,20 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 .HasForeignKey(e => e.ClientCompanyId)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            entity.HasIndex(e => new { e.TeslaVehicleId, e.ClientCompanyId, e.OutageStart, e.OutageEnd })
+            entity.HasIndex(e => new { e.VehicleId, e.ClientCompanyId, e.OutageStart, e.OutageEnd })
                 .IsUnique();
         });
 
-        modelBuilder.Entity<ClientTeslaToken>(entity =>
+        modelBuilder.Entity<ClientToken>(entity =>
         {
-            entity.HasIndex(e => new { e.TeslaVehicleId, e.AccessTokenExpiresAt });
+            entity.HasIndex(e => new { e.VehicleId, e.AccessTokenExpiresAt });
 
-            entity.HasOne(e => e.ClientTeslaVehicle)
+            entity.HasOne(e => e.ClientVehicle)
                 .WithOne()
-                .HasForeignKey<ClientTeslaToken>(e => e.TeslaVehicleId)
+                .HasForeignKey<ClientToken>(e => e.VehicleId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            entity.HasIndex(e => e.TeslaVehicleId).IsUnique();
+            entity.HasIndex(e => e.VehicleId).IsUnique();
         });
 
         modelBuilder.Entity<PolarDriveLog>(entity =>

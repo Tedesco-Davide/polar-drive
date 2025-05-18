@@ -17,7 +17,7 @@ public class OutagePeriod
 
     public DateTime? OutageEnd { get; set; }
 
-    public int? TeslaVehicleId { get; set; }
+    public int? VehicleId { get; set; }
 
     public int? ClientCompanyId { get; set; }
 
@@ -25,7 +25,7 @@ public class OutagePeriod
 
     public string Notes { get; set; } = string.Empty;
 
-    public ClientTeslaVehicle? ClientTeslaVehicle { get; set; }
+    public ClientVehicle? ClientVehicle { get; set; }
 
     public ClientCompany? ClientCompany { get; set; }
 }

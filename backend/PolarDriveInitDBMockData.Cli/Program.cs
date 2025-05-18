@@ -18,8 +18,8 @@ using var db = new PolarDriveDbContext(options);
 // 1. Pulisce tabelle
 // ─────────────────────────────────────
 db.ClientConsents.RemoveRange(db.ClientConsents);
-db.ClientTeslaTokens.RemoveRange(db.ClientTeslaTokens);
-db.ClientTeslaVehicles.RemoveRange(db.ClientTeslaVehicles);
+db.ClientTokens.RemoveRange(db.ClientTokens);
+db.ClientVehicles.RemoveRange(db.ClientVehicles);
 db.ClientCompanies.RemoveRange(db.ClientCompanies);
 await db.SaveChangesAsync();
 
@@ -96,7 +96,7 @@ foreach (var company in companies)
 
     // 🚘 Mock Tesla
     var vin = $"5YJ3E1EA7KF31{vinCounter++:0000}";
-    var vehicle = new ClientTeslaVehicle
+    var vehicle = new ClientVehicle
     {
         ClientCompanyId = company.Id,
         Vin = vin,
@@ -105,13 +105,13 @@ foreach (var company in companies)
         IsFetchingDataFlag = true,
         FirstActivationAt = DateTime.Today
     };
-    db.ClientTeslaVehicles.Add(vehicle);
+    db.ClientVehicles.Add(vehicle);
     await db.SaveChangesAsync();
 
     // 🔑 Mock Token associato alla Tesla
-    var token = new ClientTeslaToken
+    var token = new ClientToken
     {
-        TeslaVehicleId = vehicle.Id,
+        VehicleId = vehicle.Id,
         AccessToken = $"access_token_{vehicle.Id}",
         RefreshToken = $"refresh_token_{vehicle.Id}",
         AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
@@ -119,14 +119,14 @@ foreach (var company in companies)
         CreatedAt = DateTime.UtcNow,
         UpdatedAt = DateTime.UtcNow
     };
-    db.ClientTeslaTokens.Add(token);
+    db.ClientTokens.Add(token);
     await db.SaveChangesAsync();
 
     // 📝 Mock consenso associato alla Tesla
     var consent = new ClientConsent
     {
         ClientCompanyId = company.Id,
-        TeslaVehicleId = vehicle.Id,
+        VehicleId = vehicle.Id,
         ConsentType = "Consent Activation",
         UploadDate = DateTime.Today,
         ZipFilePath = Path.Combine("companies", $"company-{company.Id}", "consents-zip", "consent_1.zip").Replace("\\", "/"),
@@ -172,7 +172,7 @@ var outages = new List<OutagePeriod>
 {
     new()
     {
-        TeslaVehicleId = 1,
+        VehicleId = 1,
         ClientCompanyId = 1,
         AutoDetected = true,
         OutageType = "Outage Vehicle",
@@ -184,7 +184,7 @@ var outages = new List<OutagePeriod>
     },
     new()
     {
-        TeslaVehicleId = 2,
+        VehicleId = 2,
         ClientCompanyId = 2,
         AutoDetected = false,
         OutageType = "Outage Vehicle",
@@ -195,7 +195,7 @@ var outages = new List<OutagePeriod>
     },
     new()
     {
-        TeslaVehicleId = 3,
+        VehicleId = 3,
         ClientCompanyId = 3,
         AutoDetected = true,
         OutageType = "Outage Vehicle",
@@ -206,7 +206,7 @@ var outages = new List<OutagePeriod>
     },
     new()
     {
-        TeslaVehicleId = null,
+        VehicleId = null,
         ClientCompanyId = null,
         AutoDetected = true,
         OutageType = "Outage Fleet Api",
@@ -217,7 +217,7 @@ var outages = new List<OutagePeriod>
     },
     new()
     {
-        TeslaVehicleId = null,
+        VehicleId = null,
         ClientCompanyId = null,
         AutoDetected = false,
         OutageType = "Outage Fleet Api",

@@ -13,7 +13,7 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AdminWorkflowExtendedDTO>>> Get()
     {
-        var rawItems = await db.ClientTeslaVehicles
+        var rawItems = await db.ClientVehicles
             .Include(v => v.ClientCompany)
             .ToListAsync();
 
@@ -52,7 +52,7 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
         if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
-        var entity = new ClientTeslaVehicle
+        var entity = new ClientVehicle
         {
             ClientCompanyId = dto.ClientCompanyId,
             Vin = dto.Vin,
@@ -66,7 +66,7 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
             CreatedAt = DateTime.UtcNow
         };
 
-        db.ClientTeslaVehicles.Add(entity);
+        db.ClientVehicles.Add(entity);
         await db.SaveChangesAsync();
 
         return CreatedAtAction(nameof(Get), new { id = entity.Id }, entity.Id);
@@ -78,7 +78,7 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
         if (dto.IsActive && !dto.IsFetching)
             return BadRequest("SERVER ERROR → BAD REQUEST: An Active vehicle must also be in Data Acquisition state (IsFetching)!");
 
-        var vehicle = await db.ClientTeslaVehicles.FindAsync(id);
+        var vehicle = await db.ClientVehicles.FindAsync(id);
         if (vehicle == null)
             return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 
@@ -101,7 +101,7 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
     [HttpPut("{id}")]
     public async Task<IActionResult> Put(int id, [FromBody] ClientTeslaVehicleDTO dto)
     {
-        var vehicle = await db.ClientTeslaVehicles.FindAsync(id);
+        var vehicle = await db.ClientVehicles.FindAsync(id);
         if (vehicle == null)
             return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 

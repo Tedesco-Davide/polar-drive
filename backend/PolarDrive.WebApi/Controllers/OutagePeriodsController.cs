@@ -16,12 +16,12 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
 
         var items = await db.OutagePeriods
             .Include(o => o.ClientCompany)
-            .Include(o => o.ClientTeslaVehicle)
+            .Include(o => o.ClientVehicle)
             .OrderByDescending(o => o.OutageStart)
             .Select(o => new
             {
                 o.Id,
-                o.TeslaVehicleId,
+                o.VehicleId,
                 o.ClientCompanyId,
                 o.AutoDetected,
                 o.OutageType,
@@ -30,7 +30,7 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
                 o.OutageEnd,
                 o.ZipFilePath,
                 o.Notes,
-                vin = o.ClientTeslaVehicle != null ? o.ClientTeslaVehicle.Vin : "",
+                vin = o.ClientVehicle != null ? o.ClientVehicle.Vin : "",
                 companyVatNumber = o.ClientCompany != null ? o.ClientCompany.VatNumber : ""
             })
             .ToListAsync();
@@ -53,14 +53,14 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
 
         if (outage.OutageType == "Outage Vehicle")
         {
-            if (!outage.ClientCompanyId.HasValue || !outage.TeslaVehicleId.HasValue)
+            if (!outage.ClientCompanyId.HasValue || !outage.VehicleId.HasValue)
                 return BadRequest("SERVER ERROR → BAD REQUEST: Missing Tesla vehicle or company ID!");
 
             var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == outage.ClientCompanyId);
             if (company == null)
                 return NotFound("SERVER ERROR → NOT FOUND: Client company not found!");
 
-            var vehicle = await db.ClientTeslaVehicles.FirstOrDefaultAsync(v => v.Id == outage.TeslaVehicleId);
+            var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == outage.VehicleId);
             if (vehicle == null)
                 return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
 
@@ -70,8 +70,8 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
         else
         {
             // Se è "Outage Fleet Api", consenti anche null
-            if (outage.TeslaVehicleId.HasValue &&
-                !await db.ClientTeslaVehicles.AnyAsync(v => v.Id == outage.TeslaVehicleId))
+            if (outage.VehicleId.HasValue &&
+                !await db.ClientVehicles.AnyAsync(v => v.Id == outage.VehicleId))
             {
                 return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
             }

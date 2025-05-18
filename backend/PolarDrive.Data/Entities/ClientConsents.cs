@@ -7,7 +7,7 @@ public class ClientConsent
 
     public int ClientCompanyId { get; set; }
 
-    public int TeslaVehicleId { get; set; }
+    public int VehicleId { get; set; }
 
     public DateTime UploadDate { get; set; }
 
@@ -23,5 +23,5 @@ public class ClientConsent
 
     public ClientCompany? ClientCompany { get; set; }
     
-    public ClientTeslaVehicle? ClientTeslaVehicle { get; set; }
+    public ClientVehicle? ClientVehicle { get; set; }
 }
