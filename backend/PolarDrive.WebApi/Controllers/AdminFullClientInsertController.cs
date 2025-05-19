@@ -66,6 +66,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             {
                 ClientCompanyId = company.Id,
                 Vin = request.VehicleVIN,
+                Brand = request.VehicleBrand,
                 Model = request.VehicleModel,
                 IsActiveFlag = true,
                 IsFetchingDataFlag = true,

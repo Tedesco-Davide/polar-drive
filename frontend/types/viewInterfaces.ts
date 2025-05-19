@@ -7,6 +7,7 @@ export interface ClientFullProfile {
   pecAddress: string;
   vehicleId: number;
   vin: string;
+  brand: string;
   model: string;
   workflowStatus: boolean;
   dataCollectionFlag: boolean;

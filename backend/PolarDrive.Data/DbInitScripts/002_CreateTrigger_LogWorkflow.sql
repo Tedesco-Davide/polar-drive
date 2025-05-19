@@ -1,8 +1,8 @@
 CREATE TRIGGER IF NOT EXISTS trg_log_workflow_update
-AFTER UPDATE ON Workflows
+AFTER UPDATE ON VehicleWorkflows
 FOR EACH ROW
 BEGIN
-    INSERT INTO WorkflowEvents
+    INSERT INTO VehicleWorkflowEvents
           (VehicleId, FieldChanged, OldValue, NewValue, EventTimestamp)
     SELECT NEW.VehicleId,
            'IsActiveFlag',
@@ -11,7 +11,7 @@ BEGIN
            CURRENT_TIMESTAMP
     WHERE OLD.IsActiveFlag <> NEW.IsActiveFlag;
 
-    INSERT INTO WorkflowEvents
+    INSERT INTO VehicleWorkflowEvents
           (VehicleId, FieldChanged, OldValue, NewValue, EventTimestamp)
     SELECT NEW.VehicleId,
            'FetchDataFlag',

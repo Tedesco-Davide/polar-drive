@@ -58,6 +58,7 @@ export default function AdminOutagePeriodsAddForm({
     const {
       status,
       outageType,
+      outageBrand,
       outageStart,
       outageEnd,
       vin,
@@ -77,6 +78,10 @@ export default function AdminOutagePeriodsAddForm({
 
     if (!outageType)
       return alert(t("admin.outagePeriods.validation.outageTypeRequired"));
+
+    if (!outageBrand) {
+      return alert(t("admin.outagePeriods.validation.outageBrandRequired"));
+    }
 
     if (!outageStart)
       return alert(t("admin.outagePeriods.validation.startDateRequired"));
@@ -152,6 +157,7 @@ export default function AdminOutagePeriodsAddForm({
     }
 
     payload.append("outageType", outageType);
+    payload.append("outageType", outageBrand);
     payload.append("autoDetected", formData.autoDetected ? "true" : "false");
     payload.append("status", status);
     payload.append("outageStart", outageStart);
@@ -250,6 +256,20 @@ export default function AdminOutagePeriodsAddForm({
             <option value="Outage Vehicle">Outage Vehicle</option>
             <option value="Outage Fleet Api">Outage Fleet Api</option>
           </select>
+        </label>
+
+        {/* Outage Brand */}
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.outagePeriods.outageBrand")}
+          </span>
+          <input
+            name="outageBrand"
+            value={formData.outageBrand}
+            onChange={handleChange}
+            className="input"
+            required
+          />
         </label>
 
         {/* Outage Start */}

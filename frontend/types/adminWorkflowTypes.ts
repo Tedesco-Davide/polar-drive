@@ -7,6 +7,7 @@ export type adminWorkflowTypesInputForm = {
   zipFilePath: File;
   uploadDate: string;
   vehicleVIN: string;
+  brand: string;
   model: string;
   accessToken: string;
   refreshToken: string;

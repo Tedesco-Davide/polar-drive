@@ -6,6 +6,7 @@ export interface OutageFormData {
   autoDetected: boolean;
   status: OutageStatus;
   outageType: OutageType;
+  outageBrand: string;
   outageStart: string;
   outageEnd?: string;
   companyVatNumber?: string;

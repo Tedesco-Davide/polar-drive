@@ -4,6 +4,7 @@ export interface OutagePeriod {
   clientCompanyId: number;
   autoDetected: boolean;
   outageType: "Outage Vehicle" | "Outage Fleet Api";
+  outageBrand: string;
   createdAt: string;
   outageStart: string;
   outageEnd?: string;

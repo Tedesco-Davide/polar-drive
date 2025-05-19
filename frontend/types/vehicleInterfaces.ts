@@ -2,6 +2,7 @@ export interface ClientVehicle {
   id: number;
   clientCompanyId: number;
   vin: string;
+  brand: string;
   model: string;
   trim: string;
   color: string;

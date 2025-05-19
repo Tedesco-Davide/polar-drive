@@ -61,6 +61,7 @@ export default function AdminOutagePeriodsTable({
     autoDetected: false,
     status: "",
     outageType: "",
+    outageBrand: "",
     outageStart: "",
     outageEnd: undefined,
     companyVatNumber: "",
@@ -79,7 +80,7 @@ export default function AdminOutagePeriodsTable({
 
   const { query, setQuery, filteredData } = useSearchFilter<OutagePeriod>(
     localOutages,
-    ["outageType", "notes", "companyVatNumber", "vin"]
+    ["outageType", "notes", "companyVatNumber", "vin", "outageBrand"]
   );
 
   const {
@@ -131,6 +132,7 @@ export default function AdminOutagePeriodsTable({
             <th className="p-4">{t("admin.outagePeriods.autoDetected")}</th>
             <th className="p-4">{t("admin.outagePeriods.status")}</th>
             <th className="p-4">{t("admin.outagePeriods.outageType")}</th>
+            <th className="p-4">{t("admin.outagePeriods.outageBrand")}</th>
             <th className="p-4">
               {t("admin.outagePeriods.outageStart")} -{" "}
               {t("admin.outagePeriods.outageEnd")}
@@ -212,6 +214,7 @@ export default function AdminOutagePeriodsTable({
                           const payload = new FormData();
                           payload.append("zipFile", file);
                           payload.append("outageType", outage.outageType);
+                          payload.append("outageBrand", outage.outageBrand);
                           payload.append(
                             "autoDetected",
                             outage.autoDetected ? "true" : "false"
@@ -289,6 +292,7 @@ export default function AdminOutagePeriodsTable({
                   <Chip className={getStatusColor(status)}>{status}</Chip>
                 </td>
                 <td className="p-4">{outage.outageType}</td>
+                <td className="p-4">{outage.outageBrand}</td>
                 <td className="p-4">
                   {formatDateToDisplay(outage.outageStart)} -{" "}
                   {outage.outageEnd ? (

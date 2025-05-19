@@ -95,45 +95,82 @@ foreach (var company in companies)
     }
 
     // 🚘 Mock Veicoli
-    var vin = $"5YJ3E1EA7KF31{vinCounter++:0000}";
-    var vehicle = new ClientVehicle
+    var vehicles = new[]
     {
-        ClientCompanyId = company.Id,
-        Vin = vin,
-        Model = "Model 3",
-        IsActiveFlag = true,
-        IsFetchingDataFlag = true,
-        FirstActivationAt = DateTime.Today
+        new ClientVehicle
+        {
+            ClientCompanyId = companies[0].Id,
+            Vin = "5YJJ6677544845943",
+            Brand = "Tesla",
+            Model = "Model 3",
+            Trim = "Long Range",
+            Color = "Black",
+            IsActiveFlag = true,
+            IsFetchingDataFlag = true,
+            FirstActivationAt = DateTime.Today,
+            CreatedAt = DateTime.UtcNow
+        },
+        new ClientVehicle
+        {
+            ClientCompanyId = companies[1].Id,
+            Vin = "5YJW5451356531830",
+            Brand = "Jaguar",
+            Model = "F-TYPE",
+            Trim = "Long Range",
+            Color = "White",
+            IsActiveFlag = true,
+            IsFetchingDataFlag = true,
+            FirstActivationAt = DateTime.Today,
+            CreatedAt = DateTime.UtcNow
+        },
+        new ClientVehicle
+        {
+            ClientCompanyId = companies[2].Id,
+            Vin = "5YJT8233374058256",
+            Brand = "Porsche",
+            Model = "Macan EV",
+            Trim = "Base",
+            Color = "Blue",
+            IsActiveFlag = true,
+            IsFetchingDataFlag = true,
+            FirstActivationAt = DateTime.Today,
+            CreatedAt = DateTime.UtcNow
+        }
     };
-    db.ClientVehicles.Add(vehicle);
+    db.ClientVehicles.AddRange(vehicles);
     await db.SaveChangesAsync();
 
-    // 🔑 Mock Token associato al veicolo
-    var token = new ClientToken
+    // 🔑🔐 Inserisce token + consenso per ciascun veicolo
+    for (int i = 0; i < vehicles.Length; i++)
     {
-        VehicleId = vehicle.Id,
-        AccessToken = $"access_token_{vehicle.Id}",
-        RefreshToken = $"refresh_token_{vehicle.Id}",
-        AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
-        RefreshTokenExpiresAt = null,
-        CreatedAt = DateTime.UtcNow,
-        UpdatedAt = DateTime.UtcNow
-    };
-    db.ClientTokens.Add(token);
-    await db.SaveChangesAsync();
+        var vehicle = vehicles[i];
+        var currentCompany = companies[i];
 
-    // 📝 Mock consenso associato al Veicolo
-    var consent = new ClientConsent
-    {
-        ClientCompanyId = company.Id,
-        VehicleId = vehicle.Id,
-        ConsentType = "Consent Activation",
-        UploadDate = DateTime.Today,
-        ZipFilePath = Path.Combine("companies", $"company-{company.Id}", "consents-zip", "consent_1.zip").Replace("\\", "/"),
-        ConsentHash = $"mockhash-{company.Id}-abc123",
-        Notes = "Mock consent automatico"
-    };
-    db.ClientConsents.Add(consent);
+        var token = new ClientToken
+        {
+            VehicleId = vehicle.Id,
+            AccessToken = $"access_token_{vehicle.Id}",
+            RefreshToken = $"refresh_token_{vehicle.Id}",
+            AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
+            RefreshTokenExpiresAt = null,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        db.ClientTokens.Add(token);
+
+        var consent = new ClientConsent
+        {
+            ClientCompanyId = company.Id,
+            VehicleId = vehicle.Id,
+            ConsentType = "Consent Activation",
+            UploadDate = DateTime.Today,
+            ZipFilePath = Path.Combine("companies", $"company-{company.Id}", "consents-zip", "consent_1.zip").Replace("\\", "/"),
+            ConsentHash = $"mockhash-{company.Id}-abc123",
+            Notes = "Mock consent automatico"
+        };
+        db.ClientConsents.Add(consent);
+    }
+
     await db.SaveChangesAsync();
 }
 
@@ -176,6 +213,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = 1,
         AutoDetected = true,
         OutageType = "Outage Vehicle",
+        OutageBrand = "Toyota",
         CreatedAt = DateTime.Parse("2025-04-20T10:30:00Z"),
         OutageStart = DateTime.Parse("2025-04-18T04:00:00Z"),
         OutageEnd = DateTime.Parse("2025-04-19T18:00:00Z"),
@@ -188,6 +226,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = 2,
         AutoDetected = false,
         OutageType = "Outage Vehicle",
+        OutageBrand = "Jaguar",
         CreatedAt = DateTime.Parse("2025-04-21T09:45:00Z"),
         OutageStart = DateTime.Parse("2025-04-15T00:00:00Z"),
         OutageEnd = DateTime.Parse("2025-04-20T23:59:00Z"),
@@ -199,6 +238,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = 3,
         AutoDetected = true,
         OutageType = "Outage Vehicle",
+        OutageBrand = "Ford",
         CreatedAt = DateTime.Parse("2025-04-24T07:10:00Z"),
         OutageStart = DateTime.Parse("2025-04-23T22:00:00Z"),
         OutageEnd = null,
@@ -210,6 +250,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = null,
         AutoDetected = true,
         OutageType = "Outage Fleet Api",
+        OutageBrand = "Lotus",
         CreatedAt = DateTime.Parse("2025-04-22T12:00:00Z"),
         OutageStart = DateTime.Parse("2025-04-22T08:00:00Z"),
         OutageEnd = DateTime.Parse("2025-04-22T11:30:00Z"),
@@ -221,6 +262,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = null,
         AutoDetected = false,
         OutageType = "Outage Fleet Api",
+        OutageBrand = "Porsche",
         CreatedAt = DateTime.Parse("2025-04-25T09:00:00Z"),
         OutageStart = DateTime.Parse("2025-04-25T07:00:00Z"),
         OutageEnd = null,

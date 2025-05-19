@@ -11,6 +11,8 @@ public class OutagePeriod
     [RegularExpression("Outage Vehicle|Outage Fleet Api")]
     public string OutageType { get; set; } = string.Empty;
 
+    public string OutageBrand { get; set; } = string.Empty;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime OutageStart { get; set; }

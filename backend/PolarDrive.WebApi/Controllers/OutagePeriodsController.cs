@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Text.Json;
+using PolarDrive.Data.Constants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -25,6 +26,7 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
                 o.ClientCompanyId,
                 o.AutoDetected,
                 o.OutageType,
+                o.OutageBrand,
                 o.CreatedAt,
                 o.OutageStart,
                 o.OutageEnd,
@@ -44,7 +46,7 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
         var sanitizedOutageType = outage.OutageType?.Trim();
 
         if (string.IsNullOrWhiteSpace(sanitizedOutageType) ||
-            !new[] { "Outage Vehicle", "Outage Fleet Api" }.Contains(sanitizedOutageType))
+            !OutageConstants.ValidOutageTypes.Contains(sanitizedOutageType))
         {
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage type!");
         }
@@ -82,6 +84,16 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
                 return NotFound("SERVER ERROR → NOT FOUND: Client company not found!");
             }
         }
+
+        var sanitizedOutageBrand = outage.OutageBrand?.Trim();
+        
+        if (string.IsNullOrWhiteSpace(sanitizedOutageBrand) ||
+            !VehicleConstants.ValidBrands.Contains(sanitizedOutageBrand))
+        {
+            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage brand!");
+        }
+
+        outage.OutageBrand = sanitizedOutageBrand;
 
         outage.CreatedAt = DateTime.UtcNow;
 

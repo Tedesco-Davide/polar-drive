@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Globalization;
+using PolarDrive.Data.Constants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -14,6 +15,7 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
     [HttpPost]
     public async Task<IActionResult> UploadOutage(
         [FromForm] string outageType,
+        [FromForm] string outageBrand,
         [FromForm] string outageStart,
         [FromForm] string? outageEnd,
         [FromForm] string status,
@@ -25,8 +27,14 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
         [FromForm] IFormFile? zipFile
     )
     {
-        if (string.IsNullOrWhiteSpace(outageType) || !new[] { "Outage Vehicle", "Outage Fleet Api" }.Contains(outageType))
+
+        var sanitizedOutageType = outageType?.Trim();
+        if (string.IsNullOrWhiteSpace(sanitizedOutageType) || !OutageConstants.ValidOutageTypes.Contains(sanitizedOutageType))
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage type!");
+
+        var sanitizedOutageBrand = outageBrand?.Trim();
+        if (string.IsNullOrWhiteSpace(sanitizedOutageBrand) || !VehicleConstants.ValidBrands.Contains(sanitizedOutageBrand))
+            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage brand!");            
 
         if (!DateTime.TryParseExact(outageStart, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedStart))
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage start date format!");
@@ -132,6 +140,7 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
             {
                 id = existingOutage.Id,
                 outageType,
+                outageBrand,
                 outageStart = parsedStart.ToString("dd/MM/yyyy"),
                 outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
                 zipFilePath = existingOutage.ZipFilePath,
@@ -142,7 +151,8 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
         {
             var outage = new OutagePeriod
             {
-                OutageType = outageType,
+                OutageType = sanitizedOutageType,
+                OutageBrand = sanitizedOutageBrand,
                 CreatedAt = DateTime.UtcNow,
                 OutageStart = parsedStart,
                 OutageEnd = parsedEnd,

@@ -4,6 +4,7 @@ public class AdminWorkflowExtendedDTO
 {
     public int Id { get; set; }
     public string Vin { get; set; } = "";
+    public string Brand { get; set; } = string.Empty;
     public string Model { get; set; } = "";
     public string Trim { get; set; } = "";
     public string Color { get; set; } = "";
