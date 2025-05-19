@@ -1,6 +1,6 @@
 namespace PolarDrive.Data.DTOs;
 
-public class ClientTeslaVehicleDTO
+public class ClientVehicleDTO
 {
     public int Id { get; set; }
     public int ClientCompanyId { get; set; }

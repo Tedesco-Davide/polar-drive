@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
+import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { TFunction } from "i18next";
 import { API_BASE_URL } from "@/utils/api";
 import { formatDateToDisplay } from "@/utils/date";
@@ -7,9 +7,9 @@ import { isAfter, isValid, parseISO } from "date-fns";
 import axios from "axios";
 
 type Props = {
-  vehicle: ClientTeslaVehicle;
+  vehicle: ClientVehicle;
   onClose: () => void;
-  onSave: (updatedVehicle: ClientTeslaVehicle) => void;
+  onSave: (updatedVehicle: ClientVehicle) => void;
   t: TFunction;
   refreshWorkflowData: () => Promise<void>;
 };
@@ -21,7 +21,7 @@ export default function AdminClientTeslaVehicleEditForm({
   t,
   refreshWorkflowData,
 }: Props) {
-  const [formData, setFormData] = useState<ClientTeslaVehicle>({
+  const [formData, setFormData] = useState<ClientVehicle>({
     ...vehicle,
     firstActivationAt: vehicle.firstActivationAt ?? "",
   });
@@ -42,12 +42,12 @@ export default function AdminClientTeslaVehicleEditForm({
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
 
     if (!vinRegex.test(formData.vin.trim())) {
-      alert(t("admin.clientTeslaVehicle.validation.invalidTeslaVehicleVIN"));
+      alert(t("admin.clientVehicle.validation.invalidTeslaVehicleVIN"));
       return;
     }
 
     if (!formData.model.trim()) {
-      alert(t("admin.clientTeslaVehicle.validation.modelRequired"));
+      alert(t("admin.clientVehicle.validation.modelRequired"));
       return;
     }
 
@@ -98,7 +98,7 @@ export default function AdminClientTeslaVehicleEditForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientTeslaVehicle.model")}
+            {t("admin.clientVehicle.model")}
           </span>
           <select
             name="model"
@@ -116,7 +116,7 @@ export default function AdminClientTeslaVehicleEditForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientTeslaVehicle.trim")}
+            {t("admin.clientVehicle.trim")}
           </span>
           <input
             name="trim"
@@ -127,7 +127,7 @@ export default function AdminClientTeslaVehicleEditForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientTeslaVehicle.color")}
+            {t("admin.clientVehicle.color")}
           </span>
           <input
             name="color"
@@ -141,7 +141,7 @@ export default function AdminClientTeslaVehicleEditForm({
         <label className="flex flex-col md:flex-row md:items-center gap-2 md:gap-6 col-span-full px-1">
           <div className="flex items-center gap-2">
             <span className="text-xl text-gray-600 dark:text-gray-300">
-              {t("admin.clientTeslaVehicle.isActive")}
+              {t("admin.clientVehicle.isActive")}
             </span>
             <span className="text-xl">
               {formData.isActive
@@ -152,7 +152,7 @@ export default function AdminClientTeslaVehicleEditForm({
 
           <div className="flex items-center gap-2">
             <span className="text-xl text-gray-600 dark:text-gray-300">
-              {t("admin.clientTeslaVehicle.isFetching")}
+              {t("admin.clientVehicle.isFetching")}
             </span>
             <span className="text-xl">
               {formData.isFetching
@@ -163,7 +163,7 @@ export default function AdminClientTeslaVehicleEditForm({
 
           <div className="flex items-center gap-2">
             <span className="text-xl text-gray-600 dark:text-gray-300">
-              {t("admin.clientTeslaVehicle.firstActivationAt")}
+              {t("admin.clientVehicle.firstActivationAt")}
             </span>
             <span className="text-xl">
               {formData.firstActivationAt

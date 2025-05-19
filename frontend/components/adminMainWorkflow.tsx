@@ -12,7 +12,7 @@ import AdminLoader from "@/components/adminLoader";
 import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
 import PaginationControls from "@/components/paginationControls";
-import TeslaStatusToggle from "./teslaStatusToggle";
+import TeslaStatusToggle from "./vehicleStatusToggle";
 
 export default function AdminMainWorkflow({
   workflowData,
@@ -30,11 +30,11 @@ export default function AdminMainWorkflow({
     zipFilePath: new File([""], ""),
     uploadDate: "",
     model: "",
-    teslaVehicleVIN: "",
+    vehicleVIN: "",
     accessToken: "",
     refreshToken: "",
-    isTeslaActive: true,
-    isTeslaFetchingData: true,
+    isVehicleActive: true,
+    isVehicleFetchingData: true,
   });
 
   const [internalWorkflowData, setInternalWorkflowData] =
@@ -125,8 +125,8 @@ export default function AdminMainWorkflow({
 
     // ✅ Validazione VIN Tesla (regex: 17 caratteri alfanumerici, senza I/O/Q)
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
-    if (!vinRegex.test(formData.teslaVehicleVIN)) {
-      alert(t("admin.validation.invalidTeslaVehicleVIN"));
+    if (!vinRegex.test(formData.vehicleVIN)) {
+      alert(t("admin.validation.invalidVehicleVIN"));
       return;
     }
 
@@ -187,11 +187,11 @@ export default function AdminMainWorkflow({
       zipFilePath: new File([""], ""),
       uploadDate: "",
       model: "",
-      teslaVehicleVIN: "",
+      vehicleVIN: "",
       accessToken: "",
       refreshToken: "",
-      isTeslaActive: true,
-      isTeslaFetchingData: true,
+      isVehicleActive: true,
+      isVehicleFetchingData: true,
     });
 
     setShowForm(false);
@@ -278,13 +278,13 @@ export default function AdminMainWorkflow({
               <td className="p-4 align-middle">
                 <TeslaStatusToggle
                   id={entry.id}
-                  isActive={entry.isTeslaActive}
-                  isFetching={entry.isTeslaFetchingData}
+                  isActive={entry.isVehicleActive}
+                  isFetching={entry.isVehicleFetchingData}
                   field="IsActive"
                   onStatusChange={(newIsActive, newIsFetching) => {
                     const updated = [...workflowData];
-                    updated[index].isTeslaActive = newIsActive;
-                    updated[index].isTeslaFetchingData = newIsFetching;
+                    updated[index].isVehicleActive = newIsActive;
+                    updated[index].isVehicleFetchingData = newIsFetching;
                     setInternalWorkflowData(updated);
                   }}
                   setLoading={setIsStatusChanging}
@@ -293,13 +293,13 @@ export default function AdminMainWorkflow({
               <td className="p-4 align-middle">
                 <TeslaStatusToggle
                   id={entry.id}
-                  isActive={entry.isTeslaActive}
-                  isFetching={entry.isTeslaFetchingData}
+                  isActive={entry.isVehicleActive}
+                  isFetching={entry.isVehicleFetchingData}
                   field="IsFetching"
                   onStatusChange={(newIsActive, newIsFetching) => {
                     const updated = [...workflowData];
-                    updated[index].isTeslaActive = newIsActive;
-                    updated[index].isTeslaFetchingData = newIsFetching;
+                    updated[index].isVehicleActive = newIsActive;
+                    updated[index].isVehicleFetchingData = newIsFetching;
                     setInternalWorkflowData(updated);
                   }}
                   setLoading={setIsStatusChanging}
@@ -308,7 +308,7 @@ export default function AdminMainWorkflow({
               <td className="p-4">{entry.companyName}</td>
               <td className="p-4">{entry.companyVatNumber}</td>
               <td className="p-4">{entry.model}</td>
-              <td className="p-4">{entry.teslaVehicleVIN}</td>
+              <td className="p-4">{entry.vehicleVIN}</td>
             </tr>
           ))}
         </tbody>

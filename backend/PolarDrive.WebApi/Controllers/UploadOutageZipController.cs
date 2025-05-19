@@ -21,7 +21,7 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
         [FromForm] string? companyVatNumber,
         [FromForm] bool autoDetected,
         [FromForm] int? clientCompanyId,
-        [FromForm] int? teslaVehicleId,
+        [FromForm] int? vehicleId,
         [FromForm] IFormFile? zipFile
     )
     {
@@ -46,16 +46,16 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
 
         if (outageType == "Outage Vehicle")
         {
-            if (clientCompanyId is null || teslaVehicleId is null)
-                return BadRequest("SERVER ERROR → BAD REQUEST: Missing Tesla vehicle or company ID!");
+            if (clientCompanyId is null || vehicleId is null)
+                return BadRequest("SERVER ERROR → BAD REQUEST: Missing vehicle or company ID!");
 
             var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == clientCompanyId && c.VatNumber == companyVatNumber);
             if (company == null)
                 return NotFound("SERVER ERROR → NOT FOUND: Company not found or VAT mismatch!");
 
-            var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == teslaVehicleId && v.Vin == vin && v.ClientCompanyId == clientCompanyId);
+            var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicleId && v.Vin == vin && v.ClientCompanyId == clientCompanyId);
             if (vehicle == null)
-                return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found or mismatched!");
+                return NotFound("SERVER ERROR → NOT FOUND: vehicle not found or mismatched!");
         }
 
         string? relativeZipPath = null;
@@ -104,11 +104,11 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
             o.OutageEnd?.Date == parsedEnd?.Date &&
             o.OutageType.Trim() == outageType.Trim() &&
             (
-                (!teslaVehicleId.HasValue && !clientCompanyId.HasValue &&
+                (!vehicleId.HasValue && !clientCompanyId.HasValue &&
                 o.VehicleId == null && o.ClientCompanyId == null)
                 ||
-                (teslaVehicleId.HasValue && clientCompanyId.HasValue &&
-                o.VehicleId == teslaVehicleId && o.ClientCompanyId == clientCompanyId)
+                (vehicleId.HasValue && clientCompanyId.HasValue &&
+                o.VehicleId == vehicleId && o.ClientCompanyId == clientCompanyId)
             )
         );
 
@@ -148,7 +148,7 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
                 OutageEnd = parsedEnd,
                 AutoDetected = autoDetected,
                 ClientCompanyId = clientCompanyId,
-                VehicleId = teslaVehicleId,
+                VehicleId = vehicleId,
                 ZipFilePath = relativeZipPath,
                 Notes = ""
             };

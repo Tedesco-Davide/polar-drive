@@ -1,6 +1,6 @@
 import { Pencil } from "lucide-react";
 import { TFunction } from "i18next";
-import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
+import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useEffect, useState } from "react";
@@ -8,21 +8,21 @@ import { formatDateToDisplay } from "@/utils/date";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import EditModal from "@/components/adminEditModal";
-import AdminClientTeslaVehicleEditForm from "@/components/adminClientTeslaVehicleEditForm";
+import AdminClientVehicleEditForm from "@/components/adminClientVehicleEditForm";
 
 type Props = {
-  vehicles: ClientTeslaVehicle[];
+  vehicles: ClientVehicle[];
   refreshWorkflowData: () => Promise<void>;
   t: TFunction;
 };
 
-export default function AdminClientTeslaVehiclesTable({
+export default function AdminClientVehiclesTable({
   vehicles,
   refreshWorkflowData,
   t,
 }: Props) {
-  const [vehicleData, setVehicleData] = useState<ClientTeslaVehicle[]>([]);
-  const { query, setQuery, filteredData } = useSearchFilter<ClientTeslaVehicle>(
+  const [vehicleData, setVehicleData] = useState<ClientVehicle[]>([]);
+  const { query, setQuery, filteredData } = useSearchFilter<ClientVehicle>(
     vehicleData,
     ["vin", "model", "trim", "color"]
   );
@@ -34,17 +34,18 @@ export default function AdminClientTeslaVehiclesTable({
     nextPage,
     prevPage,
     setCurrentPage,
-  } = usePagination<ClientTeslaVehicle>(filteredData, 5);
+  } = usePagination<ClientVehicle>(filteredData, 5);
 
-  const [selectedVehicle, setSelectedVehicle] =
-    useState<ClientTeslaVehicle | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<ClientVehicle | null>(
+    null
+  );
   const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     setVehicleData(vehicles);
   }, [vehicles]);
 
-  const handleEditClick = (vehicle: ClientTeslaVehicle) => {
+  const handleEditClick = (vehicle: ClientVehicle) => {
     setSelectedVehicle(vehicle);
     setShowEditModal(true);
   };
@@ -52,26 +53,26 @@ export default function AdminClientTeslaVehiclesTable({
   return (
     <div>
       <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite mb-12">
-        {t("admin.clientTeslaVehicle.tableHeader")}
+        {t("admin.clientVehicle.tableHeader")}
       </h1>
       <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">{t("admin.actions")}</th>
-            <th className="p-4">{t("admin.teslaVehicleVIN")}</th>
-            <th className="p-4">{t("admin.clientTeslaVehicle.model")}</th>
-            <th className="p-4">{t("admin.clientTeslaVehicle.trim")}</th>
-            <th className="p-4">{t("admin.clientTeslaVehicle.color")}</th>
-            <th className="p-4">{t("admin.clientTeslaVehicle.isActive")}</th>
-            <th className="p-4">{t("admin.clientTeslaVehicle.isFetching")}</th>
+            <th className="p-4">{t("admin.vehicleVIN")}</th>
+            <th className="p-4">{t("admin.clientVehicle.model")}</th>
+            <th className="p-4">{t("admin.clientVehicle.trim")}</th>
+            <th className="p-4">{t("admin.clientVehicle.color")}</th>
+            <th className="p-4">{t("admin.clientVehicle.isActive")}</th>
+            <th className="p-4">{t("admin.clientVehicle.isFetching")}</th>
             <th className="p-4">
-              {t("admin.clientTeslaVehicle.firstActivationAt")}
+              {t("admin.clientVehicle.firstActivationAt")}
             </th>
             <th className="p-4">
-              {t("admin.clientTeslaVehicle.lastDeactivationAt")}
+              {t("admin.clientVehicle.lastDeactivationAt")}
             </th>
             <th className="p-4">
-              {t("admin.clientTeslaVehicle.lastFetchingDataAt")}
+              {t("admin.clientVehicle.lastFetchingDataAt")}
             </th>
           </tr>
         </thead>
@@ -134,12 +135,12 @@ export default function AdminClientTeslaVehiclesTable({
         <EditModal
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
-          title={t("admin.clientTeslaVehicle.editModal")}
+          title={t("admin.clientVehicle.editModal")}
         >
-          <AdminClientTeslaVehicleEditForm
+          <AdminClientVehicleEditForm
             vehicle={selectedVehicle}
             onClose={() => setShowEditModal(false)}
-            onSave={async (updatedVehicle: ClientTeslaVehicle) => {
+            onSave={async (updatedVehicle: ClientVehicle) => {
               setVehicleData((prev) =>
                 prev.map((v) =>
                   v.id === updatedVehicle.id ? updatedVehicle : v

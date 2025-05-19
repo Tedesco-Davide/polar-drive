@@ -4,20 +4,20 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTheme } from "next-themes";
 import { useTranslation } from "next-i18next";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
-import { ClientTeslaVehicle } from "@/types/teslaVehicleInterfaces";
+import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import { PdfReport } from "@/types/reportInterfaces";
 import { API_BASE_URL } from "@/utils/api";
 import { WorkflowRow } from "@/types/adminWorkflowTypes";
-import { ClientTeslaVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
+import { ClientVehicleWithCompany as ClientVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
 import AdminLoader from "@/components/adminLoader";
-import AdminClientTeslaVehiclesTable from "@/components/adminClientTeslaVehiclesTable";
+import AdminClientVehiclesTable from "@/components/adminClientVehiclesTable";
 import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
 import AdminMainWorkflow from "@/components/adminMainWorkflow";
 import AdminClientConsents from "@/components/adminClientConsentsTable";
 import AdminOutagePeriodsTable from "@/components/adminOutagePeriodsTable";
-import AdminTeslaVehiclesReport from "@/components/adminTeslaVehiclesReport";
+import AdminVehiclesReport from "@/components/adminVehiclesReport";
 import Head from "next/head";
 import Header from "@/components/header";
 import classNames from "classnames";
@@ -29,7 +29,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>("PolarDrive");
   const [workflowData, setWorkflowData] = useState<WorkflowRow[]>([]);
   const [clients, setClients] = useState<ClientCompany[]>([]);
-  const [vehicles, setVehicles] = useState<ClientTeslaVehicle[]>([]);
+  const [vehicles, setVehicles] = useState<ClientVehicle[]>([]);
   const [clientConsents, setClientConsents] = useState<ClientConsent[]>([]);
   const [outagePeriods, setOutagePeriods] = useState<OutagePeriod[]>([]);
   const [pdfReports, setPdfReports] = useState<PdfReport[]>([]);
@@ -40,8 +40,8 @@ export default function AdminDashboard() {
 
   const refreshWorkflowData = async () => {
     try {
-      const res = await fetch("https://localhost:5041/api/ClientTeslaVehicles");
-      const data: ClientTeslaVehicleWithCompany[] = await res.json();
+      const res = await fetch("https://localhost:5041/api/ClientVehicles");
+      const data: ClientVehicleWithCompany[] = await res.json();
 
       setWorkflowData(
         data.map((entry) => ({
@@ -54,11 +54,11 @@ export default function AdminDashboard() {
           zipFilePath: "",
           uploadDate: entry.firstActivationAt ?? "",
           model: entry.model ?? "",
-          teslaVehicleVIN: entry.vin ?? "",
+          vehicleVIN: entry.vin ?? "",
           accessToken: "",
           refreshToken: "",
-          isTeslaActive: entry.isActive,
-          isTeslaFetchingData: entry.isFetching,
+          isVehicleActive: entry.isActive,
+          isVehicleFetchingData: entry.isFetching,
         }))
       );
     } catch (err) {
@@ -86,14 +86,14 @@ export default function AdminDashboard() {
         const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
           await Promise.all([
             fetch(`${API_BASE_URL}/api/clientcompanies`),
-            fetch(`${API_BASE_URL}/api/clientteslavehicles`),
+            fetch(`${API_BASE_URL}/api/clientvehicles`),
             fetch(`${API_BASE_URL}/api/clientconsents`),
             fetch(`${API_BASE_URL}/api/outageperiods`),
             fetch("/api/mock-pdfreports"),
           ]);
 
         const clientsData: ClientCompany[] = await clientsRes.json();
-        const vehiclesData: ClientTeslaVehicleWithCompany[] =
+        const vehiclesData: ClientVehicleWithCompany[] =
           await vehiclesRes.json();
         const consentsData: ClientConsent[] = await consentsRes.json();
         const outagesData: OutagePeriod[] = await outagesRes.json();
@@ -206,7 +206,7 @@ export default function AdminDashboard() {
                         t={t}
                         refreshWorkflowData={refreshWorkflowData}
                       />
-                      <AdminClientTeslaVehiclesTable
+                      <AdminClientVehiclesTable
                         vehicles={vehicles}
                         t={t}
                         refreshWorkflowData={refreshWorkflowData}
@@ -234,7 +234,7 @@ export default function AdminDashboard() {
                           return updatedOutagePeriods;
                         }}
                       />
-                      <AdminTeslaVehiclesReport reports={pdfReports} t={t} />
+                      <AdminVehiclesReport reports={pdfReports} t={t} />
                     </div>
                   </div>
                 )}

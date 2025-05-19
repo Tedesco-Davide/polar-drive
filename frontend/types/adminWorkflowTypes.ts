@@ -6,12 +6,12 @@ export type adminWorkflowTypesInputForm = {
   referentEmail: string;
   zipFilePath: File;
   uploadDate: string;
-  teslaVehicleVIN: string;
+  vehicleVIN: string;
   model: string;
   accessToken: string;
   refreshToken: string;
-  isTeslaActive: boolean;
-  isTeslaFetchingData: boolean;
+  isVehicleActive: boolean;
+  isVehicleFetchingData: boolean;
 };
 
 type InputWithoutFile = Omit<adminWorkflowTypesInputForm, "zipFilePath">;

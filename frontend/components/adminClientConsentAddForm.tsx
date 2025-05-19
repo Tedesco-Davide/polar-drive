@@ -45,13 +45,17 @@ export default function AdminClientConsentAddForm({
   };
 
   const handleSubmit = async () => {
-    const { companyVatNumber, teslaVehicleVIN, consentType, uploadDate } =
-      formData;
+    const {
+      companyVatNumber,
+      vehicleVIN: vehicleVIN,
+      consentType,
+      uploadDate,
+    } = formData;
 
     // Validazione aggregata
     const requiredFields = [
       "companyVatNumber",
-      "teslaVehicleVIN",
+      "vehicleVIN",
       "consentType",
       "uploadDate",
     ] as const;
@@ -81,8 +85,8 @@ export default function AdminClientConsentAddForm({
       return;
     }
 
-    if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(teslaVehicleVIN)) {
-      alert(t("admin.validation.invalidTeslaVehicleVIN"));
+    if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(vehicleVIN)) {
+      alert(t("admin.validation.invalidVehicleVIN"));
       return;
     }
 
@@ -102,7 +106,7 @@ export default function AdminClientConsentAddForm({
 
     try {
       const resolveRes = await fetch(
-        `${API_BASE_URL}/api/ClientConsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${teslaVehicleVIN}`
+        `${API_BASE_URL}/api/ClientConsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${vehicleVIN}`
       );
 
       if (!resolveRes.ok) {
@@ -110,16 +114,16 @@ export default function AdminClientConsentAddForm({
         return;
       }
 
-      const { clientCompanyId, teslaVehicleId } = await resolveRes.json();
+      const { clientCompanyId, vehicleId: vehicleId } = await resolveRes.json();
 
       const uploadForm = new FormData();
       uploadForm.append("zipFile", formData.zipFile);
       uploadForm.append("clientCompanyId", clientCompanyId.toString());
-      uploadForm.append("teslaVehicleId", teslaVehicleId.toString());
+      uploadForm.append("vehicleId", vehicleId.toString());
       uploadForm.append("consentType", consentType);
       uploadForm.append("uploadDate", uploadDate);
       uploadForm.append("companyVatNumber", companyVatNumber);
-      uploadForm.append("teslaVehicleVIN", teslaVehicleVIN);
+      uploadForm.append("vehicleVIN", vehicleVIN);
 
       const res = await fetch(`${API_BASE_URL}/api/uploadconsentzip`, {
         method: "POST",
@@ -152,13 +156,13 @@ export default function AdminClientConsentAddForm({
       setFormData({
         id: 0,
         clientCompanyId: 0,
-        teslaVehicleId: 0,
+        vehicleId: 0,
         uploadDate: "",
         zipFilePath: "",
         consentHash: "",
         consentType: "",
         companyVatNumber: "",
-        teslaVehicleVIN: "",
+        vehicleVIN: "",
         notes: "",
         zipFile: null,
       });
@@ -211,11 +215,11 @@ export default function AdminClientConsentAddForm({
 
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientConsents.teslaVehicleVIN")}
+            {t("admin.clientConsents.vehicleVIN")}
           </span>
           <input
-            name="teslaVehicleVIN"
-            value={formData.teslaVehicleVIN}
+            name="vehicleVIN"
+            value={formData.vehicleVIN}
             onChange={handleChange}
             className="input"
             maxLength={17}

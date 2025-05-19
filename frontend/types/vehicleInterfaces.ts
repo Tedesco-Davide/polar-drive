@@ -1,4 +1,4 @@
-export interface ClientTeslaVehicle {
+export interface ClientVehicle {
   id: number;
   clientCompanyId: number;
   vin: string;
@@ -12,16 +12,16 @@ export interface ClientTeslaVehicle {
   lastFetchingDataAt: string | null;
 }
 
-export interface TeslaWorkflow {
-  teslaVehicleId: number;
+export interface VehicleWorkflow {
+  vehicleId: number;
   isActive: boolean;
   isFetching: boolean;
   lastStatusChangeAt: string;
 }
 
-export interface TeslaWorkflowEvent {
+export interface VehicleWorkflowEvent {
   id: number;
-  teslaVehicleId: number;
+  vehicleId: number;
   fieldChanged: "IsActiveFlag" | "FetchDataFlag";
   oldValue: 0 | 1;
   newValue: 0 | 1;

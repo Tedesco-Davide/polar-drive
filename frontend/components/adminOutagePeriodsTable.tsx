@@ -243,10 +243,10 @@ export default function AdminOutagePeriodsTable({
                               "clientCompanyId",
                               outage.clientCompanyId.toString()
                             );
-                          if (outage.teslaVehicleId != null)
+                          if (outage.vehicleId != null)
                             payload.append(
                               "teslaVehicleId",
-                              outage.teslaVehicleId.toString()
+                              outage.vehicleId.toString()
                             );
                           const res = await fetch(
                             `${API_BASE_URL}/api/uploadoutagezip`,

@@ -1,6 +1,6 @@
-export interface ClientTeslaToken {
+export interface ClientVehicleToken {
   id: number;
-  teslaVehicleId: number;
+  vehicleId: number;
   accessToken: string;
   refreshToken: string;
   accessTokenExpiresAt: string;

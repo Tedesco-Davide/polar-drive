@@ -204,7 +204,7 @@ export default function AdminMainWorkflowInputForm({
           <input
             maxLength={17}
             name="teslaVehicleVIN"
-            value={formData.teslaVehicleVIN}
+            value={formData.vehicleVIN}
             onChange={handleChange}
             className="input"
           />

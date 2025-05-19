@@ -8,7 +8,7 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerBase
+public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AdminWorkflowExtendedDTO>>> Get()
@@ -43,7 +43,7 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
     }
 
     [HttpPost]
-    public async Task<ActionResult> Post([FromBody] ClientTeslaVehicleDTO dto)
+    public async Task<ActionResult> Post([FromBody] ClientVehicleDTO dto)
     {
         // Validazione logica: se è attiva, deve anche fare fetch
         if (dto.IsActive && !dto.IsFetching)
@@ -73,14 +73,14 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
     }
 
     [HttpPatch("{id}/status")]
-    public async Task<IActionResult> UpdateStatus(int id, [FromBody] TeslaVehicleStatusUpdateDTO dto)
+    public async Task<IActionResult> UpdateStatus(int id, [FromBody] VehicleStatusUpdateDTO dto)
     {
         if (dto.IsActive && !dto.IsFetching)
             return BadRequest("SERVER ERROR → BAD REQUEST: An Active vehicle must also be in Data Acquisition state (IsFetching)!");
 
         var vehicle = await db.ClientVehicles.FindAsync(id);
         if (vehicle == null)
-            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
+            return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found!");
 
         vehicle.IsActiveFlag = dto.IsActive;
         vehicle.IsFetchingDataFlag = dto.IsFetching;
@@ -99,11 +99,11 @@ public class ClientTeslaVehiclesController(PolarDriveDbContext db) : ControllerB
     }
 
     [HttpPut("{id}")]
-    public async Task<IActionResult> Put(int id, [FromBody] ClientTeslaVehicleDTO dto)
+    public async Task<IActionResult> Put(int id, [FromBody] ClientVehicleDTO dto)
     {
         var vehicle = await db.ClientVehicles.FindAsync(id);
         if (vehicle == null)
-            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
+            return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found!");
 
         if (dto.IsActive && !dto.IsFetching)
             return BadRequest("SERVER ERROR → BAD REQUEST: An Active vehicle must also be in Data Acquisition state (IsFetching)!");

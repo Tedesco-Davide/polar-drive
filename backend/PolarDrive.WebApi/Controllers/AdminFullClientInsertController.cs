@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
 using System.IO.Compression;
 using System.Security.Cryptography;
@@ -42,30 +43,30 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 await _dbContext.SaveChangesAsync();
             }
 
-            // Check: se esiste già una Tesla con quel VIN
+            // Check: se esiste già una veicolo con quel VIN
             var existingVehicle = await _dbContext.ClientVehicles
-                .FirstOrDefaultAsync(v => v.Vin == request.TeslaVIN);
+                .FirstOrDefaultAsync(v => v.Vin == request.VehicleVIN);
 
             if (existingVehicle != null)
             {
                 // È già associata a un'altra azienda?
                 if (existingVehicle.ClientCompanyId != company.Id)
                 {
-                    return BadRequest("SERVER ERROR → BAD REQUEST: This Tesla VIN is already registered and assigned to another company!");
+                    return BadRequest("SERVER ERROR → BAD REQUEST: This vehicle VIN is already registered and assigned to another company!");
                 }
 
                 // Se invece è già associata alla stessa azienda, blocca per evitare duplicato
-                return BadRequest("SERVER ERROR → BAD REQUEST: This Tesla VIN is already associated with this company!");
+                return BadRequest("SERVER ERROR → BAD REQUEST: This vehicle VIN is already associated with this company!");
             }
 
             // ─────────────────────
-            // 2. Veicolo Tesla
+            // 2. Veicolo
             // ─────────────────────
             var vehicle = new ClientVehicle
             {
                 ClientCompanyId = company.Id,
-                Vin = request.TeslaVIN,
-                Model = request.TeslaModel,
+                Vin = request.VehicleVIN,
+                Model = request.VehicleModel,
                 IsActiveFlag = true,
                 IsFetchingDataFlag = true,
                 FirstActivationAt = request.UploadDate

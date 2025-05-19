@@ -5,14 +5,12 @@ export interface ClientFullProfile {
   address: string;
   email: string;
   pecAddress: string;
-
-  teslaVehicleId: number;
+  vehicleId: number;
   vin: string;
   model: string;
-  workflowStatus: boolean; // mappa `IsActiveFlag` → true/false
-  dataCollectionFlag: boolean; // mappa `FetchDataFlag` → true/false
+  workflowStatus: boolean;
+  dataCollectionFlag: boolean;
   lastStatusChangeAt: string;
-
   eventType: "IsActiveFlag" | "FetchDataFlag";
   eventTimestamp?: string;
 }

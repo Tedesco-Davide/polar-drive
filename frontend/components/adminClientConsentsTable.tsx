@@ -72,13 +72,13 @@ export default function AdminClientConsents({
   const [formData, setFormData] = useState<ClientConsent>({
     id: 0,
     clientCompanyId: 0,
-    teslaVehicleId: 0,
+    vehicleId: 0,
     uploadDate: "",
     zipFilePath: "",
     consentHash: "",
     consentType: "",
     companyVatNumber: "",
-    teslaVehicleVIN: "",
+    vehicleVIN: "",
     notes: "",
   });
 
@@ -120,7 +120,7 @@ export default function AdminClientConsents({
             <th className="p-4">
               {t("admin.clientConsents.companyVatNumber")}{" "}
               {t("admin.basicPlaceholder")}{" "}
-              {t("admin.clientConsents.teslaVehicleVIN")}
+              {t("admin.clientConsents.vehicleVIN")}
             </th>
             <th className="p-4">{t("admin.clientConsents.hash")}</th>
           </tr>
@@ -198,7 +198,7 @@ export default function AdminClientConsents({
               <td className="p-4">{formatDateToDisplay(consent.uploadDate)}</td>
               <td className="p-4">
                 {consent.companyVatNumber} {t("admin.basicPlaceholder")}{" "}
-                {consent.teslaVehicleVIN}
+                {consent.vehicleVIN}
               </td>
               <td className="p-4">{consent.consentHash}</td>
             </tr>

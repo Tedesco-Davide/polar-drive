@@ -1,6 +1,6 @@
 export interface OutagePeriod {
   id: number;
-  teslaVehicleId: number;
+  vehicleId: number;
   clientCompanyId: number;
   autoDetected: boolean;
   outageType: "Outage Vehicle" | "Outage Fleet Api";

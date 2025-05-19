@@ -1,9 +1,9 @@
-export async function updateTeslaVehicleStatus(
+export async function updateVehicleStatus(
   id: number,
   isActive: boolean,
   isFetching: boolean
 ): Promise<void> {
-  const response = await fetch(`/api/ClientTeslaVehicles/${id}/status`, {
+  const response = await fetch(`/api/ClientVehicles/${id}/status`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",

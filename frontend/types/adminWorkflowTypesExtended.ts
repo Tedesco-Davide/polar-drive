@@ -1,10 +1,10 @@
-import { ClientTeslaVehicle } from "./teslaVehicleInterfaces";
+import { ClientVehicle } from "./vehicleInterfaces";
 import { ClientCompany } from "./clientCompanyInterfaces";
 
 /**
  * DTO esteso usato solo per il componente AdminMainWorkflow.
- * Include il veicolo Tesla e i dati dell'azienda associata.
+ * Include il veicolo ed i dati dell'azienda associata.
  */
-export interface ClientTeslaVehicleWithCompany extends ClientTeslaVehicle {
+export interface ClientVehicleWithCompany extends ClientVehicle {
   clientCompany: ClientCompany;
 }

@@ -15,11 +15,11 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
     [HttpPost]
     public async Task<IActionResult> UploadConsent(
         [FromForm] int clientCompanyId,
-        [FromForm] int teslaVehicleId,
+        [FromForm] int vehicleId,
         [FromForm] string consentType,
         [FromForm] string uploadDate,
         [FromForm] string companyVatNumber,
-        [FromForm] string teslaVehicleVIN,
+        [FromForm] string vehicleVIN,
         [FromForm] IFormFile zipFile
     )
     {
@@ -66,9 +66,9 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         if (company == null)
             return NotFound("SERVER ERROR → NOT FOUND: Company not found or invalid VAT number!");
 
-        var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == teslaVehicleId && v.Vin == teslaVehicleVIN && v.ClientCompanyId == clientCompanyId);
+        var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicleId && v.Vin == vehicleVIN && v.ClientCompanyId == clientCompanyId);
         if (vehicle == null)
-            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found or not associated with the company!");
+            return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found or not associated with the company!");
 
         // 🔐 SHA256
         string hash;
@@ -89,7 +89,7 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         }
 
         // 📁 Salva ZIP
-        var safeVin = teslaVehicleVIN.ToUpper().Trim();
+        var safeVin = vehicleVIN.ToUpper().Trim();
         var companyBasePath = Path.Combine(env.WebRootPath ?? "wwwroot", "companies", $"company-{clientCompanyId}");
         var consentsDir = Path.Combine(companyBasePath, "consents-zip");
         Directory.CreateDirectory(consentsDir);
@@ -109,7 +109,7 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         var consent = new ClientConsent
         {
             ClientCompanyId = clientCompanyId,
-            VehicleId = teslaVehicleId,
+            VehicleId = vehicleId,
             UploadDate = parsedDate,
             ZipFilePath = Path.Combine("companies", $"company-{clientCompanyId}", "consents-zip", zipFilename).Replace("\\", "/"),
             ConsentHash = hash,
@@ -128,7 +128,7 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
             zipFilePath = consent.ZipFilePath,
             consentHash = hash,
             companyVatNumber,
-            teslaVehicleVIN
+            vehicleVIN
         });
     }
 }

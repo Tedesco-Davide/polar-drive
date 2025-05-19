@@ -1,7 +1,7 @@
 export interface ClientConsent {
   id: number;
   clientCompanyId: number;
-  teslaVehicleId: number;
+  vehicleId: number;
   uploadDate: string;
   zipFilePath: string;
   consentHash: string;
@@ -11,7 +11,7 @@ export interface ClientConsent {
     | "Consent Deactivation"
     | "Consent Stop Data Fetching"
     | "Consent Reactivation";
-  teslaVehicleVIN: string;
+  vehicleVIN: string;
   companyVatNumber: string;
   notes?: string;
   zipFile?: File | null;

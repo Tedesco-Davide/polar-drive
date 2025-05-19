@@ -22,8 +22,8 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
                 Id = c.Id,
                 ClientCompanyId = c.ClientCompanyId,
                 CompanyVatNumber = c.ClientCompany!.VatNumber,
-                TeslaVehicleId = c.VehicleId,
-                TeslaVehicleVIN = c.ClientVehicle!.Vin,
+                VehicleId = c.VehicleId,
+                VehicleVIN = c.ClientVehicle!.Vin,
                 UploadDate = c.UploadDate.ToString("o"),
                 ZipFilePath = c.ZipFilePath,
                 ConsentHash = c.ConsentHash,
@@ -40,13 +40,13 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
-        if (!await db.ClientVehicles.AnyAsync(v => v.Id == dto.TeslaVehicleId))
-            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
+        if (!await db.ClientVehicles.AnyAsync(v => v.Id == dto.VehicleId))
+            return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found!");
 
         var entity = new ClientConsent
         {
             ClientCompanyId = dto.ClientCompanyId,
-            VehicleId = dto.TeslaVehicleId,
+            VehicleId = dto.VehicleId,
             UploadDate = ParseDate(dto.UploadDate),
             ZipFilePath = dto.ZipFilePath,
             ConsentHash = dto.ConsentHash,
@@ -107,15 +107,15 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
 
         var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
         if (vehicle == null)
-            return NotFound("SERVER ERROR → NOT FOUND: Tesla vehicle not found!");
+            return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found!");
 
         if (vehicle.ClientCompanyId != company.Id)
-            return BadRequest("SERVER ERROR → BAD REQUEST: This Tesla vehicle does not belong to the company you are trying to associate!");
+            return BadRequest("SERVER ERROR → BAD REQUEST: This vehicle does not belong to the company you are trying to associate!");
 
         return Ok(new
         {
             clientCompanyId = company.Id,
-            teslaVehicleId = vehicle.Id
+            vehicleId = vehicle.Id
         });
     }
 

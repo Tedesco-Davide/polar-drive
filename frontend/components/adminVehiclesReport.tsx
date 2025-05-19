@@ -14,7 +14,7 @@ type Props = {
   reports: PdfReport[];
 };
 
-export default function AdminTeslaVehiclesReport({ t, reports }: Props) {
+export default function AdminVehiclesReport({ t, reports }: Props) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
@@ -48,7 +48,7 @@ export default function AdminTeslaVehiclesReport({ t, reports }: Props) {
     <div>
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.teslaReports.tableHeader")}
+          {t("admin.vehicleReports.tableHeader")}
         </h1>
       </div>
 
@@ -56,12 +56,14 @@ export default function AdminTeslaVehiclesReport({ t, reports }: Props) {
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">{t("admin.actions")}</th>
-            <th className="p-4">{t("admin.teslaReports.reportPeriod")}</th>
+            <th className="p-4">{t("admin.vehicleReports.reportPeriod")}</th>
             <th className="p-4">
-              {t("admin.teslaReports.clientCompanyVATName")}
+              {t("admin.vehicleReports.clientCompanyVATName")}
             </th>
-            <th className="p-4">{t("admin.teslaReports.vehicleVinDisplay")}</th>
-            <th className="p-4">{t("admin.teslaReports.generatedAt")}</th>
+            <th className="p-4">
+              {t("admin.vehicleReports.vehicleVinDisplay")}
+            </th>
+            <th className="p-4">{t("admin.vehicleReports.generatedAt")}</th>
           </tr>
         </thead>
         <tbody>
@@ -73,7 +75,7 @@ export default function AdminTeslaVehiclesReport({ t, reports }: Props) {
               <td className="p-4 space-x-2 inline-flex">
                 <button
                   className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
-                  title={t("admin.teslaReports.downloadSinglePdf")}
+                  title={t("admin.vehicleReports.downloadSinglePdf")}
                   onClick={() => window.open(report.pdfFilePath, "_blank")}
                 >
                   <FileText size={16} />
@@ -89,7 +91,7 @@ export default function AdminTeslaVehiclesReport({ t, reports }: Props) {
                   <NotesModal
                     entity={selectedReportForNotes}
                     isOpen={!!selectedReportForNotes}
-                    title={t("admin.teslaReports.notesModalTitle")}
+                    title={t("admin.vehicleReports.notesModalTitle")}
                     notesField="notes"
                     onSave={(updated) => {
                       setLocalReports((prev) =>

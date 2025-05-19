@@ -58,7 +58,7 @@ db.ClientCompanies.AddRange(companies);
 await db.SaveChangesAsync();
 
 // ─────────────────────────────────────
-// 3. Per ogni azienda: crea cartelle + mock Tesla + token + consenso
+// 3. Per ogni azienda: crea cartelle + mock vehicle + token + consenso
 // ─────────────────────────────────────
 int vinCounter = 1;
 foreach (var company in companies)
@@ -94,7 +94,7 @@ foreach (var company in companies)
         await writer.WriteAsync("%PDF-1.4\n%empty consent\n%%EOF");
     }
 
-    // 🚘 Mock Tesla
+    // 🚘 Mock Veicoli
     var vin = $"5YJ3E1EA7KF31{vinCounter++:0000}";
     var vehicle = new ClientVehicle
     {
@@ -108,7 +108,7 @@ foreach (var company in companies)
     db.ClientVehicles.Add(vehicle);
     await db.SaveChangesAsync();
 
-    // 🔑 Mock Token associato alla Tesla
+    // 🔑 Mock Token associato al veicolo
     var token = new ClientToken
     {
         VehicleId = vehicle.Id,
@@ -122,7 +122,7 @@ foreach (var company in companies)
     db.ClientTokens.Add(token);
     await db.SaveChangesAsync();
 
-    // 📝 Mock consenso associato alla Tesla
+    // 📝 Mock consenso associato al Veicolo
     var consent = new ClientConsent
     {
         ClientCompanyId = company.Id,
@@ -213,7 +213,7 @@ var outages = new List<OutagePeriod>
         CreatedAt = DateTime.Parse("2025-04-22T12:00:00Z"),
         OutageStart = DateTime.Parse("2025-04-22T08:00:00Z"),
         OutageEnd = DateTime.Parse("2025-04-22T11:30:00Z"),
-        Notes = "API Tesla non rispondeva: HTTP 503 da tutte le richieste."
+        Notes = "API ufficiale non rispondeva: HTTP 503 da tutte le richieste."
     },
     new()
     {
