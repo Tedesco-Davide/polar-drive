@@ -14,7 +14,7 @@ type Props = {
   refreshWorkflowData: () => Promise<void>;
 };
 
-export default function AdminClientTeslaVehicleEditForm({
+export default function AdminClientVehicleEditForm({
   vehicle,
   onClose,
   onSave,
@@ -42,7 +42,7 @@ export default function AdminClientTeslaVehicleEditForm({
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
 
     if (!vinRegex.test(formData.vin.trim())) {
-      alert(t("admin.clientVehicle.validation.invalidTeslaVehicleVIN"));
+      alert(t("admin.clientVehicle.validation.invalidVehicleVIN"));
       return;
     }
 
@@ -64,7 +64,7 @@ export default function AdminClientTeslaVehicleEditForm({
 
     try {
       await axios.put(
-        `${API_BASE_URL}/api/ClientTeslaVehicles/${formData.id}`,
+        `${API_BASE_URL}/api/ClientVehicles/${formData.id}`,
         formData
       );
 

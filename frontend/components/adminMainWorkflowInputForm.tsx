@@ -199,11 +199,11 @@ export default function AdminMainWorkflowInputForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.mainWorkflow.labels.teslaVehicleVIN")}
+            {t("admin.mainWorkflow.labels.vehicleVIN")}
           </span>
           <input
             maxLength={17}
-            name="teslaVehicleVIN"
+            name="vehicleVIN"
             value={formData.vehicleVIN}
             onChange={handleChange}
             className="input"
@@ -236,7 +236,7 @@ export default function AdminMainWorkflowInputForm({
         className="mt-6 bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600"
         onClick={onSubmit}
       >
-        {t("admin.mainWorkflow.button.confirmAddNewTesla")}
+        {t("admin.mainWorkflow.button.confirmAddNewVehicle")}
       </button>
     </div>
   );

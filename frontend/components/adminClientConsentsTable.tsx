@@ -53,7 +53,7 @@ export default function AdminClientConsents({
       "uploadDate",
       "consentHash",
       "consentType",
-      "teslaVehicleVIN",
+      "vehicleVIN",
       "companyVatNumber",
     ]
   );

@@ -139,7 +139,7 @@ export default function AdminOutagePeriodsTable({
             <th className="p-4">
               {t("admin.outagePeriods.companyVatNumber")}{" "}
               {t("admin.basicPlaceholder")}{" "}
-              {t("admin.outagePeriods.teslaVehicleVIN")}
+              {t("admin.outagePeriods.vehicleVIN")}
             </th>
           </tr>
         </thead>
@@ -245,7 +245,7 @@ export default function AdminOutagePeriodsTable({
                             );
                           if (outage.vehicleId != null)
                             payload.append(
-                              "teslaVehicleId",
+                              "vehicleId",
                               outage.vehicleId.toString()
                             );
                           const res = await fetch(

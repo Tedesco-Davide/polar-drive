@@ -12,7 +12,7 @@ import AdminLoader from "@/components/adminLoader";
 import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
 import PaginationControls from "@/components/paginationControls";
-import TeslaStatusToggle from "./vehicleStatusToggle";
+import VehicleStatusToggle from "./vehicleStatusToggle";
 
 export default function AdminMainWorkflow({
   workflowData,
@@ -55,7 +55,7 @@ export default function AdminMainWorkflow({
       "companyName",
       "referentMobile",
       "referentEmail",
-      "teslaVehicleVIN",
+      "vehicleVIN",
     ]
   );
 
@@ -78,7 +78,7 @@ export default function AdminMainWorkflow({
       "zipFilePath",
       "uploadDate",
       "model",
-      "teslaVehicleVIN",
+      "vehicleVIN",
       "accessToken",
       "refreshToken",
     ];
@@ -123,7 +123,7 @@ export default function AdminMainWorkflow({
       return;
     }
 
-    // ✅ Validazione VIN Tesla (regex: 17 caratteri alfanumerici, senza I/O/Q)
+    // ✅ Validazione VIN Vehicle (regex: 17 caratteri alfanumerici, senza I/O/Q)
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
     if (!vinRegex.test(formData.vehicleVIN)) {
       alert(t("admin.validation.invalidVehicleVIN"));
@@ -174,7 +174,7 @@ export default function AdminMainWorkflow({
     setCurrentPage(1);
 
     // ✅ 3. Mostra alert di successo
-    alert(t("admin.mainWorkflow.button.successAddNewTesla"));
+    alert(t("admin.mainWorkflow.button.successAddNewVehicle"));
     await refreshWorkflowData();
 
     // ✅ 4. Reset del form
@@ -213,8 +213,8 @@ export default function AdminMainWorkflow({
           onClick={() => setShowForm(!showForm)}
         >
           {showForm
-            ? t("admin.mainWorkflow.button.undoAddNewTesla")
-            : t("admin.mainWorkflow.button.addNewTesla")}
+            ? t("admin.mainWorkflow.button.undoAddNewVehicle")
+            : t("admin.mainWorkflow.button.addNewVehicle")}
         </button>
       </div>
 
@@ -232,10 +232,10 @@ export default function AdminMainWorkflow({
           <tr>
             <th className="p-4">{t("admin.actions")}</th>
             <th className="p-4">
-              {t("admin.mainWorkflow.headers.isTeslaActive")}
+              {t("admin.mainWorkflow.headers.isVehicleActive")}
             </th>
             <th className="p-4">
-              {t("admin.mainWorkflow.headers.isTeslaFetchingData")}
+              {t("admin.mainWorkflow.headers.isVehicleFetchingData")}
             </th>
             <th className="p-4">
               {t("admin.mainWorkflow.headers.companyName")}
@@ -245,7 +245,7 @@ export default function AdminMainWorkflow({
             </th>
             <th className="p-4">{t("admin.mainWorkflow.headers.model")}</th>
             <th className="p-4">
-              {t("admin.mainWorkflow.headers.teslaVehicleVIN")}
+              {t("admin.mainWorkflow.headers.vehicleVIN")}
             </th>
           </tr>
         </thead>
@@ -258,7 +258,7 @@ export default function AdminMainWorkflow({
               <td className="p-4 space-x-2 inline-flex">
                 <button
                   className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600"
-                  title={t("admin.mainWorkflow.button.pdfUserAndTesla")}
+                  title={t("admin.mainWorkflow.button.pdfUserAndVehicle")}
                 >
                   <UserSearch size={16} />
                 </button>
@@ -276,7 +276,7 @@ export default function AdminMainWorkflow({
                 </button>
               </td>
               <td className="p-4 align-middle">
-                <TeslaStatusToggle
+                <VehicleStatusToggle
                   id={entry.id}
                   isActive={entry.isVehicleActive}
                   isFetching={entry.isVehicleFetchingData}
@@ -291,7 +291,7 @@ export default function AdminMainWorkflow({
                 />
               </td>
               <td className="p-4 align-middle">
-                <TeslaStatusToggle
+                <VehicleStatusToggle
                   id={entry.id}
                   isActive={entry.isVehicleActive}
                   isFetching={entry.isVehicleFetchingData}

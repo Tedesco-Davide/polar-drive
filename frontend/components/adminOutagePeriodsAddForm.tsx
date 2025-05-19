@@ -69,7 +69,7 @@ export default function AdminOutagePeriodsAddForm({
     const parsedStart = parseISO(outageStart);
     const isGenericOutage = !vin && !companyVatNumber;
     let clientCompanyId: number | null = null;
-    let teslaVehicleId: number | null = null;
+    let vehicleId: number | null = null;
 
     // Validazioni base
     if (!status)
@@ -129,7 +129,7 @@ export default function AdminOutagePeriodsAddForm({
       }
       const resolved = await resolveRes.json();
       clientCompanyId = resolved.clientCompanyId;
-      teslaVehicleId = resolved.teslaVehicleId;
+      vehicleId = resolved.vehicleId;
     }
 
     if (zipFilePath) {
@@ -160,8 +160,7 @@ export default function AdminOutagePeriodsAddForm({
     if (companyVatNumber) payload.append("companyVatNumber", companyVatNumber);
     if (clientCompanyId !== null)
       payload.append("clientCompanyId", clientCompanyId.toString());
-    if (teslaVehicleId !== null)
-      payload.append("teslaVehicleId", teslaVehicleId.toString());
+    if (vehicleId !== null) payload.append("vehicleId", vehicleId.toString());
 
     const res = await fetch(`${API_BASE_URL}/api/uploadoutagezip`, {
       method: "POST",
@@ -310,10 +309,10 @@ export default function AdminOutagePeriodsAddForm({
           />
         </label>
 
-        {/* Tesla VIN */}
+        {/* Vehicled VIN */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.outagePeriods.teslaVehicleVIN")}
+            {t("admin.outagePeriods.vehicleVIN")}
           </span>
           <input
             name="vin"

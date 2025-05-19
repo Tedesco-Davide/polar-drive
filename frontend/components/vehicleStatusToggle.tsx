@@ -11,7 +11,7 @@ type Props = {
   setLoading: (value: boolean) => void;
 };
 
-export default function TeslaStatusToggle({
+export default function VehicleStatusToggle({
   id,
   isActive,
   isFetching,
@@ -28,13 +28,13 @@ export default function TeslaStatusToggle({
     if (field === "IsActive") {
       if (isActive) {
         const confirm = window.confirm(
-          t("admin.teslaStatusToggle.confirmAction.toNotActive")
+          t("admin.vehicleStatusToggle.confirmAction.toNotActive")
         );
         if (!confirm) return;
         newIsActive = false;
       } else {
         const confirm = window.confirm(
-          t("admin.teslaStatusToggle.confirmAction.backToActiveAndFetching")
+          t("admin.vehicleStatusToggle.confirmAction.backToActiveAndFetching")
         );
         if (!confirm) return;
         newIsActive = true;
@@ -45,20 +45,22 @@ export default function TeslaStatusToggle({
     if (field === "IsFetching") {
       if (isFetching && isActive) {
         alert(
-          t("admin.teslaStatusToggle.confirmAction.toNotFetchingFromActive")
+          t("admin.vehicleStatusToggle.confirmAction.toNotFetchingFromActive")
         );
         return;
       }
       if (isFetching && !isActive) {
         const confirm = window.confirm(
-          t("admin.teslaStatusToggle.confirmAction.toNotFetchingFromNotActive")
+          t(
+            "admin.vehicleStatusToggle.confirmAction.toNotFetchingFromNotActive"
+          )
         );
         if (!confirm) return;
         newIsFetching = false;
       }
       if (!isFetching && !isActive) {
         const confirm = window.confirm(
-          t("admin.teslaStatusToggle.confirmAction.toFetchingFromNotFetching")
+          t("admin.vehicleStatusToggle.confirmAction.toFetchingFromNotFetching")
         );
         if (!confirm) return;
         newIsFetching = true;
@@ -67,20 +69,17 @@ export default function TeslaStatusToggle({
 
     try {
       setLoading(true);
-      await axios.patch(
-        `${API_BASE_URL}/api/ClientTeslaVehicles/${id}/status`,
-        {
-          isActive: newIsActive,
-          isFetching: newIsFetching,
-        }
-      );
+      await axios.patch(`${API_BASE_URL}/api/ClientVehicles/${id}/status`, {
+        isActive: newIsActive,
+        isFetching: newIsFetching,
+      });
       onStatusChange(newIsActive, newIsFetching);
     } catch (err) {
-      console.error(t("admin.teslaStatusToggle.confirmAction.error"), err);
+      console.error(t("admin.vehicleStatusToggle.confirmAction.error"), err);
       alert(
         err instanceof Error
           ? err.message
-          : t("admin.teslaStatusToggle.confirmAction.error")
+          : t("admin.vehicleStatusToggle.confirmAction.error")
       );
     } finally {
       setLoading(false);
