@@ -67,7 +67,7 @@
   "admin.of": "di",
   "admin.yes": "Si",
   "admin.no": "No",
-  "admin.expectedResult:": "Risultato atteso",
+  "admin.expectedResult": "Risultato atteso",
   "admin.insertedValue": "Valore inserito",
   "admin.vehicleVIN": "Veicolo VIN",
   "admin.basicPlaceholder": "—",
@@ -215,5 +215,5 @@
   "admin.outagePeriods.validation.outageEndRequiredForResolved": "Per OUTAGE-RESOLVED è obbligatorio inserire anche la data di fine",
   "admin.outagePeriods.validation.invalidEndDate": "La data di fine non è valida",
   "admin.outagePeriods.validation.outageEndBeforeStart": "La data di fine non può essere precedente alla data di inizio",
-  "admin.outagePeriods.validation.outageEndAfterToday": "La data di fine non può essere nel futuro"
+  "admin.outagePeriods.validation.outageEndInFuture": "La data di fine non può essere nel futuro"
 }
