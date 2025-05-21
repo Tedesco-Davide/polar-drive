@@ -5,18 +5,25 @@ public static class VehicleConstants
     public static readonly string[] ValidBrands =
     {
         "Tesla",
-        "Jaguar",
+        "Polestar",
         "Porsche",
-        "Lotus",
-        "Toyota"
     };
     public static readonly string[] ValidModels =
     {
         "Model 3",
-        "Model Y",
-        "Model S",
-        "Model X",
-        "Macan",
-        "GT4",
+        "Polestar 4",
+        "718 Cayman",
+    };
+    public static readonly string[] ValidTrims =
+    {
+        "Long Range",
+        "Long range Single motor",
+        "GT4RS",
+    };
+    public static readonly string[] ValidColors =
+    {
+        "Ultra Red",
+        "Snow",
+        "Racing Yellow",
     };
 }

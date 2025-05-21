@@ -60,7 +60,6 @@ Il contratto Tesla Fleet API (§9, §5.6.17, §9.3.6)
 
 ###
 
-
 🔐 1. Data breach / violazioni GDPR
 Rischio: se i dati raccolti da PolarDrive vengono violati, leakati o gestiti male → la responsabilità è tua, come Data Controller (contratto Tesla §9.3.1 e seguenti)​Fleet-API-Agreement-EN.
 
@@ -116,6 +115,10 @@ Giustifichi pricing elevato in modo pulito e difendibile
 #################################################################################################################################################################
 
 ########## CHITCHAT DA IMPLEMENTARE
+
+🔥 Bonus: la frase da tenere in tasca se qualcuno ti contesta
+“Il mio core business è analizzare il comportamento su strada di veicoli elettrici e termici, per generare dataset comparativi finalizzati a un sistema fiscale automatizzato.
+Quest’auto è uno strumento tecnico, come lo è un drone per chi fa rilievi o una termocamera per chi fa sicurezza. Ogni suo chilometro è un dato.”
 
 Calcolo tecnico previsionale
 "Il compenso pattuito è calcolato in misura proporzionale al vantaggio fiscale stimato, come da report tecnico allegato, secondo normativa vigente."

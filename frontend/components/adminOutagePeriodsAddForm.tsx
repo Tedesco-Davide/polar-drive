@@ -4,9 +4,13 @@ import { API_BASE_URL } from "@/utils/api";
 import { OutageFormData, UploadOutageResult } from "@/types/outagePeriodTypes";
 import { isAfter, isValid, parseISO } from "date-fns";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
-import DatePicker from "react-datepicker";
+import { vehicleOptions } from "@/types/vehicleOptions";
+import { outageStatusOptions, outageTypeOptions } from "@/types/outageOptions";
 import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
 import JSZip from "jszip";
+
+const brandOptions = Object.keys(vehicleOptions);
 
 type Props = {
   formData: OutageFormData;
@@ -233,43 +237,49 @@ export default function AdminOutagePeriodsAddForm({
             onChange={handleChange}
             className="input cursor-pointer"
           >
-            <option value="">{t("admin.basicPlaceholder")}</option>{" "}
-            {/* 🆕 basicPlaceholder */}
-            <option value="OUTAGE-ONGOING">OUTAGE-ONGOING</option>
-            <option value="OUTAGE-RESOLVED">OUTAGE-RESOLVED</option>
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {outageStatusOptions.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
           </select>
         </label>
 
         {/* Outage Type */}
-        <label className="flex flex-col">
-          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.outagePeriods.outageType")}
-          </span>
-          <select
-            name="outageType"
-            value={formData.outageType}
-            onChange={handleChange}
-            className="input cursor-pointer"
-          >
-            <option value="">{t("admin.basicPlaceholder")}</option>{" "}
-            {/* 🆕 basicPlaceholder */}
-            <option value="Outage Vehicle">Outage Vehicle</option>
-            <option value="Outage Fleet Api">Outage Fleet Api</option>
-          </select>
-        </label>
+        <select
+          name="outageType"
+          value={formData.outageType}
+          onChange={handleChange}
+          className="input cursor-pointer"
+        >
+          <option value="">{t("admin.basicPlaceholder")}</option>
+          {outageTypeOptions.map((type) => (
+            <option key={type} value={type}>
+              {type}
+            </option>
+          ))}
+        </select>
 
         {/* Outage Brand */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.outagePeriods.outageBrand")}
           </span>
-          <input
+          <select
             name="outageBrand"
             value={formData.outageBrand}
             onChange={handleChange}
-            className="input"
+            className="input cursor-pointer"
             required
-          />
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {brandOptions.map((brand) => (
+              <option key={brand} value={brand}>
+                {brand}
+              </option>
+            ))}
+          </select>
         </label>
 
         {/* Outage Start */}

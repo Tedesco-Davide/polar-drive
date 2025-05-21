@@ -46,10 +46,10 @@ var companies = new[]
     },
     new ClientCompany
     {
-        Name = "Gamma Energia",
+        Name = "DataPolar",
         VatNumber = "00000000003",
-        ReferentName = "Sara Verdi",
-        ReferentEmail = "s.verdi@gammaenergia.it",
+        ReferentName = "Tedesco Davide",
+        ReferentEmail = "support@datapolar.dev",
         ReferentMobileNumber = "3289876543",
     }
 };
@@ -60,7 +60,6 @@ await db.SaveChangesAsync();
 // ─────────────────────────────────────
 // 3. Per ogni azienda: crea cartelle + mock vehicle + token + consenso
 // ─────────────────────────────────────
-int vinCounter = 1;
 foreach (var company in companies)
 {
     var companyDir = Path.Combine(wwwRoot, $"company-{company.Id}");
@@ -104,7 +103,7 @@ foreach (var company in companies)
             Brand = "Tesla",
             Model = "Model 3",
             Trim = "Long Range",
-            Color = "Black",
+            Color = "Ultra Red",
             IsActiveFlag = true,
             IsFetchingDataFlag = true,
             FirstActivationAt = DateTime.Today,
@@ -114,10 +113,10 @@ foreach (var company in companies)
         {
             ClientCompanyId = companies[1].Id,
             Vin = "5YJW5451356531830",
-            Brand = "Jaguar",
-            Model = "F-TYPE",
-            Trim = "Long Range",
-            Color = "White",
+            Brand = "Polestar",
+            Model = "Polestar 4",
+            Trim = "Long range Single motor",
+            Color = "Snow",
             IsActiveFlag = true,
             IsFetchingDataFlag = true,
             FirstActivationAt = DateTime.Today,
@@ -128,9 +127,9 @@ foreach (var company in companies)
             ClientCompanyId = companies[2].Id,
             Vin = "5YJT8233374058256",
             Brand = "Porsche",
-            Model = "Macan EV",
-            Trim = "Base",
-            Color = "Blue",
+            Model = "718 Cayman",
+            Trim = "GT4RS",
+            Color = "Racing Yellow",
             IsActiveFlag = true,
             IsFetchingDataFlag = true,
             FirstActivationAt = DateTime.Today,
@@ -213,7 +212,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = 1,
         AutoDetected = true,
         OutageType = "Outage Vehicle",
-        OutageBrand = "Toyota",
+        OutageBrand = "Tesla",
         CreatedAt = DateTime.Parse("2025-04-20T10:30:00Z"),
         OutageStart = DateTime.Parse("2025-04-18T04:00:00Z"),
         OutageEnd = DateTime.Parse("2025-04-19T18:00:00Z"),
@@ -226,7 +225,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = 2,
         AutoDetected = false,
         OutageType = "Outage Vehicle",
-        OutageBrand = "Jaguar",
+        OutageBrand = "Polestar",
         CreatedAt = DateTime.Parse("2025-04-21T09:45:00Z"),
         OutageStart = DateTime.Parse("2025-04-15T00:00:00Z"),
         OutageEnd = DateTime.Parse("2025-04-20T23:59:00Z"),
@@ -238,7 +237,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = 3,
         AutoDetected = true,
         OutageType = "Outage Vehicle",
-        OutageBrand = "Ford",
+        OutageBrand = "Porsche",
         CreatedAt = DateTime.Parse("2025-04-24T07:10:00Z"),
         OutageStart = DateTime.Parse("2025-04-23T22:00:00Z"),
         OutageEnd = null,
@@ -250,7 +249,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = null,
         AutoDetected = true,
         OutageType = "Outage Fleet Api",
-        OutageBrand = "Lotus",
+        OutageBrand = "Tesla",
         CreatedAt = DateTime.Parse("2025-04-22T12:00:00Z"),
         OutageStart = DateTime.Parse("2025-04-22T08:00:00Z"),
         OutageEnd = DateTime.Parse("2025-04-22T11:30:00Z"),
@@ -262,7 +261,7 @@ var outages = new List<OutagePeriod>
         ClientCompanyId = null,
         AutoDetected = false,
         OutageType = "Outage Fleet Api",
-        OutageBrand = "Porsche",
+        OutageBrand = "Polestar",
         CreatedAt = DateTime.Parse("2025-04-25T09:00:00Z"),
         OutageStart = DateTime.Parse("2025-04-25T07:00:00Z"),
         OutageEnd = null,

@@ -7,4 +7,9 @@ public static class OutageConstants
         "Outage Vehicle",
         "Outage Fleet Api"
     };
+    public static readonly string[] ValidOutageStatuses =
+    {
+        "OUTAGE-ONGOING",
+        "OUTAGE-RESOLVED"
+    };
 }
