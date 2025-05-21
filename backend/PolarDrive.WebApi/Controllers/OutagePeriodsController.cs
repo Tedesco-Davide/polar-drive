@@ -59,6 +59,7 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
                 return BadRequest("SERVER ERROR → BAD REQUEST: Missing vehicle or company ID!");
 
             var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == outage.ClientCompanyId);
+
             if (company == null)
                 return NotFound("SERVER ERROR → NOT FOUND: Client company not found!");
 
@@ -68,6 +69,9 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
 
             if (vehicle.ClientCompanyId != company.Id)
                 return BadRequest("SERVER ERROR → BAD REQUEST: Vehicle does not belong to the specified company!");
+
+            if (!string.Equals(vehicle.Brand.Trim(), outage.OutageBrand.Trim(), StringComparison.OrdinalIgnoreCase))
+                return BadRequest("SERVER ERROR → BAD REQUEST: Brand does not match vehicle's actual brand!");
         }
         else
         {
@@ -86,7 +90,7 @@ public class OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment
         }
 
         var sanitizedOutageBrand = outage.OutageBrand?.Trim();
-        
+
         if (string.IsNullOrWhiteSpace(sanitizedOutageBrand) ||
             !VehicleConstants.ValidBrands.Contains(sanitizedOutageBrand))
         {

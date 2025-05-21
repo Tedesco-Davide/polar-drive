@@ -67,6 +67,8 @@
   "admin.of": "di",
   "admin.yes": "Si",
   "admin.no": "No",
+  "admin.expectedResult:": "Risultato atteso",
+  "admin.insertedValue": "Valore inserito",
   "admin.vehicleVIN": "Veicolo VIN",
   "admin.basicPlaceholder": "—",
   "admin.cancelEditRow": "Chiudi ed anulla modifiche",
@@ -78,6 +80,7 @@
   "admin.openNotesModal": "Apri gestione note",
   "admin.notesGenericError": "ATTENZIONE! errore generico non gestito per le Note: ",
   "admin.resolveVATandVIN": "ATTENZIONE! seleziona attentamente l'Azienda (Partita IVA) e la Veicolo di interesse (Veicolo VIN) assicurandoti che combacino e siano effettivamente collegate tra di loro",
+  "admin.brandMismatch": "ATTENZIONE! Il brand selezionato non corrisponde a quello effettivo del veicolo associato",
 
   "admin.mainWorkflow.tableHeader": "Gestione principale workflow",
   "admin.mainWorkflow.labels.companyVatNumber": "Partita IVA",

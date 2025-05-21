@@ -74,7 +74,7 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         await db.SaveChangesAsync();
 
         return NoContent();
-    }   
+    }
 
     [HttpGet("{id}/download")]
     public async Task<IActionResult> DownloadZip(int id)
@@ -115,7 +115,8 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         return Ok(new
         {
             clientCompanyId = company.Id,
-            vehicleId = vehicle.Id
+            vehicleId = vehicle.Id,
+            vehicleBrand = vehicle.Brand
         });
     }
 

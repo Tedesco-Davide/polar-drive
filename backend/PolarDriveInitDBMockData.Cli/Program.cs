@@ -92,10 +92,12 @@ foreach (var company in companies)
         using var writer = new StreamWriter(stream);
         await writer.WriteAsync("%PDF-1.4\n%empty consent\n%%EOF");
     }
+    await db.SaveChangesAsync();
+}
 
-    // 🚘 Mock Veicoli
-    var vehicles = new[]
-    {
+// 🚘 Mock Veicoli
+var vehicles = new[]
+{
         new ClientVehicle
         {
             ClientCompanyId = companies[0].Id,
@@ -136,41 +138,38 @@ foreach (var company in companies)
             CreatedAt = DateTime.UtcNow
         }
     };
-    db.ClientVehicles.AddRange(vehicles);
-    await db.SaveChangesAsync();
+db.ClientVehicles.AddRange(vehicles);
+await db.SaveChangesAsync();
 
-    // 🔑🔐 Inserisce token + consenso per ciascun veicolo
-    for (int i = 0; i < vehicles.Length; i++)
+// 🔑🔐 Inserisce token + consenso per ciascun veicolo
+for (int i = 0; i < vehicles.Length; i++)
+{
+    var vehicle = vehicles[i];
+    var currentCompany = companies[i];
+
+    var token = new ClientToken
     {
-        var vehicle = vehicles[i];
-        var currentCompany = companies[i];
+        VehicleId = vehicle.Id,
+        AccessToken = $"access_token_{vehicle.Id}",
+        RefreshToken = $"refresh_token_{vehicle.Id}",
+        AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
+        RefreshTokenExpiresAt = null,
+        CreatedAt = DateTime.UtcNow,
+        UpdatedAt = DateTime.UtcNow
+    };
+    db.ClientTokens.Add(token);
 
-        var token = new ClientToken
-        {
-            VehicleId = vehicle.Id,
-            AccessToken = $"access_token_{vehicle.Id}",
-            RefreshToken = $"refresh_token_{vehicle.Id}",
-            AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
-            RefreshTokenExpiresAt = null,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-        db.ClientTokens.Add(token);
-
-        var consent = new ClientConsent
-        {
-            ClientCompanyId = company.Id,
-            VehicleId = vehicle.Id,
-            ConsentType = "Consent Activation",
-            UploadDate = DateTime.Today,
-            ZipFilePath = Path.Combine("companies", $"company-{company.Id}", "consents-zip", "consent_1.zip").Replace("\\", "/"),
-            ConsentHash = $"mockhash-{company.Id}-abc123",
-            Notes = "Mock consent automatico"
-        };
-        db.ClientConsents.Add(consent);
-    }
-
-    await db.SaveChangesAsync();
+    var consent = new ClientConsent
+    {
+        ClientCompanyId = currentCompany.Id,
+        VehicleId = vehicle.Id,
+        ConsentType = "Consent Activation",
+        UploadDate = DateTime.Today,
+        ZipFilePath = Path.Combine("companies", $"company-{currentCompany.Id}", "consents-zip", "consent_1.zip").Replace("\\", "/"),
+        ConsentHash = $"mockhash-{currentCompany.Id}-abc123",
+        Notes = "Mock consent automatico"
+    };
+    db.ClientConsents.Add(consent);
 }
 
 // ─────────────────────────────────────
@@ -272,5 +271,6 @@ var outages = new List<OutagePeriod>
 
 db.OutagePeriods.AddRange(outages);
 await db.SaveChangesAsync();
+db.ChangeTracker.Clear();
 
 Console.WriteLine("✅ Dati mock completi e file fisici generati con successo.");

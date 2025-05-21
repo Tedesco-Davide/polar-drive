@@ -139,6 +139,18 @@ export default function AdminOutagePeriodsAddForm({
       const resolved = await resolveRes.json();
       clientCompanyId = resolved.clientCompanyId;
       vehicleId = resolved.vehicleId;
+
+      // ✅ Nuovo controllo brand coerente
+      const vehicleBrand = (resolved.vehicleBrand || "").trim();
+      const selectedBrand = (outageBrand || "").trim();
+      if (vehicleBrand !== selectedBrand) {
+        alert(
+          `${t("admin.brandMismatch")}\n\n${t(
+            "admin.expectedResult"
+          )}: ${vehicleBrand}\n${t("admin.insertedValue")}: ${selectedBrand}`
+        );
+        return;
+      }
     }
 
     if (zipFilePath) {
@@ -161,7 +173,7 @@ export default function AdminOutagePeriodsAddForm({
     }
 
     payload.append("outageType", outageType);
-    payload.append("outageType", outageBrand);
+    payload.append("outageBrand", outageBrand);
     payload.append("autoDetected", formData.autoDetected ? "true" : "false");
     payload.append("status", status);
     payload.append("outageStart", outageStart);
@@ -247,20 +259,24 @@ export default function AdminOutagePeriodsAddForm({
         </label>
 
         {/* Outage Type */}
-        <select
-          name="outageType"
-          value={formData.outageType}
-          onChange={handleChange}
-          className="input cursor-pointer"
-        >
-          <option value="">{t("admin.basicPlaceholder")}</option>
-          {outageTypeOptions.map((type) => (
-            <option key={type} value={type}>
-              {type}
-            </option>
-          ))}
-        </select>
-
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.outagePeriods.outageType")}
+          </span>
+          <select
+            name="outageType"
+            value={formData.outageType}
+            onChange={handleChange}
+            className="input cursor-pointer"
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {outageTypeOptions.map((type) => (
+              <option key={type} value={type}>
+                {type}
+              </option>
+            ))}
+          </select>
+        </label>
         {/* Outage Brand */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
