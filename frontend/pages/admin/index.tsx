@@ -57,6 +57,7 @@ export default function AdminDashboard() {
           vehicleVIN: entry.vin ?? "",
           accessToken: "",
           refreshToken: "",
+          brand: entry.brand ?? "",
           isVehicleActive: entry.isActive,
           isVehicleFetchingData: entry.isFetching,
         }))
@@ -107,6 +108,7 @@ export default function AdminDashboard() {
             vin: entry.vin,
             model: entry.model,
             trim: entry.trim ?? "",
+            brand: entry.brand ?? "",
             color: entry.color ?? "",
             isActive: entry.isActive,
             isFetching: entry.isFetching,

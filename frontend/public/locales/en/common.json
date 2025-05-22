@@ -213,6 +213,7 @@
   "admin.outagePeriods.validation.outageBrandRequired": "Please select a valid brand",
   "admin.outagePeriods.validation.startDateInFuture": "Please enter a valid start date that is not in the future",
   "admin.outagePeriods.validation.outageEndRequiredForResolved": "OUTAGE-RESOLVED requires an end date to be specified",
+  "admin.outagePeriods.validation.ongoingCannotHaveEndDate": "OUTAGE-ONGOING status cannot have an end date.",
   "admin.outagePeriods.validation.invalidEndDate": "End date is not valid",
   "admin.outagePeriods.validation.outageEndBeforeStart": "End date cannot be earlier than start date",
   "admin.outagePeriods.validation.outageEndInFuture": "End date cannot be in the future"

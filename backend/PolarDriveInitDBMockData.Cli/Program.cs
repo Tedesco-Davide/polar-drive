@@ -6,7 +6,7 @@ using System.IO.Compression;
 var basePath = AppContext.BaseDirectory;
 var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));
 
-var wwwRoot = Path.Combine(basePath, "..", "..", "..", "..", "PolarDrive.WebApi", "wwwroot", "companies");
+var wwwRoot = Path.Combine(basePath, "..", "..", "..", "..", "PolarDrive.WebApi", "wwwroot");
 
 var options = new DbContextOptionsBuilder<PolarDriveDbContext>()
     .UseSqlite($"Data Source={dbPath}")

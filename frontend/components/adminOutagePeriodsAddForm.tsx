@@ -2,7 +2,7 @@ import { TFunction } from "i18next";
 import { formatDateToSave } from "@/utils/date";
 import { API_BASE_URL } from "@/utils/api";
 import { OutageFormData, UploadOutageResult } from "@/types/outagePeriodTypes";
-import { isAfter, isValid, parseISO } from "date-fns";
+import { isAfter, isValid, parseISO, addDays } from "date-fns";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import { vehicleOptions } from "@/types/vehicleOptions";
 import { outageStatusOptions, outageTypeOptions } from "@/types/outageOptions";
@@ -89,6 +89,12 @@ export default function AdminOutagePeriodsAddForm({
 
     if (!outageStart)
       return alert(t("admin.outagePeriods.validation.startDateRequired"));
+
+    // ⛔ Se stato è OUTAGE-ONGOING, non deve esserci una data di fine!
+    if (status === "OUTAGE-ONGOING" && outageEnd) {
+      alert(t("admin.outagePeriods.validation.ongoingCannotHaveEndDate"));
+      return;
+    }
 
     // ⛔ OUTAGE-RESOLVED richiede anche la data di fine
     if (status === "OUTAGE-RESOLVED" && !outageEnd) {
@@ -177,7 +183,12 @@ export default function AdminOutagePeriodsAddForm({
     payload.append("autoDetected", formData.autoDetected ? "true" : "false");
     payload.append("status", status);
     payload.append("outageStart", outageStart);
-    if (outageEnd) payload.append("outageEnd", outageEnd);
+    if (outageEnd) {
+      const parsedEnd = parseISO(outageEnd);
+      const adjustedEnd = addDays(parsedEnd, 1);
+      const formattedEnd = formatDateToSave(adjustedEnd);
+      payload.append("outageEnd", formattedEnd);
+    }
     if (vin) payload.append("vin", vin);
     if (companyVatNumber) payload.append("companyVatNumber", companyVatNumber);
     if (clientCompanyId !== null)
@@ -327,10 +338,14 @@ export default function AdminOutagePeriodsAddForm({
             {t("admin.outagePeriods.outageEnd")}
           </span>
           <DatePicker
+            isClearable
             className="input appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
             selected={formData.outageEnd ? new Date(formData.outageEnd) : null}
             onChange={(date: Date | null) => {
-              if (!date) return;
+              if (!date) {
+                setFormData({ ...formData, outageEnd: undefined });
+                return;
+              }
               const formatted = formatDateToSave(date);
               setFormData({
                 ...formData,

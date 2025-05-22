@@ -8,6 +8,7 @@ import { parseISO } from "date-fns";
 import { OutageFormData } from "@/types/outagePeriodTypes";
 import { formatDateToDisplay } from "@/utils/date";
 import { API_BASE_URL } from "@/utils/api";
+import { outageStatusOptions } from "@/types/outageOptions";
 import AdminOutagePeriodsAddForm from "./adminOutagePeriodsAddForm";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -15,15 +16,17 @@ import Chip from "@/components/chip";
 import NotesModal from "./notesModal";
 import JSZip from "jszip";
 
+const [ONGOING, RESOLVED] = outageStatusOptions;
+
 const getOutageStatus = (start: string, end?: string) => {
-  return end ? "OUTAGE-RESOLVED" : "OUTAGE-ONGOING";
+  return end ? RESOLVED : ONGOING;
 };
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "OUTAGE-ONGOING":
+    case ONGOING:
       return "bg-red-100 text-red-700 border-red-500";
-    case "OUTAGE-RESOLVED":
+    case RESOLVED:
       return "bg-green-100 text-green-700 border-green-500";
     default:
       return "bg-gray-100 text-polarNight border-gray-400";
@@ -298,9 +301,7 @@ export default function AdminOutagePeriodsTable({
                   {outage.outageEnd ? (
                     formatDateToDisplay(outage.outageEnd)
                   ) : (
-                    <Chip className={getStatusColor("OUTAGE-ONGOING")}>
-                      OUTAGE-ONGOING
-                    </Chip>
+                    <Chip className={getStatusColor(ONGOING)}>{ONGOING}</Chip>
                   )}
                 </td>
                 <td className="p-4">
@@ -308,7 +309,7 @@ export default function AdminOutagePeriodsTable({
                     getOutageDuration(outage.outageStart, outage.outageEnd)
                   ) : (
                     <Chip className="bg-red-100 text-red-700 border-red-500">
-                      OUTAGE-ONGOING
+                      {ONGOING}
                     </Chip>
                   )}
                 </td>

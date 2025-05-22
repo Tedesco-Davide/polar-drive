@@ -212,7 +212,8 @@
   "admin.outagePeriods.validation.outageTypeRequired": "Seleziona una tipologia di interruzione valida",
   "admin.outagePeriods.validation.outageBrandRequired": "Seleziona una brand valido",
   "admin.outagePeriods.validation.startDateInFuture": "Inserisci una data inizio valida che non sia futura",
-  "admin.outagePeriods.validation.outageEndRequiredForResolved": "Per OUTAGE-RESOLVED è obbligatorio inserire anche la data di fine",
+  "admin.outagePeriods.validation.outageEndRequiredForResolved": "Per lo stato OUTAGE-RESOLVED è obbligatorio inserire anche la data di fine",
+  "admin.outagePeriods.validation.ongoingCannotHaveEndDate": "Lo stato OUTAGE-ONGOING non può avere una data di fine.",
   "admin.outagePeriods.validation.invalidEndDate": "La data di fine non è valida",
   "admin.outagePeriods.validation.outageEndBeforeStart": "La data di fine non può essere precedente alla data di inizio",
   "admin.outagePeriods.validation.outageEndInFuture": "La data di fine non può essere nel futuro"
