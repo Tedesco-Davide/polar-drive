@@ -29,6 +29,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             IsFetching = v.IsFetchingDataFlag,
             FirstActivationAt = v.FirstActivationAt?.ToString("o"),
             LastDeactivationAt = v.LastDeactivationAt?.ToString("o"),
+            LastFetchingDataAt = v.LastFetchingDataAt?.ToString("o"),
             ClientCompany = new ClientCompanyDTO
             {
                 Id = v.ClientCompany!.Id,
@@ -84,10 +85,17 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         if (vehicle == null)
             return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found!");
 
+        // Update flag
+        bool wasActive = vehicle.IsActiveFlag;
+        bool wasFetching = vehicle.IsFetchingDataFlag;
+
         vehicle.IsActiveFlag = dto.IsActive;
         vehicle.IsFetchingDataFlag = dto.IsFetching;
 
-        if (dto.IsFetching)
+        if (wasActive && !dto.IsActive)
+            vehicle.LastDeactivationAt = DateTime.UtcNow;
+
+        if (wasFetching != dto.IsFetching)
             vehicle.LastFetchingDataAt = DateTime.UtcNow;
 
         await db.SaveChangesAsync();

@@ -43,6 +43,7 @@ export default function AdminDashboard() {
       const res = await fetch("https://localhost:5041/api/ClientVehicles");
       const data: ClientVehicleWithCompany[] = await res.json();
 
+      // Refresh AdminMainWorkflow
       setWorkflowData(
         data.map((entry) => ({
           id: entry.id,
@@ -62,8 +63,26 @@ export default function AdminDashboard() {
           isVehicleFetchingData: entry.isFetching,
         }))
       );
+
+      // Refresh AdminClientVehiclesTable
+      setVehicles(
+        data.map((entry) => ({
+          id: entry.id,
+          clientCompanyId: entry.clientCompany?.id ?? 0,
+          vin: entry.vin,
+          model: entry.model,
+          trim: entry.trim ?? "",
+          brand: entry.brand ?? "",
+          color: entry.color ?? "",
+          isActive: entry.isActive,
+          isFetching: entry.isFetching,
+          firstActivationAt: entry.firstActivationAt ?? "",
+          lastDeactivationAt: entry.lastDeactivationAt ?? null,
+          lastFetchingDataAt: entry.lastFetchingDataAt ?? null,
+        }))
+      );
     } catch (err) {
-      console.error("Errore durante il fetch del workflow:", err);
+      console.error("ERROR:", err);
     }
   };
 

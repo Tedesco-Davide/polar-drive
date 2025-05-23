@@ -12,5 +12,6 @@ public class AdminWorkflowExtendedDTO
     public bool IsFetching { get; set; }
     public string? FirstActivationAt { get; set; }
     public string? LastDeactivationAt { get; set; }
+    public string? LastFetchingDataAt { get; set; }
     public ClientCompanyDTO ClientCompany { get; set; } = new();
 }

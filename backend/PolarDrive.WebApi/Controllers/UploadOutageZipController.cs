@@ -110,14 +110,14 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
         var existingOutage = allOutages.FirstOrDefault(o =>
             o.OutageStart == parsedStart &&
             o.OutageEnd == parsedEnd &&
-            o.OutageType.Trim() == outageType.Trim() &&
-            o.OutageBrand.Trim() == outageBrand.Trim() &&
+            string.Equals(o.OutageType?.Trim(), sanitizedOutageType, StringComparison.OrdinalIgnoreCase) &&
+            string.Equals(o.OutageBrand?.Trim(), sanitizedOutageBrand, StringComparison.OrdinalIgnoreCase) &&
             (
                 (!vehicleId.HasValue && !clientCompanyId.HasValue &&
-                o.VehicleId == null && o.ClientCompanyId == null)
+                 o.VehicleId == null && o.ClientCompanyId == null)
                 ||
                 (vehicleId.HasValue && clientCompanyId.HasValue &&
-                o.VehicleId == vehicleId && o.ClientCompanyId == clientCompanyId)
+                 o.VehicleId == vehicleId && o.ClientCompanyId == clientCompanyId)
             )
         );
 

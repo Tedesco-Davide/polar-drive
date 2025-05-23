@@ -5,6 +5,7 @@ import { API_BASE_URL } from "@/utils/api";
 import { isAfter, isValid, parseISO } from "date-fns";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import JSZip from "jszip";
 
 type Props = {
   formData: ClientConsent;
@@ -29,7 +30,7 @@ export default function AdminClientConsentAddForm({
     });
   };
 
-  const handleZipUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -38,6 +39,21 @@ export default function AdminClientConsentAddForm({
       return;
     }
 
+    // ⛔ Controllo contenuto ZIP
+    const zipBuffer = await file.arrayBuffer();
+    const zip = new JSZip();
+    const contents = await zip.loadAsync(zipBuffer);
+    const hasPdf = Object.keys(contents.files).some(
+      (filename) =>
+        filename.toLowerCase().endsWith(".pdf") && !contents.files[filename].dir
+    );
+
+    if (!hasPdf) {
+      alert(t("admin.validation.invalidZipTypeRequiredConsent"));
+      return;
+    }
+
+    // ✅ Tutto OK
     setFormData((prev) => ({
       ...prev,
       zipFile: file,

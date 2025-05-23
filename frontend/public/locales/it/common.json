@@ -134,7 +134,7 @@
   "admin.clientVehicle.model": "Modello Veicolo",
   "admin.clientVehicle.trim": "Versione",
   "admin.clientVehicle.color": "Colore",
-  "admin.clientVehicle.isActive": "Veicolo Attiva?",
+  "admin.clientVehicle.isActive": "Veicolo Attivo?",
   "admin.clientVehicle.isFetching": "Acquisizione Dati?",
   "admin.clientVehicle.firstActivationAt": "Prima Attivazione",
   "admin.clientVehicle.lastDeactivationAt": "Ultima Disattivazione",
