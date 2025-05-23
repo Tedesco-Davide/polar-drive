@@ -34,15 +34,15 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
 
         var sanitizedOutageBrand = outageBrand?.Trim();
         if (string.IsNullOrWhiteSpace(sanitizedOutageBrand) || !VehicleConstants.ValidBrands.Contains(sanitizedOutageBrand))
-            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage brand!");            
+            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage brand!");
 
-        if (!DateTime.TryParseExact(outageStart, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedStart))
+        if (!DateTime.TryParseExact(outageStart, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedStart))
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage start date format!");
 
         DateTime? parsedEnd = null;
         if (!string.IsNullOrWhiteSpace(outageEnd))
         {
-            if (!DateTime.TryParseExact(outageEnd, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var tmpEnd))
+            if (!DateTime.TryParseExact(outageEnd, "yyyy-MM-dd'T'HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var tmpEnd))
                 return BadRequest("SERVER ERROR → BAD REQUEST: Invalid outage end date format!");
             parsedEnd = tmpEnd;
         }

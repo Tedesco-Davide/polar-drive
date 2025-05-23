@@ -6,7 +6,7 @@ import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useState, useEffect } from "react";
 import { parseISO } from "date-fns";
 import { OutageFormData } from "@/types/outagePeriodTypes";
-import { formatDateToDisplay } from "@/utils/date";
+import { formatOutageDateToDisplay } from "@/utils/date";
 import { API_BASE_URL } from "@/utils/api";
 import { outageStatusOptions } from "@/types/outageOptions";
 import AdminOutagePeriodsAddForm from "./adminOutagePeriodsAddForm";
@@ -41,9 +41,13 @@ const getOutageDuration = (start: string, end?: string): string => {
   const days = Math.floor(diffMins / 1440);
   const hours = Math.floor((diffMins % 1440) / 60);
   const minutes = diffMins % 60;
-  return `${days > 0 ? days + "g " : ""}${hours > 0 ? hours + "h " : ""}${
-    days === 0 && hours === 0 ? minutes + "m" : ""
-  }`.trim();
+
+  const parts: string[] = [];
+  if (days > 0) parts.push(`${days}g`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0 || parts.length === 0) parts.push(`${minutes}m`);
+
+  return parts.join(" ");
 };
 
 type Props = {
@@ -297,9 +301,9 @@ export default function AdminOutagePeriodsTable({
                 <td className="p-4">{outage.outageType}</td>
                 <td className="p-4">{outage.outageBrand}</td>
                 <td className="p-4">
-                  {formatDateToDisplay(outage.outageStart)} -{" "}
+                  {formatOutageDateToDisplay(outage.outageStart)} -{" "}
                   {outage.outageEnd ? (
-                    formatDateToDisplay(outage.outageEnd)
+                    formatOutageDateToDisplay(outage.outageEnd)
                   ) : (
                     <Chip className={getStatusColor(ONGOING)}>{ONGOING}</Chip>
                   )}

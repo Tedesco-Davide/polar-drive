@@ -1,8 +1,8 @@
 import { TFunction } from "i18next";
-import { formatDateToSave } from "@/utils/date";
+import { formatOutageDateTimeToSave } from "@/utils/date";
 import { API_BASE_URL } from "@/utils/api";
 import { OutageFormData, UploadOutageResult } from "@/types/outagePeriodTypes";
-import { isAfter, isValid, parseISO, addDays } from "date-fns";
+import { isAfter, isValid, parseISO } from "date-fns";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import { vehicleOptions } from "@/types/vehicleOptions";
 import { outageStatusOptions, outageTypeOptions } from "@/types/outageOptions";
@@ -105,8 +105,7 @@ export default function AdminOutagePeriodsAddForm({
     // ⛔ END non può essere prima della START
     if (outageEnd) {
       const parsedEnd = parseISO(outageEnd);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0); // ✅ rimuove l'orario per confronto coerente
+      const now = new Date();
 
       if (!isValid(parsedEnd)) {
         alert(t("admin.outagePeriods.validation.invalidEndDate"));
@@ -118,7 +117,7 @@ export default function AdminOutagePeriodsAddForm({
         return;
       }
 
-      if (parsedEnd > today) {
+      if (parsedEnd > now) {
         alert(t("admin.outagePeriods.validation.outageEndInFuture"));
         return;
       }
@@ -184,10 +183,10 @@ export default function AdminOutagePeriodsAddForm({
     payload.append("status", status);
     payload.append("outageStart", outageStart);
     if (outageEnd) {
-      const parsedEnd = parseISO(outageEnd);
-      const adjustedEnd = addDays(parsedEnd, 1);
-      const formattedEnd = formatDateToSave(adjustedEnd);
-      payload.append("outageEnd", formattedEnd);
+      payload.append(
+        "outageEnd",
+        formatOutageDateTimeToSave(parseISO(outageEnd))
+      );
     }
     if (vin) payload.append("vin", vin);
     if (companyVatNumber) payload.append("companyVatNumber", companyVatNumber);
@@ -315,20 +314,25 @@ export default function AdminOutagePeriodsAddForm({
             {t("admin.outagePeriods.outageStart")}
           </span>
           <DatePicker
+            showTimeSelect
+            timeIntervals={10}
+            showTimeSelectOnly={false}
+            timeFormat="HH:mm"
+            timeCaption="Orario"
             className="input appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
             selected={
               formData.outageStart ? new Date(formData.outageStart) : null
             }
             onChange={(date: Date | null) => {
               if (!date) return;
-              const formatted = formatDateToSave(date);
+              const formatted = formatOutageDateTimeToSave(date);
               setFormData({
                 ...formData,
                 outageStart: formatted,
               });
             }}
-            dateFormat="dd/MM/yyyy"
-            placeholderText="dd/MM/yyyy"
+            dateFormat="dd/MM/yyyy HH:mm"
+            placeholderText="dd/MM/yyyy HH:mm"
           />
         </label>
 
@@ -339,6 +343,11 @@ export default function AdminOutagePeriodsAddForm({
           </span>
           <DatePicker
             isClearable
+            showTimeSelect
+            timeIntervals={10}
+            showTimeSelectOnly={false}
+            timeFormat="HH:mm"
+            timeCaption="Orario"
             className="input appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
             selected={formData.outageEnd ? new Date(formData.outageEnd) : null}
             onChange={(date: Date | null) => {
@@ -346,14 +355,14 @@ export default function AdminOutagePeriodsAddForm({
                 setFormData({ ...formData, outageEnd: undefined });
                 return;
               }
-              const formatted = formatDateToSave(date);
+              const formatted = formatOutageDateTimeToSave(date);
               setFormData({
                 ...formData,
                 outageEnd: formatted,
               });
             }}
-            dateFormat="dd/MM/yyyy"
-            placeholderText="dd/MM/yyyy"
+            dateFormat="dd/MM/yyyy HH:mm"
+            placeholderText="dd/MM/yyyy HH:mm"
           />
         </label>
 
