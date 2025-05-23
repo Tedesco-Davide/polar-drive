@@ -6,7 +6,10 @@ import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useState, useEffect } from "react";
 import { parseISO } from "date-fns";
 import { OutageFormData } from "@/types/outagePeriodTypes";
-import { formatOutageDateToDisplay } from "@/utils/date";
+import {
+  formatOutageDateTimeToSave,
+  formatOutageDateToDisplay,
+} from "@/utils/date";
 import { API_BASE_URL } from "@/utils/api";
 import { outageStatusOptions } from "@/types/outageOptions";
 import AdminOutagePeriodsAddForm from "./adminOutagePeriodsAddForm";
@@ -235,12 +238,16 @@ export default function AdminOutagePeriodsTable({
                           );
                           payload.append(
                             "outageStart",
-                            outage.outageStart.split("T")[0]
+                            formatOutageDateTimeToSave(
+                              parseISO(outage.outageStart)
+                            )
                           );
                           if (outage.outageEnd)
                             payload.append(
                               "outageEnd",
-                              outage.outageEnd.split("T")[0]
+                              formatOutageDateTimeToSave(
+                                parseISO(outage.outageEnd)
+                              )
                             );
                           if (outage.vin) payload.append("vin", outage.vin);
                           if (outage.companyVatNumber)

@@ -108,9 +108,10 @@ public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironme
         var allOutages = await db.OutagePeriods.ToListAsync();
 
         var existingOutage = allOutages.FirstOrDefault(o =>
-            o.OutageStart.Date == parsedStart.Date &&
-            o.OutageEnd?.Date == parsedEnd?.Date &&
+            o.OutageStart == parsedStart &&
+            o.OutageEnd == parsedEnd &&
             o.OutageType.Trim() == outageType.Trim() &&
+            o.OutageBrand.Trim() == outageBrand.Trim() &&
             (
                 (!vehicleId.HasValue && !clientCompanyId.HasValue &&
                 o.VehicleId == null && o.ClientCompanyId == null)

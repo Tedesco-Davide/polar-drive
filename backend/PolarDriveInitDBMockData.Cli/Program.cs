@@ -227,7 +227,7 @@ var outages = new List<OutagePeriod>
         OutageBrand = "Polestar",
         CreatedAt = DateTime.Parse("2025-04-21T09:45:00Z"),
         OutageStart = DateTime.Parse("2025-04-15T00:00:00Z"),
-        OutageEnd = DateTime.Parse("2025-04-20T23:59:00Z"),
+        OutageEnd = DateTime.Parse("2025-04-20T23:50:00Z"),
         Notes = "Outage manuale: veicolo in assistenza per aggiornamento batteria."
     },
     new()
