@@ -2,28 +2,49 @@ namespace PolarDrive.Data.Constants;
 
 public static class VehicleConstants
 {
-    public static readonly string[] ValidBrands =
-    {
-        "Tesla",
-        "Polestar",
-        "Porsche",
-    };
+    public static readonly Dictionary<string, Dictionary<string, VehicleVariant>> Options =
+        new()
+        {
+            ["Tesla"] = new Dictionary<string, VehicleVariant>
+            {
+                ["Model 3"] = new VehicleVariant
+                {
+                    Trims = ["Long Range"],
+                    Colors = ["Ultra Red"]
+                }
+            },
+            ["Polestar"] = new Dictionary<string, VehicleVariant>
+            {
+                ["Polestar 4"] = new VehicleVariant
+                {
+                    Trims = ["Long range Single motor"],
+                    Colors = ["Snow"]
+                }
+            },
+            ["Porsche"] = new Dictionary<string, VehicleVariant>
+            {
+                ["718 Cayman"] = new VehicleVariant
+                {
+                    Trims = ["GT4RS"],
+                    Colors = ["Racing Yellow"]
+                }
+            }
+        };
+
+    public static readonly string[] ValidBrands = [.. Options.Keys];
+
     public static readonly string[] ValidModels =
-    {
-        "Model 3",
-        "Polestar 4",
-        "718 Cayman",
-    };
+        [.. Options.SelectMany(b => b.Value.Keys).Distinct()];
+
     public static readonly string[] ValidTrims =
-    {
-        "Long Range",
-        "Long range Single motor",
-        "GT4RS",
-    };
+        [.. Options.SelectMany(b => b.Value.Values.SelectMany(v => v.Trims)).Distinct()];
+
     public static readonly string[] ValidColors =
-    {
-        "Ultra Red",
-        "Snow",
-        "Racing Yellow",
-    };
+        [.. Options.SelectMany(b => b.Value.Values.SelectMany(v => v.Colors)).Distinct()];
+}
+
+public class VehicleVariant
+{
+    public string[] Trims { get; set; } = [];
+    public string[] Colors { get; set; } = [];
 }

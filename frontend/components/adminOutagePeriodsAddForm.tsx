@@ -133,6 +133,11 @@ export default function AdminOutagePeriodsAddForm({
       }
     }
 
+    if (outageType === "Outage Fleet Api" && (vin || companyVatNumber)) {
+      alert(t("admin.outagePeriods.fleetApiMustNotHaveVinOrVat"));
+      return;
+    }
+
     if (!isGenericOutage) {
       const resolveRes = await fetch(
         `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${vin}`

@@ -4,6 +4,7 @@ import { TFunction } from "i18next";
 import { API_BASE_URL } from "@/utils/api";
 import { formatDateToDisplay } from "@/utils/date";
 import { isAfter, isValid, parseISO } from "date-fns";
+import { vehicleOptions } from "@/types/vehicleOptions";
 import axios from "axios";
 
 type Props = {
@@ -26,11 +27,50 @@ export default function AdminClientVehicleEditForm({
     firstActivationAt: vehicle.firstActivationAt ?? "",
   });
 
+  const brandOptions = Object.keys(vehicleOptions);
+
+  const modelOptions = formData.brand
+    ? Object.keys(vehicleOptions[formData.brand]?.models || {})
+    : [];
+
+  const colorOptions =
+    formData.brand && formData.model
+      ? vehicleOptions[formData.brand]?.models[formData.model]?.colors || []
+      : [];
+
+  const trimOptions =
+    formData.brand && formData.model
+      ? vehicleOptions[formData.brand]?.models[formData.model]?.trims || []
+      : [];
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value } = e.target;
+
+    if (name === "brand") {
+      setFormData((prev) => ({
+        ...prev,
+        brand: value,
+        model: "",
+        trim: "",
+        color: "",
+      }));
+      return;
+    }
+
+    if (name === "model") {
+      setFormData((prev) => ({
+        ...prev,
+        model: value,
+        trim: "",
+        color: "",
+      }));
+      return;
+    }
+
     if (name === "firstActivationAt") return;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -43,6 +83,11 @@ export default function AdminClientVehicleEditForm({
 
     if (!vinRegex.test(formData.vin.trim())) {
       alert(t("admin.clientVehicle.validation.invalidVehicleVIN"));
+      return;
+    }
+
+    if (!formData.brand?.trim()) {
+      alert(t("admin.clientVehicle.validation.brandRequired"));
       return;
     }
 
@@ -96,6 +141,29 @@ export default function AdminClientVehicleEditForm({
             required
           />
         </label>
+
+        {/* Brand */}
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.clientVehicle.brand")}
+          </span>
+          <select
+            name="brand"
+            value={formData.brand}
+            onChange={handleChange}
+            className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
+            required
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {brandOptions.map((brand) => (
+              <option key={brand} value={brand}>
+                {brand}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Model */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.clientVehicle.model")}
@@ -106,35 +174,59 @@ export default function AdminClientVehicleEditForm({
             onChange={handleChange}
             className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
             required
+            disabled={!formData.brand}
           >
             <option value="">{t("admin.basicPlaceholder")}</option>
-            <option value="Model 3">Model 3</option>
-            <option value="Model Y">Model Y</option>
-            <option value="Model S">Model S</option>
-            <option value="Model X">Model X</option>
+            {modelOptions.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
           </select>
         </label>
-        <label className="flex flex-col">
-          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientVehicle.trim")}
-          </span>
-          <input
-            name="trim"
-            value={formData.trim}
-            onChange={handleChange}
-            className="input"
-          />
-        </label>
+
+        {/* Color */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.clientVehicle.color")}
           </span>
-          <input
+          <select
             name="color"
             value={formData.color}
             onChange={handleChange}
-            className="input"
-          />
+            className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
+            required
+            disabled={!formData.model}
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {colorOptions.map((color) => (
+              <option key={color} value={color}>
+                {color}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Trim */}
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.clientVehicle.trim")}
+          </span>
+          <select
+            name="trim"
+            value={formData.trim || ""}
+            onChange={handleChange}
+            className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
+            required
+            disabled={!formData.model}
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {trimOptions.map((trim) => (
+              <option key={trim} value={trim}>
+                {trim}
+              </option>
+            ))}
+          </select>
         </label>
 
         {/* ✅ Blocchi read-only in riga completa */}
