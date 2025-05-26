@@ -2,6 +2,7 @@ export interface ClientVehicle {
   id: number;
   clientCompanyId: number;
   vin: string;
+  fuelType: string;
   brand: string;
   model: string;
   trim: string;

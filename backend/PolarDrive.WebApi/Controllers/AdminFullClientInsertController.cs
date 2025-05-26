@@ -66,6 +66,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             {
                 ClientCompanyId = company.Id,
                 Vin = request.VehicleVIN,
+                FuelType = request.VehicleFuelType,
                 Brand = request.VehicleBrand,
                 Model = request.VehicleModel,
                 IsActiveFlag = true,
@@ -101,7 +102,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 return BadRequest("SERVER ERROR → BAD REQUEST: The .zip you are trying to upload must contain at least one .pdf file!");
 
             // Percorso base della company
-            var companyBasePath = Path.Combine(_env.WebRootPath, "companies", $"company-{company.Id}");         
+            var companyBasePath = Path.Combine(_env.WebRootPath, "companies", $"company-{company.Id}");
 
             // Crea la cartella base company-{id} solo se non esiste
             if (!Directory.Exists(companyBasePath))

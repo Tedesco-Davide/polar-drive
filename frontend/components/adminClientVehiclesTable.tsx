@@ -24,7 +24,7 @@ export default function AdminClientVehiclesTable({
   const [vehicleData, setVehicleData] = useState<ClientVehicle[]>([]);
   const { query, setQuery, filteredData } = useSearchFilter<ClientVehicle>(
     vehicleData,
-    ["vin", "brand", "model", "trim", "color"]
+    ["vin", "fuelType", "brand", "model", "trim", "color"]
   );
 
   const {
@@ -60,6 +60,7 @@ export default function AdminClientVehiclesTable({
           <tr>
             <th className="p-4">{t("admin.actions")}</th>
             <th className="p-4">{t("admin.vehicleVIN")}</th>
+            <th className="p-4">{t("admin.clientVehicle.fuelType")}</th>
             <th className="p-4">{t("admin.clientVehicle.brand")}</th>
             <th className="p-4">{t("admin.clientVehicle.model")}</th>
             <th className="p-4">{t("admin.clientVehicle.trim")}</th>
@@ -93,6 +94,7 @@ export default function AdminClientVehiclesTable({
                 </button>
               </td>
               <td className="p-4">{vehicle.vin}</td>
+              <td className="p-4">{vehicle.fuelType}</td>
               <td className="p-4">{vehicle.brand}</td>
               <td className="p-4">{vehicle.model}</td>
               <td className="p-4">{vehicle.trim}</td>

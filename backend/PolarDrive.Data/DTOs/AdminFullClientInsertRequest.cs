@@ -9,6 +9,7 @@ public class AdminFullClientInsertRequest
     public string ReferentEmail { get; set; } = string.Empty;
     public string ReferentMobile { get; set; } = string.Empty;
     public string VehicleVIN { get; set; } = string.Empty;
+    public string VehicleFuelType { get; set; } = string.Empty;
     public string VehicleBrand { get; set; } = string.Empty;
     public string VehicleModel { get; set; } = string.Empty;
     public DateTime UploadDate { get; set; }

@@ -133,6 +133,7 @@
   "admin.clientVehicle.tableHeader": "Vehicles",
   "admin.clientVehicle.model": "Vehicle Model",
   "admin.clientVehicle.trim": "Trim",
+  "admin.clientVehicle.fuelType": "Fuel Type",
   "admin.clientVehicle.brand": "Brand",
   "admin.clientVehicle.color": "Color",
   "admin.clientVehicle.isActive": "Active Vehicle?",

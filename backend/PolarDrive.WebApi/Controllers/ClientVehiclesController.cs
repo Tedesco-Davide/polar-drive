@@ -21,6 +21,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         {
             Id = v.Id,
             Vin = v.Vin,
+            FuelType = v.FuelType,
             Brand = v.Brand,
             Model = v.Model,
             Trim = v.Trim ?? "",
@@ -58,6 +59,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         {
             ClientCompanyId = dto.ClientCompanyId,
             Vin = dto.Vin,
+            FuelType = dto.FuelType,
             Brand = dto.Brand,
             Model = dto.Model,
             Trim = dto.Trim,
@@ -122,6 +124,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
 
         vehicle.Vin = dto.Vin;
+        vehicle.FuelType = dto.FuelType;
         vehicle.Brand = dto.Brand;
         vehicle.Model = dto.Model;
         vehicle.Trim = dto.Trim;

@@ -102,6 +102,7 @@ var vehicles = new[]
         {
             ClientCompanyId = companies[0].Id,
             Vin = "5YJJ6677544845943",
+            FuelType = "Electric",
             Brand = "Tesla",
             Model = "Model 3",
             Trim = "Long Range",
@@ -115,6 +116,7 @@ var vehicles = new[]
         {
             ClientCompanyId = companies[1].Id,
             Vin = "5YJW5451356531830",
+            FuelType = "Electric",
             Brand = "Polestar",
             Model = "Polestar 4",
             Trim = "Long range Single motor",
@@ -128,6 +130,7 @@ var vehicles = new[]
         {
             ClientCompanyId = companies[2].Id,
             Vin = "5YJT8233374058256",
+            FuelType = "Combustion",
             Brand = "Porsche",
             Model = "718 Cayman",
             Trim = "GT4RS",

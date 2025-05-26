@@ -1,5 +1,8 @@
+export type FuelType = "Electric" | "Combustion";
+
 export type VehicleOptionsType = {
   [brand: string]: {
+    fuelType: FuelType;
     models: {
       [model: string]: {
         trims: string[];
@@ -11,6 +14,7 @@ export type VehicleOptionsType = {
 
 export const vehicleOptions: VehicleOptionsType = {
   Tesla: {
+    fuelType: "Electric",
     models: {
       "Model 3": {
         trims: ["Long Range"],
@@ -19,6 +23,7 @@ export const vehicleOptions: VehicleOptionsType = {
     },
   },
   Polestar: {
+    fuelType: "Electric",
     models: {
       "Polestar 4": {
         trims: ["Long range Single motor"],
@@ -27,6 +32,7 @@ export const vehicleOptions: VehicleOptionsType = {
     },
   },
   Porsche: {
+    fuelType: "Combustion",
     models: {
       "718 Cayman": {
         trims: ["GT4RS"],
