@@ -1,8 +1,10 @@
+import { FuelType } from "./vehicleOptions";
+
 export interface ClientVehicle {
   id: number;
   clientCompanyId: number;
   vin: string;
-  fuelType: string;
+  fuelType: FuelType;
   brand: string;
   model: string;
   trim: string;

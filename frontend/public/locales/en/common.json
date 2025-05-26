@@ -206,6 +206,7 @@
   "admin.mainWorkflow.validation.invalidAccessToken": "Please enter a valid Access Token (JWT format)",
   "admin.mainWorkflow.validation.invalidRefreshToken": "Please enter a valid Refresh Token (at least 100 characters long)",
   "admin.clientVehicle.validation.invalidVehicleVIN": "Please enter a valid VIN number",
+  "admin.clientVehicle.validation.fuelTypeRequired": "Please enter a valid Fuel Type",
   "admin.clientVehicle.validation.brandRequired": "Please select a valid Brand",
   "admin.clientVehicle.validation.modelRequired": "Please enter a valid Vehicle Model",
   "admin.clientConsents.validation.consentType": "Please select a valid Consent Type",

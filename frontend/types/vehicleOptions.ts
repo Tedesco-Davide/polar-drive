@@ -1,10 +1,13 @@
-export type FuelType = "Electric" | "Combustion";
+export enum FuelType {
+  Electric = "Electric",
+  Combustion = "Combustion",
+}
 
 export type VehicleOptionsType = {
   [brand: string]: {
-    fuelType: FuelType;
     models: {
       [model: string]: {
+        fuelType: FuelType;
         trims: string[];
         colors: string[];
       };
@@ -14,30 +17,35 @@ export type VehicleOptionsType = {
 
 export const vehicleOptions: VehicleOptionsType = {
   Tesla: {
-    fuelType: "Electric",
     models: {
       "Model 3": {
+        fuelType: FuelType.Electric,
         trims: ["Long Range"],
         colors: ["Ultra Red"],
       },
     },
   },
   Polestar: {
-    fuelType: "Electric",
     models: {
       "Polestar 4": {
+        fuelType: FuelType.Electric,
         trims: ["Long range Single motor"],
         colors: ["Snow"],
       },
     },
   },
   Porsche: {
-    fuelType: "Combustion",
     models: {
       "718 Cayman": {
+        fuelType: FuelType.Combustion,
         trims: ["GT4RS"],
         colors: ["Racing Yellow"],
       },
     },
   },
 };
+
+export const fuelTypeOptions: { value: FuelType; label: string }[] = [
+  { value: FuelType.Electric, label: "Electric" },
+  { value: FuelType.Combustion, label: "Combustion" },
+];

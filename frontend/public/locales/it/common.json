@@ -206,6 +206,7 @@
   "admin.mainWorkflow.validation.invalidAccessToken": "Inserisci un Access Token valido (formato JWT)",
   "admin.mainWorkflow.validation.invalidRefreshToken": "Inserisci un Refresh Token valido (stringa lunga di almeno 100 caratteri)",
   "admin.clientVehicle.validation.invalidVehicleVIN": "Inserisci un numero VIN valido",
+  "admin.clientVehicle.validation.fuelTypeRequired": "Inserisci un tipo di Alimentazione valido",
   "admin.clientVehicle.validation.brandRequired": "Inserisci un Brand valido",
   "admin.clientVehicle.validation.modelRequired": "Inserisci un Modello Veicolo valido",
   "admin.clientConsents.validation.consentType": "Scegliere obbligatoriamente una Tipo Consenso",

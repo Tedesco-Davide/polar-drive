@@ -27,7 +27,7 @@ export default function AdminClientVehicleEditForm({
     firstActivationAt: vehicle.firstActivationAt ?? "",
   });
 
-  const brandOptions = Object.keys(vehicleOptions);
+  const _vehicleOptions = Object.keys(vehicleOptions);
 
   const modelOptions = formData.brand
     ? Object.keys(vehicleOptions[formData.brand]?.models || {})
@@ -60,9 +60,13 @@ export default function AdminClientVehicleEditForm({
     }
 
     if (name === "model") {
+      const detectedFuelType =
+        vehicleOptions[formData.brand]?.models[value]?.fuelType ?? "";
+
       setFormData((prev) => ({
         ...prev,
         model: value,
+        fuelType: detectedFuelType,
         trim: "",
         color: "",
       }));
@@ -83,6 +87,11 @@ export default function AdminClientVehicleEditForm({
 
     if (!vinRegex.test(formData.vin.trim())) {
       alert(t("admin.clientVehicle.validation.invalidVehicleVIN"));
+      return;
+    }
+
+    if (!formData.fuelType?.trim()) {
+      alert(t("admin.clientVehicle.validation.fuelTypeRequired"));
       return;
     }
 
@@ -155,9 +164,30 @@ export default function AdminClientVehicleEditForm({
             required
           >
             <option value="">{t("admin.basicPlaceholder")}</option>
-            {brandOptions.map((brand) => (
+            {_vehicleOptions.map((brand) => (
               <option key={brand} value={brand}>
                 {brand}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Fuel Type */}
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.clientVehicle.fuelType")}
+          </span>
+          <select
+            name="fuelType"
+            value={formData.fuelType}
+            onChange={handleChange}
+            className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
+            required
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {fuelTypeOptions.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
               </option>
             ))}
           </select>

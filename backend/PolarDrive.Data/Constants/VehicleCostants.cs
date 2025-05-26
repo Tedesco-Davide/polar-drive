@@ -22,27 +22,27 @@ public static class VehicleConstants
             {
                 ["Model 3"] = new VehicleVariant
                 {
+                    FuelType = FuelType.Electric,
                     Trims = ["Long Range"],
-                    Colors = ["Ultra Red"],
-                    FuelType = FuelType.Electric
+                    Colors = ["Ultra Red"]
                 }
             },
             ["Polestar"] = new Dictionary<string, VehicleVariant>
             {
                 ["Polestar 4"] = new VehicleVariant
                 {
+                    FuelType = FuelType.Electric,
                     Trims = ["Long range Single motor"],
-                    Colors = ["Snow"],
-                    FuelType = FuelType.Electric
+                    Colors = ["Snow"]
                 }
             },
             ["Porsche"] = new Dictionary<string, VehicleVariant>
             {
                 ["718 Cayman"] = new VehicleVariant
                 {
+                    FuelType = FuelType.Combustion,
                     Trims = ["GT4RS"],
-                    Colors = ["Racing Yellow"],
-                    FuelType = FuelType.Combustion
+                    Colors = ["Racing Yellow"]
                 }
             }
         };
