@@ -40,10 +40,16 @@ export default function AdminDashboard() {
 
   const refreshWorkflowData = async () => {
     try {
+      // 🔁 Veicoli con dati aziendali
       const res = await fetch("https://localhost:5041/api/ClientVehicles");
       const data: ClientVehicleWithCompany[] = await res.json();
 
-      // Refresh AdminMainWorkflow
+      // ✅ Fetcha anche le aziende
+      const resCompanies = await fetch(`${API_BASE_URL}/api/clientcompanies`);
+      const companies: ClientCompany[] = await resCompanies.json();
+      setClients(companies);
+
+      // 🔁 AdminMainWorkflow
       setWorkflowData(
         data.map((entry) => ({
           id: entry.id,
@@ -57,6 +63,8 @@ export default function AdminDashboard() {
           model: entry.model ?? "",
           fuelType: entry.fuelType ?? "",
           vehicleVIN: entry.vin ?? "",
+          color: entry.color ?? "",
+          trim: entry.trim ?? "",
           accessToken: "",
           refreshToken: "",
           brand: entry.brand ?? "",
@@ -65,7 +73,7 @@ export default function AdminDashboard() {
         }))
       );
 
-      // Refresh AdminClientVehiclesTable
+      // 🔁 AdminClientVehiclesTable
       setVehicles(
         data.map((entry) => ({
           id: entry.id,

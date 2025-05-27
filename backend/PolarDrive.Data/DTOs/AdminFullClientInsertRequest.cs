@@ -12,6 +12,8 @@ public class AdminFullClientInsertRequest
     public string VehicleFuelType { get; set; } = string.Empty;
     public string VehicleBrand { get; set; } = string.Empty;
     public string VehicleModel { get; set; } = string.Empty;
+    public string? VehicleTrim { get; set; } = "";
+    public string? VehicleColor { get; set; } = "";
     public DateTime UploadDate { get; set; }
     public string AccessToken { get; set; } = string.Empty;
     public string RefreshToken { get; set; } = string.Empty;

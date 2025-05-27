@@ -3,6 +3,7 @@ import { adminWorkflowTypesInputForm } from "@/types/adminWorkflowTypes";
 import { formatDateToSave } from "@/utils/date";
 import { fuelTypeOptions } from "@/types/fuelTypes";
 import { vehicleOptions } from "@/types/vehicleOptions";
+import JSZip from "jszip";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -81,6 +82,43 @@ export default function AdminMainWorkflowInputForm({
     });
   };
 
+  const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // ✅ Estensione valida .zip
+    if (!file.name.toLowerCase().endsWith(".zip")) {
+      alert(t("admin.validation.invalidZipType"));
+      return;
+    }
+
+    try {
+      const zipBuffer = await file.arrayBuffer();
+      const zip = new JSZip();
+      const contents = await zip.loadAsync(zipBuffer);
+
+      const hasPdf = Object.keys(contents.files).some(
+        (filename) =>
+          filename.toLowerCase().endsWith(".pdf") &&
+          !contents.files[filename].dir
+      );
+
+      if (!hasPdf) {
+        alert(t("admin.validation.invalidZipTypeRequiredConsent"));
+        return;
+      }
+
+      // ✅ Tutto OK
+      setFormData((prev) => ({
+        ...prev,
+        zipFilePath: file,
+      }));
+    } catch (err) {
+      console.error("Errore lettura ZIP:", err);
+      alert(t("admin.validation.invalidZipCorrupted"));
+    }
+  };
+
   const modelOptions =
     formData.brand && vehicleOptions[formData.brand]
       ? Object.keys(vehicleOptions[formData.brand].models)
@@ -154,39 +192,15 @@ export default function AdminMainWorkflowInputForm({
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.uploadZipOutageSigned")}
           </span>
-          <input
-            name="zipFilePath"
-            type="file"
-            onChange={(e) => {
-              const { files } = e.target;
-              if (!files?.[0]) return;
-
-              const file = files[0];
-              const allowedTypes = [
-                "application/zip",
-                "application/x-zip-compressed",
-              ];
-              const maxSize = 20 * 1024 * 1024; // 20MB
-
-              if (!allowedTypes.includes(file.type)) {
-                alert(t("admin.validation.invalidZipType")); // puoi creare una chiave nuova
-                e.target.value = "";
-                return;
-              }
-
-              if (file.size > maxSize) {
-                alert(t("admin.outagePeriods.validation.zipTooLarge"));
-                e.target.value = "";
-                return;
-              }
-
-              setFormData({
-                ...formData,
-                zipFilePath: file,
-              });
-            }}
-            className="input text-[12px]"
-          />
+          <label className="flex flex-col">
+            <input
+              name="zipFilePath"
+              type="file"
+              accept=".zip"
+              onChange={handleZipUpload}
+              className="input text-[12px]"
+            />
+          </label>
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">

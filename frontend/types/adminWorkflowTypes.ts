@@ -12,6 +12,8 @@ export type adminWorkflowTypesInputForm = {
   fuelType: FuelType;
   brand: string;
   model: string;
+  trim: string;
+  color: string;
   accessToken: string;
   refreshToken: string;
   isVehicleActive: boolean;

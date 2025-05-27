@@ -35,6 +35,8 @@ export default function AdminMainWorkflow({
     fuelType: FuelType.Electric,
     vehicleVIN: "",
     brand: "",
+    trim: "",
+    color: "",
     accessToken: "",
     refreshToken: "",
     isVehicleActive: true,
@@ -160,8 +162,7 @@ export default function AdminMainWorkflow({
     }
 
     // ✅ Validazione Refresh Token
-    const refreshTokenRegex = /^[A-Za-z0-9\-_.]{100,}$/;
-    if (!refreshTokenRegex.test(formData.refreshToken)) {
+    if (!formData.refreshToken || formData.refreshToken.length < 100) {
       alert(t("admin.mainWorkflow.validation.invalidRefreshToken"));
       return;
     }
@@ -182,6 +183,8 @@ export default function AdminMainWorkflow({
       formDataToSend.append("fuelType", formData.fuelType);
       formDataToSend.append("vehicleVIN", formData.vehicleVIN);
       formDataToSend.append("brand", formData.brand);
+      formDataToSend.append("vehicleTrim", formData.trim || "");
+      formDataToSend.append("vehicleColor", formData.color || "");
       formDataToSend.append("accessToken", formData.accessToken);
       formDataToSend.append("refreshToken", formData.refreshToken);
 
@@ -224,6 +227,8 @@ export default function AdminMainWorkflow({
       fuelType: FuelType.Electric,
       vehicleVIN: "",
       brand: "",
+      trim: "",
+      color: "",
       accessToken: "",
       refreshToken: "",
       isVehicleActive: true,

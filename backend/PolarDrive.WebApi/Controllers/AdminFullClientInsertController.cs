@@ -69,6 +69,8 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 FuelType = request.VehicleFuelType,
                 Brand = request.VehicleBrand,
                 Model = request.VehicleModel,
+                Trim = string.IsNullOrWhiteSpace(request.VehicleTrim) ? null : request.VehicleTrim,
+                Color = string.IsNullOrWhiteSpace(request.VehicleColor) ? null : request.VehicleColor,
                 IsActiveFlag = true,
                 IsFetchingDataFlag = true,
                 FirstActivationAt = request.UploadDate
@@ -96,40 +98,38 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             if (request.ConsentZip == null || !request.ConsentZip.FileName.EndsWith(".zip"))
                 return BadRequest("SERVER ERROR → BAD REQUEST: The file you are trying to upload must be a .zip file!");
 
-            using var zip = new ZipArchive(request.ConsentZip.OpenReadStream());
+            // ✅ Carica ZIP in memoria una sola volta
+            await using var memoryStream = new MemoryStream();
+            await request.ConsentZip.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            // ✅ Estrai PDF dal file ZIP
+            using var zip = new ZipArchive(memoryStream, ZipArchiveMode.Read, leaveOpen: true);
             var pdfEntry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
             if (pdfEntry == null)
                 return BadRequest("SERVER ERROR → BAD REQUEST: The .zip you are trying to upload must contain at least one .pdf file!");
 
-            // Percorso base della company
+            // ✅ Percorso base + cartelle
             var companyBasePath = Path.Combine(_env.WebRootPath, "companies", $"company-{company.Id}");
-
-            // Crea la cartella base company-{id} solo se non esiste
-            if (!Directory.Exists(companyBasePath))
-            {
-                Directory.CreateDirectory(companyBasePath);
-            }
-
-            // Percorsi sottocartelle
+            Directory.CreateDirectory(companyBasePath);
             var consentsDir = Path.Combine(companyBasePath, "consents-zip");
             var historyDir = Path.Combine(companyBasePath, "history-pdf");
             var reportsDir = Path.Combine(companyBasePath, "reports-pdf");
-
-            // Crea le sottocartelle se mancano (CreateDirectory è idempotente: non lancia errore se già esiste)
             Directory.CreateDirectory(consentsDir);
             Directory.CreateDirectory(historyDir);
             Directory.CreateDirectory(reportsDir);
 
-            // 2. Salva lo ZIP del consenso in consents-zip/
+            // ✅ Salva ZIP sul disco (da memoryStream)
             var zipFilename = Path.GetFileNameWithoutExtension(request.ConsentZip.FileName);
             var uniqueName = $"{zipFilename}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
             var zipPath = Path.Combine(consentsDir, uniqueName);
-            using (var fs = new FileStream(zipPath, FileMode.Create))
+            memoryStream.Position = 0;
+            await using (var fs = new FileStream(zipPath, FileMode.Create))
             {
-                await request.ConsentZip.CopyToAsync(fs);
+                await memoryStream.CopyToAsync(fs);
             }
 
-            // Calcolo SHA-256 hash del PDF estratto
+            // ✅ Calcolo SHA-256 del PDF estratto
             string hash;
             using (var stream = pdfEntry.Open())
             using (var ms = new MemoryStream())
