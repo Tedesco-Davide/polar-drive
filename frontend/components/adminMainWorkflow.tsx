@@ -4,6 +4,7 @@ import { FileArchive, UserSearch } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { FuelType } from "@/types/fuelTypes";
+import { API_BASE_URL } from "@/utils/api";
 import {
   adminWorkflowTypesInputForm,
   WorkflowRow,
@@ -14,7 +15,6 @@ import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
 import PaginationControls from "@/components/paginationControls";
 import VehicleStatusToggle from "./vehicleStatusToggle";
-import { API_BASE_URL } from "@/utils/api";
 
 export default function AdminMainWorkflow({
   workflowData,
@@ -47,11 +47,6 @@ export default function AdminMainWorkflow({
   const [isStatusChanging, setIsStatusChanging] = useState(false);
   const { t } = useTranslation("");
 
-  useEffect(() => {
-    setInternalWorkflowData(workflowData);
-    setCurrentPage(1);
-  }, [workflowData]);
-
   const { query, setQuery, filteredData } = useSearchFilter<WorkflowRow>(
     internalWorkflowData,
     [
@@ -71,6 +66,11 @@ export default function AdminMainWorkflow({
     prevPage,
     setCurrentPage,
   } = usePagination<WorkflowRow>(filteredData, 5);
+
+  useEffect(() => {
+    setInternalWorkflowData(workflowData);
+    setCurrentPage(1);
+  }, [workflowData, setCurrentPage]);
 
   const handleSubmit = async () => {
     const requiredFields: (keyof adminWorkflowTypesInputForm)[] = [
