@@ -14,6 +14,7 @@ import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
 import PaginationControls from "@/components/paginationControls";
 import VehicleStatusToggle from "./vehicleStatusToggle";
+import { API_BASE_URL } from "@/utils/api";
 
 export default function AdminMainWorkflow({
   workflowData,
@@ -167,13 +168,13 @@ export default function AdminMainWorkflow({
 
     console.log("Submitting", formData);
 
-    // ✅ 1. Genera URL dal file PDF
+    // ✅ Genera URL dal file PDF
     const pdfFileUrl =
       formData.zipFilePath instanceof File
         ? URL.createObjectURL(formData.zipFilePath)
         : "";
 
-    // ✅ 2. Aggiungi ai dati di tabella
+    // ✅ Aggiungi ai dati di tabella
     setInternalWorkflowData((prev) => [
       ...prev,
       {
@@ -184,11 +185,50 @@ export default function AdminMainWorkflow({
     ]);
     setCurrentPage(1);
 
-    // ✅ 3. Mostra alert di successo
-    alert(t("admin.mainWorkflow.button.successAddNewVehicle"));
-    await refreshWorkflowData();
+    // ✅ Invio dati al backend
+    try {
+      const formDataToSend = new FormData();
+      formDataToSend.append("companyVatNumber", formData.companyVatNumber);
+      formDataToSend.append("companyName", formData.companyName);
+      formDataToSend.append("referentName", formData.referentName);
+      formDataToSend.append("referentMobile", formData.referentMobile);
+      formDataToSend.append("referentEmail", formData.referentEmail);
+      formDataToSend.append("ConsentZip", formData.zipFilePath); // 👈 deve chiamarsi esattamente così
+      formDataToSend.append("uploadDate", formData.uploadDate);
+      formDataToSend.append("model", formData.model);
+      formDataToSend.append("fuelType", formData.fuelType);
+      formDataToSend.append("vehicleVIN", formData.vehicleVIN);
+      formDataToSend.append("brand", formData.brand);
+      formDataToSend.append("accessToken", formData.accessToken);
+      formDataToSend.append("refreshToken", formData.refreshToken);
 
-    // ✅ 4. Reset del form
+      const response = await fetch(
+        `${API_BASE_URL}/api/adminfullclientinsert`,
+        {
+          method: "POST",
+          body: formDataToSend,
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+      }
+
+      // ✅ Mostri alert ed aggiorni i dati
+      try {
+        alert(t("admin.mainWorkflow.button.successAddNewVehicle"));
+        await refreshWorkflowData();
+      } catch (refreshErr) {
+        console.warn("Refresh fallito dopo insert:", refreshErr);
+      }
+    } catch (error) {
+      alert(`Errore durante l'inserimento: ${error}`);
+      console.error("Errore POST:", error);
+      return;
+    }
+
+    // ✅ Reset del form
     setFormData({
       companyVatNumber: "",
       companyName: "",
