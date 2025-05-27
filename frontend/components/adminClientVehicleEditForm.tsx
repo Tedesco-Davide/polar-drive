@@ -90,7 +90,7 @@ export default function AdminClientVehicleEditForm({
       return;
     }
 
-    if (!formData.fuelType?.trim()) {
+    if (!formData.fuelType) {
       alert(t("admin.clientVehicle.validation.fuelTypeRequired"));
       return;
     }
