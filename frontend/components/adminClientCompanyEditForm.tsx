@@ -195,14 +195,11 @@ export default function AdminClientCompanyEditForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientCompany.landline")}
+            {t("admin.clientCompany.referentPec")}
           </span>
           <input
-            maxLength={11}
-            pattern="[0-9]*"
-            inputMode="numeric"
-            name="landlineNumber"
-            value={formData.landlineNumber}
+            name="referentPecAddress"
+            value={formData.referentPecAddress}
             onChange={handleChange}
             className="input"
           />
@@ -246,11 +243,14 @@ export default function AdminClientCompanyEditForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientCompany.referentPec")}
+            {t("admin.clientCompany.landline")}
           </span>
           <input
-            name="referentPecAddress"
-            value={formData.referentPecAddress}
+            maxLength={11}
+            pattern="[0-9]*"
+            inputMode="numeric"
+            name="landlineNumber"
+            value={formData.landlineNumber}
             onChange={handleChange}
             className="input"
           />
