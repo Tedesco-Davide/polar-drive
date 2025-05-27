@@ -129,12 +129,6 @@ export default function AdminClientCompanyEditForm({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            ID
-          </span>
-          <input name="id" value={formData.id} disabled className="input" />
-        </label>
-        <label className="flex flex-col">
-          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.clientCompany.vatNumber")}
           </span>
           <input
@@ -144,7 +138,9 @@ export default function AdminClientCompanyEditForm({
             name="vatNumber"
             value={formData.vatNumber}
             onChange={handleChange}
-            className="input"
+            className="input bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
+            disabled
+            readOnly
           />
         </label>
         <label className="flex flex-col">
