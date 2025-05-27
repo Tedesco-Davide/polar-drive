@@ -139,15 +139,16 @@ export default function AdminClientVehicleEditForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            VIN
+            {t("admin.vehicleVIN")}
           </span>
           <input
             name="vin"
             value={formData.vin}
-            onChange={handleChange}
-            className="input"
-            maxLength={17}
+            className="input bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
             required
+            maxLength={17}
+            onChange={handleChange}
+            disabled
           />
         </label>
 
