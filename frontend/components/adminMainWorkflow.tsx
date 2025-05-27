@@ -166,23 +166,6 @@ export default function AdminMainWorkflow({
       return;
     }
 
-    console.log("Submitting", formData);
-
-    // ✅ Genera URL dal file PDF
-    const pdfFileUrl =
-      formData.zipFilePath instanceof File
-        ? URL.createObjectURL(formData.zipFilePath)
-        : "";
-
-    // ✅ Aggiungi ai dati di tabella
-    setInternalWorkflowData((prev) => [
-      ...prev,
-      {
-        id: Date.now(), // 👈 ID temporaneo generato via timestamp
-        ...formData,
-        zipFilePath: pdfFileUrl,
-      },
-    ]);
     setCurrentPage(1);
 
     // ✅ Invio dati al backend
@@ -193,7 +176,7 @@ export default function AdminMainWorkflow({
       formDataToSend.append("referentName", formData.referentName);
       formDataToSend.append("referentMobile", formData.referentMobile);
       formDataToSend.append("referentEmail", formData.referentEmail);
-      formDataToSend.append("ConsentZip", formData.zipFilePath); // 👈 deve chiamarsi esattamente così
+      formDataToSend.append("ConsentZip", formData.zipFilePath);
       formDataToSend.append("uploadDate", formData.uploadDate);
       formDataToSend.append("model", formData.model);
       formDataToSend.append("fuelType", formData.fuelType);
