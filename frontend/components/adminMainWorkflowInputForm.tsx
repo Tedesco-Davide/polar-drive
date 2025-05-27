@@ -36,6 +36,18 @@ export default function AdminMainWorkflowInputForm({
       return;
     }
 
+    if (name === "model") {
+      const detectedFuelType =
+        vehicleOptions[formData.brand]?.models[value]?.fuelType ?? "";
+
+      setFormData((prev) => ({
+        ...prev,
+        model: value,
+        fuelType: detectedFuelType,
+      }));
+      return;
+    }
+
     // ✅ ZIP upload: controlli specifici
     if (name === "zipFilePath" && files?.[0]) {
       const file = files[0];
@@ -68,6 +80,11 @@ export default function AdminMainWorkflowInputForm({
       [name]: files ? files[0] : value,
     });
   };
+
+  const modelOptions =
+    formData.brand && vehicleOptions[formData.brand]
+      ? Object.keys(vehicleOptions[formData.brand].models)
+      : [];
 
   return (
     <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
@@ -239,12 +256,15 @@ export default function AdminMainWorkflowInputForm({
             value={formData.model}
             onChange={handleChange}
             className="input cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
+            required
+            disabled={!formData.brand}
           >
             <option value="">{t("admin.basicPlaceholder")}</option>
-            <option value="Model 3">Model 3</option>
-            <option value="Model Y">Model Y</option>
-            <option value="Model S">Model S</option>
-            <option value="Model X">Model X</option>
+            {modelOptions.map((model) => (
+              <option key={model} value={model}>
+                {model}
+              </option>
+            ))}
           </select>
         </label>
         <label className="flex flex-col">
