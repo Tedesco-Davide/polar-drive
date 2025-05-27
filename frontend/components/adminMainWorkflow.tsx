@@ -290,6 +290,7 @@ export default function AdminMainWorkflow({
                     setInternalWorkflowData(updated);
                   }}
                   setLoading={setIsStatusChanging}
+                  refreshWorkflowData={refreshWorkflowData}
                 />
               </td>
               <td className="p-4 align-middle">
@@ -305,6 +306,7 @@ export default function AdminMainWorkflow({
                     setInternalWorkflowData(updated);
                   }}
                   setLoading={setIsStatusChanging}
+                  refreshWorkflowData={refreshWorkflowData}
                 />
               </td>
               <td className="p-4">{entry.companyName}</td>

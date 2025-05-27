@@ -4,7 +4,7 @@ import { TFunction } from "i18next";
 import { API_BASE_URL } from "@/utils/api";
 import { formatDateToDisplay } from "@/utils/date";
 import { isAfter, isValid, parseISO } from "date-fns";
-import { vehicleOptions } from "@/types/vehicleOptions";
+import { fuelTypeOptions, vehicleOptions } from "@/types/vehicleOptions";
 import axios from "axios";
 
 type Props = {
@@ -151,27 +151,6 @@ export default function AdminClientVehicleEditForm({
           />
         </label>
 
-        {/* Brand */}
-        <label className="flex flex-col">
-          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientVehicle.brand")}
-          </span>
-          <select
-            name="brand"
-            value={formData.brand}
-            onChange={handleChange}
-            className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
-            required
-          >
-            <option value="">{t("admin.basicPlaceholder")}</option>
-            {_vehicleOptions.map((brand) => (
-              <option key={brand} value={brand}>
-                {brand}
-              </option>
-            ))}
-          </select>
-        </label>
-
         {/* Fuel Type */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
@@ -188,6 +167,27 @@ export default function AdminClientVehicleEditForm({
             {fuelTypeOptions.map(({ value, label }) => (
               <option key={value} value={value}>
                 {label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Brand */}
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.clientVehicle.brand")}
+          </span>
+          <select
+            name="brand"
+            value={formData.brand}
+            onChange={handleChange}
+            className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
+            required
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {_vehicleOptions.map((brand) => (
+              <option key={brand} value={brand}>
+                {brand}
               </option>
             ))}
           </select>
@@ -215,28 +215,6 @@ export default function AdminClientVehicleEditForm({
           </select>
         </label>
 
-        {/* Color */}
-        <label className="flex flex-col">
-          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientVehicle.color")}
-          </span>
-          <select
-            name="color"
-            value={formData.color}
-            onChange={handleChange}
-            className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
-            required
-            disabled={!formData.model}
-          >
-            <option value="">{t("admin.basicPlaceholder")}</option>
-            {colorOptions.map((color) => (
-              <option key={color} value={color}>
-                {color}
-              </option>
-            ))}
-          </select>
-        </label>
-
         {/* Trim */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
@@ -254,6 +232,28 @@ export default function AdminClientVehicleEditForm({
             {trimOptions.map((trim) => (
               <option key={trim} value={trim}>
                 {trim}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {/* Color */}
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.clientVehicle.color")}
+          </span>
+          <select
+            name="color"
+            value={formData.color}
+            onChange={handleChange}
+            className="input appearance-none cursor-pointer bg-white dark:bg-gray-700 dark:text-softWhite"
+            required
+            disabled={!formData.model}
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {colorOptions.map((color) => (
+              <option key={color} value={color}>
+                {color}
               </option>
             ))}
           </select>

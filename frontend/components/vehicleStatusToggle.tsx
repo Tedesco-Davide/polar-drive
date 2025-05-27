@@ -9,6 +9,7 @@ type Props = {
   field: "IsActive" | "IsFetching";
   onStatusChange: (newIsActive: boolean, newIsFetching: boolean) => void;
   setLoading: (value: boolean) => void;
+  refreshWorkflowData: () => Promise<void>;
 };
 
 export default function VehicleStatusToggle({
@@ -18,6 +19,7 @@ export default function VehicleStatusToggle({
   field,
   onStatusChange,
   setLoading,
+  refreshWorkflowData,
 }: Props) {
   const { t } = useTranslation("");
 
@@ -74,6 +76,7 @@ export default function VehicleStatusToggle({
         isFetching: newIsFetching,
       });
       onStatusChange(newIsActive, newIsFetching);
+      await refreshWorkflowData();
     } catch (err) {
       console.error(t("admin.vehicleStatusToggle.confirmAction.error"), err);
       alert(
