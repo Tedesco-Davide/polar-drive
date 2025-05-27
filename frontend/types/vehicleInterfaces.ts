@@ -1,4 +1,4 @@
-import { FuelType } from "./vehicleOptions";
+import { FuelType } from "./fuelTypes";
 
 export interface ClientVehicle {
   id: number;

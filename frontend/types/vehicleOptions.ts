@@ -1,7 +1,4 @@
-export enum FuelType {
-  Electric = "Electric",
-  Combustion = "Combustion",
-}
+import { FuelType } from "./fuelTypes";
 
 export type VehicleOptionsType = {
   [brand: string]: {
@@ -44,8 +41,3 @@ export const vehicleOptions: VehicleOptionsType = {
     },
   },
 };
-
-export const fuelTypeOptions: { value: FuelType; label: string }[] = [
-  { value: FuelType.Electric, label: "Electric" },
-  { value: FuelType.Combustion, label: "Combustion" },
-];

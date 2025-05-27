@@ -55,6 +55,7 @@ export default function AdminDashboard() {
           zipFilePath: "",
           uploadDate: entry.firstActivationAt ?? "",
           model: entry.model ?? "",
+          fuelType: entry.fuelType ?? "",
           vehicleVIN: entry.vin ?? "",
           accessToken: "",
           refreshToken: "",

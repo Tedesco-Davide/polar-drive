@@ -3,6 +3,7 @@ import { useTranslation } from "next-i18next";
 import { FileArchive, UserSearch } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
+import { FuelType } from "@/types/fuelTypes";
 import {
   adminWorkflowTypesInputForm,
   WorkflowRow,
@@ -30,6 +31,7 @@ export default function AdminMainWorkflow({
     zipFilePath: new File([""], ""),
     uploadDate: "",
     model: "",
+    fuelType: FuelType.Electric,
     vehicleVIN: "",
     brand: "",
     accessToken: "",
@@ -79,7 +81,9 @@ export default function AdminMainWorkflow({
       "zipFilePath",
       "uploadDate",
       "model",
+      "fuelType",
       "vehicleVIN",
+      "brand",
       "accessToken",
       "refreshToken",
     ];
@@ -100,6 +104,12 @@ export default function AdminMainWorkflow({
         t(`admin.mainWorkflow.labels.${field}`)
       );
       alert(t("admin.missingFields") + ": " + translatedLabels.join(", "));
+      return;
+    }
+
+    // ✅ Validazione Alimentazaione
+    if (!formData.fuelType) {
+      alert(t("admin.clientVehicle.validation.fuelTypeRequired"));
       return;
     }
 
@@ -188,6 +198,7 @@ export default function AdminMainWorkflow({
       zipFilePath: new File([""], ""),
       uploadDate: "",
       model: "",
+      fuelType: FuelType.Electric,
       vehicleVIN: "",
       brand: "",
       accessToken: "",

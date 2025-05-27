@@ -4,7 +4,8 @@ import { TFunction } from "i18next";
 import { API_BASE_URL } from "@/utils/api";
 import { formatDateToDisplay } from "@/utils/date";
 import { isAfter, isValid, parseISO } from "date-fns";
-import { fuelTypeOptions, vehicleOptions } from "@/types/vehicleOptions";
+import { vehicleOptions } from "@/types/vehicleOptions";
+import { fuelTypeOptions } from "@/types/fuelTypes";
 import axios from "axios";
 
 type Props = {

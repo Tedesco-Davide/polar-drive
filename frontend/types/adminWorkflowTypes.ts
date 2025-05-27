@@ -1,3 +1,5 @@
+import { FuelType } from "./fuelTypes";
+
 export type adminWorkflowTypesInputForm = {
   companyVatNumber: string;
   companyName: string;
@@ -7,6 +9,7 @@ export type adminWorkflowTypesInputForm = {
   zipFilePath: File;
   uploadDate: string;
   vehicleVIN: string;
+  fuelType: FuelType;
   brand: string;
   model: string;
   accessToken: string;

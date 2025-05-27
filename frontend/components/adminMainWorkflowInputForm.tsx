@@ -1,6 +1,8 @@
 import { TFunction } from "i18next";
 import { adminWorkflowTypesInputForm } from "@/types/adminWorkflowTypes";
 import { formatDateToSave } from "@/utils/date";
+import { fuelTypeOptions } from "@/types/fuelTypes";
+import { vehicleOptions } from "@/types/vehicleOptions";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -19,10 +21,20 @@ export default function AdminMainWorkflowInputForm({
   onSubmit,
   t,
 }: Props) {
+  const brandOptions = Object.keys(vehicleOptions);
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, files } = e.target as HTMLInputElement;
+
+    if (name === "brand") {
+      setFormData((prev) => ({
+        ...prev,
+        brand: value,
+        model: "",
+      }));
+      return;
+    }
 
     // ✅ ZIP upload: controlli specifici
     if (name === "zipFilePath" && files?.[0]) {
@@ -179,6 +191,44 @@ export default function AdminMainWorkflowInputForm({
             dateFormat="dd/MM/yyyy"
             placeholderText="dd/MM/yyyy"
           />
+        </label>
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.clientVehicle.fuelType")}
+          </span>
+          <select
+            name="fuelType"
+            value={formData.fuelType}
+            onChange={handleChange}
+            className="input cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
+            required
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {fuelTypeOptions.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.clientVehicle.brand")}
+          </span>
+          <select
+            name="brand"
+            value={formData.brand}
+            onChange={handleChange}
+            className="input cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
+            required
+          >
+            <option value="">{t("admin.basicPlaceholder")}</option>
+            {brandOptions.map((brand) => (
+              <option key={brand} value={brand}>
+                {brand}
+              </option>
+            ))}
+          </select>
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
