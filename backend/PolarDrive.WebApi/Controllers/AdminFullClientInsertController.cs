@@ -53,11 +53,11 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 // È già associata a un'altra azienda?
                 if (existingVehicle.ClientCompanyId != company.Id)
                 {
-                    return BadRequest(new { errorCode = ErrorCodes.VehicleAlreadyAssociated });
+                    return BadRequest(new { errorCode = ErrorCodes.VehicleAlreadyAssociatedToAnotherCompany });
                 }
 
                 // Se invece è già associata alla stessa azienda, blocca per evitare duplicato
-                return BadRequest(new { errorCode = ErrorCodes.VehicleAlreadyRegisteredToThisCompany });
+                return BadRequest(new { errorCode = ErrorCodes.VehicleAlreadyAssociatedToSameCompany });
             }
 
             // ─────────────────────

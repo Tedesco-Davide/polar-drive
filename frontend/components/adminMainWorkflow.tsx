@@ -207,11 +207,11 @@ export default function AdminMainWorkflow({
         }
 
         switch (errorCode) {
-          case "VEHICLE_ALREADY_ASSOCIATED":
-            alert(t("admin.vehicleAlreadyAssociated"));
+          case "VEHICLE_ALREADY_ASSOCIATED_TO_SAME_COMPANY":
+            alert(t("admin.vehicleAlreadyAssociatedToSameCompany"));
             return;
-          case "VEHICLE_ALREADY_REGISTERED_TO_OTHER_COMPANY":
-            alert(t("admin.vehicleAssignedToAnotherCompany"));
+          case "VEHICLE_ALREADY_ASSOCIATED_TO_ANOTHER_COMPANY":
+            alert(t("admin.vehicleAlreadyAssociatedToAnotherCompany"));
             return;
           case "DUPLICATE_CONSENT_HASH":
             alert(t("admin.duplicatePdfHash"));
