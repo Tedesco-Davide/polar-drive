@@ -44,10 +44,15 @@ export default function AdminDashboard() {
       const res = await fetch("https://localhost:5041/api/ClientVehicles");
       const data: ClientVehicleWithCompany[] = await res.json();
 
-      // ✅ Fetcha anche le aziende
+      // 🔁 Aziende
       const resCompanies = await fetch(`${API_BASE_URL}/api/clientcompanies`);
       const companies: ClientCompany[] = await resCompanies.json();
       setClients(companies);
+
+      // 🔁 Consensi
+      const resConsents = await fetch(`${API_BASE_URL}/api/clientconsents`);
+      const consents: ClientConsent[] = await resConsents.json();
+      setClientConsents(consents); // 👈 AGGIORNA la tabella Consensi
 
       // 🔁 AdminMainWorkflow
       setWorkflowData(

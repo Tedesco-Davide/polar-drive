@@ -99,7 +99,7 @@
   "admin.mainWorkflow.button.confirmAddNewVehicle": "Conferma aggiunta Veicolo",
   "admin.mainWorkflow.button.addNewVehicle": "Aggiungi nuova Veicolo",
   "admin.mainWorkflow.button.undoAddNewVehicle": "Annulla aggiunta Veicolo",
-  "admin.mainWorkflow.button.successAddNewVehicle": "Veicolo aggiunta con successo!",
+  "admin.mainWorkflow.button.successAddNewVehicle": "Veicolo aggiunto con successo!",
   "admin.mainWorkflow.button.zipPdfReports": "Report Veicolo per Azienda (.zip)",
   "admin.mainWorkflow.button.managePdfReports": "Gestione Report PDF",
   "admin.mainWorkflow.button.zipConsents": "Tutti i consensi per Azienda (.zip)",

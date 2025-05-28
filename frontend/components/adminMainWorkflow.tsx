@@ -172,21 +172,21 @@ export default function AdminMainWorkflow({
     // ✅ Invio dati al backend
     try {
       const formDataToSend = new FormData();
-      formDataToSend.append("companyVatNumber", formData.companyVatNumber);
-      formDataToSend.append("companyName", formData.companyName);
-      formDataToSend.append("referentName", formData.referentName);
-      formDataToSend.append("referentMobile", formData.referentMobile);
-      formDataToSend.append("referentEmail", formData.referentEmail);
+      formDataToSend.append("CompanyName", formData.companyName);
+      formDataToSend.append("CompanyVatNumber", formData.companyVatNumber);
+      formDataToSend.append("ReferentName", formData.referentName);
+      formDataToSend.append("ReferentEmail", formData.referentEmail);
+      formDataToSend.append("ReferentMobile", formData.referentMobile);
+      formDataToSend.append("VehicleVIN", formData.vehicleVIN);
+      formDataToSend.append("VehicleFuelType", formData.fuelType);
+      formDataToSend.append("VehicleBrand", formData.brand);
+      formDataToSend.append("VehicleModel", formData.model);
+      formDataToSend.append("VehicleTrim", formData.trim ?? "");
+      formDataToSend.append("VehicleColor", formData.color ?? "");
+      formDataToSend.append("UploadDate", formData.uploadDate);
+      formDataToSend.append("AccessToken", formData.accessToken);
+      formDataToSend.append("RefreshToken", formData.refreshToken);
       formDataToSend.append("ConsentZip", formData.zipFilePath);
-      formDataToSend.append("uploadDate", formData.uploadDate);
-      formDataToSend.append("model", formData.model);
-      formDataToSend.append("fuelType", formData.fuelType);
-      formDataToSend.append("vehicleVIN", formData.vehicleVIN);
-      formDataToSend.append("brand", formData.brand);
-      formDataToSend.append("vehicleTrim", formData.trim || "");
-      formDataToSend.append("vehicleColor", formData.color || "");
-      formDataToSend.append("accessToken", formData.accessToken);
-      formDataToSend.append("refreshToken", formData.refreshToken);
 
       const response = await fetch(
         `${API_BASE_URL}/api/adminfullclientinsert`,

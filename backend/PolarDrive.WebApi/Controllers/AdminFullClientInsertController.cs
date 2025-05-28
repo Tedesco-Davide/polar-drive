@@ -77,6 +77,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             };
             _dbContext.ClientVehicles.Add(vehicle);
             await _dbContext.SaveChangesAsync();
+            Console.WriteLine($"✅ Vehicle created: {vehicle.Id}");
 
             // 2b. Salva token associato
             var token = new ClientToken
@@ -91,6 +92,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             };
             _dbContext.ClientTokens.Add(token);
             await _dbContext.SaveChangesAsync();
+            Console.WriteLine($"✅ Vehicle created: {vehicle.Id}");
 
             // ─────────────────────
             // 3. Estrazione ZIP e salvataggio consenso
@@ -163,6 +165,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             };
             _dbContext.ClientConsents.Add(consent);
             await _dbContext.SaveChangesAsync();
+            Console.WriteLine($"✅ Vehicle created: {vehicle.Id}");
 
             await transaction.CommitAsync();
             return Ok("SERVER MESSAGE: Workflow executed successfully!");
