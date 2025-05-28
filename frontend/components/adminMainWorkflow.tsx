@@ -197,16 +197,44 @@ export default function AdminMainWorkflow({
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText);
+        let errorCode = "";
+        try {
+          const json = await response.json();
+          errorCode = json.errorCode || "";
+        } catch {
+          alert(`${t("admin.genericError")} ${await response.text()}`);
+          return;
+        }
+
+        switch (errorCode) {
+          case "VEHICLE_ALREADY_ASSOCIATED":
+            alert(t("admin.vehicleAlreadyAssociated"));
+            return;
+          case "VEHICLE_ALREADY_REGISTERED_TO_OTHER_COMPANY":
+            alert(t("admin.vehicleAssignedToAnotherCompany"));
+            return;
+          case "DUPLICATE_CONSENT_HASH":
+            alert(t("admin.duplicatePdfHash"));
+            return;
+          case "INVALID_ZIP_FORMAT":
+            alert(t("admin.validation.invalidZipType"));
+            return;
+          case "MISSING_PDF_IN_ZIP":
+            alert(t("admin.validation.invalidZipTypeRequiredConsent"));
+            return;
+          default:
+            alert(`${t("admin.genericError")} ${errorCode}`);
+            return;
+        }
       }
 
       // ✅ Mostri alert ed aggiorni i dati
       try {
         alert(t("admin.mainWorkflow.button.successAddNewVehicle"));
         await refreshWorkflowData();
-      } catch (refreshErr) {
-        console.warn("Refresh fallito dopo insert:", refreshErr);
+      } catch (error) {
+        alert(t("admin.genericError"));
+        console.error("Errore POST:", error);
       }
     } catch (error) {
       alert(`Errore durante l'inserimento: ${error}`);

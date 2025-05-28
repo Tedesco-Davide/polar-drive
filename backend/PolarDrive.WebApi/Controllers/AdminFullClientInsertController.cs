@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
@@ -52,11 +53,11 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 // È già associata a un'altra azienda?
                 if (existingVehicle.ClientCompanyId != company.Id)
                 {
-                    return BadRequest("SERVER ERROR → BAD REQUEST: This vehicle VIN is already registered and assigned to another company!");
+                    return BadRequest(new { errorCode = ErrorCodes.VehicleAlreadyAssociated });
                 }
 
                 // Se invece è già associata alla stessa azienda, blocca per evitare duplicato
-                return BadRequest("SERVER ERROR → BAD REQUEST: This vehicle VIN is already associated with this company!");
+                return BadRequest(new { errorCode = ErrorCodes.VehicleAlreadyRegisteredToThisCompany });
             }
 
             // ─────────────────────
@@ -98,7 +99,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             // 3. Estrazione ZIP e salvataggio consenso
             // ─────────────────────
             if (request.ConsentZip == null || !request.ConsentZip.FileName.EndsWith(".zip"))
-                return BadRequest("SERVER ERROR → BAD REQUEST: The file you are trying to upload must be a .zip file!");
+                return BadRequest(new { ErrorCodes.InvalidZipFormat });
 
             // ✅ Carica ZIP in memoria una sola volta
             await using var memoryStream = new MemoryStream();
@@ -109,7 +110,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             using var zip = new ZipArchive(memoryStream, ZipArchiveMode.Read, leaveOpen: true);
             var pdfEntry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
             if (pdfEntry == null)
-                return BadRequest("SERVER ERROR → BAD REQUEST: The .zip you are trying to upload must contain at least one .pdf file!");
+                return BadRequest(new { ErrorCodes.MissingPdfInZip });
 
             // ✅ Percorso base + cartelle
             var companyBasePath = Path.Combine(_env.WebRootPath, "companies", $"company-{company.Id}");
@@ -147,7 +148,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
 
             if (existingConsent != null)
             {
-                return BadRequest("SERVER ERROR → BAD REQUEST: This file has an existing and validated Hash, therefore has already been uploaded!");
+                return BadRequest(new { errorCode = ErrorCodes.DuplicateConsentHash });
             }
 
             // ─────────────────────
