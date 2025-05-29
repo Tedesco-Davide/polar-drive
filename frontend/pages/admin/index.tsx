@@ -9,6 +9,7 @@ import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import { API_BASE_URL } from "@/utils/api";
 import { WorkflowRow } from "@/types/adminWorkflowTypes";
+import { PdfReport } from "@/types/reportInterfaces";
 import { ClientVehicleWithCompany as ClientVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
 import AdminLoader from "@/components/adminLoader";
 import AdminClientVehiclesTable from "@/components/adminClientVehiclesTable";
@@ -31,6 +32,7 @@ export default function AdminDashboard() {
   const [vehicles, setVehicles] = useState<ClientVehicle[]>([]);
   const [clientConsents, setClientConsents] = useState<ClientConsent[]>([]);
   const [outagePeriods, setOutagePeriods] = useState<OutagePeriod[]>([]);
+  const [pdfReports, setPdfReports] = useState<PdfReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
@@ -116,12 +118,13 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [clientsRes, vehiclesRes, consentsRes, outagesRes] =
+        const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
           await Promise.all([
             fetch(`${API_BASE_URL}/api/clientcompanies`),
             fetch(`${API_BASE_URL}/api/clientvehicles`),
             fetch(`${API_BASE_URL}/api/clientconsents`),
             fetch(`${API_BASE_URL}/api/outageperiods`),
+            fetch(`${API_BASE_URL}/api/pdfreports`),
           ]);
 
         const clientsData: ClientCompany[] = await clientsRes.json();
@@ -129,6 +132,7 @@ export default function AdminDashboard() {
           await vehiclesRes.json();
         const consentsData: ClientConsent[] = await consentsRes.json();
         const outagesData: OutagePeriod[] = await outagesRes.json();
+        const reportsData: PdfReport[] = await reportsRes.json();
 
         setClients(clientsData);
         setVehicles(
@@ -150,6 +154,7 @@ export default function AdminDashboard() {
         );
         setClientConsents(consentsData);
         setOutagePeriods(outagesData);
+        setPdfReports(reportsData);
       } catch (err) {
         console.error("API fetch error:", err);
       } finally {
@@ -266,7 +271,7 @@ export default function AdminDashboard() {
                           return updatedOutagePeriods;
                         }}
                       />
-                      <AdminPdfReports t={t} />{" "}
+                      <AdminPdfReports t={t} reports={pdfReports} />
                     </div>
                   </div>
                 )}

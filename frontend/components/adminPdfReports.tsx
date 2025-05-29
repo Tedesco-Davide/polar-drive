@@ -9,18 +9,20 @@ import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 
-export default function AdminPdfReports({ t }: { t: TFunction }) {
+export default function AdminPdfReports({
+  t,
+  reports,
+}: {
+  t: TFunction;
+  reports: PdfReport[];
+}) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
 
   useEffect(() => {
-    fetch("/api/pdfreports")
-      .then((res) => res.json())
-      .then((data: PdfReport[]) => {
-        setLocalReports(data);
-      });
-  }, []);
+    setLocalReports(reports);
+  }, [reports]);
 
   const { query, setQuery, filteredData } = useSearchFilter<PdfReport>(
     localReports,
