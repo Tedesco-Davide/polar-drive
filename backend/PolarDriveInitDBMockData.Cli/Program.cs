@@ -2,6 +2,7 @@
 using PolarDrive.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.IO.Compression;
+using PolarDriveInitDBMockData.Cli.Utils;
 
 var basePath = AppContext.BaseDirectory;
 var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));
@@ -14,18 +15,18 @@ var options = new DbContextOptionsBuilder<PolarDriveDbContext>()
 
 using var db = new PolarDriveDbContext(options);
 
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // 1. Pulisce tabelle
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 db.ClientConsents.RemoveRange(db.ClientConsents);
 db.ClientTokens.RemoveRange(db.ClientTokens);
 db.ClientVehicles.RemoveRange(db.ClientVehicles);
 db.ClientCompanies.RemoveRange(db.ClientCompanies);
 await db.SaveChangesAsync();
 
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // 2. Mock aziende complete
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 var companies = new[]
 {
     new ClientCompany
@@ -57,9 +58,9 @@ var companies = new[]
 db.ClientCompanies.AddRange(companies);
 await db.SaveChangesAsync();
 
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // 3. Per ogni azienda: crea cartelle + mock vehicle + token + consenso
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 foreach (var company in companies)
 {
     var companyDir = Path.Combine(wwwRoot, $"company-{company.Id}");
@@ -71,26 +72,32 @@ foreach (var company in companies)
     Directory.CreateDirectory(historyDir);
     Directory.CreateDirectory(reportsDir);
 
-    // 🔧 File PDF mock
-    for (int i = 1; i <= 2; i++)
+    // CAMBIARE FLAG A TRUE PER PRODURRE .ZIP CONSENT 
+    bool generaZipMock = false;
+
+    if (generaZipMock)
     {
-        await File.WriteAllTextAsync(Path.Combine(historyDir, $"history_{i}.pdf"), "%PDF-1.4\n%empty history\n%%EOF");
-        await File.WriteAllTextAsync(Path.Combine(reportsDir, $"report_{i}.pdf"), "%PDF-1.4\n%empty report\n%%EOF");
-
-        var zipPath = Path.Combine(consentsDir, $"consent_{i}.zip");
-
-        // Se il file esiste, lo elimino
-        if (File.Exists(zipPath))
+        // 🔧 File PDF mock
+        for (int i = 1; i <= 2; i++)
         {
-            File.Delete(zipPath);
-        }
+            await File.WriteAllTextAsync(Path.Combine(historyDir, $"history_{i}.pdf"), "%PDF-1.4\n%empty history\n%%EOF");
+            await File.WriteAllTextAsync(Path.Combine(reportsDir, $"report_{i}.pdf"), "%PDF-1.4\n%empty report\n%%EOF");
 
-        // Crea ZIP nuovo
-        using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
-        var entry = zip.CreateEntry($"consent_{i}.pdf");
-        using var stream = entry.Open();
-        using var writer = new StreamWriter(stream);
-        await writer.WriteAsync("%PDF-1.4\n%empty consent\n%%EOF");
+            var zipPath = Path.Combine(consentsDir, $"consent_{i}.zip");
+
+            // Se il file esiste, lo elimino
+            if (File.Exists(zipPath))
+            {
+                File.Delete(zipPath);
+            }
+
+            // Crea ZIP nuovo
+            using var zip = ZipFile.Open(zipPath, ZipArchiveMode.Create);
+            var entry = zip.CreateEntry($"consent_{i}.pdf");
+            using var stream = entry.Open();
+            using var writer = new StreamWriter(stream);
+            await writer.WriteAsync("%PDF-1.4\n%empty consent\n%%EOF");
+        }
     }
     await db.SaveChangesAsync();
 }
@@ -211,9 +218,9 @@ for (int i = 0; i < vehicles.Length; i++)
     db.ClientConsents.Add(consent);
 }
 
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // 3.b Crea ZIP mock usati negli outage
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 var zipsDir = Path.Combine(wwwRoot, "zips-outages");
 Directory.CreateDirectory(zipsDir);
 
@@ -239,9 +246,9 @@ using (var zip = ZipFile.Open(zip2Path, ZipArchiveMode.Create))
     await writer.WriteAsync("%PDF-1.4\n%OUTAGE ZIP FleetApi\n%%EOF");
 }
 
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 // 4. Inserisce 5 outage mock coerenti
-// ─────────────────────────────────────
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
 var outages = new List<OutagePeriod>
 {
     new()
@@ -309,6 +316,32 @@ var outages = new List<OutagePeriod>
 };
 
 db.OutagePeriods.AddRange(outages);
+await db.SaveChangesAsync();
+
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
+// 4. Inserisce Mock VehicleData generati con successo per tutti i veicoli.
+// ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+var random = new Random();
+var startDate = DateTime.Today.AddDays(-30);
+var totalHours = 30 * 24;
+
+foreach (var vehicle in vehicles)
+{
+    for (int i = 0; i < totalHours; i++)
+    {
+        var ts = startDate.AddHours(i);
+        var rawJson = FakeTeslaJsonDataFetch.GenerateRawVehicleJson(ts, random);
+
+        db.VehiclesData.Add(new VehicleData
+        {
+            VehicleId = vehicle.Id,
+            Timestamp = ts,
+            RawJson = rawJson
+        });
+    }
+}
+
 await db.SaveChangesAsync();
 db.ChangeTracker.Clear();
 
