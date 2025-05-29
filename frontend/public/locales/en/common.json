@@ -194,6 +194,7 @@
   "admin.vehicleReports.vehicleVinDisplay": "Vehicle",
   "admin.vehicleReports.generatedAt": "Generated On",
   "admin.vehicleReports.notesModalTitle": "Manage note for: row in PDF Reports Table",
+  "admin.vehicleReports.downloadSinglePdf": "Sinlge PDF",
 
   "admin.validation.invalidVat": "Please enter a valid Company VAT consisting of 11 digits",
   "admin.validation.companyName": "Please enter a valid Company Name",

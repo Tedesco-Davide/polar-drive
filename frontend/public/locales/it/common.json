@@ -194,6 +194,7 @@
   "admin.vehicleReports.vehicleVinDisplay": "Veicolo interessato",
   "admin.vehicleReports.generatedAt": "Giorno di generazione",
   "admin.vehicleReports.notesModalTitle": "Gestione nota per: riga in Tabella Reports PDF",
+  "admin.vehicleReports.downloadSinglePdf": "Singolo PDF",
 
   "admin.validation.invalidVat": "Inserisci una Partita IVA valida composta da 11 cifre",
   "admin.validation.companyName": "Inserisci un Nome Azienda valido",
