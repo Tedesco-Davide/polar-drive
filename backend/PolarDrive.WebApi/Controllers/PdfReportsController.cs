@@ -24,9 +24,9 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         var result = reports.Select(r => new PdfReportDTO
         {
             Id = r.Id,
-            ReportPeriodStart = r.ReportPeriodStart.ToString("dd/MM/yyyy"),
-            ReportPeriodEnd = r.ReportPeriodEnd.ToString("dd/MM/yyyy"),
-            GeneratedAt = r.GeneratedAt?.ToString("dd/MM/yyyy"),
+            ReportPeriodStart = r.ReportPeriodStart.ToString("o"),
+            ReportPeriodEnd = r.ReportPeriodEnd.ToString("o"),
+            GeneratedAt = r.GeneratedAt?.ToString("o"),
             CompanyVatNumber = r.ClientCompany?.VatNumber ?? "",
             CompanyName = r.ClientCompany?.Name ?? "",
             VehicleVin = r.ClientVehicle?.Vin ?? "",
