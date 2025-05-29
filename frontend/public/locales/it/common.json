@@ -191,7 +191,7 @@
   "admin.vehicleReports.tableHeader": "Reports PDF",
   "admin.vehicleReports.reportPeriod": "Periodo di rilevanza",
   "admin.vehicleReports.clientCompanyVATName": "Azienda interessata",
-  "admin.vehicleReports.vehicleVinDisplay": "Veicolo interessata",
+  "admin.vehicleReports.vehicleVinDisplay": "Veicolo interessato",
   "admin.vehicleReports.generatedAt": "Giorno di generazione",
   "admin.vehicleReports.notesModalTitle": "Gestione nota per: riga in Tabella Reports PDF",
 

@@ -7,7 +7,6 @@ import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
-import { PdfReport } from "@/types/reportInterfaces";
 import { API_BASE_URL } from "@/utils/api";
 import { WorkflowRow } from "@/types/adminWorkflowTypes";
 import { ClientVehicleWithCompany as ClientVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
@@ -17,7 +16,7 @@ import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
 import AdminMainWorkflow from "@/components/adminMainWorkflow";
 import AdminClientConsents from "@/components/adminClientConsentsTable";
 import AdminOutagePeriodsTable from "@/components/adminOutagePeriodsTable";
-import AdminVehiclesReport from "@/components/adminVehiclesReport";
+import AdminPdfReports from "@/components/adminPdfReports";
 import Head from "next/head";
 import Header from "@/components/header";
 import classNames from "classnames";
@@ -32,7 +31,6 @@ export default function AdminDashboard() {
   const [vehicles, setVehicles] = useState<ClientVehicle[]>([]);
   const [clientConsents, setClientConsents] = useState<ClientConsent[]>([]);
   const [outagePeriods, setOutagePeriods] = useState<OutagePeriod[]>([]);
-  const [pdfReports, setPdfReports] = useState<PdfReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
@@ -118,13 +116,12 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
+        const [clientsRes, vehiclesRes, consentsRes, outagesRes] =
           await Promise.all([
             fetch(`${API_BASE_URL}/api/clientcompanies`),
             fetch(`${API_BASE_URL}/api/clientvehicles`),
             fetch(`${API_BASE_URL}/api/clientconsents`),
             fetch(`${API_BASE_URL}/api/outageperiods`),
-            fetch("/api/mock-pdfreports"),
           ]);
 
         const clientsData: ClientCompany[] = await clientsRes.json();
@@ -132,7 +129,6 @@ export default function AdminDashboard() {
           await vehiclesRes.json();
         const consentsData: ClientConsent[] = await consentsRes.json();
         const outagesData: OutagePeriod[] = await outagesRes.json();
-        const reportsData: PdfReport[] = await reportsRes.json();
 
         setClients(clientsData);
         setVehicles(
@@ -154,7 +150,6 @@ export default function AdminDashboard() {
         );
         setClientConsents(consentsData);
         setOutagePeriods(outagesData);
-        setPdfReports(reportsData);
       } catch (err) {
         console.error("API fetch error:", err);
       } finally {
@@ -271,7 +266,7 @@ export default function AdminDashboard() {
                           return updatedOutagePeriods;
                         }}
                       />
-                      <AdminVehiclesReport reports={pdfReports} t={t} />
+                      <AdminPdfReports t={t} />{" "}
                     </div>
                   </div>
                 )}

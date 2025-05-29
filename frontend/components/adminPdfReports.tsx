@@ -9,19 +9,18 @@ import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 
-type Props = {
-  t: TFunction;
-  reports: PdfReport[];
-};
-
-export default function AdminVehiclesReport({ t, reports }: Props) {
+export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
 
   useEffect(() => {
-    setLocalReports(reports);
-  }, [reports]);
+    fetch("/api/pdfreports")
+      .then((res) => res.json())
+      .then((data: PdfReport[]) => {
+        setLocalReports(data);
+      });
+  }, []);
 
   const { query, setQuery, filteredData } = useSearchFilter<PdfReport>(
     localReports,
@@ -29,7 +28,7 @@ export default function AdminVehiclesReport({ t, reports }: Props) {
       "companyVatNumber",
       "companyName",
       "vehicleVin",
-      "vehicleDisplayName",
+      "vehicleModel",
       "reportPeriodStart",
       "reportPeriodEnd",
     ]
@@ -76,7 +75,14 @@ export default function AdminVehiclesReport({ t, reports }: Props) {
                 <button
                   className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                   title={t("admin.vehicleReports.downloadSinglePdf")}
-                  onClick={() => window.open(report.pdfFilePath, "_blank")}
+                  onClick={async () => {
+                    const response = await fetch(
+                      `/api/pdfreports/${report.id}/download`
+                    );
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    window.open(url, "_blank");
+                  }}
                 >
                   <FileText size={16} />
                 </button>
@@ -93,15 +99,30 @@ export default function AdminVehiclesReport({ t, reports }: Props) {
                     isOpen={!!selectedReportForNotes}
                     title={t("admin.vehicleReports.notesModalTitle")}
                     notesField="notes"
-                    onSave={(updated) => {
-                      setLocalReports((prev) =>
-                        prev.map((r) =>
-                          r.pdfFilePath === updated.pdfFilePath
-                            ? { ...r, notes: updated.notes }
-                            : r
-                        )
-                      );
-                      setSelectedReportForNotes(null);
+                    onSave={async (updated) => {
+                      try {
+                        await fetch(`/api/pdfreports/${updated.id}/notes`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ notes: updated.notes }),
+                        });
+
+                        setLocalReports((prev) =>
+                          prev.map((r) =>
+                            r.id === updated.id
+                              ? { ...r, notes: updated.notes }
+                              : r
+                          )
+                        );
+                        setSelectedReportForNotes(null);
+                      } catch (err) {
+                        console.error(t("admin.notesGenericError"), err);
+                        alert(
+                          err instanceof Error
+                            ? err.message
+                            : t("admin.notesGenericError")
+                        );
+                      }
                     }}
                     onClose={() => setSelectedReportForNotes(null)}
                     t={t}
@@ -116,7 +137,7 @@ export default function AdminVehiclesReport({ t, reports }: Props) {
                 {report.companyVatNumber} - {report.companyName}
               </td>
               <td className="p-4">
-                {report.vehicleVin} - {report.vehicleDisplayName}
+                {report.vehicleVin} - {report.vehicleModel}
               </td>
               <td className="p-4">{formatDateToDisplay(report.generatedAt)}</td>
             </tr>

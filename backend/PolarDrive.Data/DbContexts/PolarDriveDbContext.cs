@@ -27,7 +27,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
         {
             entity.HasIndex(e => e.VatNumber).IsUnique();
         });
-        
+
         modelBuilder.Entity<ClientVehicle>(entity =>
         {
             entity.HasIndex(e => e.Vin).IsUnique();
@@ -69,7 +69,24 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        modelBuilder.Entity<PdfReport>(entity =>{});
+        modelBuilder.Entity<PdfReport>(entity =>
+        {
+            entity.HasOne(e => e.ClientCompany)
+                .WithMany()
+                .HasForeignKey(e => e.ClientCompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.ClientVehicle)
+                .WithMany()
+                .HasForeignKey(e => e.ClientVehicleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.ClientCompanyId, e.ClientVehicleId, e.ReportPeriodStart, e.ReportPeriodEnd })
+                .IsUnique();
+
+            entity.Property(e => e.GeneratedAt)
+                .IsRequired(false);
+        });
 
         modelBuilder.Entity<VehicleData>(entity =>
         {

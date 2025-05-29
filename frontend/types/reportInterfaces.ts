@@ -1,11 +1,11 @@
 export interface PdfReport {
+  id: number;
   reportPeriodStart: string;
   reportPeriodEnd: string;
-  pdfFilePath: string;
-  generatedAt: string;
+  generatedAt: string | null;
   companyVatNumber: string;
   companyName: string;
   vehicleVin: string;
-  vehicleDisplayName: string;
+  vehicleModel: string;
   notes?: string;
 }
