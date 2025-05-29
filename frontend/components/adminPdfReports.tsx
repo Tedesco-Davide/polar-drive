@@ -5,6 +5,7 @@ import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
 import { FileText, NotebookPen } from "lucide-react";
+import { API_BASE_URL } from "@/utils/api";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -95,41 +96,6 @@ export default function AdminPdfReports({
                 >
                   <NotebookPen size={16} />
                 </button>
-                {selectedReportForNotes && (
-                  <NotesModal
-                    entity={selectedReportForNotes}
-                    isOpen={!!selectedReportForNotes}
-                    title={t("admin.vehicleReports.notesModalTitle")}
-                    notesField="notes"
-                    onSave={async (updated) => {
-                      try {
-                        await fetch(`/api/pdfreports/${updated.id}/notes`, {
-                          method: "PATCH",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({ notes: updated.notes }),
-                        });
-
-                        setLocalReports((prev) =>
-                          prev.map((r) =>
-                            r.id === updated.id
-                              ? { ...r, notes: updated.notes }
-                              : r
-                          )
-                        );
-                        setSelectedReportForNotes(null);
-                      } catch (err) {
-                        console.error(t("admin.notesGenericError"), err);
-                        alert(
-                          err instanceof Error
-                            ? err.message
-                            : t("admin.notesGenericError")
-                        );
-                      }
-                    }}
-                    onClose={() => setSelectedReportForNotes(null)}
-                    t={t}
-                  />
-                )}
               </td>
               <td className="p-4">
                 {formatDateToDisplay(report.reportPeriodStart)} -{" "}
@@ -160,6 +126,43 @@ export default function AdminPdfReports({
           resetPage={() => setCurrentPage(1)}
         />
       </div>
+
+      {selectedReportForNotes && (
+        <NotesModal
+          entity={selectedReportForNotes}
+          isOpen={!!selectedReportForNotes}
+          title={t("admin.vehicleReports.notesModalTitle")}
+          notesField="notes"
+          onSave={async (updated) => {
+            try {
+              await fetch(
+                `${API_BASE_URL}/api/PdfReports/${updated.id}/notes`,
+                {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ notes: updated.notes }),
+                }
+              );
+
+              setLocalReports((prev) =>
+                prev.map((r) =>
+                  r.id === updated.id ? { ...r, notes: updated.notes } : r
+                )
+              );
+              setSelectedReportForNotes(null);
+            } catch (err) {
+              console.error(t("admin.notesGenericError"), err);
+              alert(
+                err instanceof Error
+                  ? err.message
+                  : t("admin.notesGenericError")
+              );
+            }
+          }}
+          onClose={() => setSelectedReportForNotes(null)}
+          t={t}
+        />
+      )}
     </div>
   );
 }
