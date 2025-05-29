@@ -144,6 +144,42 @@ var vehicles = new[]
 db.ClientVehicles.AddRange(vehicles);
 await db.SaveChangesAsync();
 
+// 📄 Mock Report PDF associati ai veicoli
+var reports = new List<PdfReport>
+{
+    new()
+    {
+        ClientCompanyId = companies[0].Id,
+        ClientVehicleId = vehicles[0].Id,
+        ReportPeriodStart = new DateTime(2025, 4, 1),
+        ReportPeriodEnd = new DateTime(2025, 4, 30),
+        GeneratedAt = DateTime.UtcNow,
+        Notes = "Report mensile standard aprile 2025"
+    },
+    new()
+    {
+        ClientCompanyId = companies[1].Id,
+        ClientVehicleId = vehicles[1].Id,
+        ReportPeriodStart = new DateTime(2025, 4, 1),
+        ReportPeriodEnd = new DateTime(2025, 4, 30),
+        GeneratedAt = DateTime.UtcNow,
+        Notes = "Primo report per veicolo Polestar"
+    },
+    new()
+    {
+        ClientCompanyId = companies[2].Id,
+        ClientVehicleId = vehicles[2].Id,
+        ReportPeriodStart = new DateTime(2025, 4, 1),
+        ReportPeriodEnd = new DateTime(2025, 4, 30),
+        GeneratedAt = DateTime.UtcNow,
+        Notes = "Monitoraggio uso esclusivo veicolo sportivo"
+    }
+};
+
+db.PdfReports.AddRange(reports);
+await db.SaveChangesAsync();
+
+
 // 🔑🔐 Inserisce token + consenso per ciascun veicolo
 for (int i = 0; i < vehicles.Length; i++)
 {
