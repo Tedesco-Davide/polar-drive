@@ -80,7 +80,7 @@ export default function AdminPdfReports({
                   title={t("admin.vehicleReports.downloadSinglePdf")}
                   onClick={async () => {
                     const response = await fetch(
-                      `/api/pdfreports/${report.id}/download`
+                      `${API_BASE_URL}/api/pdfreports/${report.id}/download`
                     );
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
