@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.Entities;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -6,50 +8,86 @@ namespace PolarDrive.WebApi.Controllers;
 [Route("api/[controller]")]
 public class VehicleOAuthController : ControllerBase
 {
+    private readonly PolarDriveDbContext _db;
+    private readonly PolarDriveLogger _logger;
+
+    public VehicleOAuthController(PolarDriveDbContext db)
+    {
+        _db = db;
+        _logger = new PolarDriveLogger(_db);
+    }
+
     [HttpGet("GenerateUrl")]
-    public IActionResult GenerateOAuthUrl([FromQuery] string brand, [FromQuery] string vin)
+    public async Task<IActionResult> GenerateOAuthUrl([FromQuery] string brand, [FromQuery] string vin)
     {
         if (string.IsNullOrWhiteSpace(brand))
+        {
+            await _logger.Error(
+                  "VehicleOAuthController.GenerateOAuthUrl",
+                  "Missing required parameter: brand"
+            );
             return BadRequest("Missing required parameter: brand");
+        }
 
-        // Normalizzo in lowercase per confronto robusto
         brand = brand.Trim().ToLowerInvariant();
 
         string clientId;
-        string redirectUri;
+        string redirectUri = "https://datapolar.dev/api/OAuthCallback";
         string scopes;
         string authBaseUrl;
 
-        switch (brand)
+        try
         {
-            case "tesla":
-                clientId = "ownerapi";
-                redirectUri = "https://datapolar.dev/api/OAuthCallback";
-                scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
-                authBaseUrl = "https://auth.tesla.com/oauth2/v3/authorize";
-                break;
+            switch (brand)
+            {
+                case "tesla":
+                    clientId = "ownerapi";
+                    scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
+                    authBaseUrl = "https://auth.tesla.com/oauth2/v3/authorize";
+                    break;
 
-            case "polestar":
-                clientId = "<polestar_client_id>";
-                redirectUri = "https://datapolar.dev/api/OAuthCallback";
-                scopes = "openid vehicles:read";
-                authBaseUrl = "https://auth.polestar.com/oauth2/authorize"; // da verificare
-                break;
+                case "polestar":
+                    clientId = "<polestar_client_id>";
+                    scopes = "openid vehicles:read";
+                    authBaseUrl = "https://auth.polestar.com/oauth2/authorize";
+                    break;
 
-            default:
-                return BadRequest($"Unsupported brand: {brand}");
+                default:
+                    await _logger.Warning(
+                        "VehicleOAuthController.GenerateOAuthUrl",
+                        "Unsupported brand received",
+                        $"Brand: {brand}, VIN: {vin}"
+                    );
+                    return BadRequest($"Unsupported brand received: {brand}");
+            }
+
+            var state = Guid.NewGuid().ToString("N");
+
+            var url = $"{authBaseUrl}?" +
+                      $"client_id={clientId}" +
+                      $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
+                      $"&response_type=code" +
+                      $"&scope={Uri.EscapeDataString(scopes)}" +
+                      $"&state={state}" +
+                      $"&audience=ownerapi";
+
+            await _logger.Info(
+                "VehicleOAuthController.GenerateOAuthUrl",
+                $"Generated OAuth URL for brand: {brand}, vin: {vin}",
+                $"Url: {url}"
+            );
+
+            return Ok(new { url });
         }
+        catch (Exception ex)
+        {
+            await _logger.Error(
+                "VehicleOAuthController.GenerateOAuthUrl",
+                $"Failed to generate OAuth URL for brand: {brand}",
+                $"Exception: {ex.ToString()}"
+            );
 
-        var state = Guid.NewGuid().ToString("N");
-
-        var url = $"{authBaseUrl}?" +
-                  $"client_id={clientId}" +
-                  $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
-                  $"&response_type=code" +
-                  $"&scope={Uri.EscapeDataString(scopes)}" +
-                  $"&state={state}" +
-                  $"&audience=ownerapi"; // ← opzionale, specifico Tesla
-
-        return Ok(new { url });
+            return StatusCode(500, "An error occurred while generating the URL.");
+        }
     }
 }

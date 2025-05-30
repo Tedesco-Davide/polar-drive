@@ -151,7 +151,12 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
         {
             entity.Property(e => e.Timestamp)
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.Property(e => e.Level)
+                .HasConversion<string>()
+                .HasDefaultValue(PolarDriveLogLevel.INFO);
         });
+
 
     }
 }
