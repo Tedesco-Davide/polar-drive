@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "next-i18next";
-import { FileArchive, UserSearch } from "lucide-react";
+import { FileArchive, UserSearch, Link } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { FuelType } from "@/types/fuelTypes";
@@ -37,8 +37,6 @@ export default function AdminMainWorkflow({
     brand: "",
     trim: "",
     color: "",
-    accessToken: "",
-    refreshToken: "",
     isVehicleActive: true,
     isVehicleFetchingData: true,
   });
@@ -87,8 +85,6 @@ export default function AdminMainWorkflow({
       "fuelType",
       "vehicleVIN",
       "brand",
-      "accessToken",
-      "refreshToken",
     ];
 
     const missing = requiredFields.filter((f) => {
@@ -153,20 +149,6 @@ export default function AdminMainWorkflow({
       return;
     }
 
-    // ✅ Validazione Access Token (JWT)
-    const jwtAccessTokenRegex =
-      /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/;
-    if (!jwtAccessTokenRegex.test(formData.accessToken)) {
-      alert(t("admin.mainWorkflow.validation.invalidAccessToken"));
-      return;
-    }
-
-    // ✅ Validazione Refresh Token
-    if (!formData.refreshToken || formData.refreshToken.length < 100) {
-      alert(t("admin.mainWorkflow.validation.invalidRefreshToken"));
-      return;
-    }
-
     setCurrentPage(1);
 
     // ✅ Invio dati al backend
@@ -184,8 +166,6 @@ export default function AdminMainWorkflow({
       formDataToSend.append("VehicleTrim", formData.trim ?? "");
       formDataToSend.append("VehicleColor", formData.color ?? "");
       formDataToSend.append("UploadDate", formData.uploadDate);
-      formDataToSend.append("AccessToken", formData.accessToken);
-      formDataToSend.append("RefreshToken", formData.refreshToken);
       formDataToSend.append("ConsentZip", formData.zipFilePath);
 
       const response = await fetch(
@@ -257,8 +237,6 @@ export default function AdminMainWorkflow({
       brand: "",
       trim: "",
       color: "",
-      accessToken: "",
-      refreshToken: "",
       isVehicleActive: true,
       isVehicleFetchingData: true,
     });
@@ -325,6 +303,41 @@ export default function AdminMainWorkflow({
               className="border-b border-gray-300 dark:border-gray-600"
             >
               <td className="p-4 space-x-2 inline-flex">
+                <button
+                  className="p-2 bg-cyan-500 text-softWhite rounded hover:bg-cyan-600"
+                  title="Genera URL di autorizzazione veicolo"
+                  onClick={async () => {
+                    try {
+                      if (!entry.brand) {
+                        alert("Errore: brand del veicolo mancante.");
+                        return;
+                      }
+
+                      const brand = entry.brand.toLowerCase();
+
+                      const res = await fetch(
+                        `${API_BASE_URL}/api/VehicleOAuth/GenerateUrl?brand=${brand}&vin=${entry.vehicleVIN}`
+                      );
+
+                      const data = await res.json();
+                      if (data?.url) {
+                        await navigator.clipboard.writeText(data.url);
+                        alert(
+                          "URL copiato negli appunti. Invia al cliente via WhatsApp."
+                        );
+                      } else {
+                        alert(
+                          "Errore nella generazione dell'URL di autorizzazione."
+                        );
+                      }
+                    } catch (err) {
+                      console.error("Errore OAuth:", err);
+                      alert("Errore durante il recupero dell'URL OAuth.");
+                    }
+                  }}
+                >
+                  <Link size={16} />
+                </button>
                 <button
                   className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600"
                   title={t("admin.mainWorkflow.button.pdfUserAndVehicle")}

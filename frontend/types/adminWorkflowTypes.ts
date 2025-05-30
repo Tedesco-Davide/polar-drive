@@ -14,8 +14,6 @@ export type adminWorkflowTypesInputForm = {
   model: string;
   trim: string;
   color: string;
-  accessToken: string;
-  refreshToken: string;
   isVehicleActive: boolean;
   isVehicleFetchingData: boolean;
 };

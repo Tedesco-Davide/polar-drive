@@ -293,28 +293,6 @@ export default function AdminMainWorkflowInputForm({
             className="input"
           />
         </label>
-        <label className="flex flex-col">
-          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.mainWorkflow.labels.accessToken")}
-          </span>
-          <input
-            name="accessToken"
-            value={formData.accessToken}
-            onChange={handleChange}
-            className="input"
-          />
-        </label>
-        <label className="flex flex-col">
-          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.mainWorkflow.labels.refreshToken")}
-          </span>
-          <input
-            name="refreshToken"
-            value={formData.refreshToken}
-            onChange={handleChange}
-            className="input"
-          />
-        </label>
       </div>
       <button
         className="mt-6 bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600"
