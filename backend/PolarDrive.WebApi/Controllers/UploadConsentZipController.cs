@@ -12,6 +12,8 @@ namespace PolarDrive.WebApi.Controllers;
 [Route("api/[controller]")]
 public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
 {
+    private readonly PolarDriveLogger _logger = new(db);
+
     [HttpPost]
     public async Task<IActionResult> UploadConsent(
         [FromForm] int clientCompanyId,
@@ -24,12 +26,17 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
     )
     {
         if (zipFile == null || zipFile.Length == 0)
+        {
+            await _logger.Warning("UploadConsentZipController", "ZIP file missing or empty.");
             return BadRequest("SERVER ERROR → BAD REQUEST: File .zip missing!");
+        }
 
         if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            await _logger.Warning("UploadConsentZipController", "Invalid file extension.", zipFile.FileName);
             return BadRequest("SERVER ERROR → BAD REQUEST: File type not valid. It must be a .zip!");
+        }
 
-        // ✅ Validazione tipo consenso
         var allowedTypes = new[] {
             "Consent Activation",
             "Consent Deactivation",
@@ -38,10 +45,12 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         };
 
         if (string.IsNullOrWhiteSpace(consentType) || !allowedTypes.Contains(consentType))
+        {
+            await _logger.Warning("UploadConsentZipController", "Invalid consent type received.", consentType);
             return BadRequest("SERVER ERROR → BAD REQUEST: Consent Type not valid!");
+        }
 
-        // 🔄 Carica tutto il file ZIP in memoria
-        using var memoryStream = new MemoryStream();
+        await using var memoryStream = new MemoryStream();
         await zipFile.CopyToAsync(memoryStream);
         memoryStream.Position = 0;
 
@@ -54,47 +63,52 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
             );
 
             if (!containsPdf)
+            {
+                await _logger.Warning("UploadConsentZipController", "ZIP file does not contain any PDF.", zipFile.FileName);
                 return BadRequest("SERVER ERROR → BAD REQUEST: The .zip file must contain at least a single .pdf file!");
+            }
         }
         catch (InvalidDataException)
         {
+            await _logger.Error("UploadConsentZipController", "Invalid ZIP file format or corrupted.");
             return BadRequest("SERVER ERROR → BAD REQUEST: The .zip file is either damaged/broken or not valid!");
         }
 
-        // 🔍 Validazione logica di coerenza
         var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == clientCompanyId && c.VatNumber == companyVatNumber);
         if (company == null)
+        {
+            await _logger.Warning("UploadConsentZipController", "Company not found or VAT mismatch.", $"CompanyId: {clientCompanyId}, VAT: {companyVatNumber}");
             return NotFound("SERVER ERROR → NOT FOUND: Company not found or invalid VAT number!");
+        }
 
         var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicleId && v.Vin == vehicleVIN && v.ClientCompanyId == clientCompanyId);
         if (vehicle == null)
+        {
+            await _logger.Warning("UploadConsentZipController", "Vehicle not found or mismatch.", $"VehicleId: {vehicleId}, VIN: {vehicleVIN}");
             return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found or not associated with the company!");
+        }
 
         // 🔐 SHA256
         string hash;
-        
-        // Calcola SHA256 direttamente dal memoryStream già pieno
         memoryStream.Position = 0;
         using var sha = SHA256.Create();
         var hashBytes = await sha.ComputeHashAsync(memoryStream);
         hash = Convert.ToHexStringLower(hashBytes);
-
-        // Reset posizione per salvataggio file
         memoryStream.Position = 0;
 
         var existingConsent = await db.ClientConsents.FirstOrDefaultAsync(c => c.ConsentHash == hash);
         if (existingConsent != null)
         {
+            await _logger.Warning("UploadConsentZipController", "Duplicate consent hash detected.", $"ExistingId: {existingConsent.Id}, Hash: {hash}");
             return Conflict(new { message = "CONFLICT - SERVER ERROR: This file has an existing and validated Hash, therefore has already been uploaded!", existingId = existingConsent.Id });
         }
 
-        // 📁 Salva ZIP
+        // 📁 Save ZIP
         var safeVin = vehicleVIN.ToUpper().Trim();
         var companyBasePath = Path.Combine(env.WebRootPath ?? "wwwroot", "companies", $"company-{clientCompanyId}");
         var consentsDir = Path.Combine(companyBasePath, "consents-zip");
         Directory.CreateDirectory(consentsDir);
 
-        // Evita sovrascrittura con timestamp
         var zipFilename = $"manual_upload_{safeVin}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
         var finalZipPath = Path.Combine(consentsDir, zipFilename);
 
@@ -104,7 +118,10 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
         }
 
         if (!DateTime.TryParseExact(uploadDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+        {
+            await _logger.Warning("UploadConsentZipController", "Invalid upload date format.", uploadDate);
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid signature date format. Expected server-side format: 'yyyy-MM-dd'!");
+        }
 
         var consent = new ClientConsent
         {
@@ -119,6 +136,8 @@ public class UploadConsentZipController(PolarDriveDbContext db, IWebHostEnvironm
 
         db.ClientConsents.Add(consent);
         await db.SaveChangesAsync();
+
+        await _logger.Info("UploadConsentZipController", "Consent ZIP successfully uploaded and registered.", $"ConsentId: {consent.Id}, Hash: {hash}");
 
         return Ok(new
         {

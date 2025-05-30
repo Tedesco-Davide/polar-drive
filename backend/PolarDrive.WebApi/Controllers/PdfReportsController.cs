@@ -13,9 +13,13 @@ namespace PolarDrive.WebApi.Controllers;
 [Route("api/[controller]")]
 public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 {
+    private readonly PolarDriveLogger _logger = new(db);
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PdfReportDTO>>> Get()
     {
+        await _logger.Info("PdfReportsController.Get", "Requested list of PDF reports.");
+
         var reports = await db.PdfReports
             .Include(r => r.ClientCompany)
             .Include(r => r.ClientVehicle)
@@ -42,14 +46,21 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     {
         var entity = await db.PdfReports.FindAsync(id);
         if (entity == null)
+        {
+            await _logger.Warning("PdfReportsController.PatchNotes", "PDF report not found.", $"ReportId: {id}");
             return NotFound("SERVER ERROR → NOT FOUND: PDF report not found!");
+        }
 
         if (!body.TryGetProperty("notes", out var notesProp))
+        {
+            await _logger.Warning("PdfReportsController.PatchNotes", "Missing 'notes' field.", $"ReportId: {id}");
             return BadRequest("SERVER ERROR → BAD REQUEST: Notes field missing!");
+        }
 
         entity.Notes = notesProp.GetString() ?? string.Empty;
         await db.SaveChangesAsync();
 
+        await _logger.Debug("PdfReportsController.PatchNotes", "PDF report notes updated.", $"ReportId: {id}");
         return NoContent();
     }
 
@@ -62,9 +73,14 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             .FirstOrDefaultAsync(r => r.Id == id);
 
         if (report == null)
+        {
+            await _logger.Warning("PdfReportsController.DownloadPdf", "PDF report not found.", $"ReportId: {id}");
             return NotFound("SERVER ERROR → NOT FOUND: PDF report not found!");
+        }
 
-        // 🔧 Prepara contenuto dinamico
+        await _logger.Info("PdfReportsController.DownloadPdf", "PDF report requested for download.", $"ReportId: {id}");
+
+        // 🔧 Prepare dynamic content
         var sb = new StringBuilder();
         sb.AppendLine("🧾 POLARDRIVE REPORT");
         sb.AppendLine("-----------------------------");
@@ -76,19 +92,19 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         sb.AppendLine("📌 NOTE:");
         sb.AppendLine(report.Notes ?? "-");
 
-        // 📄 Genera PDF
+        // 📄 Generate PDF
         using var document = new PdfDocument();
         var page = document.AddPage();
         var gfx = XGraphics.FromPdfPage(page);
         var font = new XFont("Verdana", 12, XFontStyle.Regular);
         gfx.DrawString(sb.ToString(), font, XBrushes.Black, new XRect(40, 40, page.Width - 80, page.Height - 80), XStringFormats.TopLeft);
 
-        // 📦 Esporta
         using var stream = new MemoryStream();
         document.Save(stream, false);
         stream.Seek(0, SeekOrigin.Begin);
 
+        await _logger.Info("PdfReportsController.DownloadPdf", "PDF report successfully generated.", $"ReportId: {id}");
+
         return File(stream.ToArray(), "application/pdf", $"PolarDrive_Report_{id}.pdf");
     }
-
 }

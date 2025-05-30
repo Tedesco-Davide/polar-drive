@@ -10,9 +10,13 @@ namespace PolarDrive.WebApi.Controllers;
 [Route("api/[controller]")]
 public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
 {
+    private readonly PolarDriveLogger _logger = new(db);
+
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ClientCompanyDTO>>> Get()
     {
+        await _logger.Info("ClientCompaniesController.Get", "Requested list of client companies.");
+
         var items = await db.ClientCompanies
             .Select(c => new ClientCompanyDTO
             {
@@ -36,7 +40,10 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     public async Task<ActionResult> Post([FromBody] ClientCompanyDTO dto)
     {
         if (await db.ClientCompanies.AnyAsync(c => c.VatNumber == dto.VatNumber))
-            return Conflict("CONFLICT - SERVER ERROR: This company has already been saved, VAT numbher already existing!");
+        {
+            await _logger.Warning("ClientCompaniesController.Post", "Attempt to insert duplicate company.", $"VAT: {dto.VatNumber}");
+            return Conflict("CONFLICT - SERVER ERROR: This company has already been saved, VAT number already existing!");
+        }
 
         var entity = new ClientCompany
         {
@@ -56,6 +63,8 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         db.ClientCompanies.Add(entity);
         await db.SaveChangesAsync();
 
+        await _logger.Info("ClientCompaniesController.Post", "New client company inserted successfully.", $"CompanyId: {entity.Id}, VAT: {entity.VatNumber}");
+
         return CreatedAtAction(nameof(Get), new { id = entity.Id }, entity.Id);
     }
 
@@ -64,10 +73,16 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     {
         var entity = await db.ClientCompanies.FindAsync(id);
         if (entity == null)
+        {
+            await _logger.Warning("ClientCompaniesController.Delete", "Attempt to delete a non-existing company.", $"CompanyId: {id}");
             return NotFound();
+        }
 
         db.ClientCompanies.Remove(entity);
         await db.SaveChangesAsync();
+
+        await _logger.Info("ClientCompaniesController.Delete", "Client company deleted successfully.", $"CompanyId: {id}");
+
         return NoContent();
     }
 
@@ -75,13 +90,18 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     public async Task<IActionResult> Put(int id, [FromBody] ClientCompanyDTO updated)
     {
         if (id != updated.Id)
+        {
+            await _logger.Error("ClientCompaniesController.Put", "ID mismatch in update request.", $"Route ID: {id}, Body ID: {updated.Id}");
             return BadRequest("SERVER ERROR → BAD REQUEST: ID mismatch!");
+        }
 
         var existing = await db.ClientCompanies.FindAsync(id);
         if (existing == null)
+        {
+            await _logger.Warning("ClientCompaniesController.Put", "Attempt to update a non-existing company.", $"CompanyId: {id}");
             return NotFound();
+        }
 
-        // Aggiorna i campi
         existing.Name = updated.Name;
         existing.VatNumber = updated.VatNumber;
         existing.Address = updated.Address;
@@ -94,6 +114,9 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         existing.LandlineNumber = updated.LandlineNumber;
 
         await db.SaveChangesAsync();
+
+        await _logger.Info("ClientCompaniesController.Put", "Client company updated successfully.", $"CompanyId: {id}");
+
         return Ok();
     }
 }

@@ -23,11 +23,11 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
         }
         catch (ObjectDisposedException ex)
         {
-            Console.WriteLine($"❌ PolarDriveLogger => DbContext already disposed: {ex.Message}");
+            Console.WriteLine($"❌ PolarDriveLogger → DbContext already disposed: {ex.Message}");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ FATAL ERROR => IMPOSSIBLE TO SAVE IN PolarDriveLogger: {ex.Message}");
+            Console.WriteLine($"❌ FATAL ERROR → IMPOSSIBLE TO SAVE IN PolarDriveLogger: {ex.Message}");
         }
     }
 

@@ -15,18 +15,18 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
 {
     private readonly PolarDriveDbContext _dbContext = dbContext;
     private readonly IWebHostEnvironment _env = env;
+    private readonly PolarDriveLogger _logger = new(dbContext);
 
     [HttpPost]
-    [RequestSizeLimit(100_000_000)] // ZIP fino a 100MB
+    [RequestSizeLimit(100_000_000)] // ZIP up to 100MB
     public async Task<IActionResult> Post([FromForm] AdminFullClientInsertRequest request)
     {
+        await _logger.Info("AdminFullClientInsertController.Post", "Started full client onboarding workflow.");
+
         using var transaction = await _dbContext.Database.BeginTransactionAsync();
 
         try
         {
-            // ─────────────────────
-            // 1. Azienda Cliente - Riusa se già esiste per VatNumber
-            // ─────────────────────
             var company = await _dbContext.ClientCompanies
                 .FirstOrDefaultAsync(c => c.VatNumber == request.CompanyVatNumber);
 
@@ -42,27 +42,27 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 };
                 _dbContext.ClientCompanies.Add(company);
                 await _dbContext.SaveChangesAsync();
+
+                await _logger.Info("AdminFullClientInsertController.Post", "Created new client company.", $"VAT: {company.VatNumber}");
             }
 
-            // Check: se esiste già una veicolo con quel VIN
             var existingVehicle = await _dbContext.ClientVehicles
                 .FirstOrDefaultAsync(v => v.Vin == request.VehicleVIN);
 
             if (existingVehicle != null)
             {
-                // È già associata a un'altra azienda?
-                if (existingVehicle.ClientCompanyId != company.Id)
-                {
-                    return BadRequest(new { errorCode = ErrorCodes.VehicleAlreadyAssociatedToAnotherCompany });
-                }
+                var msg = existingVehicle.ClientCompanyId != company.Id
+                    ? "Vehicle already associated to a different company."
+                    : "Vehicle already associated to the same company.";
 
-                // Se invece è già associata alla stessa azienda, blocca per evitare duplicato
-                return BadRequest(new { errorCode = ErrorCodes.VehicleAlreadyAssociatedToSameCompany });
+                await _logger.Warning("AdminFullClientInsertController.Post", msg, $"VIN: {request.VehicleVIN}");
+                var errorCode = existingVehicle.ClientCompanyId != company.Id
+                    ? ErrorCodes.VehicleAlreadyAssociatedToAnotherCompany
+                    : ErrorCodes.VehicleAlreadyAssociatedToSameCompany;
+
+                return BadRequest(new { errorCode });
             }
 
-            // ─────────────────────
-            // 2. Veicolo
-            // ─────────────────────
             var vehicle = new ClientVehicle
             {
                 ClientCompanyId = company.Id,
@@ -78,9 +78,8 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             };
             _dbContext.ClientVehicles.Add(vehicle);
             await _dbContext.SaveChangesAsync();
-            Console.WriteLine($"✅ Vehicle created: {vehicle.Id}");
+            await _logger.Info("AdminFullClientInsertController.Post", "New vehicle registered.", $"VIN: {vehicle.Vin}, CompanyId: {company.Id}");
 
-            // 2b. Salva token associato
             var token = new ClientToken
             {
                 VehicleId = vehicle.Id,
@@ -93,26 +92,26 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             };
             _dbContext.ClientTokens.Add(token);
             await _dbContext.SaveChangesAsync();
-            Console.WriteLine($"✅ Vehicle created: {vehicle.Id}");
+            await _logger.Debug("AdminFullClientInsertController.Post", "Token saved for vehicle.", $"VehicleId: {vehicle.Id}");
 
-            // ─────────────────────
-            // 3. Estrazione ZIP e salvataggio consenso
-            // ─────────────────────
             if (request.ConsentZip == null || !request.ConsentZip.FileName.EndsWith(".zip"))
+            {
+                await _logger.Warning("AdminFullClientInsertController.Post", "Uploaded file is not a valid ZIP.");
                 return BadRequest(new { ErrorCodes.InvalidZipFormat });
+            }
 
-            // ✅ Carica ZIP in memoria una sola volta
             await using var memoryStream = new MemoryStream();
             await request.ConsentZip.CopyToAsync(memoryStream);
             memoryStream.Position = 0;
 
-            // ✅ Estrai PDF dal file ZIP
             using var zip = new ZipArchive(memoryStream, ZipArchiveMode.Read, leaveOpen: true);
             var pdfEntry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
             if (pdfEntry == null)
+            {
+                await _logger.Warning("AdminFullClientInsertController.Post", "No PDF file found inside ZIP.");
                 return BadRequest(new { ErrorCodes.MissingPdfInZip });
+            }
 
-            // ✅ Percorso base + cartelle
             var companyBasePath = Path.Combine(_env.WebRootPath, "companies", $"company-{company.Id}");
             Directory.CreateDirectory(companyBasePath);
             var consentsDir = Path.Combine(companyBasePath, "consents-zip");
@@ -122,7 +121,6 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             Directory.CreateDirectory(historyDir);
             Directory.CreateDirectory(reportsDir);
 
-            // ✅ Salva ZIP sul disco (da memoryStream)
             var zipFilename = Path.GetFileNameWithoutExtension(request.ConsentZip.FileName);
             var uniqueName = $"{zipFilename}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
             var zipPath = Path.Combine(consentsDir, uniqueName);
@@ -132,7 +130,6 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 await memoryStream.CopyToAsync(fs);
             }
 
-            // ✅ Calcolo SHA-256 del PDF estratto
             string hash;
             using (var stream = pdfEntry.Open())
             using (var ms = new MemoryStream())
@@ -142,18 +139,15 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 hash = Convert.ToHexStringLower(hashBytes);
             }
 
-            // ✅ Check se già esiste un consenso identico
             var existingConsent = await _dbContext.ClientConsents
                 .FirstOrDefaultAsync(c => c.ConsentHash == hash);
 
             if (existingConsent != null)
             {
+                await _logger.Warning("AdminFullClientInsertController.Post", "Consent PDF already exists.", $"Hash: {hash}");
                 return BadRequest(new { errorCode = ErrorCodes.DuplicateConsentHash });
             }
 
-            // ─────────────────────
-            // 4. Salva consenso
-            // ─────────────────────
             var consent = new ClientConsent
             {
                 ClientCompanyId = company.Id,
@@ -166,14 +160,18 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             };
             _dbContext.ClientConsents.Add(consent);
             await _dbContext.SaveChangesAsync();
-            Console.WriteLine($"✅ Vehicle created: {vehicle.Id}");
+
+            await _logger.Info("AdminFullClientInsertController.Post", "Consent PDF stored and hash verified.", $"Hash: {hash}");
 
             await transaction.CommitAsync();
+            await _logger.Info("AdminFullClientInsertController.Post", "Full client workflow completed successfully.");
+
             return Ok("SERVER MESSAGE: Workflow executed successfully!");
         }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            await _logger.Error("AdminFullClientInsertController.Post", "Exception during full client workflow.", ex.ToString());
             return StatusCode(500, $"SERVER ERROR → STATUS CODE: Error while executing the Workflow! {ex.Message}");
         }
     }

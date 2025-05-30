@@ -4,7 +4,7 @@ using PolarDrive.Data.DbContexts;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Aggiungi servizi Web API + Swagger
+// Add Web API services + Swagger
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -16,7 +16,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Abilitazione CORS
+// Enable CORS
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -27,27 +27,45 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Aggiungi il DbContext
+// Configure DB path
 var basePath = AppContext.BaseDirectory;
 var relativePath = Path.Combine("..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db");
 var dbPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
-Console.WriteLine("Sto usando il DB per Web API: " + dbPath);
 
+// Setup DbContext
 builder.Services.AddDbContext<PolarDriveDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}")
 );
 
 var app = builder.Build();
 
-// Usa Swagger solo in sviluppo
+// Use Swagger only in development
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// Apply middlewares
 app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.MapControllers();
+
+// Run app with logger on startup
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
+    var logger = new PolarDriveLogger(dbContext);
+
+    try
+    {
+        await logger.Info("Program.Main", "PolarDrive Web API is starting...", $"DB Path: {dbPath}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ FATAL ERROR during startup logging: {ex.Message}");
+    }
+}
+
 app.Run();

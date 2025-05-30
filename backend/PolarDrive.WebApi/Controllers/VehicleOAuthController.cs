@@ -20,12 +20,11 @@ public class VehicleOAuthController : ControllerBase
     [HttpGet("GenerateUrl")]
     public async Task<IActionResult> GenerateOAuthUrl([FromQuery] string brand, [FromQuery] string vin)
     {
+        const string source = "VehicleOAuthController.GenerateOAuthUrl";
+
         if (string.IsNullOrWhiteSpace(brand))
         {
-            await _logger.Error(
-                  "VehicleOAuthController.GenerateOAuthUrl",
-                  "Missing required parameter: brand"
-            );
+            await _logger.Error(source, "Missing required parameter: brand");
             return BadRequest("Missing required parameter: brand");
         }
 
@@ -54,7 +53,7 @@ public class VehicleOAuthController : ControllerBase
 
                 default:
                     await _logger.Warning(
-                        "VehicleOAuthController.GenerateOAuthUrl",
+                        source,
                         "Unsupported brand received",
                         $"Brand: {brand}, VIN: {vin}"
                     );
@@ -72,9 +71,9 @@ public class VehicleOAuthController : ControllerBase
                       $"&audience=ownerapi";
 
             await _logger.Info(
-                "VehicleOAuthController.GenerateOAuthUrl",
-                $"Generated OAuth URL for brand: {brand}, vin: {vin}",
-                $"Url: {url}"
+                source,
+                $"Generated OAuth URL for brand",
+                $"Brand: {brand}, VIN: {vin}, URL: {url}"
             );
 
             return Ok(new { url });
@@ -82,9 +81,9 @@ public class VehicleOAuthController : ControllerBase
         catch (Exception ex)
         {
             await _logger.Error(
-                "VehicleOAuthController.GenerateOAuthUrl",
-                $"Failed to generate OAuth URL for brand: {brand}",
-                $"Exception: {ex.ToString()}"
+                source,
+                "Exception while generating OAuth URL",
+                ex.ToString()
             );
 
             return StatusCode(500, "An error occurred while generating the URL.");
