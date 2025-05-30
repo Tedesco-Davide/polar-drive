@@ -3,6 +3,7 @@ import { formatDateToSave } from "@/utils/date";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { API_BASE_URL } from "@/utils/api";
 import { isAfter, isValid, parseISO } from "date-fns";
+import { logFrontendEvent } from "@/utils/logger";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import JSZip from "jszip";
@@ -121,11 +122,24 @@ export default function AdminClientConsentAddForm({
     }
 
     try {
+      await logFrontendEvent(
+        "AdminClientConsentAddForm",
+        "INFO",
+        "Attempting to upload a new consent ZIP",
+        JSON.stringify(formData)
+      );
+
       const resolveRes = await fetch(
         `${API_BASE_URL}/api/ClientConsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${vehicleVIN}`
       );
 
       if (!resolveRes.ok) {
+        await logFrontendEvent(
+          "AdminClientConsentAddForm",
+          "WARNING",
+          "resolve-ids failed (VAT or VIN not found)",
+          `VAT: ${companyVatNumber}, VIN: ${vehicleVIN}`
+        );
         alert(t("admin.resolveVATandVIN"));
         return;
       }
@@ -148,6 +162,12 @@ export default function AdminClientConsentAddForm({
 
       if (res.status === 409) {
         const conflict = await res.json();
+        await logFrontendEvent(
+          "AdminClientConsentAddForm",
+          "WARNING",
+          "Duplicate consent hash detected",
+          `existingId=${conflict.existingId}`
+        );
         alert(
           t("admin.clientConsents.validation.hashIDalready") +
             conflict.existingId
@@ -157,6 +177,12 @@ export default function AdminClientConsentAddForm({
 
       if (!res.ok) {
         const errMsg = await res.text();
+        await logFrontendEvent(
+          "AdminClientConsentAddForm",
+          "ERROR",
+          "Consent upload failed",
+          errMsg
+        );
         console.error(
           t("admin.clientConsents.validation.genericError"),
           errMsg
@@ -164,6 +190,13 @@ export default function AdminClientConsentAddForm({
         alert(errMsg);
         return;
       }
+
+      await logFrontendEvent(
+        "AdminClientConsentAddForm",
+        "INFO",
+        "Consent uploaded successfully",
+        `CompanyId=${clientCompanyId}, VehicleId=${vehicleId}`
+      );
 
       alert(t("admin.clientConsents.successAddNewConsent"));
 
@@ -183,12 +216,15 @@ export default function AdminClientConsentAddForm({
         zipFile: null,
       });
     } catch (err) {
-      console.error(t("admin.clientConsents.validation.genericError"), err);
-      alert(
-        err instanceof Error
-          ? err.message
-          : t("admin.clientConsents.validation.genericError")
+      const errMsg = err instanceof Error ? err.message : String(err);
+      await logFrontendEvent(
+        "AdminClientConsentAddForm",
+        "ERROR",
+        "Exception thrown during consent upload",
+        errMsg
       );
+      console.error(t("admin.clientConsents.validation.genericError"), err);
+      alert(t("admin.clientConsents.validation.genericError"));
     }
   };
 

@@ -1,4 +1,5 @@
 import { useEffect, ReactNode } from "react";
+import { logFrontendEvent } from "@/utils/logger";
 
 type Props = {
   isOpen: boolean;
@@ -8,17 +9,51 @@ type Props = {
 };
 
 export default function EditModal({ isOpen, title, children }: Props) {
-  // 🔒 Blocca lo scroll della pagina
   useEffect(() => {
-    if (isOpen) {
-      document.body.classList.add("overflow-hidden");
-    } else {
-      document.body.classList.remove("overflow-hidden");
+    try {
+      if (isOpen) {
+        document.body.classList.add("overflow-hidden");
+        logFrontendEvent(
+          "AdminEditModal",
+          "INFO",
+          "Modal opened and body scroll disabled"
+        );
+      } else {
+        document.body.classList.remove("overflow-hidden");
+        logFrontendEvent(
+          "AdminEditModal",
+          "INFO",
+          "Modal closed and body scroll restored"
+        );
+      }
+    } catch (err) {
+      const errDetails = err instanceof Error ? err.message : String(err);
+      logFrontendEvent(
+        "AdminEditModal",
+        "ERROR",
+        "Error occurred while toggling modal scroll behavior",
+        errDetails
+      );
     }
 
-    // Pulizia
     return () => {
-      document.body.classList.remove("overflow-hidden");
+      try {
+        document.body.classList.remove("overflow-hidden");
+        logFrontendEvent(
+          "AdminEditModal",
+          "INFO",
+          "Modal cleanup triggered and body scroll restored"
+        );
+      } catch (cleanupErr) {
+        const errDetails =
+          cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr);
+        logFrontendEvent(
+          "AdminEditModal",
+          "ERROR",
+          "Error occurred during modal cleanup",
+          errDetails
+        );
+      }
     };
   }, [isOpen]);
 

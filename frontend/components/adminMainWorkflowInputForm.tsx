@@ -3,6 +3,7 @@ import { adminWorkflowTypesInputForm } from "@/types/adminWorkflowTypes";
 import { formatDateToSave } from "@/utils/date";
 import { fuelTypeOptions } from "@/types/fuelTypes";
 import { vehicleOptions } from "@/types/vehicleOptions";
+import { logFrontendEvent } from "@/utils/logger";
 import JSZip from "jszip";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -86,9 +87,15 @@ export default function AdminMainWorkflowInputForm({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // ✅ Estensione valida .zip
+    // ✅ Extension check
     if (!file.name.toLowerCase().endsWith(".zip")) {
       alert(t("admin.validation.invalidZipType"));
+      await logFrontendEvent(
+        "AdminMainWorkflowInputForm",
+        "WARNING",
+        "ZIP file upload rejected: invalid extension",
+        file.name
+      );
       return;
     }
 
@@ -105,16 +112,38 @@ export default function AdminMainWorkflowInputForm({
 
       if (!hasPdf) {
         alert(t("admin.validation.invalidZipTypeRequiredConsent"));
+        await logFrontendEvent(
+          "AdminMainWorkflowInputForm",
+          "WARNING",
+          "ZIP file rejected: no PDF file found",
+          file.name
+        );
         return;
       }
 
-      // ✅ Tutto OK
+      // ✅ All OK
+      await logFrontendEvent(
+        "AdminMainWorkflowInputForm",
+        "INFO",
+        "ZIP file validated and accepted",
+        file.name
+      );
+
       setFormData((prev) => ({
         ...prev,
         zipFilePath: file,
       }));
     } catch (err) {
-      console.error("Errore lettura ZIP:", err);
+      const errorDetails = err instanceof Error ? err.message : String(err);
+      console.error("ZIP read error:", err);
+
+      await logFrontendEvent(
+        "AdminMainWorkflowInputForm",
+        "ERROR",
+        "Error while reading uploaded ZIP file",
+        errorDetails
+      );
+
       alert(t("admin.validation.invalidZipCorrupted"));
     }
   };

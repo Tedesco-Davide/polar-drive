@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { TFunction } from "i18next";
 import { API_BASE_URL } from "@/utils/api";
+import { logFrontendEvent } from "@/utils/logger";
 
 type Props = {
   client: ClientCompany;
@@ -97,6 +98,13 @@ export default function AdminClientCompanyEditForm({
     }
 
     try {
+      await logFrontendEvent(
+        "AdminClientCompanyEditForm",
+        "INFO",
+        "Attempting to update client company",
+        JSON.stringify(formData)
+      );
+
       const response = await fetch(
         `${API_BASE_URL}/api/ClientCompanies/${formData.id}`,
         {
@@ -109,16 +117,37 @@ export default function AdminClientCompanyEditForm({
       );
 
       if (!response.ok) {
-        throw new Error("Errore nel salvataggio");
+        const errorMessage = `Failed to update client. Status: ${response.status}`;
+        await logFrontendEvent(
+          "AdminClientCompanyEditForm",
+          "ERROR",
+          errorMessage
+        );
+        throw new Error(errorMessage);
       }
 
-      // ✅ Successo
+      await logFrontendEvent(
+        "AdminClientCompanyEditForm",
+        "INFO",
+        "Client company updated successfully",
+        `CompanyId=${formData.id}`
+      );
+
       alert(t("admin.successEditRow"));
       onSave(formData);
       await refreshWorkflowData();
     } catch (err) {
+      const errorDetails = err instanceof Error ? err.message : String(err);
+
+      await logFrontendEvent(
+        "AdminClientCompanyEditForm",
+        "ERROR",
+        "Exception thrown during client update",
+        errorDetails
+      );
+
       console.error(t("admin.genericApiError"), err);
-      alert(err instanceof Error ? err.message : t("admin.genericApiError"));
+      alert(t("admin.genericApiError"));
     }
 
     onSave(formData);

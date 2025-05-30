@@ -6,6 +6,7 @@ import { isAfter, isValid, parseISO } from "date-fns";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import { vehicleOptions } from "@/types/vehicleOptions";
 import { outageStatusOptions, outageTypeOptions } from "@/types/outageOptions";
+import { logFrontendEvent } from "@/utils/logger";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 import JSZip from "jszip";
@@ -59,179 +60,226 @@ export default function AdminOutagePeriodsAddForm({
   };
 
   const handleSubmit = async () => {
-    const {
-      status,
-      outageType,
-      outageBrand,
-      outageStart,
-      outageEnd,
-      vin,
-      companyVatNumber,
-      zipFilePath,
-    } = formData;
-
-    const payload = new FormData();
-    const parsedStart = parseISO(outageStart);
-    const isGenericOutage = !vin && !companyVatNumber;
-    let clientCompanyId: number | null = null;
-    let vehicleId: number | null = null;
-
-    // Validazioni base
-    if (!status)
-      return alert(t("admin.outagePeriods.validation.statusRequired"));
-
-    if (!outageType)
-      return alert(t("admin.outagePeriods.validation.outageTypeRequired"));
-
-    if (!outageBrand) {
-      return alert(t("admin.outagePeriods.validation.outageBrandRequired"));
-    }
-
-    if (!outageStart)
-      return alert(t("admin.outagePeriods.validation.startDateRequired"));
-
-    // ⛔ Se stato è OUTAGE-ONGOING, non deve esserci una data di fine!
-    if (status === "OUTAGE-ONGOING" && outageEnd) {
-      alert(t("admin.outagePeriods.validation.ongoingCannotHaveEndDate"));
-      return;
-    }
-
-    // ⛔ OUTAGE-RESOLVED richiede anche la data di fine
-    if (status === "OUTAGE-RESOLVED" && !outageEnd) {
-      alert(t("admin.outagePeriods.validation.outageEndRequiredForResolved"));
-      return;
-    }
-
-    // ⛔ END non può essere prima della START
-    if (outageEnd) {
-      const parsedEnd = parseISO(outageEnd);
-      const now = new Date();
-
-      if (!isValid(parsedEnd)) {
-        alert(t("admin.outagePeriods.validation.invalidEndDate"));
-        return;
-      }
-
-      if (parsedEnd < parsedStart) {
-        alert(t("admin.outagePeriods.validation.outageEndBeforeStart"));
-        return;
-      }
-
-      if (parsedEnd > now) {
-        alert(t("admin.outagePeriods.validation.outageEndInFuture"));
-        return;
-      }
-    }
-
-    if (!isValid(parsedStart) || isAfter(parsedStart, new Date()))
-      return alert(t("admin.outagePeriods.validation.startDateInFuture"));
-
-    if (outageType === "Outage Vehicle") {
-      if (!vin || !companyVatNumber) {
-        alert(t("admin.resolveVATandVIN"));
-        return;
-      }
-    }
-
-    if (outageType === "Outage Fleet Api" && (vin || companyVatNumber)) {
-      alert(t("admin.outagePeriods.fleetApiMustNotHaveVinOrVat"));
-      return;
-    }
-
-    if (!isGenericOutage) {
-      const resolveRes = await fetch(
-        `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${vin}`
+    try {
+      await logFrontendEvent(
+        "AdminOutagePeriodsAddForm",
+        "INFO",
+        "Attempting to submit new outage period"
       );
-      if (!resolveRes.ok) {
-        alert(t("admin.resolveVATandVIN"));
+      const {
+        status,
+        outageType,
+        outageBrand,
+        outageStart,
+        outageEnd,
+        vin,
+        companyVatNumber,
+        zipFilePath,
+      } = formData;
+
+      const payload = new FormData();
+      const parsedStart = parseISO(outageStart);
+      const isGenericOutage = !vin && !companyVatNumber;
+      let clientCompanyId: number | null = null;
+      let vehicleId: number | null = null;
+
+      // Validazioni base
+      if (!status)
+        return alert(t("admin.outagePeriods.validation.statusRequired"));
+
+      if (!outageType)
+        return alert(t("admin.outagePeriods.validation.outageTypeRequired"));
+
+      if (!outageBrand) {
+        return alert(t("admin.outagePeriods.validation.outageBrandRequired"));
+      }
+
+      if (!outageStart)
+        return alert(t("admin.outagePeriods.validation.startDateRequired"));
+
+      // ⛔ Se stato è OUTAGE-ONGOING, non deve esserci una data di fine!
+      if (status === "OUTAGE-ONGOING" && outageEnd) {
+        alert(t("admin.outagePeriods.validation.ongoingCannotHaveEndDate"));
         return;
       }
-      const resolved = await resolveRes.json();
-      clientCompanyId = resolved.clientCompanyId;
-      vehicleId = resolved.vehicleId;
 
-      // ✅ Nuovo controllo brand coerente
-      const vehicleBrand = (resolved.vehicleBrand || "").trim();
-      const selectedBrand = (outageBrand || "").trim();
-      if (vehicleBrand !== selectedBrand) {
+      // ⛔ OUTAGE-RESOLVED richiede anche la data di fine
+      if (status === "OUTAGE-RESOLVED" && !outageEnd) {
+        alert(t("admin.outagePeriods.validation.outageEndRequiredForResolved"));
+        return;
+      }
+
+      // ⛔ END non può essere prima della START
+      if (outageEnd) {
+        const parsedEnd = parseISO(outageEnd);
+        const now = new Date();
+
+        if (!isValid(parsedEnd)) {
+          alert(t("admin.outagePeriods.validation.invalidEndDate"));
+          return;
+        }
+
+        if (parsedEnd < parsedStart) {
+          alert(t("admin.outagePeriods.validation.outageEndBeforeStart"));
+          return;
+        }
+
+        if (parsedEnd > now) {
+          alert(t("admin.outagePeriods.validation.outageEndInFuture"));
+          return;
+        }
+      }
+
+      if (!isValid(parsedStart) || isAfter(parsedStart, new Date()))
+        return alert(t("admin.outagePeriods.validation.startDateInFuture"));
+
+      if (outageType === "Outage Vehicle") {
+        if (!vin || !companyVatNumber) {
+          alert(t("admin.resolveVATandVIN"));
+          return;
+        }
+      }
+
+      if (outageType === "Outage Fleet Api" && (vin || companyVatNumber)) {
+        alert(t("admin.outagePeriods.fleetApiMustNotHaveVinOrVat"));
+        return;
+      }
+
+      if (!isGenericOutage) {
+        const resolveRes = await fetch(
+          `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${companyVatNumber}&vin=${vin}`
+        );
+        await logFrontendEvent(
+          "AdminOutagePeriodsAddForm",
+          "INFO",
+          "Validation passed, uploading outage data"
+        );
+        if (!resolveRes.ok) {
+          alert(t("admin.resolveVATandVIN"));
+          return;
+        }
+        const resolved = await resolveRes.json();
+        clientCompanyId = resolved.clientCompanyId;
+        vehicleId = resolved.vehicleId;
+
+        // ✅ Nuovo controllo brand coerente
+        const vehicleBrand = (resolved.vehicleBrand || "").trim();
+        const selectedBrand = (outageBrand || "").trim();
+        if (vehicleBrand !== selectedBrand) {
+          alert(
+            `${t("admin.brandMismatch")}\n\n${t(
+              "admin.expectedResult"
+            )}: ${vehicleBrand}\n${t("admin.insertedValue")}: ${selectedBrand}`
+          );
+          return;
+        }
+      }
+
+      if (zipFilePath) {
+        // ⛔ Verifica contenuto ZIP (deve avere almeno un PDF)
+        const zipBuffer = await zipFilePath.arrayBuffer();
+        const zip = new JSZip();
+        const contents = await zip.loadAsync(zipBuffer);
+        const pdfFound = Object.keys(contents.files).some(
+          (filename) =>
+            filename.toLowerCase().endsWith(".pdf") &&
+            !contents.files[filename].dir
+        );
+        if (!pdfFound) {
+          alert(t("admin.outagePeriods.invalidZipTypeRequiredOutages"));
+          return;
+        }
+
+        // ✅ Allego al payload solo se valido
+        payload.append("zipFile", zipFilePath);
+      }
+
+      payload.append("outageType", outageType);
+      payload.append("outageBrand", outageBrand);
+      payload.append("autoDetected", formData.autoDetected ? "true" : "false");
+      payload.append("status", status);
+      payload.append("outageStart", outageStart);
+      if (outageEnd) {
+        payload.append(
+          "outageEnd",
+          formatOutageDateTimeToSave(parseISO(outageEnd))
+        );
+      }
+      if (vin) payload.append("vin", vin);
+      if (companyVatNumber)
+        payload.append("companyVatNumber", companyVatNumber);
+      if (clientCompanyId !== null)
+        payload.append("clientCompanyId", clientCompanyId.toString());
+      if (vehicleId !== null) payload.append("vehicleId", vehicleId.toString());
+
+      const res = await fetch(`${API_BASE_URL}/api/uploadoutagezip`, {
+        method: "POST",
+        body: payload,
+      });
+
+      const responseText = await res.text();
+
+      if (!res.ok) {
+        await logFrontendEvent(
+          "AdminOutagePeriodsAddForm",
+          "ERROR",
+          "Failed to upload outage ZIP",
+          responseText
+        );
+        console.error("UPLOAD OUTAGE ERROR", {
+          status: res.status,
+          statusText: res.statusText,
+          error: responseText,
+        });
         alert(
-          `${t("admin.brandMismatch")}\n\n${t(
-            "admin.expectedResult"
-          )}: ${vehicleBrand}\n${t("admin.insertedValue")}: ${selectedBrand}`
+          `${t("admin.outagePeriods.genericUploadError")}: ${responseText}`
         );
         return;
       }
-    }
 
-    if (zipFilePath) {
-      // ⛔ Verifica contenuto ZIP (deve avere almeno un PDF)
-      const zipBuffer = await zipFilePath.arrayBuffer();
-      const zip = new JSZip();
-      const contents = await zip.loadAsync(zipBuffer);
-      const pdfFound = Object.keys(contents.files).some(
-        (filename) =>
-          filename.toLowerCase().endsWith(".pdf") &&
-          !contents.files[filename].dir
-      );
-      if (!pdfFound) {
-        alert(t("admin.outagePeriods.invalidZipTypeRequiredOutages"));
-        return;
+      let result: UploadOutageResult = {};
+      try {
+        result = JSON.parse(responseText) as UploadOutageResult;
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : JSON.stringify(error);
+        console.error("Unexpected error during outage submission:", error);
+        await logFrontendEvent(
+          "AdminOutagePeriodsAddForm",
+          "ERROR",
+          "Unexpected error during outage submission",
+          errorMessage
+        );
+        alert(
+          `${t("admin.outagePeriods.genericUploadError")}: ${errorMessage}`
+        );
       }
 
-      // ✅ Allego al payload solo se valido
-      payload.append("zipFile", zipFilePath);
-    }
-
-    payload.append("outageType", outageType);
-    payload.append("outageBrand", outageBrand);
-    payload.append("autoDetected", formData.autoDetected ? "true" : "false");
-    payload.append("status", status);
-    payload.append("outageStart", outageStart);
-    if (outageEnd) {
-      payload.append(
-        "outageEnd",
-        formatOutageDateTimeToSave(parseISO(outageEnd))
+      if (result && result.isNew) {
+        alert(t("admin.outagePeriods.successAddNewOutage"));
+      } else {
+        alert(t("admin.outagePeriods.addNewOutageExisting"));
+      }
+      await logFrontendEvent(
+        "AdminOutagePeriodsAddForm",
+        "INFO",
+        "Outage period successfully handled"
       );
+      await refreshOutagePeriods();
+      onSubmitSuccess();
+      setFormData((prev) => ({ ...prev, zipFilePath: null }));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : JSON.stringify(error);
+      console.error("Unexpected error during outage submission:", error);
+      await logFrontendEvent(
+        "AdminOutagePeriodsAddForm",
+        "ERROR",
+        "Unexpected error during outage submission",
+        errorMessage
+      );
+      alert(`${t("admin.outagePeriods.genericUploadError")}: ${errorMessage}`);
     }
-    if (vin) payload.append("vin", vin);
-    if (companyVatNumber) payload.append("companyVatNumber", companyVatNumber);
-    if (clientCompanyId !== null)
-      payload.append("clientCompanyId", clientCompanyId.toString());
-    if (vehicleId !== null) payload.append("vehicleId", vehicleId.toString());
-
-    const res = await fetch(`${API_BASE_URL}/api/uploadoutagezip`, {
-      method: "POST",
-      body: payload,
-    });
-
-    const responseText = await res.text();
-
-    if (!res.ok) {
-      console.error("UPLOAD OUTAGE ERROR", {
-        status: res.status,
-        statusText: res.statusText,
-        error: responseText,
-      });
-      alert(`${t("admin.outagePeriods.genericUploadError")}: ${responseText}`);
-      return;
-    }
-
-    let result: UploadOutageResult = {};
-    try {
-      result = JSON.parse(responseText) as UploadOutageResult;
-    } catch (e) {
-      console.warn("Warning: JSON parse failed", e);
-    }
-
-    if (result && result.isNew) {
-      alert(t("admin.outagePeriods.successAddNewOutage"));
-    } else {
-      alert(t("admin.outagePeriods.addNewOutageExisting"));
-    }
-
-    await refreshOutagePeriods();
-    onSubmitSuccess();
-    setFormData((prev) => ({ ...prev, zipFilePath: null }));
   };
 
   return (

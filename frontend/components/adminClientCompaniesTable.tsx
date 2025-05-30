@@ -4,6 +4,7 @@ import { TFunction } from "i18next";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
+import { logFrontendEvent } from "@/utils/logger";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import EditModal from "@/components/adminEditModal";
@@ -27,6 +28,12 @@ export default function AdminClientCompaniesTable({
   useEffect(() => {
     setClientData(clients);
     setLoading(false);
+    logFrontendEvent(
+      "AdminClientCompaniesTable",
+      "INFO",
+      "Component mounted and client data loaded",
+      `Loaded ${clients.length} clients`
+    );
   }, [clients]);
 
   const { query, setQuery, filteredData } = useSearchFilter<ClientCompany>(
@@ -43,6 +50,15 @@ export default function AdminClientCompaniesTable({
     ]
   );
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminClientCompaniesTable",
+      "DEBUG",
+      "Search query updated",
+      `Query: ${query}`
+    );
+  }, [query]);
+
   const {
     currentPage,
     totalPages,
@@ -52,6 +68,15 @@ export default function AdminClientCompaniesTable({
     setCurrentPage,
   } = usePagination<ClientCompany>(filteredData, 5);
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminClientCompaniesTable",
+      "DEBUG",
+      "Pagination changed",
+      `Current page: ${currentPage}`
+    );
+  }, [currentPage]);
+
   const [selectedClient, setSelectedClient] = useState<ClientCompany | null>(
     null
   );
@@ -60,6 +85,12 @@ export default function AdminClientCompaniesTable({
   const handleEditClick = (client: ClientCompany) => {
     setSelectedClient(client);
     setShowEditModal(true);
+    logFrontendEvent(
+      "AdminClientCompaniesTable",
+      "INFO",
+      "Edit modal opened for client",
+      `ClientId: ${client.id}, VAT: ${client.vatNumber}`
+    );
   };
 
   return (
@@ -146,6 +177,12 @@ export default function AdminClientCompaniesTable({
                 prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
               );
               setShowEditModal(false);
+              logFrontendEvent(
+                "AdminClientCompaniesTable",
+                "INFO",
+                "Client update saved successfully",
+                `ClientId: ${updatedClient.id}, VAT: ${updatedClient.vatNumber}`
+              );
             }}
             refreshWorkflowData={refreshWorkflowData}
             t={t}

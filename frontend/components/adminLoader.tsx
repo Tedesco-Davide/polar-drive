@@ -1,7 +1,27 @@
 import { useTranslation } from "next-i18next";
+import { logFrontendEvent } from "@/utils/logger";
+import { useEffect } from "react";
 
 export default function AdminLoader() {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    try {
+      logFrontendEvent(
+        "AdminLoader",
+        "INFO",
+        "AdminLoader mounted and displayed"
+      );
+    } catch (err) {
+      const details = err instanceof Error ? err.message : String(err);
+      logFrontendEvent(
+        "AdminLoader",
+        "ERROR",
+        "Error while mounting AdminLoader",
+        details
+      );
+    }
+  }, []);
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/90 backdrop-blur">

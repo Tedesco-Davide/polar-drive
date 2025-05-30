@@ -7,6 +7,7 @@ import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
 import { NotebookPen } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
+import { logFrontendEvent } from "@/utils/logger";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -45,6 +46,12 @@ export default function AdminClientConsents({
 
   useEffect(() => {
     setLocalConsents(consents);
+    logFrontendEvent(
+      "AdminClientConsentsTable",
+      "INFO",
+      "Component mounted and consents data initialized",
+      `Loaded ${consents.length} consent records`
+    );
   }, [consents]);
 
   const { query, setQuery, filteredData } = useSearchFilter<ClientConsent>(
@@ -58,6 +65,15 @@ export default function AdminClientConsents({
     ]
   );
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminClientConsentsTable",
+      "DEBUG",
+      "Search query updated",
+      `Query: ${query}`
+    );
+  }, [query]);
+
   const {
     currentPage,
     totalPages,
@@ -66,6 +82,15 @@ export default function AdminClientConsents({
     prevPage,
     setCurrentPage,
   } = usePagination<ClientConsent>(filteredData, 5);
+
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminClientConsentsTable",
+      "DEBUG",
+      "Pagination interaction",
+      `Current page: ${currentPage}`
+    );
+  }, [currentPage]);
 
   const [showForm, setShowForm] = useState(false);
 
@@ -94,7 +119,16 @@ export default function AdminClientConsents({
               ? "bg-dataRed hover:bg-red-600"
               : "bg-blue-500 hover:bg-blue-600"
           } text-softWhite px-6 py-2 rounded`}
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            const newValue = !showForm;
+            setShowForm(newValue);
+            logFrontendEvent(
+              "AdminClientConsentsTable",
+              "INFO",
+              "Consent form visibility toggled",
+              `Now showing form: ${newValue}`
+            );
+          }}
         >
           {showForm
             ? t("admin.clientConsents.addNewConsent")
@@ -147,7 +181,15 @@ export default function AdminClientConsents({
                 <button
                   className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                   title={t("admin.openNotesModal")}
-                  onClick={() => setSelectedConsentForNotes(consent)}
+                  onClick={() => {
+                    setSelectedConsentForNotes(consent);
+                    logFrontendEvent(
+                      "AdminClientConsentsTable",
+                      "INFO",
+                      "Notes modal opened for consent",
+                      `Consent ID: ${consent.id}, VIN: ${consent.vehicleVIN}`
+                    );
+                  }}
                 >
                   <NotebookPen size={16} />
                 </button>
@@ -175,9 +217,22 @@ export default function AdminClientConsents({
                           )
                         );
                         setSelectedConsentForNotes(null);
+                        logFrontendEvent(
+                          "AdminClientConsentsTable",
+                          "INFO",
+                          "Notes updated for consent",
+                          `Consent ID: ${updated.id}`
+                        );
                       } catch (err) {
+                        const details =
+                          err instanceof Error ? err.message : String(err);
+                        logFrontendEvent(
+                          "AdminClientConsentsTable",
+                          "ERROR",
+                          "Failed to update notes for consent",
+                          details
+                        );
                         console.error(t("admin.notesGenericError"), err);
-                        alert();
                         alert(
                           err instanceof Error
                             ? err.message

@@ -12,6 +12,7 @@ import {
 } from "@/utils/date";
 import { API_BASE_URL } from "@/utils/api";
 import { outageStatusOptions } from "@/types/outageOptions";
+import { logFrontendEvent } from "@/utils/logger";
 import AdminOutagePeriodsAddForm from "./adminOutagePeriodsAddForm";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -83,6 +84,12 @@ export default function AdminOutagePeriodsTable({
 
   useEffect(() => {
     setLocalOutages(outages);
+    logFrontendEvent(
+      "AdminOutagePeriodsTable",
+      "INFO",
+      "Component mounted and outages data initialized",
+      `Loaded ${outages.length} outage records`
+    );
   }, [outages]);
 
   const [selectedOutageForNotes, setSelectedOutageForNotes] =
@@ -93,6 +100,15 @@ export default function AdminOutagePeriodsTable({
     ["outageType", "notes", "companyVatNumber", "vin", "outageBrand"]
   );
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminOutagePeriodsTable",
+      "DEBUG",
+      "Search query updated",
+      `Query: ${query}`
+    );
+  }, [query]);
+
   const {
     currentPage,
     totalPages,
@@ -101,6 +117,15 @@ export default function AdminOutagePeriodsTable({
     prevPage,
     setCurrentPage,
   } = usePagination<OutagePeriod>(filteredData, 5);
+
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminOutagePeriodsTable",
+      "DEBUG",
+      "Pagination interaction",
+      `Current page: ${currentPage}`
+    );
+  }, [currentPage]);
 
   return (
     <div>
@@ -114,7 +139,15 @@ export default function AdminOutagePeriodsTable({
               ? "bg-dataRed hover:bg-red-600"
               : "bg-blue-500 hover:bg-blue-600"
           } text-softWhite px-6 py-2 rounded`}
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            setShowForm(!showForm);
+            logFrontendEvent(
+              "AdminOutagePeriodsTable",
+              "INFO",
+              "Form visibility toggled",
+              `Now showing form: ${!showForm}`
+            );
+          }}
         >
           {showForm
             ? t("admin.outagePeriods.undoAddNewOutage")
@@ -171,12 +204,18 @@ export default function AdminOutagePeriodsTable({
                     <button
                       className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                       title={t("admin.outagePeriods.viewZipOutage")}
-                      onClick={() =>
+                      onClick={() => {
                         window.open(
                           `${API_BASE_URL}/api/outageperiods/${outage.id}/download`,
                           "_blank"
-                        )
-                      }
+                        );
+                        logFrontendEvent(
+                          "AdminOutagePeriodsTable",
+                          "INFO",
+                          "Outage ZIP download triggered",
+                          `Outage ID: ${outage.id}, VIN: ${outage.vin}`
+                        );
+                      }}
                     >
                       <FileArchive size={16} />
                     </button>
@@ -213,6 +252,12 @@ export default function AdminOutagePeriodsTable({
                           );
 
                           if (!pdfFound) {
+                            logFrontendEvent(
+                              "AdminOutagePeriodsTable",
+                              "WARNING",
+                              "Invalid ZIP uploaded: no PDF found",
+                              `Outage ID: ${outage.id}, ZIP: ${file.name}`
+                            );
                             alert(
                               t(
                                 "admin.outagePeriods.invalidZipTypeRequiredOutages"
@@ -275,6 +320,12 @@ export default function AdminOutagePeriodsTable({
 
                           if (!res.ok) {
                             const errText = await res.text();
+                            logFrontendEvent(
+                              "AdminOutagePeriodsTable",
+                              "ERROR",
+                              "Failed to upload outage ZIP",
+                              errText
+                            );
                             alert(
                               t("admin.outagePeriods.genericUploadError") +
                                 ": " +
@@ -284,6 +335,12 @@ export default function AdminOutagePeriodsTable({
                           }
 
                           const updated = await refreshOutagePeriods();
+                          logFrontendEvent(
+                            "AdminOutagePeriodsTable",
+                            "INFO",
+                            "ZIP uploaded successfully",
+                            `Outage ID: ${outage.id}, VIN: ${outage.vin}`
+                          );
                           setLocalOutages(updated);
                           alert(t("admin.outagePeriods.successUploadZip"));
                         }}
@@ -294,7 +351,15 @@ export default function AdminOutagePeriodsTable({
                   <button
                     className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                     title={t("admin.openNotesModal")}
-                    onClick={() => setSelectedOutageForNotes(outage)}
+                    onClick={() => {
+                      setSelectedOutageForNotes(outage);
+                      logFrontendEvent(
+                        "AdminOutagePeriodsTable",
+                        "INFO",
+                        "Notes modal opened for outage",
+                        `Outage ID: ${outage.id}, VIN: ${outage.vin}`
+                      );
+                    }}
                   >
                     <NotebookPen size={16} />
                   </button>
@@ -370,7 +435,20 @@ export default function AdminOutagePeriodsTable({
                 )
               );
               setSelectedOutageForNotes(null);
+              logFrontendEvent(
+                "AdminOutagePeriodsTable",
+                "INFO",
+                "Notes updated for outage",
+                `Outage ID: ${updated.id}`
+              );
             } catch (err) {
+              const details = err instanceof Error ? err.message : String(err);
+              logFrontendEvent(
+                "AdminOutagePeriodsTable",
+                "ERROR",
+                "Failed to update notes for outage",
+                details
+              );
               console.error(t("admin.outagePeriods.notes.genericError"), err);
               alert(
                 err instanceof Error

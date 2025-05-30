@@ -10,6 +10,7 @@ import {
   WorkflowRow,
 } from "@/types/adminWorkflowTypes";
 import { parseISO, isAfter, isValid } from "date-fns";
+import { logFrontendEvent } from "@/utils/logger";
 import AdminLoader from "@/components/adminLoader";
 import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
@@ -58,6 +59,15 @@ export default function AdminMainWorkflow({
     ]
   );
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminMainWorkflow",
+      "DEBUG",
+      "Search query updated",
+      `Query: ${query}`
+    );
+  }, [query]);
+
   const {
     currentPage,
     totalPages,
@@ -68,11 +78,30 @@ export default function AdminMainWorkflow({
   } = usePagination<WorkflowRow>(filteredData, 5);
 
   useEffect(() => {
+    logFrontendEvent(
+      "AdminMainWorkflow",
+      "DEBUG",
+      "Pagination or search interaction",
+      `Current page: ${currentPage}, Query: ${query}`
+    );
+  }, [currentPage, query]);
+
+  useEffect(() => {
     setInternalWorkflowData(workflowData);
     setCurrentPage(1);
   }, [workflowData, setCurrentPage]);
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminMainWorkflow",
+      "INFO",
+      "Component mounted and initialized with workflow data"
+    );
+  }, []);
+
   const handleSubmit = async () => {
+    logFrontendEvent("AdminMainWorkflow", "INFO", "Form submission triggered");
+
     const requiredFields: (keyof adminWorkflowTypesInputForm)[] = [
       "companyVatNumber",
       "companyName",
@@ -99,6 +128,12 @@ export default function AdminMainWorkflow({
     });
 
     if (missing.length > 0) {
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "WARNING",
+        "Form validation failed: missing required fields",
+        JSON.stringify(missing)
+      );
       const translatedLabels = missing.map((field) =>
         t(`admin.mainWorkflow.labels.${field}`)
       );
@@ -182,27 +217,69 @@ export default function AdminMainWorkflow({
           const json = await response.json();
           errorCode = json.errorCode || "";
         } catch {
+          logFrontendEvent(
+            "AdminMainWorkflow",
+            "ERROR",
+            "Error during form submission",
+            `Status: ${response.status}, VIN: ${formData.vehicleVIN}`
+          );
           alert(`${t("admin.genericError")} ${await response.text()}`);
           return;
         }
 
         switch (errorCode) {
           case "VEHICLE_ALREADY_ASSOCIATED_TO_SAME_COMPANY":
+            logFrontendEvent(
+              "AdminMainWorkflow",
+              "WARNING",
+              "Form submission failed with known backend error",
+              `ErrorCode: ${errorCode}`
+            );
             alert(t("admin.vehicleAlreadyAssociatedToSameCompany"));
             return;
           case "VEHICLE_ALREADY_ASSOCIATED_TO_ANOTHER_COMPANY":
+            logFrontendEvent(
+              "AdminMainWorkflow",
+              "WARNING",
+              "Form submission failed with known backend error",
+              `ErrorCode: ${errorCode}`
+            );
             alert(t("admin.vehicleAlreadyAssociatedToAnotherCompany"));
             return;
           case "DUPLICATE_CONSENT_HASH":
+            logFrontendEvent(
+              "AdminMainWorkflow",
+              "WARNING",
+              "Form submission failed with known backend error",
+              `ErrorCode: ${errorCode}`
+            );
             alert(t("admin.duplicatePdfHash"));
             return;
           case "INVALID_ZIP_FORMAT":
+            logFrontendEvent(
+              "AdminMainWorkflow",
+              "WARNING",
+              "Form submission failed with known backend error",
+              `ErrorCode: ${errorCode}`
+            );
             alert(t("admin.validation.invalidZipType"));
             return;
           case "MISSING_PDF_IN_ZIP":
+            logFrontendEvent(
+              "AdminMainWorkflow",
+              "WARNING",
+              "Form submission failed with known backend error",
+              `ErrorCode: ${errorCode}`
+            );
             alert(t("admin.validation.invalidZipTypeRequiredConsent"));
             return;
           default:
+            logFrontendEvent(
+              "AdminMainWorkflow",
+              "WARNING",
+              "Form submission failed with known backend error",
+              `ErrorCode: ${errorCode}`
+            );
             alert(`${t("admin.genericError")} ${errorCode}`);
             return;
         }
@@ -213,6 +290,12 @@ export default function AdminMainWorkflow({
         alert(t("admin.mainWorkflow.button.successAddNewVehicle"));
         await refreshWorkflowData();
       } catch (error) {
+        logFrontendEvent(
+          "AdminMainWorkflow",
+          "ERROR",
+          "Error during workflow refresh after insert",
+          error instanceof Error ? error.message : String(error)
+        );
         alert(t("admin.genericError"));
         console.error("Errore POST:", error);
       }
@@ -221,6 +304,12 @@ export default function AdminMainWorkflow({
       console.error("Errore POST:", error);
       return;
     }
+
+    logFrontendEvent(
+      "AdminMainWorkflow",
+      "INFO",
+      "Form reset after successful submission"
+    );
 
     // ✅ Reset del form
     setFormData({
@@ -257,7 +346,16 @@ export default function AdminMainWorkflow({
               ? "bg-dataRed hover:bg-red-600"
               : "bg-blue-500 hover:bg-blue-600"
           } text-softWhite px-6 py-2 rounded`}
-          onClick={() => setShowForm(!showForm)}
+          onClick={() => {
+            const newValue = !showForm;
+            setShowForm(newValue);
+            logFrontendEvent(
+              "AdminMainWorkflow",
+              "INFO",
+              "Form visibility toggled",
+              `Now showing form: ${newValue}`
+            );
+          }}
         >
           {showForm
             ? t("admin.mainWorkflow.button.undoAddNewVehicle")
@@ -322,6 +420,12 @@ export default function AdminMainWorkflow({
                       const data = await res.json();
                       if (data?.url) {
                         await navigator.clipboard.writeText(data.url);
+                        logFrontendEvent(
+                          "AdminMainWorkflow",
+                          "INFO",
+                          "OAuth URL generated and copied to clipboard",
+                          `VIN: ${entry.vehicleVIN}`
+                        );
                         alert(
                           "URL copiato negli appunti. Invia al cliente via WhatsApp."
                         );
@@ -331,6 +435,12 @@ export default function AdminMainWorkflow({
                         );
                       }
                     } catch (err) {
+                      logFrontendEvent(
+                        "AdminMainWorkflow",
+                        "ERROR",
+                        "OAuth URL generation failed",
+                        err instanceof Error ? err.message : String(err)
+                      );
                       console.error("Errore OAuth:", err);
                       alert("Errore durante il recupero dell'URL OAuth.");
                     }
@@ -368,6 +478,12 @@ export default function AdminMainWorkflow({
                     updated[index].isVehicleActive = newIsActive;
                     updated[index].isVehicleFetchingData = newIsFetching;
                     setInternalWorkflowData(updated);
+                    logFrontendEvent(
+                      "AdminMainWorkflow",
+                      "INFO",
+                      "Vehicle status changed",
+                      `VIN: ${entry.vehicleVIN}, Active: ${newIsActive}, Fetching: ${newIsFetching}`
+                    );
                   }}
                   setLoading={setIsStatusChanging}
                   refreshWorkflowData={refreshWorkflowData}
@@ -384,6 +500,12 @@ export default function AdminMainWorkflow({
                     updated[index].isVehicleActive = newIsActive;
                     updated[index].isVehicleFetchingData = newIsFetching;
                     setInternalWorkflowData(updated);
+                    logFrontendEvent(
+                      "AdminMainWorkflow",
+                      "INFO",
+                      "Vehicle status changed",
+                      `VIN: ${entry.vehicleVIN}, Active: ${newIsActive}, Fetching: ${newIsFetching}`
+                    );
                   }}
                   setLoading={setIsStatusChanging}
                   refreshWorkflowData={refreshWorkflowData}

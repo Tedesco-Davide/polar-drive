@@ -6,6 +6,7 @@ import { formatDateToDisplay } from "@/utils/date";
 import { isAfter, isValid, parseISO } from "date-fns";
 import { vehicleOptions } from "@/types/vehicleOptions";
 import { fuelTypeOptions } from "@/types/fuelTypes";
+import { logFrontendEvent } from "@/utils/logger";
 import axios from "axios";
 
 type Props = {
@@ -118,18 +119,41 @@ export default function AdminClientVehicleEditForm({
     }
 
     try {
+      await logFrontendEvent(
+        "AdminClientVehicleEditForm",
+        "INFO",
+        "Attempting to update client vehicle",
+        JSON.stringify(formData)
+      );
+
       await axios.put(
         `${API_BASE_URL}/api/ClientVehicles/${formData.id}`,
         formData
       );
 
-      // 🔄 Aggiorna la tabella Gestione principale workflow
+      await logFrontendEvent(
+        "AdminClientVehicleEditForm",
+        "INFO",
+        "Client vehicle updated successfully",
+        `VehicleId=${formData.id}, VIN=${formData.vin}`
+      );
+
+      // 🔄 Update workflow table
       await refreshWorkflowData();
 
       alert(t("admin.successEditRow"));
       onSave(formData);
       onClose();
     } catch (err) {
+      const errDetails = err instanceof Error ? err.message : String(err);
+
+      await logFrontendEvent(
+        "AdminClientVehicleEditForm",
+        "ERROR",
+        "Exception thrown during vehicle update",
+        errDetails
+      );
+
       console.error(t("admin.genericApiError"), err);
       alert(err instanceof Error ? err.message : t("admin.genericApiError"));
     }

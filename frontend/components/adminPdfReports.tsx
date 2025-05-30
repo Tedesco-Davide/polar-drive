@@ -6,6 +6,7 @@ import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
 import { FileText, NotebookPen } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
+import { logFrontendEvent } from "@/utils/logger";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -23,6 +24,12 @@ export default function AdminPdfReports({
 
   useEffect(() => {
     setLocalReports(reports);
+    logFrontendEvent(
+      "AdminPdfReports",
+      "INFO",
+      "Component mounted and reports data initialized",
+      `Loaded ${reports.length} reports`
+    );
   }, [reports]);
 
   const { query, setQuery, filteredData } = useSearchFilter<PdfReport>(
@@ -37,6 +44,15 @@ export default function AdminPdfReports({
     ]
   );
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminPdfReports",
+      "DEBUG",
+      "Search query updated",
+      `Query: ${query}`
+    );
+  }, [query]);
+
   const {
     currentPage,
     totalPages,
@@ -45,6 +61,15 @@ export default function AdminPdfReports({
     prevPage,
     setCurrentPage,
   } = usePagination<PdfReport>(filteredData, 5);
+
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminPdfReports",
+      "DEBUG",
+      "Pagination interaction",
+      `Current page: ${currentPage}`
+    );
+  }, [currentPage]);
 
   return (
     <div>
@@ -79,12 +104,32 @@ export default function AdminPdfReports({
                   className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                   title={t("admin.vehicleReports.downloadSinglePdf")}
                   onClick={async () => {
-                    const response = await fetch(
-                      `${API_BASE_URL}/api/pdfreports/${report.id}/download`
-                    );
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    window.open(url, "_blank");
+                    try {
+                      const response = await fetch(
+                        `${API_BASE_URL}/api/pdfreports/${report.id}/download`
+                      );
+                      if (!response.ok)
+                        throw new Error(`Status ${response.status}`);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      window.open(url, "_blank");
+                      logFrontendEvent(
+                        "AdminPdfReports",
+                        "INFO",
+                        "PDF report download triggered",
+                        `Report ID: ${report.id}`
+                      );
+                    } catch (err) {
+                      const details =
+                        err instanceof Error ? err.message : String(err);
+                      logFrontendEvent(
+                        "AdminPdfReports",
+                        "ERROR",
+                        "Failed to download PDF report",
+                        details
+                      );
+                      alert(t("admin.notesGenericError"));
+                    }
                   }}
                 >
                   <FileText size={16} />
@@ -92,7 +137,15 @@ export default function AdminPdfReports({
                 <button
                   className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                   title={t("admin.openNotesModal")}
-                  onClick={() => setSelectedReportForNotes(report)}
+                  onClick={() => {
+                    setSelectedReportForNotes(report);
+                    logFrontendEvent(
+                      "AdminPdfReports",
+                      "INFO",
+                      "Notes modal opened for report",
+                      `Report ID: ${report.id}`
+                    );
+                  }}
                 >
                   <NotebookPen size={16} />
                 </button>
@@ -150,7 +203,20 @@ export default function AdminPdfReports({
                 )
               );
               setSelectedReportForNotes(null);
+              logFrontendEvent(
+                "AdminPdfReports",
+                "INFO",
+                "Notes updated for report",
+                `Report ID: ${updated.id}`
+              );
             } catch (err) {
+              const details = err instanceof Error ? err.message : String(err);
+              logFrontendEvent(
+                "AdminPdfReports",
+                "ERROR",
+                "Failed to update notes for report",
+                details
+              );
               console.error(t("admin.notesGenericError"), err);
               alert(
                 err instanceof Error

@@ -5,6 +5,7 @@ import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useEffect, useState } from "react";
 import { formatDateToDisplay } from "@/utils/date";
+import { logFrontendEvent } from "@/utils/logger";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import EditModal from "@/components/adminEditModal";
@@ -27,6 +28,15 @@ export default function AdminClientVehiclesTable({
     ["vin", "fuelType", "brand", "model", "trim", "color"]
   );
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminClientVehiclesTable",
+      "DEBUG",
+      "Search query updated",
+      `Query: ${query}`
+    );
+  }, [query]);
+
   const {
     currentPage,
     totalPages,
@@ -36,6 +46,15 @@ export default function AdminClientVehiclesTable({
     setCurrentPage,
   } = usePagination<ClientVehicle>(filteredData, 5);
 
+  useEffect(() => {
+    logFrontendEvent(
+      "AdminClientVehiclesTable",
+      "DEBUG",
+      "Pagination interaction",
+      `Current page: ${currentPage}`
+    );
+  }, [currentPage]);
+
   const [selectedVehicle, setSelectedVehicle] = useState<ClientVehicle | null>(
     null
   );
@@ -43,11 +62,23 @@ export default function AdminClientVehiclesTable({
 
   useEffect(() => {
     setVehicleData(vehicles);
+    logFrontendEvent(
+      "AdminClientVehiclesTable",
+      "INFO",
+      "Component mounted and vehicle data initialized",
+      `Loaded ${vehicles.length} vehicles`
+    );
   }, [vehicles]);
 
   const handleEditClick = (vehicle: ClientVehicle) => {
     setSelectedVehicle(vehicle);
     setShowEditModal(true);
+    logFrontendEvent(
+      "AdminClientVehiclesTable",
+      "INFO",
+      "Edit modal opened for vehicle",
+      `Vehicle VIN: ${vehicle.vin}`
+    );
   };
 
   return (
@@ -145,13 +176,30 @@ export default function AdminClientVehiclesTable({
             vehicle={selectedVehicle}
             onClose={() => setShowEditModal(false)}
             onSave={async (updatedVehicle: ClientVehicle) => {
-              setVehicleData((prev) =>
-                prev.map((v) =>
-                  v.id === updatedVehicle.id ? updatedVehicle : v
-                )
-              );
-              await refreshWorkflowData();
-              setShowEditModal(false);
+              try {
+                setVehicleData((prev) =>
+                  prev.map((v) =>
+                    v.id === updatedVehicle.id ? updatedVehicle : v
+                  )
+                );
+                await refreshWorkflowData();
+                setShowEditModal(false);
+                logFrontendEvent(
+                  "AdminClientVehiclesTable",
+                  "INFO",
+                  "Vehicle updated successfully",
+                  `Vehicle VIN: ${updatedVehicle.vin}`
+                );
+              } catch (err) {
+                const details =
+                  err instanceof Error ? err.message : String(err);
+                logFrontendEvent(
+                  "AdminClientVehiclesTable",
+                  "ERROR",
+                  "Error while saving vehicle update",
+                  details
+                );
+              }
             }}
             refreshWorkflowData={refreshWorkflowData}
             t={t}
