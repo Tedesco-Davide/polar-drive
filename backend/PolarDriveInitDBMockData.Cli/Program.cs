@@ -2,7 +2,7 @@
 using PolarDrive.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using System.IO.Compression;
-using PolarDriveInitDBMockData.Cli.Utils;
+using PolarDriveInitDBMockData.Cli;
 
 var basePath = AppContext.BaseDirectory;
 var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));

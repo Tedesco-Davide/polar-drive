@@ -1,7 +1,6 @@
-// File: FakeTeslaJsonDataFetch.cs
 using System.Text.Json;
 
-namespace PolarDriveInitDBMockData.Cli.Utils;
+namespace PolarDriveInitDBMockData.Cli;
 
 public static class FakeTeslaJsonDataFetch
 {
@@ -76,6 +75,58 @@ public static class FakeTeslaJsonDataFetch
                 car_exterior_color = "Ultra Red",
                 wheel_type = "Aero18",
                 has_ludicrous_mode = false
+            },
+            charging_history = new[]
+            {
+                new
+                {
+                    sessionId = 100000 + random.Next(1000, 9999),
+                    vin = "5YJJ6677544845943",
+                    siteLocationName = "Napoli - Tesla Supercharger",
+                    chargeStartDateTime = ts.AddMinutes(-45).ToString("o"),
+                    chargeStopDateTime = ts.AddMinutes(-15).ToString("o"),
+                    unlatchDateTime = ts.ToString("o"),
+                    countryCode = "IT",
+                    billingType = "IMMEDIATE",
+                    vehicleMakeType = "TSLA",
+                    fees = new[]
+                    {
+                        new {
+                            sessionFeeId = 1,
+                            feeType = "CHARGING",
+                            currencyCode = "EUR",
+                            pricingType = "PAYMENT",
+                            rateBase = 0.48,
+                            rateTier1 = 0,
+                            rateTier2 = 0,
+                            rateTier3 = (decimal?)null,
+                            rateTier4 = (decimal?)null,
+                            usageBase = 35,
+                            usageTier1 = 0,
+                            usageTier2 = 25,
+                            usageTier3 = (decimal?)null,
+                            usageTier4 = (decimal?)null,
+                            totalBase = 16.8,
+                            totalTier1 = 0,
+                            totalTier2 = 0,
+                            totalTier3 = 0,
+                            totalTier4 = 0,
+                            totalDue = 16.8,
+                            netDue = 16.8,
+                            uom = "kwh",
+                            isPaid = true,
+                            status = "PAID"
+                        }
+                    },
+                    invoices = new[]
+                    {
+                        new {
+                            fileName = "INV-2025-12345.pdf",
+                            contentId = "file-abcde-12345",
+                            invoiceType = "IMMEDIATE"
+                        }
+                    }
+                }
             }
         };
 
