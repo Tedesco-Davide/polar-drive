@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PolarDrive.Data.Entities;
 
 namespace PolarDrive.Data.DbContexts;
 
@@ -6,12 +7,15 @@ public static class DbInitHelper
 {
     public static async Task RunDbInitScriptsAsync(PolarDriveDbContext dbContext)
     {
+        var logger = new PolarDriveLogger(dbContext);
+
         string basePath = AppContext.BaseDirectory;
         string scriptsPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDrive.Data", "DbInitScripts"));
 
         if (!Directory.Exists(scriptsPath))
         {
             Console.WriteLine("❌ DbInitScripts folder not found.");
+            await logger.Error("DbInitHelper.RunDbInitScriptsAsync", "Scripts folder not found", $"Path attempted: {scriptsPath}");
             return;
         }
 
@@ -30,11 +34,8 @@ public static class DbInitHelper
                     await dbContext.Database.ExecuteSqlRawAsync(sql);
                     Console.WriteLine($"✅ Executed: {fileName}");
 
-                    await dbContext.Database.ExecuteSqlRawAsync(@"
-                        INSERT INTO PolarDriveLogs (Source, Level, Message) 
-                        VALUES ({0}, {1}, {2})",
-                        "InitDB.Cli",
-                        "INFO",
+                    await logger.Info(
+                        "DbInitHelper.RunDbInitScriptsAsync",
                         $"Executed script: {fileName}"
                     );
                 }
@@ -42,21 +43,11 @@ public static class DbInitHelper
                 {
                     Console.WriteLine($"❌ Error in {fileName}: {ex.Message}");
 
-                    try
-                    {
-                        await dbContext.Database.ExecuteSqlRawAsync(@"
-                            INSERT INTO PolarDriveLogs (Source, Level, Message, Details) 
-                            VALUES ({0}, {1}, {2}, {3})",
-                            "InitDB.Cli",
-                            "ERROR",
-                            $"Failed to execute: {fileName}",
-                            ex.ToString()
-                        );
-                    }
-                    catch
-                    {
-                        // Silenzia errori secondari
-                    }
+                    await logger.Error(
+                        "DbInitHelper.RunDbInitScriptsAsync",
+                        $"Failed to execute script: {fileName}",
+                        ex.ToString()
+                    );
                 }
             }
         }

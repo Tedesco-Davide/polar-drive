@@ -8,18 +8,22 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
 
     public async Task LogAsync(string source, PolarDriveLogLevel level, string message, string? details = null)
     {
-        _dbContext.PolarDriveLogs.Add(new PolarDriveLog
-        {
-            Timestamp = DateTime.UtcNow,
-            Source = source,
-            Level = level,
-            Message = message,
-            Details = details
-        });
-
         try
         {
+            _dbContext.PolarDriveLogs.Add(new PolarDriveLog
+            {
+                Timestamp = DateTime.UtcNow,
+                Source = source,
+                Level = level,
+                Message = message,
+                Details = details
+            });
+
             await _dbContext.SaveChangesAsync();
+        }
+        catch (ObjectDisposedException ex)
+        {
+            Console.WriteLine($"❌ PolarDriveLogger => DbContext already disposed: {ex.Message}");
         }
         catch (Exception ex)
         {

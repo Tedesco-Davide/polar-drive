@@ -20,143 +20,154 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        var logger = new PolarDriveLogger(this);
 
-        base.OnModelCreating(modelBuilder);
+        logger.Info("PolarDriveDbContext.OnModelCreating", "Started model building").Wait();
 
-        modelBuilder.Entity<ClientCompany>(entity =>
+        try
         {
-            entity.HasIndex(e => e.VatNumber).IsUnique();
-        });
+            base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<ClientVehicle>(entity =>
+            modelBuilder.Entity<ClientCompany>(entity =>
+            {
+                entity.HasIndex(e => e.VatNumber).IsUnique();
+            });
+
+            modelBuilder.Entity<ClientVehicle>(entity =>
+            {
+                entity.HasIndex(e => e.Vin).IsUnique();
+
+                entity.HasOne(e => e.ClientCompany)
+                    .WithMany()
+                    .HasForeignKey(e => e.ClientCompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<VehicleWorkflow>(entity =>
+            {
+                entity.HasKey(e => e.VehicleId);
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithOne()
+                    .HasForeignKey<VehicleWorkflow>(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<VehicleWorkflowEvent>(entity =>
+            {
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<ClientConsent>(entity =>
+            {
+                entity.HasOne(e => e.ClientCompany)
+                    .WithMany()
+                    .HasForeignKey(e => e.ClientCompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<PdfReport>(entity =>
+            {
+                entity.HasOne(e => e.ClientCompany)
+                    .WithMany()
+                    .HasForeignKey(e => e.ClientCompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.ClientVehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => new { e.ClientCompanyId, e.ClientVehicleId, e.ReportPeriodStart, e.ReportPeriodEnd })
+                    .IsUnique();
+
+                entity.Property(e => e.GeneratedAt)
+                    .IsRequired(false);
+            });
+
+            modelBuilder.Entity<VehicleData>(entity =>
+            {
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<DemoSmsEvent>(entity =>
+            {
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<AnonymizedVehicleData>(entity =>
+            {
+                entity.HasOne(e => e.OriginalData)
+                    .WithMany()
+                    .HasForeignKey(e => e.OriginalDataId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.OriginalDataId).IsUnique();
+            });
+
+            modelBuilder.Entity<OutagePeriod>(entity =>
+            {
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.ClientCompany)
+                    .WithMany()
+                    .HasForeignKey(e => e.ClientCompanyId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(e => new { e.VehicleId, e.ClientCompanyId, e.OutageStart, e.OutageEnd })
+                    .IsUnique();
+            });
+
+            modelBuilder.Entity<ClientToken>(entity =>
+            {
+                entity.HasIndex(e => new { e.VehicleId, e.AccessTokenExpiresAt });
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithOne()
+                    .HasForeignKey<ClientToken>(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => e.VehicleId).IsUnique();
+            });
+
+            modelBuilder.Entity<PolarDriveLog>(entity =>
+            {
+                entity.Property(e => e.Timestamp)
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                entity.Property(e => e.Level)
+                    .HasConversion<string>()
+                    .HasDefaultValue(PolarDriveLogLevel.INFO);
+            });
+
+            logger.Info("PolarDriveDbContext.OnModelCreating", "Model building completed successfully").Wait();
+        }
+        catch (Exception ex)
         {
-            entity.HasIndex(e => e.Vin).IsUnique();
-
-            entity.HasOne(e => e.ClientCompany)
-            .WithMany()
-            .HasForeignKey(e => e.ClientCompanyId)
-            .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<VehicleWorkflow>(entity =>
-        {
-            entity.HasKey(e => e.VehicleId);
-
-            entity.HasOne(e => e.ClientVehicle)
-                .WithOne()
-                .HasForeignKey<VehicleWorkflow>(e => e.VehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<VehicleWorkflowEvent>(entity =>
-        {
-            entity.HasOne(e => e.ClientVehicle)
-                .WithMany()
-                .HasForeignKey(e => e.VehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<ClientConsent>(entity =>
-        {
-            entity.HasOne(e => e.ClientCompany)
-                .WithMany()
-                .HasForeignKey(e => e.ClientCompanyId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.ClientVehicle)
-                .WithMany()
-                .HasForeignKey(e => e.VehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<PdfReport>(entity =>
-        {
-            entity.HasOne(e => e.ClientCompany)
-                .WithMany()
-                .HasForeignKey(e => e.ClientCompanyId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.ClientVehicle)
-                .WithMany()
-                .HasForeignKey(e => e.ClientVehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(e => new { e.ClientCompanyId, e.ClientVehicleId, e.ReportPeriodStart, e.ReportPeriodEnd })
-                .IsUnique();
-
-            entity.Property(e => e.GeneratedAt)
-                .IsRequired(false);
-        });
-
-        modelBuilder.Entity<VehicleData>(entity =>
-        {
-            entity.HasOne(e => e.ClientVehicle)
-                .WithMany()
-                .HasForeignKey(e => e.VehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<DemoSmsEvent>(entity =>
-        {
-            entity.HasOne(e => e.ClientVehicle)
-                .WithMany()
-                .HasForeignKey(e => e.VehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
-
-        modelBuilder.Entity<AnonymizedVehicleData>(entity =>
-        {
-            entity.HasOne(e => e.OriginalData)
-                .WithMany()
-                .HasForeignKey(e => e.OriginalDataId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.ClientVehicle)
-                .WithMany()
-                .HasForeignKey(e => e.VehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(e => e.OriginalDataId).IsUnique();
-        });
-
-        modelBuilder.Entity<OutagePeriod>(entity =>
-        {
-            entity.HasOne(e => e.ClientVehicle)
-                .WithMany()
-                .HasForeignKey(e => e.VehicleId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasOne(e => e.ClientCompany)
-                .WithMany()
-                .HasForeignKey(e => e.ClientCompanyId)
-                .OnDelete(DeleteBehavior.SetNull);
-
-            entity.HasIndex(e => new { e.VehicleId, e.ClientCompanyId, e.OutageStart, e.OutageEnd })
-                .IsUnique();
-        });
-
-        modelBuilder.Entity<ClientToken>(entity =>
-        {
-            entity.HasIndex(e => new { e.VehicleId, e.AccessTokenExpiresAt });
-
-            entity.HasOne(e => e.ClientVehicle)
-                .WithOne()
-                .HasForeignKey<ClientToken>(e => e.VehicleId)
-                .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasIndex(e => e.VehicleId).IsUnique();
-        });
-
-        modelBuilder.Entity<PolarDriveLog>(entity =>
-        {
-            entity.Property(e => e.Timestamp)
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-            entity.Property(e => e.Level)
-                .HasConversion<string>()
-                .HasDefaultValue(PolarDriveLogLevel.INFO);
-        });
-
-
+            logger.Error("PolarDriveDbContext.OnModelCreating", "Error during model creation", ex.ToString()).Wait();
+            throw; // rethrow to crash the app in dev scenario
+        }
     }
 }
