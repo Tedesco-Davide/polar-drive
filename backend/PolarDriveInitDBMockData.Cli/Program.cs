@@ -3,6 +3,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDriveInitDBMockData.Cli;
 using System.IO.Compression;
+using static PolarDrive.Data.DbContexts.DbInitHelper;
 
 var basePath = AppContext.BaseDirectory;
 var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));
@@ -22,11 +23,7 @@ try
     // ───────────────────────────────
     // 1. Pulisce tabelle
     // ───────────────────────────────
-    db.ClientConsents.RemoveRange(db.ClientConsents);
-    db.ClientTokens.RemoveRange(db.ClientTokens);
-    db.ClientVehicles.RemoveRange(db.ClientVehicles);
-    db.ClientCompanies.RemoveRange(db.ClientCompanies);
-    await db.SaveChangesAsync();
+    await DbMockDataHelper.ClearMockDataAsync(db);
 
     await logger.Info("PolarDriveInitDBMockData.Cli", "Cleared all client-related tables");
 
@@ -42,7 +39,6 @@ try
 
     db.ClientCompanies.AddRange(companies);
     await db.SaveChangesAsync();
-
     await logger.Info("PolarDriveInitDBMockData.Cli", $"Inserted {companies.Length} mock companies");
 
     // ───────────────────────────────
@@ -96,12 +92,13 @@ try
         await db.SaveChangesAsync();
 
         // 🚘 Mock Vehicles
+        var suffix = DateTime.UtcNow.Ticks.ToString()[10..];
         var vehicles = new[]
         {
             new ClientVehicle
             {
                 ClientCompanyId = companies[0].Id,
-                Vin = "5YJJ6677544845943",
+                Vin = $"5YJJ667754484{suffix}",
                 FuelType = "Electric",
                 Brand = "Tesla",
                 Model = "Model 3",
@@ -115,7 +112,7 @@ try
             new ClientVehicle
             {
                 ClientCompanyId = companies[1].Id,
-                Vin = "5YJW5451356531830",
+                Vin = $"5YJW545135653{suffix}",
                 FuelType = "Electric",
                 Brand = "Polestar",
                 Model = "Polestar 4",
@@ -129,7 +126,7 @@ try
             new ClientVehicle
             {
                 ClientCompanyId = companies[2].Id,
-                Vin = "5YJT8233374058256",
+                Vin = $"5YJT823337405{suffix}",
                 FuelType = "Combustion",
                 Brand = "Porsche",
                 Model = "718 Cayman",
@@ -224,6 +221,8 @@ try
             };
             db.ClientConsents.Add(consent);
 
+            await db.SaveChangesAsync();
+
             await logger.Info(
                 "PolarDriveInitDBMockData.Cli",
                 "Inserted mock token and consent for vehicle",
@@ -273,6 +272,8 @@ try
         // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
         // 4. Insert 5 consistent mock outage records
         // ───────────────────────────────────────────────────────────────────────────────────────────────────────────────
+        var rand = new Random();
+        int offset = rand.Next(1, 10000);
         var outages = new List<OutagePeriod>
         {
             new()
@@ -282,9 +283,9 @@ try
                 AutoDetected = true,
                 OutageType = "Outage Vehicle",
                 OutageBrand = "Tesla",
-                CreatedAt = DateTime.Parse("2025-04-20T10:30:00Z"),
-                OutageStart = DateTime.Parse("2025-04-18T04:00:00Z"),
-                OutageEnd = DateTime.Parse("2025-04-19T18:00:00Z"),
+                CreatedAt = DateTime.Parse("2025-04-20T10:30:00Z").AddSeconds(offset),
+                OutageStart = DateTime.Parse("2025-04-18T04:00:00Z").AddSeconds(offset),
+                OutageEnd = DateTime.Parse("2025-04-19T18:00:00Z").AddSeconds(offset),
                 ZipFilePath = "zips-outages/20250418-rossi-vehicle01.zip",
                 Notes = "Rilevato automaticamente, comunicazione PEC non ricevuta."
             },
@@ -295,9 +296,9 @@ try
                 AutoDetected = false,
                 OutageType = "Outage Vehicle",
                 OutageBrand = "Polestar",
-                CreatedAt = DateTime.Parse("2025-04-21T09:45:00Z"),
-                OutageStart = DateTime.Parse("2025-04-15T00:00:00Z"),
-                OutageEnd = DateTime.Parse("2025-04-20T23:50:00Z"),
+                CreatedAt = DateTime.Parse("2025-04-21T09:45:00Z").AddSeconds(offset),
+                OutageStart = DateTime.Parse("2025-04-15T00:00:00Z").AddSeconds(offset),
+                OutageEnd = DateTime.Parse("2025-04-20T23:50:00Z").AddSeconds(offset),
                 Notes = "Outage manuale: veicolo in assistenza per aggiornamento batteria."
             },
             new()
@@ -307,8 +308,8 @@ try
                 AutoDetected = true,
                 OutageType = "Outage Vehicle",
                 OutageBrand = "Porsche",
-                CreatedAt = DateTime.Parse("2025-04-24T07:10:00Z"),
-                OutageStart = DateTime.Parse("2025-04-23T22:00:00Z"),
+                CreatedAt = DateTime.Parse("2025-04-24T07:10:00Z").AddSeconds(offset),
+                OutageStart = DateTime.Parse("2025-04-23T22:00:00Z").AddSeconds(offset),
                 OutageEnd = null,
                 Notes = "Inattività in corso: nessun dato da oltre 8 ore."
             },
@@ -319,9 +320,9 @@ try
                 AutoDetected = true,
                 OutageType = "Outage Fleet Api",
                 OutageBrand = "Tesla",
-                CreatedAt = DateTime.Parse("2025-04-22T12:00:00Z"),
-                OutageStart = DateTime.Parse("2025-04-22T08:00:00Z"),
-                OutageEnd = DateTime.Parse("2025-04-22T11:30:00Z"),
+                CreatedAt = DateTime.Parse("2025-04-22T12:00:00Z").AddSeconds(offset),
+                OutageStart = DateTime.Parse("2025-04-22T08:00:00Z").AddSeconds(offset),
+                OutageEnd = DateTime.Parse("2025-04-22T11:30:00Z").AddSeconds(offset),
                 Notes = "API ufficiale non rispondeva: HTTP 503 da tutte le richieste."
             },
             new()
@@ -331,8 +332,8 @@ try
                 AutoDetected = false,
                 OutageType = "Outage Fleet Api",
                 OutageBrand = "Polestar",
-                CreatedAt = DateTime.Parse("2025-04-25T09:00:00Z"),
-                OutageStart = DateTime.Parse("2025-04-25T07:00:00Z"),
+                CreatedAt = DateTime.Parse("2025-04-25T09:00:00Z").AddSeconds(offset),
+                OutageStart = DateTime.Parse("2025-04-25T07:00:00Z").AddSeconds(offset),
                 OutageEnd = null,
                 ZipFilePath = "zips-outages/20250425-manual-fleetapi.zip",
                 Notes = "Inserito manualmente: timeout frequenti da client."
@@ -379,4 +380,8 @@ catch (Exception ex)
 {
     await logger.Error("PolarDriveInitDBMockData.Cli", "Exception during mock setup", ex.ToString());
     Console.WriteLine($"❌ FATAL ERROR: {ex.Message}");
+    if (ex.InnerException != null)
+    {
+        Console.WriteLine($"🔍 Inner: {ex.InnerException.Message}");
+    }
 }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 import { useTranslation } from "next-i18next";
 import classNames from "classnames";
+import { logFrontendEvent } from "@/utils/logger";
 
 export default function Contacts() {
   const { t } = useTranslation();
@@ -48,12 +49,22 @@ export default function Contacts() {
       console.log("FORM SUBMISSION RESULT:", result);
 
       if (response.ok) {
+        logFrontendEvent(
+          "ContactsForm",
+          "INFO",
+          "Contact form submitted",
+          `Name: ${formData.name}, Email: ${formData.email}`
+        );
         alert(t("contact.success"));
         form.reset();
-      } else {
-        alert(t("contact.error.send"));
       }
     } catch (err) {
+      logFrontendEvent(
+        "ContactsForm",
+        "ERROR",
+        "Failed to submit contact form",
+        err instanceof Error ? err.message : String(err)
+      );
       console.error(t("admin.genericApiError"), err);
       alert(err instanceof Error ? err.message : t("admin.genericApiError"));
     } finally {
@@ -63,6 +74,7 @@ export default function Contacts() {
 
   useEffect(() => {
     setMounted(true);
+    logFrontendEvent("ContactsForm", "INFO", "Contacts form mounted");
   }, []);
 
   return (

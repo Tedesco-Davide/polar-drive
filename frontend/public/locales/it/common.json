@@ -116,6 +116,8 @@
   "admin.mainWorkflow.headers.model": "Modello Veicolo",
   "admin.mainWorkflow.headers.vehicleVIN": "Veicolo VIN",
   "admin.mainWorkflow.alerts.zipPdfReportsNotAvailable": "Non è possibile scaricare il file .zip perché non è ancora stato generato alcun Report PDF",
+  "admin.mainWorkflow.alerts.urlGenerationConfirm": "URL di autorizzazione veicolo copiato negli appunti. Invia al cliente (CTRL+V)",
+  "admin.mainWorkflow.alerts.urlGenerationFail": "Errore nella generazione dell'URL di autorizzazione",
   "admin.vehicleStatusToggle.confirmAction.toNotActive": "Sei sicuro di voler cambiare lo stato di questa Veicolo in NotActive? Assicurarsi di aver caricato i consensi firmati .zip da parte dell'azienda prima di procedere. Premi OK per confermare",
   "admin.vehicleStatusToggle.confirmAction.backToActiveAndFetching": "Stati Veicolo verificati a NotActive e NotFetching. Riportare lo stato ad Active comporterà anche il ripristino dello stato a Fetching (ripristino dell'acquisizione dati). Assicurarsi di aver caricato i consensi firmati .zip da parte dell'azienda prima di procedere. Premi OK per confermare",
   "admin.vehicleStatusToggle.confirmAction.toNotFetchingFromActive": "Non è possibile cambiare lo stato di una Veicolo in NotFetching (disattivazione acquisizione dati) mentre si trova in stato Active",

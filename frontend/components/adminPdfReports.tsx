@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { FileText, NotebookPen } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
+import AdminLoader from "@/components/adminLoader";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -21,6 +22,7 @@ export default function AdminPdfReports({
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     setLocalReports(reports);
@@ -101,9 +103,11 @@ export default function AdminPdfReports({
             >
               <td className="p-4 space-x-2 inline-flex">
                 <button
-                  className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
+                  className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:opacity-50"
                   title={t("admin.vehicleReports.downloadSinglePdf")}
+                  disabled={isDownloading}
                   onClick={async () => {
+                    setIsDownloading(true);
                     try {
                       const response = await fetch(
                         `${API_BASE_URL}/api/pdfreports/${report.id}/download`
@@ -129,6 +133,8 @@ export default function AdminPdfReports({
                         details
                       );
                       alert(t("admin.notesGenericError"));
+                    } finally {
+                      setIsDownloading(false);
                     }
                   }}
                 >
@@ -229,6 +235,7 @@ export default function AdminPdfReports({
           t={t}
         />
       )}
+      {isDownloading && <AdminLoader />}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import { API_BASE_URL } from "@/utils/api";
 import { WorkflowRow } from "@/types/adminWorkflowTypes";
 import { PdfReport } from "@/types/reportInterfaces";
 import { ClientVehicleWithCompany as ClientVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
+import { logFrontendEvent } from "@/utils/logger";
 import AdminLoader from "@/components/adminLoader";
 import AdminClientVehiclesTable from "@/components/adminClientVehiclesTable";
 import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
@@ -113,6 +114,11 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     setMounted(true);
+    logFrontendEvent(
+      "AdminDashboard",
+      "INFO",
+      "Admin dashboard mounted and visible"
+    );
   }, []);
 
   useEffect(() => {

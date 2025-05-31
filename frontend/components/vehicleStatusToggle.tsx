@@ -1,6 +1,7 @@
 import { API_BASE_URL } from "@/utils/api";
 import { useTranslation } from "next-i18next";
 import axios from "axios";
+import { logFrontendEvent } from "@/utils/logger";
 
 type Props = {
   id: number;
@@ -33,6 +34,12 @@ export default function VehicleStatusToggle({
           t("admin.vehicleStatusToggle.confirmAction.toNotActive")
         );
         if (!confirm) return;
+        logFrontendEvent(
+          "VehicleStatusToggle",
+          "INFO",
+          "User cancelled toggle operation",
+          `Field: ${field}, From: isActive=${isActive}, isFetching=${isFetching}`
+        );
         newIsActive = false;
       } else {
         const confirm = window.confirm(
@@ -76,9 +83,21 @@ export default function VehicleStatusToggle({
         isFetching: newIsFetching,
       });
       onStatusChange(newIsActive, newIsFetching);
+      logFrontendEvent(
+        "VehicleStatusToggle",
+        "INFO",
+        "Vehicle status successfully updated",
+        `Vehicle ID: ${id}, isActive: ${newIsActive}, isFetching: ${newIsFetching}`
+      );
       await refreshWorkflowData();
     } catch (err) {
       console.error(t("admin.vehicleStatusToggle.confirmAction.error"), err);
+      logFrontendEvent(
+        "VehicleStatusToggle",
+        "ERROR",
+        "Failed to update vehicle status",
+        err instanceof Error ? err.message : String(err)
+      );
       alert(
         err instanceof Error
           ? err.message

@@ -1,11 +1,18 @@
 "use client";
 import { useRouter } from "next/router";
 import Image from "next/image";
+import { logFrontendEvent } from "@/utils/logger";
 
 export default function LanguageSwitcher() {
   const router = useRouter();
 
   const switchTo = (lng: string) => {
+    logFrontendEvent(
+      "LanguageSwitcher",
+      "INFO",
+      `Language switched to ${lng}`,
+      `Current path: ${router.asPath}`
+    );
     router.push(router.pathname, router.asPath, { locale: lng });
   };
 

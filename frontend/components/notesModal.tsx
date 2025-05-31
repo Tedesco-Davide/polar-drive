@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Trash2, PlusIcon } from "lucide-react";
 import { TFunction } from "i18next";
+import { logFrontendEvent } from "@/utils/logger";
 
 type Props<T> = {
   entity: T;
@@ -47,6 +48,7 @@ export default function NotesModal<T>({
   const handleAddNote = () => {
     if (!newNote.trim()) return;
     setNotes((prev) => [...prev, newNote.trim()]);
+    logFrontendEvent("NotesModal", "INFO", "Note added", newNote);
     setNewNote("");
   };
 
@@ -54,13 +56,21 @@ export default function NotesModal<T>({
     const updated = [...notes];
     updated[index] = value;
     setNotes(updated);
+    logFrontendEvent("NotesModal", "INFO", "Note edited", `Index: ${index}`);
   };
 
   const handleDeleteNote = (index: number) => {
     setNotes(notes.filter((_, i) => i !== index));
+    logFrontendEvent("NotesModal", "INFO", "Note deleted", `Index: ${index}`);
   };
 
   const handleSave = () => {
+    logFrontendEvent(
+      "NotesModal",
+      "INFO",
+      "Notes saved",
+      `Total notes: ${notes.length}`
+    );
     onSave({
       ...entity,
       [notesField]: JSON.stringify(notes),
@@ -119,7 +129,14 @@ export default function NotesModal<T>({
           </button>
           <button
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
-            onClick={onClose}
+            onClick={() => {
+              logFrontendEvent(
+                "NotesModal",
+                "INFO",
+                "Notes modal closed without saving"
+              );
+              onClose();
+            }}
           >
             {t("admin.cancelEditRow")}
           </button>

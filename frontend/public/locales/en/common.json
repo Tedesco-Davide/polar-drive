@@ -116,6 +116,8 @@
   "admin.mainWorkflow.headers.model": "Vehicle Model",
   "admin.mainWorkflow.headers.vehicleVIN": "Vehicle VIN",
   "admin.mainWorkflow.alerts.zipPdfReportsNotAvailable": "It is not possible to download the .zip file because no PDF Report has been generated yet",
+  "admin.mainWorkflow.alerts.urlGenerationConfirm": "Vehicle authorization URL copied to clipboard. Send it to the client (CTRL+V)",
+  "admin.mainWorkflow.alerts.urlGenerationFail": "Error while generating the authorization URL",
   "admin.vehicleStatusToggle.confirmAction.toNotActive": "Are you sure you want to change this vehicle's status to NotActive? Please ensure that the signed consents, from the specific company, in .zip format, has been uploaded before proceeding. Press OK to proceed",
   "admin.vehicleStatusToggle.confirmAction.backToActiveAndFetching": "Vehicle status has been verified as NotActive and NotFetching. Restoring the status to Active will also re-enable Fetching (data acquisition). Please ensure that the signed consents, in .zip format, has been uploaded before proceeding. Press OK to proceed",
   "admin.vehicleStatusToggle.confirmAction.toNotFetchingFromActive": "It is not allowed to set a Vehicle to NotFetching (disable data acquisition) while it is in Active status",
