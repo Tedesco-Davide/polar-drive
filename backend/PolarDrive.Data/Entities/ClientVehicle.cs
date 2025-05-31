@@ -18,6 +18,8 @@ public class ClientVehicle
 
     public string? Color { get; set; }
 
+    public bool ClientOAuthAuthorized { get; set; } = false;
+
     public bool IsActiveFlag { get; set; } = true;
 
     public bool IsFetchingDataFlag { get; set; } = true;

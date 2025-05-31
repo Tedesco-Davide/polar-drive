@@ -15,7 +15,5 @@ public class AdminFullClientInsertRequest
     public string? VehicleTrim { get; set; } = "";
     public string? VehicleColor { get; set; } = "";
     public DateTime UploadDate { get; set; }
-    public string AccessToken { get; set; } = string.Empty;
-    public string RefreshToken { get; set; } = string.Empty;
     public IFormFile ConsentZip { get; set; } = null!;
 }

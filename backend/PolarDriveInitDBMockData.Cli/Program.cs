@@ -92,21 +92,23 @@ try
         await db.SaveChangesAsync();
 
         // 🚘 Mock Vehicles
+        var allVehicles = new List<ClientVehicle>();
         var suffix = DateTime.UtcNow.Ticks.ToString()[10..];
         var vehicles = new[]
         {
             new ClientVehicle
             {
                 ClientCompanyId = companies[0].Id,
-                Vin = $"5YJJ667754484{suffix}",
+                Vin = $"5YJWAIT4OAUTH6{suffix}",
                 FuelType = "Electric",
                 Brand = "Tesla",
                 Model = "Model 3",
                 Trim = "Long Range",
                 Color = "Ultra Red",
-                IsActiveFlag = true,
-                IsFetchingDataFlag = true,
-                FirstActivationAt = DateTime.Today,
+                IsActiveFlag = false,
+                IsFetchingDataFlag = false,
+                ClientOAuthAuthorized = false,
+                FirstActivationAt = null,
                 CreatedAt = DateTime.UtcNow
             },
             new ClientVehicle
@@ -120,6 +122,7 @@ try
                 Color = "Snow",
                 IsActiveFlag = true,
                 IsFetchingDataFlag = true,
+                ClientOAuthAuthorized = true,
                 FirstActivationAt = DateTime.Today,
                 CreatedAt = DateTime.UtcNow
             },
@@ -134,6 +137,7 @@ try
                 Color = "Racing Yellow",
                 IsActiveFlag = true,
                 IsFetchingDataFlag = true,
+                ClientOAuthAuthorized = true,
                 FirstActivationAt = DateTime.Today,
                 CreatedAt = DateTime.UtcNow
             }
@@ -141,6 +145,7 @@ try
 
         db.ClientVehicles.AddRange(vehicles);
         await db.SaveChangesAsync();
+        allVehicles.AddRange(vehicles);
 
         await logger.Info(
             "PolarDriveInitDBMockData.Cli",
@@ -153,17 +158,8 @@ try
         {
             new()
             {
-                ClientCompanyId = companies[0].Id,
-                ClientVehicleId = vehicles[0].Id,
-                ReportPeriodStart = new DateTime(2025, 4, 1),
-                ReportPeriodEnd = new DateTime(2025, 4, 30),
-                GeneratedAt = DateTime.UtcNow,
-                Notes = "Report mensile standard aprile 2025"
-            },
-            new()
-            {
                 ClientCompanyId = companies[1].Id,
-                ClientVehicleId = vehicles[1].Id,
+                ClientVehicleId = allVehicles[1].Id,
                 ReportPeriodStart = new DateTime(2025, 4, 1),
                 ReportPeriodEnd = new DateTime(2025, 4, 30),
                 GeneratedAt = DateTime.UtcNow,
@@ -172,7 +168,7 @@ try
             new()
             {
                 ClientCompanyId = companies[2].Id,
-                ClientVehicleId = vehicles[2].Id,
+                ClientVehicleId = allVehicles[2].Id,
                 ReportPeriodStart = new DateTime(2025, 4, 1),
                 ReportPeriodEnd = new DateTime(2025, 4, 30),
                 GeneratedAt = DateTime.UtcNow,
@@ -191,11 +187,17 @@ try
             ))
         );
 
-        // 🔑🔐 Insert token + consent for each vehicle
+        // 🔑🔐 Insert token + consent for vehicles that are authorized
         for (int i = 0; i < vehicles.Length; i++)
         {
             var vehicle = vehicles[i];
             var currentCompany = companies[i];
+
+            if (!vehicle.ClientOAuthAuthorized)
+            {
+                await logger.Info("PolarDriveInitDBMockData.Cli", $"Vehicle pending OAuth, skipping token and consent insert", $"VIN={vehicle.Vin}");
+                continue;
+            }
 
             var token = new ClientToken
             {
@@ -278,8 +280,8 @@ try
         {
             new()
             {
-                VehicleId = 1,
-                ClientCompanyId = 1,
+                VehicleId = allVehicles[0].Id,
+                ClientCompanyId = allVehicles[0].ClientCompanyId,
                 AutoDetected = true,
                 OutageType = "Outage Vehicle",
                 OutageBrand = "Tesla",
@@ -291,8 +293,8 @@ try
             },
             new()
             {
-                VehicleId = 2,
-                ClientCompanyId = 2,
+                VehicleId = allVehicles[1].Id,
+                ClientCompanyId = allVehicles[1].ClientCompanyId,
                 AutoDetected = false,
                 OutageType = "Outage Vehicle",
                 OutageBrand = "Polestar",
@@ -303,8 +305,8 @@ try
             },
             new()
             {
-                VehicleId = 3,
-                ClientCompanyId = 3,
+                VehicleId = allVehicles[2].Id,
+                ClientCompanyId = allVehicles[2].ClientCompanyId,
                 AutoDetected = true,
                 OutageType = "Outage Vehicle",
                 OutageBrand = "Porsche",
@@ -352,7 +354,7 @@ try
         var startDate = DateTime.Today.AddDays(-30);
         var totalHours = 30 * 24;
 
-        foreach (var vehicle in vehicles)
+        foreach (var vehicle in vehicles.Where(v => v.ClientOAuthAuthorized))
         {
             for (int i = 0; i < totalHours; i++)
             {

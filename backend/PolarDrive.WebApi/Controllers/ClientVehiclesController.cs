@@ -35,6 +35,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             FirstActivationAt = v.FirstActivationAt?.ToString("o"),
             LastDeactivationAt = v.LastDeactivationAt?.ToString("o"),
             LastFetchingDataAt = v.LastFetchingDataAt?.ToString("o"),
+            ClientOAuthAuthorized = v.ClientOAuthAuthorized,
             ClientCompany = new ClientCompanyDTO
             {
                 Id = v.ClientCompany!.Id,
@@ -73,12 +74,15 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             Model = dto.Model,
             Trim = dto.Trim,
             Color = dto.Color,
-            IsActiveFlag = dto.IsActive,
-            IsFetchingDataFlag = dto.IsFetching,
+            IsActiveFlag = false,
+            IsFetchingDataFlag = false,
+            ClientOAuthAuthorized = false,
             FirstActivationAt = ParseDate(dto.FirstActivationAt),
             LastDeactivationAt = ParseDate(dto.LastDeactivationAt),
             CreatedAt = DateTime.UtcNow
         };
+
+        await _logger.Info("ClientVehiclesController.Post", "Vehicle inserted via POST and awaits OAuth authorization.", $"VIN: {dto.Vin}");
 
         db.ClientVehicles.Add(entity);
         await db.SaveChangesAsync();
@@ -104,11 +108,23 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found!");
         }
 
+        if (!vehicle.ClientOAuthAuthorized)
+        {
+            await _logger.Warning("ClientVehiclesController.Put", "Attempt to change vehicle status without OAuth authorization.", $"VehicleId: {id}");
+            return BadRequest("SERVER ERROR → BAD REQUEST: Vehicle must be authorized via OAuth before activation.");
+        }
+
         bool wasActive = vehicle.IsActiveFlag;
         bool wasFetching = vehicle.IsFetchingDataFlag;
 
         vehicle.IsActiveFlag = dto.IsActive;
         vehicle.IsFetchingDataFlag = dto.IsFetching;
+
+        if (!dto.IsActive && !dto.IsFetching && vehicle.ClientOAuthAuthorized)
+        {
+            vehicle.ClientOAuthAuthorized = false;
+            await _logger.Info("ClientVehiclesController.UpdateStatus", "OAuth authorization reset due to status fallback.", $"VehicleId: {id}");
+        }
 
         if (wasActive && !dto.IsActive)
             vehicle.LastDeactivationAt = DateTime.UtcNow;
@@ -130,6 +146,12 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         {
             await _logger.Warning("ClientVehiclesController.Put", "Vehicle not found.", $"VehicleId: {id}");
             return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found!");
+        }
+
+        if (!vehicle.ClientOAuthAuthorized)
+        {
+            await _logger.Warning("ClientVehiclesController.Put", "Attempt to change vehicle status without OAuth authorization.", $"VehicleId: {id}");
+            return BadRequest("SERVER ERROR → BAD REQUEST: Vehicle must be authorized via OAuth before activation.");
         }
 
         if (dto.IsActive && !dto.IsFetching)

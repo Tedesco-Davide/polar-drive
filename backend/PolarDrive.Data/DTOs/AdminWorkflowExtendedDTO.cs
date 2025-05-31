@@ -9,6 +9,7 @@ public class AdminWorkflowExtendedDTO
     public string Model { get; set; } = "";
     public string Trim { get; set; } = "";
     public string Color { get; set; } = "";
+    public bool ClientOAuthAuthorized { get; set; }
     public bool IsActive { get; set; }
     public bool IsFetching { get; set; }
     public string? FirstActivationAt { get; set; }

@@ -16,6 +16,7 @@ export type adminWorkflowTypesInputForm = {
   color: string;
   isVehicleActive: boolean;
   isVehicleFetchingData: boolean;
+  clientOAuthAuthorized: boolean;
 };
 
 type InputWithoutFile = Omit<adminWorkflowTypesInputForm, "zipFilePath">;

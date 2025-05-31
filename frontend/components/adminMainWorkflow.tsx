@@ -40,6 +40,7 @@ export default function AdminMainWorkflow({
     color: "",
     isVehicleActive: true,
     isVehicleFetchingData: true,
+    clientOAuthAuthorized: false,
   });
 
   const [internalWorkflowData, setInternalWorkflowData] =
@@ -328,6 +329,7 @@ export default function AdminMainWorkflow({
       color: "",
       isVehicleActive: true,
       isVehicleFetchingData: true,
+      clientOAuthAuthorized: false,
     });
 
     setShowForm(false);
@@ -377,6 +379,9 @@ export default function AdminMainWorkflow({
           <tr>
             <th className="p-4">{t("admin.actions")}</th>
             <th className="p-4">
+              {t("admin.mainWorkflow.headers.oauthStatus")}
+            </th>
+            <th className="p-4">
               {t("admin.mainWorkflow.headers.isVehicleActive")}
             </th>
             <th className="p-4">
@@ -402,10 +407,17 @@ export default function AdminMainWorkflow({
             >
               <td className="p-4 space-x-2 inline-flex">
                 <button
-                  className="p-2 bg-cyan-500 text-softWhite rounded hover:bg-cyan-600"
+                  className={`p-2 ${
+                    entry.clientOAuthAuthorized
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-cyan-500 hover:bg-cyan-600"
+                  } text-softWhite rounded`}
+                  disabled={entry.clientOAuthAuthorized}
                   title="Genera URL di autorizzazione veicolo"
                   onClick={async () => {
                     try {
+                      if (entry.clientOAuthAuthorized) return;
+
                       if (!entry.brand) {
                         alert("Errore: brand del veicolo mancante.");
                         return;
@@ -449,23 +461,49 @@ export default function AdminMainWorkflow({
                   <Link size={16} />
                 </button>
                 <button
-                  className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600"
+                  disabled={entry.clientOAuthAuthorized}
+                  className={`p-2 ${
+                    entry.clientOAuthAuthorized
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-purple-500 hover:bg-purple-600"
+                  } text-softWhite rounded`}
                   title={t("admin.mainWorkflow.button.pdfUserAndVehicle")}
                 >
                   <UserSearch size={16} />
                 </button>
                 <button
-                  className="p-2 bg-yellow-500 text-softWhite rounded hover:bg-yellow-600"
+                  disabled={entry.clientOAuthAuthorized}
+                  className={`p-2 ${
+                    entry.clientOAuthAuthorized
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-yellow-500 hover:bg-yellow-600"
+                  } text-softWhite rounded`}
                   title={t("admin.mainWorkflow.button.zipPdfReports")}
                 >
                   <FileArchive size={16} />
                 </button>
                 <button
-                  className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600"
+                  disabled={entry.clientOAuthAuthorized}
+                  className={`p-2 ${
+                    entry.clientOAuthAuthorized
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-orange-500 hover:bg-orange-600"
+                  } text-softWhite rounded`}
                   title={t("admin.mainWorkflow.button.zipConsents")}
                 >
                   <FileArchive size={16} />
                 </button>
+              </td>
+              <td className="p-4">
+                {entry.clientOAuthAuthorized ? (
+                  <span className="text-green-600 font-semibold">
+                    {t("admin.authorized")}
+                  </span>
+                ) : (
+                  <span className="text-red-600 font-semibold">
+                    {t("admin.pendingAuthorization")}
+                  </span>
+                )}
               </td>
               <td className="p-4 align-middle">
                 <VehicleStatusToggle

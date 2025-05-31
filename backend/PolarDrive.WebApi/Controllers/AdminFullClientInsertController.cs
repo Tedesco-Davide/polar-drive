@@ -72,27 +72,16 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 Model = request.VehicleModel,
                 Trim = string.IsNullOrWhiteSpace(request.VehicleTrim) ? null : request.VehicleTrim,
                 Color = string.IsNullOrWhiteSpace(request.VehicleColor) ? null : request.VehicleColor,
-                IsActiveFlag = true,
-                IsFetchingDataFlag = true,
+                IsActiveFlag = false,
+                IsFetchingDataFlag = false,
+                ClientOAuthAuthorized = false,
                 FirstActivationAt = request.UploadDate
             };
             _dbContext.ClientVehicles.Add(vehicle);
+
             await _dbContext.SaveChangesAsync();
             await _logger.Info("AdminFullClientInsertController.Post", "New vehicle registered.", $"VIN: {vehicle.Vin}, CompanyId: {company.Id}");
-
-            var token = new ClientToken
-            {
-                VehicleId = vehicle.Id,
-                AccessToken = request.AccessToken,
-                RefreshToken = request.RefreshToken,
-                AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
-                RefreshTokenExpiresAt = null,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-            _dbContext.ClientTokens.Add(token);
-            await _dbContext.SaveChangesAsync();
-            await _logger.Debug("AdminFullClientInsertController.Post", "Token saved for vehicle.", $"VehicleId: {vehicle.Id}");
+            await _logger.Info("AdminFullClientInsertController.Post", "New client setup pending OAuth", $"VIN: {vehicle.Vin}, CompanyId: {company.Id}");
 
             if (request.ConsentZip == null || !request.ConsentZip.FileName.EndsWith(".zip"))
             {

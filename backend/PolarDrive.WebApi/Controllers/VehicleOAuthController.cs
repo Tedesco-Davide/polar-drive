@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 
@@ -60,7 +61,7 @@ public class VehicleOAuthController : ControllerBase
                     return BadRequest($"Unsupported brand received: {brand}");
             }
 
-            var state = Guid.NewGuid().ToString("N");
+            var state = vin;
 
             var url = $"{authBaseUrl}?" +
                       $"client_id={clientId}" +
@@ -68,7 +69,8 @@ public class VehicleOAuthController : ControllerBase
                       $"&response_type=code" +
                       $"&scope={Uri.EscapeDataString(scopes)}" +
                       $"&state={state}" +
-                      $"&audience=ownerapi";
+                      $"&audience=ownerapi" +
+                      $"&brand={brand}";
 
             await _logger.Info(
                 source,
@@ -85,8 +87,97 @@ public class VehicleOAuthController : ControllerBase
                 "Exception while generating OAuth URL",
                 ex.ToString()
             );
-
             return StatusCode(500, "An error occurred while generating the URL.");
         }
     }
+
+    [HttpGet("OAuthCallback")]
+    public async Task<IActionResult> OAuthCallback([FromQuery] string code, [FromQuery] string state, [FromQuery] string brand)
+    {
+        const string source = "VehicleOAuthController.OAuthCallback";
+
+        if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(state) || string.IsNullOrWhiteSpace(brand))
+        {
+            await _logger.Error(source, "Missing one or more required parameters");
+            return BadRequest("Missing parameters");
+        }
+
+        try
+        {
+            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == state);
+            if (vehicle == null)
+            {
+                await _logger.Warning(source, "Vehicle not found for OAuth callback", $"State (VIN): {state}");
+                return BadRequest("Invalid VIN");
+            }
+
+            brand = brand.Trim().ToLowerInvariant();
+
+            var tokens = brand switch
+            {
+                "tesla" => await TeslaOAuthService.ExchangeCodeForTokens(code),
+                "polestar" => await PolestarOAuthService.ExchangeCodeForTokens(code),
+                "porsche" => await PorscheOAuthService.ExchangeCodeForTokens(code),
+                _ => throw new NotSupportedException($"Brand '{brand}' not supported")
+            };
+
+            await _logger.Debug(source, "Token received from external service", $"Brand: {brand}, VIN: {vehicle.Vin}");
+
+            _db.ClientTokens.Add(new ClientToken
+            {
+                VehicleId = vehicle.Id,
+                AccessToken = tokens.AccessToken,
+                RefreshToken = tokens.RefreshToken,
+                AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            });
+
+            vehicle.ClientOAuthAuthorized = true;
+            await _db.SaveChangesAsync();
+
+            await _logger.Info(source, "OAuth authorization completed", $"Brand: {brand}, VIN: {vehicle.Vin}");
+
+            return Redirect("https://datapolar.dev/admin");
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Exception in OAuthCallback", ex.ToString());
+            return StatusCode(500, $"OAuth error: {ex.Message}");
+        }
+    }
+
+    public static class TeslaOAuthService
+    {
+        public static Task<(string AccessToken, string RefreshToken)> ExchangeCodeForTokens(string code)
+        {
+            return Task.FromResult((
+                AccessToken: "TESLA_TOKEN_" + code,
+                RefreshToken: "TESLA_REFRESH_" + code
+            ));
+        }
+    }
+
+    public static class PolestarOAuthService
+    {
+        public static Task<(string AccessToken, string RefreshToken)> ExchangeCodeForTokens(string code)
+        {
+            return Task.FromResult((
+                AccessToken: "POLESTAR_TOKEN_" + code,
+                RefreshToken: "POLESTAR_REFRESH_" + code
+            ));
+        }
+    }
+
+    public static class PorscheOAuthService
+    {
+        public static Task<(string AccessToken, string RefreshToken)> ExchangeCodeForTokens(string code)
+        {
+            return Task.FromResult((
+                AccessToken: "PORSCHE_TOKEN_" + code,
+                RefreshToken: "PORSCHE_REFRESH_" + code
+            ));
+        }
+    }
+
 }
