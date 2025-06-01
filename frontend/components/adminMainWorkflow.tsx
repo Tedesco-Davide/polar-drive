@@ -461,9 +461,9 @@ export default function AdminMainWorkflow({
                   <Link size={16} />
                 </button>
                 <button
-                  disabled={entry.clientOAuthAuthorized}
+                  disabled={!entry.clientOAuthAuthorized}
                   className={`p-2 ${
-                    entry.clientOAuthAuthorized
+                    !entry.clientOAuthAuthorized
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-purple-500 hover:bg-purple-600"
                   } text-softWhite rounded`}
@@ -472,9 +472,9 @@ export default function AdminMainWorkflow({
                   <UserSearch size={16} />
                 </button>
                 <button
-                  disabled={entry.clientOAuthAuthorized}
+                  disabled={!entry.clientOAuthAuthorized}
                   className={`p-2 ${
-                    entry.clientOAuthAuthorized
+                    !entry.clientOAuthAuthorized
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-yellow-500 hover:bg-yellow-600"
                   } text-softWhite rounded`}
@@ -483,9 +483,9 @@ export default function AdminMainWorkflow({
                   <FileArchive size={16} />
                 </button>
                 <button
-                  disabled={entry.clientOAuthAuthorized}
+                  disabled={!entry.clientOAuthAuthorized}
                   className={`p-2 ${
-                    entry.clientOAuthAuthorized
+                    !entry.clientOAuthAuthorized
                       ? "bg-gray-400 cursor-not-allowed"
                       : "bg-orange-500 hover:bg-orange-600"
                   } text-softWhite rounded`}

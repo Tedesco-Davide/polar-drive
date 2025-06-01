@@ -11,6 +11,7 @@ export interface ClientVehicle {
   color: string;
   isActive: boolean;
   isFetching: boolean;
+  clientOAuthAuthorized: boolean;
   firstActivationAt: string;
   lastDeactivationAt: string | null;
   lastFetchingDataAt: string | null;

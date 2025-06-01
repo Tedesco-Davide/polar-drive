@@ -76,6 +76,7 @@ export default function AdminDashboard() {
           brand: entry.brand ?? "",
           isVehicleActive: entry.isActive,
           isVehicleFetchingData: entry.isFetching,
+          clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
         }))
       );
 
@@ -95,6 +96,7 @@ export default function AdminDashboard() {
           firstActivationAt: entry.firstActivationAt ?? "",
           lastDeactivationAt: entry.lastDeactivationAt ?? null,
           lastFetchingDataAt: entry.lastFetchingDataAt ?? null,
+          clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
         }))
       );
     } catch (err) {
@@ -156,6 +158,7 @@ export default function AdminDashboard() {
             firstActivationAt: entry.firstActivationAt ?? "",
             lastDeactivationAt: entry.lastDeactivationAt ?? null,
             lastFetchingDataAt: entry.lastFetchingDataAt ?? null,
+            clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
           }))
         );
         setClientConsents(consentsData);
