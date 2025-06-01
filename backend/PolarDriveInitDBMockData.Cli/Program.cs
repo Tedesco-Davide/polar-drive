@@ -94,14 +94,14 @@ try
     // 4. 🚘 Mock Vehicles (FUORI dal loop companies!)
     // ───────────────────────────────
     var allVehicles = new List<ClientVehicle>();
-    var suffix = DateTime.UtcNow.Ticks.ToString()[10..];
+    var suffix = DateTime.UtcNow.Ticks.ToString()[^5..];
 
     var vehicles = new[]
     {
         new ClientVehicle
         {
             ClientCompanyId = companies[0].Id,
-            Vin = $"5YJWAIT4OAUTH6{suffix}",
+            Vin = $"5YJWAIT4OA{suffix}".PadRight(17, '0'),
             FuelType = "Electric",
             Brand = "Tesla",
             Model = "Model 3",
@@ -116,7 +116,7 @@ try
         new ClientVehicle
         {
             ClientCompanyId = companies[1].Id,
-            Vin = $"5YJW545135653{suffix}",
+            Vin = $"5YJW54513{suffix}".PadRight(17, '1'),
             FuelType = "Electric",
             Brand = "Polestar",
             Model = "Polestar 4",
@@ -131,7 +131,7 @@ try
         new ClientVehicle
         {
             ClientCompanyId = companies[2].Id,
-            Vin = $"5YJT823337405{suffix}",
+            Vin = $"5YJT82333{suffix}".PadRight(17, '2'),
             FuelType = "Combustion",
             Brand = "Porsche",
             Model = "718 Cayman",

@@ -8,6 +8,7 @@ type Props = {
   isActive: boolean;
   isFetching: boolean;
   field: "IsActive" | "IsFetching";
+  disabled?: boolean;
   onStatusChange: (newIsActive: boolean, newIsFetching: boolean) => void;
   setLoading: (value: boolean) => void;
   refreshWorkflowData: () => Promise<void>;
@@ -18,6 +19,7 @@ export default function VehicleStatusToggle({
   isActive,
   isFetching,
   field,
+  disabled,
   onStatusChange,
   setLoading,
   refreshWorkflowData,
@@ -42,12 +44,20 @@ export default function VehicleStatusToggle({
         );
         newIsActive = false;
       } else {
-        const confirm = window.confirm(
-          t("admin.vehicleStatusToggle.confirmAction.backToActiveAndFetching")
-        );
-        if (!confirm) return;
-        newIsActive = true;
-        newIsFetching = true;
+        if (isFetching) {
+          const confirm = window.confirm(
+            t("admin.vehicleStatusToggle.confirmAction.backToActiveOnly")
+          );
+          if (!confirm) return;
+          newIsActive = true;
+        } else {
+          const confirm = window.confirm(
+            t("admin.vehicleStatusToggle.confirmAction.backToActiveAndFetching")
+          );
+          if (!confirm) return;
+          newIsActive = true;
+          newIsFetching = true;
+        }
       }
     }
 
@@ -120,8 +130,15 @@ export default function VehicleStatusToggle({
   return (
     <button
       type="button"
-      className="active-fetching-checkbox"
-      onClick={toggleStatus}
+      className="workflow-action"
+      onClick={(e) => {
+        if (disabled) {
+          e.preventDefault();
+          return;
+        }
+        toggleStatus();
+      }}
+      disabled={disabled}
     >
       {label}
     </button>

@@ -16,6 +16,7 @@ import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
 import PaginationControls from "@/components/paginationControls";
 import VehicleStatusToggle from "./vehicleStatusToggle";
+import Chip from "./chip";
 
 export default function AdminMainWorkflow({
   workflowData,
@@ -379,7 +380,7 @@ export default function AdminMainWorkflow({
           <tr>
             <th className="p-4">{t("admin.actions")}</th>
             <th className="p-4">
-              {t("admin.mainWorkflow.headers.oauthStatus")}
+              {t("admin.mainWorkflow.headers.isVehicleAuthorized")}
             </th>
             <th className="p-4">
               {t("admin.mainWorkflow.headers.isVehicleActive")}
@@ -408,27 +409,27 @@ export default function AdminMainWorkflow({
               <td className="p-4 space-x-2 inline-flex">
                 <button
                   className={`p-2 ${
-                    entry.clientOAuthAuthorized
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-cyan-500 hover:bg-cyan-600"
+                    !entry.clientOAuthAuthorized
+                      ? "bg-cyan-500 hover:bg-cyan-600"
+                      : "bg-slate-500 cursor-not-allowed opacity-20 text-slate-200"
                   } text-softWhite rounded`}
                   disabled={entry.clientOAuthAuthorized}
-                  title="Genera URL di autorizzazione veicolo"
+                  title={t("admin.mainWorkflow.alerts.urlGenerationTooltip")}
                   onClick={async () => {
                     try {
                       if (entry.clientOAuthAuthorized) return;
-
                       if (!entry.brand) {
-                        alert("Errore: brand del veicolo mancante.");
+                        alert(
+                          t(
+                            "admin.mainWorkflow.alerts.urlGenerationMissingBrand"
+                          )
+                        );
                         return;
                       }
-
                       const brand = entry.brand.toLowerCase();
-
                       const res = await fetch(
                         `${API_BASE_URL}/api/VehicleOAuth/GenerateUrl?brand=${brand}&vin=${entry.vehicleVIN}`
                       );
-
                       const data = await res.json();
                       if (data?.url) {
                         await navigator.clipboard.writeText(data.url);
@@ -439,12 +440,10 @@ export default function AdminMainWorkflow({
                           `VIN: ${entry.vehicleVIN}`
                         );
                         alert(
-                          "URL copiato negli appunti. Invia al cliente via WhatsApp."
+                          t("admin.mainWorkflow.alerts.urlGenerationConfirm")
                         );
                       } else {
-                        alert(
-                          "Errore nella generazione dell'URL di autorizzazione."
-                        );
+                        alert(t("admin.mainWorkflow.alerts.urlGenerationFail"));
                       }
                     } catch (err) {
                       logFrontendEvent(
@@ -454,56 +453,57 @@ export default function AdminMainWorkflow({
                         err instanceof Error ? err.message : String(err)
                       );
                       console.error("Errore OAuth:", err);
-                      alert("Errore durante il recupero dell'URL OAuth.");
+                      alert(
+                        t("admin.mainWorkflow.alerts.urlGenerationOAuthFail")
+                      );
                     }
                   }}
                 >
                   <Link size={16} />
                 </button>
                 <button
-                  disabled={!entry.clientOAuthAuthorized}
-                  className={`p-2 ${
-                    !entry.clientOAuthAuthorized
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-purple-500 hover:bg-purple-600"
-                  } text-softWhite rounded`}
+                  className="p-2 bg-purple-500 hover:bg-purple-600 text-softWhite rounded"
                   title={t("admin.mainWorkflow.button.pdfUserAndVehicle")}
+                  onClick={() => {
+                    alert("TODO");
+                    // azione che fa i check interni se non ci sono dati
+                  }}
                 >
                   <UserSearch size={16} />
                 </button>
                 <button
-                  disabled={!entry.clientOAuthAuthorized}
-                  className={`p-2 ${
-                    !entry.clientOAuthAuthorized
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-yellow-500 hover:bg-yellow-600"
-                  } text-softWhite rounded`}
+                  className="p-2 bg-yellow-500 hover:bg-yellow-600 text-softWhite rounded"
                   title={t("admin.mainWorkflow.button.zipPdfReports")}
+                  onClick={() => {
+                    alert("TODO");
+                    // azione che fa i check interni se non ci sono dati
+                  }}
                 >
                   <FileArchive size={16} />
                 </button>
                 <button
-                  disabled={!entry.clientOAuthAuthorized}
-                  className={`p-2 ${
-                    !entry.clientOAuthAuthorized
-                      ? "bg-gray-400 cursor-not-allowed"
-                      : "bg-orange-500 hover:bg-orange-600"
-                  } text-softWhite rounded`}
+                  className="p-2 bg-orange-500 hover:bg-orange-600 text-softWhite rounded"
                   title={t("admin.mainWorkflow.button.zipConsents")}
+                  onClick={() => {
+                    alert("TODO");
+                    // azione che fa i check interni se non ci sono dati
+                  }}
                 >
                   <FileArchive size={16} />
                 </button>
               </td>
               <td className="p-4">
-                {entry.clientOAuthAuthorized ? (
-                  <span className="text-green-600 font-semibold">
-                    {t("admin.authorized")}
-                  </span>
-                ) : (
-                  <span className="text-red-600 font-semibold">
-                    {t("admin.pendingAuthorization")}
-                  </span>
-                )}
+                <Chip
+                  className={`w-[155px] ${
+                    entry.clientOAuthAuthorized
+                      ? "bg-green-100 text-green-700 border-green-500"
+                      : "bg-red-100 text-red-700 border-red-500"
+                  }`}
+                >
+                  {entry.clientOAuthAuthorized
+                    ? t("admin.authorized")
+                    : t("admin.pendingAuthorization")}
+                </Chip>
               </td>
               <td className="p-4 align-middle">
                 <VehicleStatusToggle
@@ -525,6 +525,7 @@ export default function AdminMainWorkflow({
                   }}
                   setLoading={setIsStatusChanging}
                   refreshWorkflowData={refreshWorkflowData}
+                  disabled={!entry.clientOAuthAuthorized}
                 />
               </td>
               <td className="p-4 align-middle">
@@ -547,6 +548,7 @@ export default function AdminMainWorkflow({
                   }}
                   setLoading={setIsStatusChanging}
                   refreshWorkflowData={refreshWorkflowData}
+                  disabled={!entry.clientOAuthAuthorized}
                 />
               </td>
               <td className="p-4">{entry.companyName}</td>
