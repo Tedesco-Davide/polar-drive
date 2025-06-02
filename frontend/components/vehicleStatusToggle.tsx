@@ -50,13 +50,6 @@ export default function VehicleStatusToggle({
           );
           if (!confirm) return;
           newIsActive = true;
-        } else {
-          const confirm = window.confirm(
-            t("admin.vehicleStatusToggle.confirmAction.backToActiveAndFetching")
-          );
-          if (!confirm) return;
-          newIsActive = true;
-          newIsFetching = true;
         }
       }
     }
