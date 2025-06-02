@@ -135,7 +135,9 @@ export default function AdminClientVehiclesTable({
                 {vehicle.isFetching ? "✅" : "🛑"}
               </td>
               <td className="p-4">
-                {formatDateToDisplay(vehicle.firstActivationAt)}
+                {vehicle.firstActivationAt
+                  ? formatDateToDisplay(vehicle.firstActivationAt)
+                  : t("admin.basicPlaceholder")}
               </td>
               <td className="p-4">
                 {vehicle.lastDeactivationAt

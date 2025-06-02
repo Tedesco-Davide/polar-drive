@@ -91,17 +91,25 @@ try
     }
 
     // ───────────────────────────────
-    // 4. 🚘 Mock Vehicles (FUORI dal loop companies!)
+    // 4. 🚘 Mock Vehicles
     // ───────────────────────────────
     var allVehicles = new List<ClientVehicle>();
-    var suffix = DateTime.UtcNow.Ticks.ToString()[^5..];
+    string GenerateMockVin(string prefix, char filler)
+    {
+        var random = new Random();
+        var chars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
+        var remainingLength = 17 - prefix.Length;
+        var suffix = new string([.. Enumerable.Range(0, remainingLength).Select(_ => chars[random.Next(chars.Length)])]);
+
+        return (prefix + suffix).Substring(0, 17);
+    }
 
     var vehicles = new[]
     {
         new ClientVehicle
         {
             ClientCompanyId = companies[0].Id,
-            Vin = $"5YJWAIT4OA{suffix}".PadRight(17, '0'),
+            Vin = GenerateMockVin("2CNBJ1365W", '0'),
             FuelType = "Electric",
             Brand = "Tesla",
             Model = "Model 3",
@@ -116,7 +124,7 @@ try
         new ClientVehicle
         {
             ClientCompanyId = companies[1].Id,
-            Vin = $"5YJW54513{suffix}".PadRight(17, '1'),
+            Vin = GenerateMockVin("5YJW54513", '1'),
             FuelType = "Electric",
             Brand = "Polestar",
             Model = "Polestar 4",
@@ -131,7 +139,7 @@ try
         new ClientVehicle
         {
             ClientCompanyId = companies[2].Id,
-            Vin = $"5YJT82333{suffix}".PadRight(17, '2'),
+            Vin = GenerateMockVin("5YJT82333", '2'),
             FuelType = "Combustion",
             Brand = "Porsche",
             Model = "718 Cayman",
@@ -199,24 +207,7 @@ try
         var vehicle = vehicles[i];
         var currentCompany = companies[i];
 
-        if (!vehicle.ClientOAuthAuthorized)
-        {
-            await logger.Info("PolarDriveInitDBMockData.Cli", $"Vehicle pending OAuth, skipping token and consent insert", $"VIN={vehicle.Vin}");
-            continue;
-        }
-
-        var token = new ClientToken
-        {
-            VehicleId = vehicle.Id,
-            AccessToken = $"access_token_{vehicle.Id}",
-            RefreshToken = $"refresh_token_{vehicle.Id}",
-            AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
-            RefreshTokenExpiresAt = null,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-        db.ClientTokens.Add(token);
-
+        // ✅ Inserisco SEMPRE il consenso ZIP
         var consent = new ClientConsent
         {
             ClientCompanyId = currentCompany.Id,
@@ -229,13 +220,37 @@ try
         };
         db.ClientConsents.Add(consent);
 
-        await db.SaveChangesAsync();
+        // ✅ Inserisco il token SOLO se autorizzato
+        if (vehicle.ClientOAuthAuthorized)
+        {
+            var token = new ClientToken
+            {
+                VehicleId = vehicle.Id,
+                AccessToken = $"access_token_{vehicle.Id}",
+                RefreshToken = $"refresh_token_{vehicle.Id}",
+                AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
+                RefreshTokenExpiresAt = null,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            db.ClientTokens.Add(token);
 
-        await logger.Info(
-            "PolarDriveInitDBMockData.Cli",
-            "Inserted mock token and consent for vehicle",
-            $"CompanyId={currentCompany.Id}, VehicleId={vehicle.Id}, VIN={vehicle.Vin}, ConsentHash={consent.ConsentHash}"
-        );
+            await logger.Info(
+                "PolarDriveInitDBMockData.Cli",
+                "Inserted mock token and consent for authorized vehicle",
+                $"CompanyId={currentCompany.Id}, VehicleId={vehicle.Id}, VIN={vehicle.Vin}, ConsentHash={consent.ConsentHash}"
+            );
+        }
+        else
+        {
+            await logger.Info(
+                "PolarDriveInitDBMockData.Cli",
+                "Inserted mock consent only - vehicle pending OAuth",
+                $"CompanyId={currentCompany.Id}, VehicleId={vehicle.Id}, VIN={vehicle.Vin}, ConsentHash={consent.ConsentHash}"
+            );
+        }
+
+        await db.SaveChangesAsync();
     }
 
     // ───────────────────────────────

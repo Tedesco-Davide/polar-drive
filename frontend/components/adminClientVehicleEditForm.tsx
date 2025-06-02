@@ -87,7 +87,11 @@ export default function AdminClientVehicleEditForm({
     console.log("formData.id:", formData.id);
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
 
-    if (!vinRegex.test(formData.vin.trim())) {
+    if (
+      !formData.vin ||
+      formData.vin.length !== 17 ||
+      !vinRegex.test(formData.vin.trim())
+    ) {
       alert(t("admin.clientVehicle.validation.invalidVehicleVIN"));
       return;
     }
@@ -170,10 +174,9 @@ export default function AdminClientVehicleEditForm({
             name="vin"
             value={formData.vin}
             className="input bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 cursor-not-allowed"
-            required
             maxLength={17}
-            onChange={handleChange}
             disabled
+            readOnly
           />
         </label>
 
