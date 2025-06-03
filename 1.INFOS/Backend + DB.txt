@@ -329,3 +329,10 @@ LISTA DI TUTTI GLI ENDPOINT TESLA ABILITATI NEI MOCK
 - fleet_telemetry_errors => OK
 - public_key => OK
 - register => IGNORATO (NON SERVE)
+
+### User Endpoints ###
+
+- feature_config => OK
+- me => OK
+- orders => OK
+- region => OK

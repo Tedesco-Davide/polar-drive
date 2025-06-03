@@ -13,7 +13,8 @@ public static class FakeTeslaJsonDataFetch
                 data = new[] {
                     new { type = "charging_history", content = GenerateChargingHistory(ts, random) },
                     new { type = "energy_endpoints", content = GenerateEnergyEndpoints(ts, random) },
-                    new { type = "partner_public_key", content = GeneratePartnerEndpoints() }
+                    new { type = "partner_public_key", content = GeneratePartnerEndpoints() },
+                    new { type = "user_profile", content = GenerateUserEndpoints() }
                 }
             }
         };
@@ -322,6 +323,63 @@ public static class FakeTeslaJsonDataFetch
             }
         },
             public_key = "0437d832a7a695151f5a671780a276aa4cf2d6be3b2786465397612a342fcf418e98022d3cedf4e9a6f4b3b160472dee4ca022383d9b4cc4001a0f3023caec58fa"
+        };
+    }
+
+    private static object GenerateUserEndpoints()
+    {
+        return new
+        {
+            feature_config = new
+            {
+                response = new
+                {
+                    signaling = new
+                    {
+                        enabled = true,
+                        subscribe_connectivity = false,
+                        use_auth_token = false
+                    }
+                }
+            },
+            me = new
+            {
+                response = new
+                {
+                    email = "test-user@tesla.com",
+                    full_name = "Testy McTesterson",
+                    profile_image_url = "https://vehicle-files.tesla.com/profile_images/mock.jpg",
+                    vault_uuid = Guid.NewGuid().ToString()
+                }
+            },
+            orders = new
+            {
+                response = new[]
+                {
+                    new
+                    {
+                        vehicleMapId = 1234567,
+                        referenceNumber = "RN00001234",
+                        vin = "5YJ30000000000001",
+                        orderStatus = "BOOKED",
+                        orderSubstatus = "_Z",
+                        modelCode = "m3",
+                        countryCode = "IT",
+                        locale = "it_IT",
+                        mktOptions = "APBS,DV2W,IBB1,PMNG,PRM30,SC04,MDL3,W41B,MT322,CPF0,RSF1,CW03",
+                        isB2b = false
+                    }
+                },
+                count = 1
+            },
+            region = new
+            {
+                response = new
+                {
+                    region = "eu",
+                    fleet_api_base_url = "https://fleet-api.prd.eu.vn.cloud.tesla.com"
+                }
+            }
         };
     }
     //
