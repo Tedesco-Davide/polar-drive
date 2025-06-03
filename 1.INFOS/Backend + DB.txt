@@ -408,3 +408,33 @@ GPT DICE DI VALUTARE SCRIPT SCRAPING NEL CASO TESLA CAMBI GLI ENDPOINT IN FUTURO
 - window_control => OK
 
 ### Vehicle Endpoints ###
+- drivers => OK
+- drivers remove => OK
+- eligible_subscriptions => OK
+- eligible_upgrades => OK
+- fleet_status => OK
+- fleet_telemetry_config create => OK
+- fleet_telemetry_config delete => OK
+- fleet_telemetry_config get => OK
+- fleet_telemetry_config_jws => OK
+- fleet_telemetry_errors => OK
+- list => OK
+- mobile_enabled => OK
+- nearby_charging_sites => OK
+- options => OK
+- recent_alerts => OK
+- release notes => OK
+- service_data => OK
+- share_invites => OK
+- share_invites create => OK
+- share_invites redeem => OK
+- share_invites revoke => OK
+- signed_command => OK
+- subscriptions => OK
+- subscriptions set => OK
+- vehicle => OK
+- vehicle_data => OK
+- vehicle_subscriptions => OK
+- vehicle_subscriptions set => OK
+- wake_up => OK
+- warranty_details => OK
