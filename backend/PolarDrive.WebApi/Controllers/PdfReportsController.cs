@@ -80,6 +80,16 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
         await _logger.Info("PdfReportsController.DownloadPdf", "PDF report requested for download.", $"ReportId: {id}");
 
+        // Recupero dati grezzi dal DB
+        var vehicleData = await db.VehiclesData
+            .Where(v => v.VehicleId == report.ClientVehicleId && v.Timestamp >= report.ReportPeriodStart && v.Timestamp <= report.ReportPeriodEnd)
+            .OrderBy(v => v.Timestamp)
+            .ToListAsync();
+        var rawJsonList = vehicleData.Select(v => v.RawJson).ToList();
+
+        // Chiamata AI Effettiva ad AI in locale
+        // var aiReportContent = await AiReportGenerator.GenerateSummaryFromRawJson(rawJsonList);
+
         // 🔧 Prepare dynamic content
         var sb = new StringBuilder();
         sb.AppendLine("🧾 POLARDRIVE REPORT");
