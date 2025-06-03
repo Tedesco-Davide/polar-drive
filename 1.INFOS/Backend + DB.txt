@@ -304,4 +304,21 @@ r3fr3sh-t0k3n.mock.eyJpc3MiOiJ0ZXNsYXVzZXIudGVzdCIsImV4cCI6MTcwMDAwMDAwMH0xMjM0N
 
 LISTA DI TUTTI GLI ENDPOINT TESLA
 
-- charging_history (DONE)
+### Charging Endpoints ###
+- charging_history => OK
+- charging_invoice => IGNORATO (FILE PDF SINGOLO? NON SERVE PER ORA)
+- charging_sessions => IGNORATO (SOLO PER BUSINESS FLEET OWNERS)
+
+### Energy Endpoints ###
+- backup => OK
+- backup_history => OK
+- charge_history => OK
+- energy_history => OK
+- grid_import_export => OK
+- live_status => OK
+- off_grid_vehicle_charging_reserve => OK
+- operation => OK
+- products => OK
+- site_info => OK
+- storm_mode => OK
+- time_of_use_settings => IGNORATO (COMPLESSO, EXTRA)
