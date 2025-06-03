@@ -302,7 +302,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3R
 MOCK REFRESH TOKEN: 
 r3fr3sh-t0k3n.mock.eyJpc3MiOiJ0ZXNsYXVzZXIudGVzdCIsImV4cCI6MTcwMDAwMDAwMH0xMjM0NTY3ODkwYWJjZGVmZw===
 
-LISTA DI TUTTI GLI ENDPOINT TESLA
+LISTA DI TUTTI GLI ENDPOINT TESLA ABILITATI NEI MOCK
 
 ### Charging Endpoints ###
 - charging_history => OK
@@ -322,3 +322,10 @@ LISTA DI TUTTI GLI ENDPOINT TESLA
 - site_info => OK
 - storm_mode => OK
 - time_of_use_settings => IGNORATO (COMPLESSO, EXTRA)
+
+### Partner Endpoints ###
+
+- fleet_telemetry_error_vins => OK
+- fleet_telemetry_errors => OK
+- public_key => OK
+- register => IGNORATO (NON SERVE)

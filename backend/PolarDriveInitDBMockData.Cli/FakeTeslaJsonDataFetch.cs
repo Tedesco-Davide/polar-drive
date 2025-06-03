@@ -12,7 +12,8 @@ public static class FakeTeslaJsonDataFetch
             {
                 data = new[] {
                     new { type = "charging_history", content = GenerateChargingHistory(ts, random) },
-                    new { type = "energy_endpoints", content = GenerateEnergyEndpoints(ts, random) }
+                    new { type = "energy_endpoints", content = GenerateEnergyEndpoints(ts, random) },
+                    new { type = "partner_public_key", content = GeneratePartnerEndpoints() }
                 }
             }
         };
@@ -301,4 +302,27 @@ public static class FakeTeslaJsonDataFetch
             }
         };
     }
+
+    private static object GeneratePartnerEndpoints()
+    {
+        return new
+        {
+            fleet_telemetry_error_vins = new[] { "5YJ3000000NEXUS01", "5YJ3000000NEXUS02" },
+            fleet_telemetry_errors = new[]
+            {
+            new {
+                name = "evotesla-client",
+                error = "Unable to parse GPS data",
+                vin = "5YJ3000000NEXUS01"
+            },
+            new {
+                name = "evotesla-client",
+                error = "Battery status timeout",
+                vin = "5YJ3000000NEXUS02"
+            }
+        },
+            public_key = "0437d832a7a695151f5a671780a276aa4cf2d6be3b2786465397612a342fcf418e98022d3cedf4e9a6f4b3b160472dee4ca022383d9b4cc4001a0f3023caec58fa"
+        };
+    }
+    //
 }
