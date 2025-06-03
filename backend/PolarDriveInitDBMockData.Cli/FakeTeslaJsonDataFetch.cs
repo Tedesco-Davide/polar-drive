@@ -8,128 +8,94 @@ public static class FakeTeslaJsonDataFetch
     {
         var json = new
         {
-            timestamp = ts.ToString("o"),
-            location = new
+            response = new
             {
-                latitude = 40.7268 + random.NextDouble() * 0.01,
-                longitude = 14.7933 + random.NextDouble() * 0.01
-            },
-            drive_state = new
-            {
-                shift_state = "D",
-                speed = random.Next(0, 100),
-                heading = random.Next(0, 360),
-                power = random.Next(0, 150),
-                latitude = 40.7268,
-                longitude = 14.7933,
-                gps_as_of = ((DateTimeOffset)ts).ToUnixTimeSeconds()
-            },
-            charge_state = new
-            {
-                charging_state = "Disconnected",
-                battery_level = random.Next(40, 95),
-                charge_limit_soc = 90,
-                charge_energy_added = 0.0,
-                charger_voltage = 0,
-                charger_pilot_current = 0,
-                battery_range = 370 + random.NextDouble() * 10,
-                est_battery_range = 340 + random.NextDouble() * 10,
-                ideal_battery_range = 400 + random.NextDouble() * 10
-            },
-            vehicle_state = new
-            {
-                odometer = 18000 + random.NextDouble() * 2000,
-                locked = true,
-                sentry_mode = false,
-                tpms_pressure_fl = 2.5 + random.NextDouble() * 0.5,
-                tpms_pressure_fr = 2.5 + random.NextDouble() * 0.5,
-                tpms_pressure_rl = 2.5 + random.NextDouble() * 0.5,
-                tpms_pressure_rr = 2.5 + random.NextDouble() * 0.5,
-                car_version = "2024.12.7",
-                software_update = new
+                data = new[]
                 {
-                    status = "available",
-                    version = "2024.14.3"
-                }
-            },
-            climate_state = new
-            {
-                inside_temp = 20 + random.NextDouble() * 5,
-                outside_temp = 25 + random.NextDouble() * 7,
-                is_auto_conditioning_on = random.Next(0, 2) == 1,
-                fan_status = random.Next(0, 6),
-                seat_heater_left = random.Next(0, 3),
-                seat_heater_right = random.Next(0, 3)
-            },
-            gui_settings = new
-            {
-                gui_distance_units = "km/hr",
-                gui_temperature_units = "C",
-                gui_charge_rate_units = "kW",
-                gui_24_hour_time = true
-            },
-            vehicle_config = new
-            {
-                car_type = "model3",
-                car_special_type = "base",
-                car_exterior_color = "Ultra Red",
-                wheel_type = "Aero18",
-                has_ludicrous_mode = false
-            },
-            charging_history = new[]
-            {
-                new
-                {
-                    sessionId = 100000 + random.Next(1000, 9999),
-                    vin = "5YJJ6677544845943",
-                    siteLocationName = "Napoli - Tesla Supercharger",
-                    chargeStartDateTime = ts.AddMinutes(-45).ToString("o"),
-                    chargeStopDateTime = ts.AddMinutes(-15).ToString("o"),
-                    unlatchDateTime = ts.ToString("o"),
-                    countryCode = "IT",
-                    billingType = "IMMEDIATE",
-                    vehicleMakeType = "TSLA",
-                    fees = new[]
-                    {
-                        new {
-                            sessionFeeId = 1,
-                            feeType = "CHARGING",
-                            currencyCode = "EUR",
-                            pricingType = "PAYMENT",
-                            rateBase = 0.48,
-                            rateTier1 = 0,
-                            rateTier2 = 0,
-                            rateTier3 = (decimal?)null,
-                            rateTier4 = (decimal?)null,
-                            usageBase = 35,
-                            usageTier1 = 0,
-                            usageTier2 = 25,
-                            usageTier3 = (decimal?)null,
-                            usageTier4 = (decimal?)null,
-                            totalBase = 16.8,
-                            totalTier1 = 0,
-                            totalTier2 = 0,
-                            totalTier3 = 0,
-                            totalTier4 = 0,
-                            totalDue = 16.8,
-                            netDue = 16.8,
-                            uom = "kwh",
-                            isPaid = true,
-                            status = "PAID"
-                        }
-                    },
-                    invoices = new[]
-                    {
-                        new {
-                            fileName = "INV-2025-12345.pdf",
-                            contentId = "file-abcde-12345",
-                            invoiceType = "IMMEDIATE"
-                        }
-                    }
+                    GenerateChargingHistory(ts, random)
                 }
             }
         };
 
         return JsonSerializer.Serialize(json);
+    }
+
+    private static object GenerateChargingHistory(DateTime ts, Random random)
+    {
+        return new
+        {
+            sessionId = 100000 + random.Next(1000, 9999),
+            vin = "5YJJ6677544845943",
+            siteLocationName = "Napoli - Tesla Supercharger",
+            chargeStartDateTime = ts.AddMinutes(-45).ToString("o"),
+            chargeStopDateTime = ts.AddMinutes(-15).ToString("o"),
+            unlatchDateTime = ts.ToString("o"),
+            countryCode = "IT",
+            billingType = "IMMEDIATE",
+            vehicleMakeType = "TSLA",
+            fees = new object[]
+            {
+                new {
+                    sessionFeeId = 1,
+                    feeType = "CHARGING",
+                    currencyCode = "EUR",
+                    pricingType = "PAYMENT",
+                    rateBase = 0.48,
+                    rateTier1 = 0,
+                    rateTier2 = 0,
+                    rateTier3 = (decimal?)null,
+                    rateTier4 = (decimal?)null,
+                    usageBase = 35,
+                    usageTier1 = 0,
+                    usageTier2 = 25,
+                    usageTier3 = (decimal?)null,
+                    usageTier4 = (decimal?)null,
+                    totalBase = 16.8,
+                    totalTier1 = 0,
+                    totalTier2 = 0,
+                    totalTier3 = 0,
+                    totalTier4 = 0,
+                    totalDue = 16.8,
+                    netDue = 16.8,
+                    uom = "kwh",
+                    isPaid = true,
+                    status = "PAID"
+                },
+                new {
+                    sessionFeeId = 2,
+                    feeType = "PARKING",
+                    currencyCode = "EUR",
+                    pricingType = "NO_CHARGE",
+                    rateBase = 0.0,
+                    rateTier1 = 0,
+                    rateTier2 = 0,
+                    rateTier3 = (decimal?)null,
+                    rateTier4 = (decimal?)null,
+                    usageBase = 0,
+                    usageTier1 = 0,
+                    usageTier2 = 0,
+                    usageTier3 = (decimal?)null,
+                    usageTier4 = (decimal?)null,
+                    totalBase = 0,
+                    totalTier1 = 0,
+                    totalTier2 = 0,
+                    totalTier3 = 0,
+                    totalTier4 = 0,
+                    totalDue = 0,
+                    netDue = 0,
+                    uom = "min",
+                    isPaid = true,
+                    status = "PAID"
+                }
+            },
+            invoices = new[]
+            {
+                new {
+                    fileName = "INV-2025-12345.pdf",
+                    contentId = "file-abcde-12345",
+                    invoiceType = "IMMEDIATE"
+                }
+            }
+        };
     }
 }
