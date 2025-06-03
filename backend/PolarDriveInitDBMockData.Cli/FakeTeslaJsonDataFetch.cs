@@ -14,7 +14,8 @@ public static class FakeTeslaJsonDataFetch
                     new { type = "charging_history", content = GenerateChargingHistory(ts, random) },
                     new { type = "energy_endpoints", content = GenerateEnergyEndpoints(ts, random) },
                     new { type = "partner_public_key", content = GeneratePartnerEndpoints() },
-                    new { type = "user_profile", content = GenerateUserEndpoints() }
+                    new { type = "user_profile", content = GenerateUserEndpoints() },
+                    new { type = "vehicle_commands", content = GenerateMockVehicleCommands(ts) }
                 }
             }
         };
@@ -379,6 +380,409 @@ public static class FakeTeslaJsonDataFetch
                     region = "eu",
                     fleet_api_base_url = "https://fleet-api.prd.eu.vn.cloud.tesla.com"
                 }
+            }
+        };
+    }
+
+    private static object GenerateMockVehicleCommands(DateTime ts)
+    {
+        return new object[]
+        {
+            new {
+                command = "actuate_trunk",
+                timestamp = ts.ToString("o"),
+                parameters = new { which_trunk = "rear" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "add_charge_schedule",
+                timestamp = ts.ToString("o"),
+                parameters = new { start_time = "22:00", end_time = "06:00" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "add_precondition_schedule",
+                timestamp = ts.ToString("o"),
+                parameters = new { days = new[] { "mon", "wed", "fri" }, time = "07:30" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "adjust_volume",
+                timestamp = ts.ToString("o"),
+                parameters = new { level = 5 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "auto_conditioning_start",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "auto_conditioning_stop",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "cancel_software_update",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "charge_max_range",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "charge_port_door_close",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "charge_port_door_open",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "charge_standard",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "charge_start",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "charge_stop",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "clear_pin_to_drive_admin",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "door_lock",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "door_unlock",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "erase_user_data",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "flash_lights",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "guest_mode",
+                timestamp = ts.ToString("o"),
+                parameters = new { enabled = true },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "honk_horn",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "media_next_fav",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "media_next_track",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "media_prev_fav",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "media_prev_track",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "media_toggle_playback",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "media_volume_down",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "navigation_gps_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { latitude = 41.9028, longitude = 12.4964 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "navigation_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { location = "Piazza Venezia, Roma" },
+                response = new { result = true, queued = false }
+            },
+            new {
+                command = "navigation_sc_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { supercharger_id = "SC_IT_001" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "navigation_waypoints_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { waypoints = new[] { "Napoli", "Roma", "Firenze" } },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remote_auto_seat_climate_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { enabled = true },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remote_auto_steering_wheel_heat_climate_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { enabled = true },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remote_boombox",
+                timestamp = ts.ToString("o"),
+                parameters = new { sound_id = 2000 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remote_seat_cooler_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { level = 2 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remote_seat_heater_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { level = 3 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remote_start_drive",
+                timestamp = ts.ToString("o"),
+                parameters = new { password = "mockpassword" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remote_steering_wheel_heat_level_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { level = 2 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remote_steering_wheel_heater_request",
+                timestamp = ts.ToString("o"),
+                parameters = new { on = true },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remove_charge_schedule",
+                timestamp = ts.ToString("o"),
+                parameters = new { schedule_id = 101 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remove_precondition_schedule",
+                timestamp = ts.ToString("o"),
+                parameters = new { schedule_id = 202 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "reset_pin_to_drive_pin",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "reset_valet_pin",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "schedule_software_update",
+                timestamp = ts.ToString("o"),
+                parameters = new { time = ts.AddMinutes(30).ToString("o") },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_bioweapon_mode",
+                timestamp = ts.ToString("o"),
+                parameters = new { on = true },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_cabin_overheat_protection",
+                timestamp = ts.ToString("o"),
+                parameters = new { state = "enabled" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_charge_limit",
+                timestamp = ts.ToString("o"),
+                parameters = new { percent = 80 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_charging_amps",
+                timestamp = ts.ToString("o"),
+                parameters = new { charging_amps = 16 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_climate_keeper_mode",
+                timestamp = ts.ToString("o"),
+                parameters = new { climate_keeper_mode = 2 }, // 0=Off, 1=Keep, 2=Dog, 3=Camp
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_cop_temp",
+                timestamp = ts.ToString("o"),
+                parameters = new { cop_temp = 1 }, // 0=Low, 1=Medium, 2=High
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_pin_to_drive",
+                timestamp = ts.ToString("o"),
+                parameters = new { pin = "1234" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_preconditioning_max",
+                timestamp = ts.ToString("o"),
+                parameters = new { on = true },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_scheduled_charging",
+                timestamp = ts.ToString("o"),
+                parameters = new { time = 120 }, // 2:00 AM
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_scheduled_departure",
+                timestamp = ts.ToString("o"),
+                parameters = new { departure_time = 420, end_off_peak_time = 480 }, // 7:00 - 8:00
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_sentry_mode",
+                timestamp = ts.ToString("o"),
+                parameters = new { on = true },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_temps",
+                timestamp = ts.ToString("o"),
+                parameters = new { driver_temp = 21.0, passenger_temp = 21.5 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_valet_mode",
+                timestamp = ts.ToString("o"),
+                parameters = new { on = true, password = "5678" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "set_vehicle_name",
+                timestamp = ts.ToString("o"),
+                parameters = new { vehicle_name = "PolarDrive-X" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "speed_limit_activate",
+                timestamp = ts.ToString("o"),
+                parameters = new { pin = "4321" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "speed_limit_clear_pin",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "speed_limit_clear_pin_admin",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "speed_limit_deactivate",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "speed_limit_set_limit",
+                timestamp = ts.ToString("o"),
+                parameters = new { limit_mph = 110 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "sun_roof_control",
+                timestamp = ts.ToString("o"),
+                parameters = new { state = "vent" },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "trigger_homelink",
+                timestamp = ts.ToString("o"),
+                parameters = new { lat = 41.8919, lon = 12.5113 },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "upcoming_calendar_entries",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
+                response = new { reason = "", result = true }
+            },
+            new {
+                command = "window_control",
+                timestamp = ts.ToString("o"),
+                parameters = new { command = "close", lat = 41.9028, lon = 12.4964 },
+                response = new { result = true, reason = "" }
             }
         };
     }
