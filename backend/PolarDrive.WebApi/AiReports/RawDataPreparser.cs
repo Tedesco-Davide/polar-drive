@@ -387,7 +387,7 @@ public static class RawDataPreparser
                                 var fleetApiUrl = regionResponse.GetProperty("fleet_api_base_url").GetString();
 
                                 sb.AppendLine("  - CONFIGURAZIONE REGIONALE:");
-                                sb.AppendLine($"    • Regione: {regionCode.ToUpper()}");
+                                sb.AppendLine($"    • Regione: {regionCode?.ToUpper()}");
                                 sb.AppendLine($"    • Fleet API Base URL: {fleetApiUrl}");
                             }
 
@@ -433,7 +433,7 @@ public static class RawDataPreparser
 
                                         sb.AppendLine($"    • Ordine #{referenceNumber} (ID: {vehicleMapId})");
                                         sb.AppendLine($"      VIN: {vin}");
-                                        sb.AppendLine($"      Modello: {modelCode.ToUpper()}, Paese: {countryCode}, Locale: {locale}");
+                                        sb.AppendLine($"      Modello: {modelCode?.ToUpper()}, Paese: {countryCode}, Locale: {locale}");
                                         sb.AppendLine($"      Stato: {orderStatus} ({orderSubstatus})");
                                         sb.AppendLine($"      Tipo: {(isB2b ? "Business (B2B)" : "Privato (B2C)")}");
 
@@ -461,11 +461,11 @@ public static class RawDataPreparser
                             // Raggruppa i comandi per categoria
                             foreach (var command in content.EnumerateArray())
                             {
-                                var commandName = command.GetProperty("command").GetString();
+                                var commandName = command.GetProperty("command").GetString() ?? "[comando non specificato]";
                                 var category = GetCommandCategory(commandName);
 
                                 if (!commandsByCategory.ContainsKey(category))
-                                    commandsByCategory[category] = new List<JsonElement>();
+                                    commandsByCategory[category] = [];
 
                                 commandsByCategory[category].Add(command);
                             }
@@ -477,13 +477,15 @@ public static class RawDataPreparser
 
                                 foreach (var command in commandsByCategory[category])
                                 {
-                                    var commandName = command.GetProperty("command").GetString();
+                                    var commandName = command.GetProperty("command").GetString() ?? "[comando sconosciuto]";
                                     var timestamp = command.GetProperty("timestamp").GetString();
                                     var commandResponse = command.GetProperty("response");
+
                                     var result = commandResponse.GetProperty("result").GetBoolean();
                                     var reason = commandResponse.TryGetProperty("reason", out var r) ? r.GetString() : "";
 
-                                    var time = DateTime.Parse(timestamp).ToString("HH:mm:ss");
+                                    var parsedTimeOk = DateTime.TryParse(timestamp, out var parsedTime);
+                                    var time = parsedTimeOk ? parsedTime.ToString("HH:mm:ss") : "[orario sconosciuto]";
                                     var status = result ? "✓ Successo" : $"✗ Errore: {reason}";
 
                                     sb.AppendLine($"    • {time} - {GetCommandDisplayName(commandName)}: {status}");
@@ -786,12 +788,13 @@ public static class RawDataPreparser
                                 {
                                     foreach (var w in activeWarranties.EnumerateArray())
                                     {
-                                        var displayName = w.GetProperty("warrantyDisplayName").GetString();
+                                        var displayName = w.GetProperty("warrantyDisplayName").GetString() ?? "[Garanzia sconosciuta]";
                                         var expirationDate = w.GetProperty("expirationDate").GetString();
                                         var expirationOdometer = w.GetProperty("expirationOdometer").GetInt32();
-                                        var odometerUnit = w.GetProperty("odometerUnit").GetString();
+                                        var odometerUnit = w.GetProperty("odometerUnit").GetString() ?? "";
 
-                                        var expDate = DateTime.Parse(expirationDate).ToString("yyyy-MM-dd");
+                                        var parsedTimeOk = DateTime.TryParse(expirationDate, out var expDt);
+                                        var expDate = parsedTimeOk ? expDt.ToString("yyyy-MM-dd") : "[data sconosciuta]";
                                         sb.AppendLine($"    • {displayName}: fino al {expDate} o {expirationOdometer:N0} {odometerUnit}");
                                     }
                                 }
@@ -806,12 +809,13 @@ public static class RawDataPreparser
 
                                 foreach (var invite in invitesResponse.EnumerateArray())
                                 {
-                                    var state = invite.GetProperty("state").GetString();
-                                    var shareType = invite.GetProperty("share_type").GetString();
+                                    var state = invite.GetProperty("state").GetString() ?? "[stato sconosciuto]";
+                                    var shareType = invite.GetProperty("share_type").GetString() ?? "[tipo sconosciuto]";
                                     var expiresAt = invite.GetProperty("expires_at").GetString();
-                                    var vin = invite.GetProperty("vin").GetString();
+                                    var vin = invite.GetProperty("vin").GetString() ?? "[VIN mancante]";
 
-                                    var expDate = DateTime.Parse(expiresAt).ToString("yyyy-MM-dd");
+                                    var parsedTimeOk = DateTime.TryParse(expiresAt, out var parsedDate);
+                                    var expDate = parsedTimeOk ? parsedDate.ToString("yyyy-MM-dd") : "[data sconosciuta]";
                                     sb.AppendLine($"    • VIN {vin}: {shareType}, Stato: {state}, Scade: {expDate}");
                                 }
                             }
@@ -830,7 +834,8 @@ public static class RawDataPreparser
                                         var time = alert.GetProperty("time").GetString();
                                         var userText = alert.TryGetProperty("user_text", out var ut) ? ut.GetString() : "";
 
-                                        var alertTime = DateTime.Parse(time).ToString("yyyy-MM-dd HH:mm");
+                                        var parsedTimeOk = DateTime.TryParse(time, out var dt);
+                                        var alertTime = parsedTimeOk ? dt.ToString("yyyy-MM-dd HH:mm") : "[orario sconosciuto]";
                                         sb.AppendLine($"    • {alertTime} - {name}: {userText}");
                                     }
                                 }
