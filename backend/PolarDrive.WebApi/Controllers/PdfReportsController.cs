@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
-using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.PdfGeneration;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -90,7 +90,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         // var aiReportContent = await AiReportGenerator.GenerateSummaryFromRawJson(rawJsonList);
 
         // 📄 Generate PDF
-        var pdfBytes = GeneratePolardriveReportPdf(report, rawJsonList);
+        var pdfBytes = PdfGenerationService.GeneratePolardriveReportPdf(report, rawJsonList);
         return File(pdfBytes, "application/pdf", $"PolarDrive_Report_{id}.pdf");
     }
 }
