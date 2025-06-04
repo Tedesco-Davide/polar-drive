@@ -1,12 +1,16 @@
 using System.Diagnostics;
+using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 
 namespace PolarDrive.WebApi.AiReports;
 
-public static class PdfGenerationService
+public class PdfGenerationService(PolarDriveDbContext dbContext)
 {
-    public static byte[] GeneratePolardriveReportPdf(PdfReport report, string aiReportContentInsights)
+    private readonly PolarDriveLogger _logger = new(dbContext);
+
+    public byte[] GeneratePolardriveReportPdf(PdfReport report, string aiReportContentInsights)
     {
+        var source = "PdfGenerationService.GeneratePolardriveReportPdf";
         var html = RenderHtmlFromTemplate(report, aiReportContentInsights);
 
         var tempDir = Path.GetTempPath();
@@ -14,6 +18,7 @@ public static class PdfGenerationService
         var pdfPath = Path.Combine(tempDir, $"PolarDrive_{report.Id}.pdf");
 
         File.WriteAllText(htmlPath, html);
+        _logger.Debug(source, "HTML template scritto su disco temporaneo.", $"Path: {htmlPath}");
 
         var programFiles = Environment.GetEnvironmentVariable("ProgramFiles") ?? @"C:\Program Files";
         var npxPath = Path.Combine(programFiles, "nodejs", "npx.cmd");
@@ -31,15 +36,25 @@ public static class PdfGenerationService
             }
         };
 
+        _logger.Info(source, "Avvio generazione PDF con Puppeteer.", $"Html: {htmlPath}, Output: {pdfPath}");
+
         process.Start();
         process.WaitForExit();
 
         if (!File.Exists(pdfPath))
+        {
+            var error = process.StandardError.ReadToEnd();
+            _logger.Error(source, "Generazione PDF fallita.", $"Errore Puppeteer: {error}");
             throw new Exception("PDF generation failed. Check Puppeteer output.");
+        }
 
         var pdfBytes = File.ReadAllBytes(pdfPath);
+        _logger.Info(source, "PDF generato con successo.", $"Dimensione: {pdfBytes.Length} bytes, ReportId: {report.Id}");
+
+        // Cleanup
         File.Delete(htmlPath);
         File.Delete(pdfPath);
+        _logger.Debug(source, "File temporanei eliminati.", $"HTML: {htmlPath}, PDF: {pdfPath}");
 
         return pdfBytes;
     }
@@ -53,7 +68,7 @@ public static class PdfGenerationService
         var htmlTemplate = File.ReadAllText(templatePath);
         var cssContent = File.ReadAllText(cssPath);
 
-        var renderedHtml = htmlTemplate
+        return htmlTemplate
             .Replace("{{companyName}}", report.ClientCompany?.Name ?? "")
             .Replace("{{vatNumber}}", report.ClientCompany?.VatNumber ?? "")
             .Replace("{{vehicleModel}}", report.ClientVehicle?.Model ?? "")
@@ -63,7 +78,5 @@ public static class PdfGenerationService
             .Replace("{{notes}}", report.Notes ?? "")
             .Replace("{{styles}}", $"<style>{cssContent}</style>")
             .Replace("{{insights}}", aiReportContentInsights);
-
-        return renderedHtml;
     }
 }

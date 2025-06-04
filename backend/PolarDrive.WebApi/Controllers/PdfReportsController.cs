@@ -98,7 +98,8 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
             var rawJsonList = vehicleData.Select(v => v.RawJson).ToList();
 
-            var aiReportContentInsights = await AiReportGenerator.GenerateSummaryFromRawJson(rawJsonList);
+            var aiReportGenerator = new AiReportGenerator(db);
+            var aiReportContentInsights = await aiReportGenerator.GenerateSummaryFromRawJson(rawJsonList);
 
             await _logger.Debug(source, "AI insights generated.", $"Length: {aiReportContentInsights?.Length ?? 0}");
 
@@ -108,7 +109,8 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 return StatusCode(500, "SERVER ERROR → AI report generation failed.");
             }
 
-            var pdfBytes = PdfGenerationService.GeneratePolardriveReportPdf(report, aiReportContentInsights);
+            var pdfGenerator = new PdfGenerationService(db);
+            var pdfBytes = pdfGenerator.GeneratePolardriveReportPdf(report, aiReportContentInsights);
 
             await _logger.Info(source, "PDF generated successfully.", $"ReportId: {id}, Size: {pdfBytes.Length} bytes");
 

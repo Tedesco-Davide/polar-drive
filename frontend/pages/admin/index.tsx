@@ -101,8 +101,30 @@ export default function AdminDashboard() {
           clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
         }))
       );
+
+      logFrontendEvent(
+        "AdminDashboard",
+        "DEBUG",
+        "Workflow data aggiornati",
+        `Veicoli: ${data.length}, Aziende: ${companies.length}`
+      );
     } catch (err) {
       console.error("ERROR:", err);
+      if (err instanceof Error) {
+        logFrontendEvent(
+          "AdminDashboard",
+          "ERROR",
+          "Errore in refreshWorkflowData",
+          err.message
+        );
+      } else {
+        logFrontendEvent(
+          "AdminDashboard",
+          "ERROR",
+          "Errore in refreshWorkflowData",
+          JSON.stringify(err)
+        );
+      }
     }
   };
 
@@ -166,8 +188,29 @@ export default function AdminDashboard() {
         setClientConsents(consentsData);
         setOutagePeriods(outagesData);
         setPdfReports(reportsData);
+        logFrontendEvent(
+          "AdminDashboard",
+          "INFO",
+          "Dati caricati correttamente da tutte le API",
+          `Clienti: ${clientsData.length}, Veicoli: ${vehiclesData.length}, Consensi: ${consentsData.length}, Outage: ${outagesData.length}, Report: ${reportsData.length}`
+        );
       } catch (err) {
         console.error("API fetch error:", err);
+        if (err instanceof Error) {
+          logFrontendEvent(
+            "AdminDashboard",
+            "ERROR",
+            "Errore nel fetchAll",
+            err.message
+          );
+        } else {
+          logFrontendEvent(
+            "AdminDashboard",
+            "ERROR",
+            "Errore nel fetchAll",
+            JSON.stringify(err)
+          );
+        }
       } finally {
         setLoading(false);
       }
