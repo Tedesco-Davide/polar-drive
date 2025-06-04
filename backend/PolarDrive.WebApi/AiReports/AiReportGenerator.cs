@@ -12,13 +12,11 @@ public static class AiReportGenerator
         var combinedJson = string.Join("\n", rawJsonList);
 
         var prompt = @$"
-Agisci come un data analyst. Analizza i seguenti dati grezzi JSON di utilizzo veicolo, 
-estrai e riassumi insight rilevanti come durata media dei viaggi, pattern di ricarica, 
-utilizzo ricorrente, anomalie, giorni più attivi o stazionari. Rispondi in italiano.
+        Agisci come un data analyst. Analizza i seguenti dati grezzi JSON di utilizzo veicolo, 
+        estrai e riassumi insight rilevanti come durata media dei viaggi, pattern di ricarica, 
+        utilizzo ricorrente, anomalie, giorni più attivi o stazionari. Rispondi in italiano.
 
-Dati:
-{combinedJson}
-";
+        Dati: {combinedJson}";
 
         var requestBody = new
         {

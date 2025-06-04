@@ -15,11 +15,14 @@ public static class PdfGenerationService
 
         File.WriteAllText(htmlPath, html);
 
+        var programFiles = Environment.GetEnvironmentVariable("ProgramFiles") ?? @"C:\Program Files";
+        var npxPath = Path.Combine(programFiles, "nodejs", "npx.cmd");
+
         var process = new Process
         {
             StartInfo = new ProcessStartInfo
             {
-                FileName = "npx",
+                FileName = npxPath,
                 Arguments = $"ts-node AiReports/generateFromFile.ts \"{htmlPath}\" \"{pdfPath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -43,7 +46,7 @@ public static class PdfGenerationService
 
     private static string RenderHtmlFromTemplate(PdfReport report, string aiReportContentInsights)
     {
-        var basePath = Path.Combine(AppContext.BaseDirectory, "PdfGeneration");
+        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "AiReports");
         var templatePath = Path.Combine(basePath, "templates", "report.html");
         var cssPath = Path.Combine(basePath, "styles", "report.css");
 
