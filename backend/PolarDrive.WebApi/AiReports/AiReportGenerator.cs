@@ -9,14 +9,14 @@ public static class AiReportGenerator
 
     public static async Task<string> GenerateSummaryFromRawJson(List<string> rawJsonList)
     {
-        var combinedJson = string.Join("\n", rawJsonList);
+        var parsedPrompt = RawDataPreparser.GenerateInsightPrompt(rawJsonList);
 
         var prompt = @$"
-        Agisci come un data analyst. Analizza i seguenti dati grezzi JSON di utilizzo veicolo, 
-        estrai e riassumi insight rilevanti come durata media dei viaggi, pattern di ricarica, 
-        utilizzo ricorrente, anomalie, giorni più attivi o stazionari. Rispondi in italiano.
+        Agisci come un data analyst. Analizza questi eventi operativi del veicolo, estratti da dati grezzi, 
+        e riassumi in italiano pattern ricorrenti, eventuali anomalie, giorni più attivi, e considerazioni utili per fini fiscali.
 
-        Dati: {combinedJson}";
+        Eventi estratti:
+        {parsedPrompt}";
 
         var requestBody = new
         {

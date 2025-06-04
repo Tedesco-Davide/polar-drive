@@ -1628,5 +1628,4 @@ public static class FakeTeslaJsonDataFetch
             }
         };
     }
-    //
 }

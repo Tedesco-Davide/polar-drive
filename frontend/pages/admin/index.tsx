@@ -41,9 +41,11 @@ export default function AdminDashboard() {
 
   const refreshWorkflowData = async () => {
     try {
-      // 🔁 Veicoli con dati aziendali
-      const res = await fetch("https://localhost:5041/api/ClientVehicles");
-      const data: ClientVehicleWithCompany[] = await res.json();
+      // 🔁 Veicoli
+      const resClientVehicles = await fetch(
+        `${API_BASE_URL}/api/ClientVehicles`
+      );
+      const data: ClientVehicleWithCompany[] = await resClientVehicles.json();
 
       // 🔁 Aziende
       const resCompanies = await fetch(`${API_BASE_URL}/api/clientcompanies`);
