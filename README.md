@@ -46,3 +46,26 @@ _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated
 - `ollama serve` → Avvia **Ollama in modalità server REST**
   > Espone l'endpoint `http://localhost:11434/api/generate` per richieste AI programmatiche.  
   > ✔️ È **stateless** e perfettamente integrabile nel backend (`HttpClient`, `POST`, JSON).
+
+##### 🔍 Come verificare se è attivo
+
+- Apri il browser e visita:  
+  `http://localhost:11434`
+
+- Oppure in terminale Powershell integrato su Visual Studio:
+
+  ```bash
+  Invoke-RestMethod -Uri http://localhost:11434/api/generate -Method Post -Body '{"model":"mistral","prompt":"Sei attivo?","stream":false}' -ContentType "application/json"
+  ```
+
+- Oppure via `curl`:
+
+  ```bash
+  curl http://localhost:11434/api/generate -d "{\"model\": \"mistral\", \"prompt\": \"Sei attivo?\", \"stream\": false}"
+  ```
+
+- Puoi chiudere Ollama manualmente nel terminale Powershell integrato su Visual Studio:
+
+  ```bash
+  Stop-Process -Name ollama -Force
+  ```

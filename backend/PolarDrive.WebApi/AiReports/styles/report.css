@@ -64,7 +64,7 @@
         }
 
         /* Stili specifici per la stampa */
-        @@media print {
+        @media print {
             html, body, table {
                 font-size: 12px !important;
             }

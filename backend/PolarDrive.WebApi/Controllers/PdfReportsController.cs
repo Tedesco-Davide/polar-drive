@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
-using PolarDrive.WebApi.PdfGeneration;
+using PolarDrive.WebApi.AiReports;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -86,11 +86,12 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
         var rawJsonList = vehicleData.Select(v => v.RawJson).ToList();
 
-        // Chiamata AI Effettiva ad AI in locale
-        // var aiReportContent = await AiReportGenerator.GenerateSummaryFromRawJson(rawJsonList);
+        // Chiamata AI Effettiva a servizio Mistral AI
+        var aiReportContentInsights = await AiReportGenerator.GenerateSummaryFromRawJson(rawJsonList);
+        report.Notes = aiReportContentInsights; // puoi salvarlo o includerlo nel PDF
 
         // 📄 Generate PDF
-        var pdfBytes = PdfGenerationService.GeneratePolardriveReportPdf(report, rawJsonList);
+        var pdfBytes = PdfGenerationService.GeneratePolardriveReportPdf(report, aiReportContentInsights);
         return File(pdfBytes, "application/pdf", $"PolarDrive_Report_{id}.pdf");
     }
 }

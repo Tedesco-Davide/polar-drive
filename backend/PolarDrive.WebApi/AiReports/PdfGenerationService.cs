@@ -1,13 +1,13 @@
 using System.Diagnostics;
 using PolarDrive.Data.Entities;
 
-namespace PolarDrive.WebApi.PdfGeneration;
+namespace PolarDrive.WebApi.AiReports;
 
 public static class PdfGenerationService
 {
-    public static byte[] GeneratePolardriveReportPdf(PdfReport report, List<string> rawJsonList)
+    public static byte[] GeneratePolardriveReportPdf(PdfReport report, string aiReportContentInsights)
     {
-        var html = RenderHtmlFromTemplate(report, rawJsonList);
+        var html = RenderHtmlFromTemplate(report, aiReportContentInsights);
 
         var tempDir = Path.GetTempPath();
         var htmlPath = Path.Combine(tempDir, $"PolarDrive_{report.Id}.html");
@@ -19,8 +19,8 @@ public static class PdfGenerationService
         {
             StartInfo = new ProcessStartInfo
             {
-                FileName = "node",
-                Arguments = $"PdfGeneration/generateFromFile.js \"{htmlPath}\" \"{pdfPath}\"",
+                FileName = "npx",
+                Arguments = $"ts-node AiReports/generateFromFile.ts \"{htmlPath}\" \"{pdfPath}\"",
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
@@ -41,7 +41,7 @@ public static class PdfGenerationService
         return pdfBytes;
     }
 
-    private static string RenderHtmlFromTemplate(PdfReport report, List<string> rawJsonList)
+    private static string RenderHtmlFromTemplate(PdfReport report, string aiReportContentInsights)
     {
         var basePath = Path.Combine(AppContext.BaseDirectory, "PdfGeneration");
         var templatePath = Path.Combine(basePath, "templates", "report.html");
@@ -59,7 +59,7 @@ public static class PdfGenerationService
             .Replace("{{periodEnd}}", report.ReportPeriodEnd.ToString("yyyy-MM-dd"))
             .Replace("{{notes}}", report.Notes ?? "")
             .Replace("{{styles}}", $"<style>{cssContent}</style>")
-            .Replace("{{rawData}}", string.Join("\n", rawJsonList.Take(5)));
+            .Replace("{{insights}}", aiReportContentInsights);
 
         return renderedHtml;
     }

@@ -4,7 +4,6 @@
     <meta charset="utf-8" />
     <title>PolarDrive PDF (IL LOGO DOVRA ESSERE BASE 64)</title>
     {{styles}}
-    <!-- ← Il CSS verrà iniettato qui -->
   </head>
   <body>
     <h1>PolarDrive Report</h1>
@@ -13,7 +12,9 @@
     <div><strong>Period:</strong> {{periodStart}} → {{periodEnd}}</div>
     <div><strong>Notes:</strong> {{notes}}</div>
     <hr />
-    <h2>Sample Raw Data:</h2>
-    <pre>{{rawData}}</pre>
+    <div class="ai-insights">
+      <h2>Insight generati da AI:</h2>
+      <p>{{insights}}</p>
+    </div>
   </body>
 </html>
