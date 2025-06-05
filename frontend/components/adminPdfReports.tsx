@@ -22,7 +22,7 @@ export default function AdminPdfReports({
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
-  const [isDownloading, setIsDownloading] = useState(false);
+  const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   useEffect(() => {
     setLocalReports(reports);
@@ -105,12 +105,12 @@ export default function AdminPdfReports({
                 <button
                   className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:opacity-50"
                   title={t("admin.vehicleReports.downloadSinglePdf")}
-                  disabled={isDownloading}
+                  disabled={downloadingId === report.id}
                   onClick={async () => {
-                    setIsDownloading(true);
+                    setDownloadingId(report.id);
                     try {
                       const response = await fetch(
-                        `${API_BASE_URL}/api/pdfreports/${report.id}/download`
+                        `${API_BASE_URL}/api/pdfreports/${report.id}/download?regenerate=true`
                       );
                       if (!response.ok)
                         throw new Error(`Status ${response.status}`);
@@ -134,11 +134,15 @@ export default function AdminPdfReports({
                       );
                       alert(t("admin.notesGenericError"));
                     } finally {
-                      setIsDownloading(false);
+                      setDownloadingId(null);
                     }
                   }}
                 >
-                  <FileText size={16} />
+                  {downloadingId === report.id ? (
+                    <AdminLoader inline />
+                  ) : (
+                    <FileText size={16} />
+                  )}
                 </button>
                 <button
                   className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
@@ -235,7 +239,6 @@ export default function AdminPdfReports({
           t={t}
         />
       )}
-      {isDownloading && <AdminLoader />}
     </div>
   );
 }

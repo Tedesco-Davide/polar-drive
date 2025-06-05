@@ -83,13 +83,40 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             return NotFound("SERVER ERROR → NOT FOUND: PDF report not found!");
         }
 
+        var regenerate = HttpContext.Request.Query["regenerate"] == "true";
+
         var pdfPath = Path.Combine("storage", "reports", report.ReportPeriodStart.Year.ToString(),
             report.ReportPeriodStart.Month.ToString("D2"), $"PolarDrive_Report_{report.Id}.pdf");
 
-        if (!System.IO.File.Exists(pdfPath))
+        if (!System.IO.File.Exists(pdfPath) || regenerate)
         {
-            await _logger.Warning(source, "PDF file non trovato su disco.", $"Path: {pdfPath}");
-            return NotFound("SERVER ERROR → PDF file not found on disk.");
+            var rawJsonList = await db.VehiclesData
+                .Where(d => d.VehicleId == report.ClientVehicleId &&
+                            d.Timestamp >= report.ReportPeriodStart &&
+                            d.Timestamp <= report.ReportPeriodEnd)
+                .OrderBy(d => d.Timestamp)
+                .Select(d => d.RawJson)
+                .ToListAsync();
+
+            if (rawJsonList.Count == 0)
+            {
+                await _logger.Warning(source, "PDF file non trovato e nessun dato disponibile per rigenerarlo.", $"ReportId: {id}");
+                return NotFound("SERVER ERROR → PDF not found and no data to regenerate.");
+            }
+
+            var aiGenerator = new AiReportGenerator(db);
+            var insights = await aiGenerator.GenerateSummaryFromRawJson(rawJsonList);
+
+            if (string.IsNullOrWhiteSpace(insights))
+            {
+                await _logger.Warning(source, "PDF rigenerazione fallita per mancanza di insights.", $"ReportId: {id}");
+                return NotFound("SERVER ERROR → No insights to regenerate PDF.");
+            }
+
+            var generator = new PdfGenerationService(db);
+            var bytes = generator.GeneratePolardriveReportPdf(report, insights);
+            await System.IO.File.WriteAllBytesAsync(pdfPath, bytes);
+            await _logger.Info(source, "PDF rigenerato da zero per download.", $"ReportId: {id}");
         }
 
         var pdfBytes = await System.IO.File.ReadAllBytesAsync(pdfPath);

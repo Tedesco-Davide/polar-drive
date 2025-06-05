@@ -49,6 +49,7 @@ export default function AdminMainWorkflow({
   const [showForm, setShowForm] = useState(false);
   const [isStatusChanging, setIsStatusChanging] = useState(false);
   const { t } = useTranslation("");
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const { query, setQuery, filteredData } = useSearchFilter<WorkflowRow>(
     internalWorkflowData,
@@ -366,13 +367,20 @@ export default function AdminMainWorkflow({
         </button>
 
         <button
-          className="bg-indigo-600 hover:bg-indigo-700 text-softWhite px-6 py-2 rounded"
+          className={`flex items-center justify-center gap-2 px-6 py-2 rounded text-softWhite ${
+            isGenerating
+              ? "bg-indigo-400 cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700"
+          }`}
           title="Genera PDF report per tutti i clienti (mese scorso)"
+          disabled={isGenerating}
           onClick={async () => {
             const confirm = window.confirm(
               t("admin.mainWorkflow.button.generateMonthlyReportsAlert")
             );
             if (!confirm) return;
+
+            setIsGenerating(true);
 
             try {
               const res = await fetch(
@@ -400,10 +408,17 @@ export default function AdminMainWorkflow({
                 err instanceof Error ? err.message : String(err)
               );
               alert(t("admin.mainWorkflow.button.errorGenerateMonthlyReports"));
+            } finally {
+              setIsGenerating(false);
             }
           }}
         >
-          📄 {t("admin.mainWorkflow.button.generateMonthlyReports")}
+          {isGenerating ? (
+            <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
+          ) : (
+            "📄"
+          )}
+          {t("admin.mainWorkflow.button.generateMonthlyReports")}
         </button>
       </div>
 

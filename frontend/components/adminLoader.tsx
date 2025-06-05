@@ -2,7 +2,7 @@ import { useTranslation } from "next-i18next";
 import { logFrontendEvent } from "@/utils/logger";
 import { useEffect } from "react";
 
-export default function AdminLoader() {
+export default function AdminLoader({ inline = false }: { inline?: boolean }) {
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -22,6 +22,12 @@ export default function AdminLoader() {
       );
     }
   }, []);
+
+  if (inline) {
+    return (
+      <div className="w-5 h-5 border-2 border-t-polarNight border-gray-300 dark:border-gray-700 dark:border-t-softWhite rounded-full animate-spin" />
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-background/90 backdrop-blur">
