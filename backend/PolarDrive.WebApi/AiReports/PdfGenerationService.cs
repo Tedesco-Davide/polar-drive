@@ -15,7 +15,8 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
 
         var tempDir = Path.GetTempPath();
         var htmlPath = Path.Combine(tempDir, $"PolarDrive_{report.Id}.html");
-        var pdfPath = Path.Combine(tempDir, $"PolarDrive_{report.Id}.pdf");
+        var pdfPath = Path.Combine("storage", "reports", report.ReportPeriodStart.Year.ToString(),
+            report.ReportPeriodStart.Month.ToString("D2"), $"PolarDrive_Report_{report.Id}.pdf");
 
         File.WriteAllText(htmlPath, html);
         _logger.Debug(source, "HTML template scritto su disco temporaneo.", $"Path: {htmlPath}");
@@ -53,7 +54,6 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
 
         // Cleanup
         File.Delete(htmlPath);
-        File.Delete(pdfPath);
         _logger.Debug(source, "File temporanei eliminati.", $"HTML: {htmlPath}, PDF: {pdfPath}");
 
         return pdfBytes;

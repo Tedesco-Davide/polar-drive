@@ -79,47 +79,22 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
         if (report == null)
         {
-            await _logger.Warning(source, "PDF report not found.", $"ReportId: {id}");
+            await _logger.Warning(source, "PDF report not found in DB.", $"ReportId: {id}");
             return NotFound("SERVER ERROR → NOT FOUND: PDF report not found!");
         }
 
-        await _logger.Info(source, "PDF report requested for download.", $"ReportId: {id}");
+        var pdfPath = Path.Combine("storage", "reports", report.ReportPeriodStart.Year.ToString(),
+            report.ReportPeriodStart.Month.ToString("D2"), $"PolarDrive_Report_{report.Id}.pdf");
 
-        try
+        if (!System.IO.File.Exists(pdfPath))
         {
-            var vehicleData = await db.VehiclesData
-                .Where(v => v.VehicleId == report.ClientVehicleId &&
-                            v.Timestamp >= report.ReportPeriodStart &&
-                            v.Timestamp <= report.ReportPeriodEnd)
-                .OrderBy(v => v.Timestamp)
-                .ToListAsync();
-
-            await _logger.Debug(source, "Fetched raw vehicle data.", $"Count: {vehicleData.Count}, VehicleId: {report.ClientVehicleId}");
-
-            var rawJsonList = vehicleData.Select(v => v.RawJson).ToList();
-
-            var aiReportGenerator = new AiReportGenerator(db);
-            var aiReportContentInsights = await aiReportGenerator.GenerateSummaryFromRawJson(rawJsonList);
-
-            await _logger.Debug(source, "AI insights generated.", $"Length: {aiReportContentInsights?.Length ?? 0}");
-
-            if (string.IsNullOrWhiteSpace(aiReportContentInsights))
-            {
-                await _logger.Error(source, "AI insights generation returned null or empty string.");
-                return StatusCode(500, "SERVER ERROR → AI report generation failed.");
-            }
-
-            var pdfGenerator = new PdfGenerationService(db);
-            var pdfBytes = pdfGenerator.GeneratePolardriveReportPdf(report, aiReportContentInsights);
-
-            await _logger.Info(source, "PDF generated successfully.", $"ReportId: {id}, Size: {pdfBytes.Length} bytes");
-
-            return File(pdfBytes, "application/pdf", $"PolarDrive_Report_{id}.pdf");
+            await _logger.Warning(source, "PDF file non trovato su disco.", $"Path: {pdfPath}");
+            return NotFound("SERVER ERROR → PDF file not found on disk.");
         }
-        catch (Exception ex)
-        {
-            await _logger.Error(source, "Failed to generate PDF report.", ex.ToString());
-            return StatusCode(500, "SERVER ERROR → PDF generation failed.");
-        }
+
+        var pdfBytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
+
+        await _logger.Info(source, "PDF file inviato con successo.", $"ReportId: {id}, Size: {pdfBytes.Length}");
+        return File(pdfBytes, "application/pdf", $"PolarDrive_Report_{id}.pdf");
     }
 }

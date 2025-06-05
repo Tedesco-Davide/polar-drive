@@ -364,6 +364,47 @@ export default function AdminMainWorkflow({
             ? t("admin.mainWorkflow.button.undoAddNewVehicle")
             : t("admin.mainWorkflow.button.addNewVehicle")}
         </button>
+
+        <button
+          className="bg-indigo-600 hover:bg-indigo-700 text-softWhite px-6 py-2 rounded"
+          title="Genera PDF report per tutti i clienti (mese scorso)"
+          onClick={async () => {
+            const confirm = window.confirm(
+              t("admin.mainWorkflow.button.generateMonthlyReportsAlert")
+            );
+            if (!confirm) return;
+
+            try {
+              const res = await fetch(
+                `${API_BASE_URL}/api/admin/jobs/monthly-report`,
+                {
+                  method: "POST",
+                }
+              );
+              if (!res.ok) throw new Error(await res.text());
+
+              alert(
+                t("admin.mainWorkflow.button.successGenerateMonthlyReports")
+              );
+              logFrontendEvent(
+                "AdminMainWorkflow",
+                "INFO",
+                "Manual report generation triggered via UI"
+              );
+            } catch (err) {
+              console.error("Errore generazione report mensile:", err);
+              logFrontendEvent(
+                "AdminMainWorkflow",
+                "ERROR",
+                "Failed to trigger monthly report job via UI",
+                err instanceof Error ? err.message : String(err)
+              );
+              alert(t("admin.mainWorkflow.button.errorGenerateMonthlyReports"));
+            }
+          }}
+        >
+          📄 {t("admin.mainWorkflow.button.generateMonthlyReports")}
+        </button>
       </div>
 
       {showForm && (
