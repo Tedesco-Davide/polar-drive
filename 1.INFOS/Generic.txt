@@ -28,9 +28,25 @@ La missione di DataPolar è migliorare concretamente la vita quotidiana delle pe
 DataPolar è pronta ad affrontare qualunque sfida commerciale in cui la gestione intelligente e la valorizzazione dei dati possano generare vantaggi concreti e misurabili per i nostri partner.
 
 Partnerships
+- Operiamo esclusivamente attraverso partnership commerciali B2B, collaborando con aziende e realtà industriali di ogni settore. Queste collaborazioni sono essenziali poiché ci permettono di inserirci concretamente nel tessuto economico e sociale, producendo soluzioni personalizzate basate sui dati e calibrate sulle reali esigenze operative dei nostri clienti.
+- Ogni azienda, indipendentemente dal settore in cui opera, può trarre enormi benefici dalla collaborazione con DataPolar. Attraverso i nostri report avanzati e insights mirati, aiutiamo i nostri partner a diventare significativamente più produttivi, efficienti e competitivi, apportando valore tangibile e misurabile ai loro business.
 
-Operiamo esclusivamente attraverso partnership commerciali B2B, collaborando con aziende e realtà industriali di ogni settore. Queste collaborazioni sono essenziali poiché ci permettono di inserirci concretamente nel tessuto economico e sociale, producendo soluzioni personalizzate basate sui dati e calibrate sulle reali esigenze operative dei nostri clienti.
-Ogni azienda, indipendentemente dal settore in cui opera, può trarre enormi benefici dalla collaborazione con DataPolar. Attraverso i nostri report avanzati e insights mirati, aiutiamo i nostri partner a diventare significativamente più produttivi, efficienti e competitivi, apportando valore tangibile e misurabile ai loro business.
+Soluzioni per Studi Professionali e Consulenti Aziendali
+(Ideale per studi legali, avvocati, commercialisti e revisori)
+- Offriamo documentazione automatizzata e AI-powered per l’utilizzo in contesti di audit, controllo fiscale, ispezioni e contenzioso.
+- Offriamo documentazione automatizzata e AI-powered per l’utilizzo in contesti di audit, controllo fiscale, ispezioni e contenzioso.
+- I nostri report sono generati da Intelligenza Artificiale locale e conservati su server privati, nel rispetto integrale del GDPR.
+- Tutti i processi sono auditabili, scalabili e personalizzabili in base alle esigenze dello studio.
+- Contattaci per attivare una partnership verticale su misura per la tua realtà professionale.
+
+Sovranità dei Dati e AI Privata
+
+- Tutta l’Intelligenza Artificiale viene eseguita in locale su nostri server privati in Europa
+- Nessun dato viene trasmesso a OpenAI, Google, Amazon o altri provider cloud esterni
+- Tutti i report sono generati senza uscita di dati sensibili dal perimetro aziendale
+- L’AI viene eseguita tramite modelli Mistral open-source ospitati su infrastruttura VPS dedicata
+- L’intero processo è auditabile e tracciato end-to-end
+- Le nostre soluzioni rispettano i più alti standard di privacy-by-design e local AI execution
 
 Sicurezza dei Dati e Conformità Normativa
 
