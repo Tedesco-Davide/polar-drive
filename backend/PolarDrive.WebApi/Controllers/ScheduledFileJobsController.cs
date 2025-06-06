@@ -48,17 +48,4 @@ public class ScheduledFileJobsController(PolarDriveDbContext db) : ControllerBas
 
         return NoContent();
     }
-
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var job = await db.ScheduledFileJobs.FindAsync(id);
-        if (job == null)
-            return NotFound();
-
-        db.ScheduledFileJobs.Remove(job);
-        await db.SaveChangesAsync();
-
-        return NoContent();
-    }
 }

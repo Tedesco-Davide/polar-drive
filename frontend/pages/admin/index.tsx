@@ -7,6 +7,7 @@ import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
+import { ScheduledFileJob } from "@/types/adminSchedulerTypes";
 import { API_BASE_URL } from "@/utils/api";
 import { WorkflowRow } from "@/types/adminWorkflowTypes";
 import { PdfReport } from "@/types/reportInterfaces";
@@ -18,6 +19,7 @@ import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
 import AdminMainWorkflow from "@/components/adminMainWorkflow";
 import AdminClientConsents from "@/components/adminClientConsentsTable";
 import AdminOutagePeriodsTable from "@/components/adminOutagePeriodsTable";
+import AdminSchedulerTable from "@/components/adminSchedulerTable";
 import AdminPdfReports from "@/components/adminPdfReports";
 import Head from "next/head";
 import Header from "@/components/header";
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
   const [vehicles, setVehicles] = useState<ClientVehicle[]>([]);
   const [clientConsents, setClientConsents] = useState<ClientConsent[]>([]);
   const [outagePeriods, setOutagePeriods] = useState<OutagePeriod[]>([]);
+  const [scheduledJobs, setScheduledJobs] = useState<ScheduledFileJob[]>([]);
   const [pdfReports, setPdfReports] = useState<PdfReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -150,20 +153,28 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
-          await Promise.all([
-            fetch(`${API_BASE_URL}/api/clientcompanies`),
-            fetch(`${API_BASE_URL}/api/clientvehicles`),
-            fetch(`${API_BASE_URL}/api/clientconsents`),
-            fetch(`${API_BASE_URL}/api/outageperiods`),
-            fetch(`${API_BASE_URL}/api/pdfreports`),
-          ]);
+        const [
+          clientsRes,
+          vehiclesRes,
+          consentsRes,
+          outagesRes,
+          schedulerRes,
+          reportsRes,
+        ] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/clientcompanies`),
+          fetch(`${API_BASE_URL}/api/clientvehicles`),
+          fetch(`${API_BASE_URL}/api/clientconsents`),
+          fetch(`${API_BASE_URL}/api/outageperiods`),
+          fetch(`${API_BASE_URL}/api/scheduler`),
+          fetch(`${API_BASE_URL}/api/pdfreports`),
+        ]);
 
         const clientsData: ClientCompany[] = await clientsRes.json();
         const vehiclesData: ClientVehicleWithCompany[] =
           await vehiclesRes.json();
         const consentsData: ClientConsent[] = await consentsRes.json();
         const outagesData: OutagePeriod[] = await outagesRes.json();
+        const schedulerData: ScheduledFileJob[] = await schedulerRes.json();
         const reportsData: PdfReport[] = await reportsRes.json();
 
         setClients(clientsData);
@@ -187,12 +198,14 @@ export default function AdminDashboard() {
         );
         setClientConsents(consentsData);
         setOutagePeriods(outagesData);
+        setScheduledJobs(schedulerData);
         setPdfReports(reportsData);
+
         logFrontendEvent(
           "AdminDashboard",
           "INFO",
           "Dati caricati correttamente da tutte le API",
-          `Clienti: ${clientsData.length}, Veicoli: ${vehiclesData.length}, Consensi: ${consentsData.length}, Outage: ${outagesData.length}, Report: ${reportsData.length}`
+          `Clienti: ${clientsData.length}, Veicoli: ${vehiclesData.length}, Consensi: ${consentsData.length}, Outage: ${outagesData.length}, Jobs: ${schedulerData.length}, Report: ${reportsData.length}`
         );
       } catch (err) {
         console.error("API fetch error:", err);
@@ -323,6 +336,18 @@ export default function AdminDashboard() {
                           const updatedOutagePeriods = await res.json();
                           setOutagePeriods(updatedOutagePeriods);
                           return updatedOutagePeriods;
+                        }}
+                      />
+                      <AdminSchedulerTable
+                        jobs={scheduledJobs}
+                        t={t}
+                        refreshJobs={async () => {
+                          const res = await fetch(
+                            `${API_BASE_URL}/api/scheduler`
+                          );
+                          const updatedScheduledJobs = await res.json();
+                          setScheduledJobs(updatedScheduledJobs);
+                          return updatedScheduledJobs;
                         }}
                       />
                       <AdminPdfReports t={t} reports={pdfReports} />
