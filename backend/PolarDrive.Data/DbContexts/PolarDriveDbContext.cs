@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.Entities;
 
@@ -16,6 +17,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
+    public DbSet<ScheduledFileJob> ScheduledFileJobs => Set<ScheduledFileJob>();
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -162,12 +164,45 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasDefaultValue(PolarDriveLogLevel.INFO);
             });
 
+            modelBuilder.Entity<ScheduledFileJob>(entity =>
+            {
+                entity.Property(e => e.FileTypeList)
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+
+                entity.Property(e => e.CompanyList)
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+
+                entity.Property(e => e.BrandList)
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+
+                entity.Property(e => e.ConsentTypeList)
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+
+                entity.Property(e => e.OutageTypeList)
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+
+                entity.Property(e => e.OutageAutoDetectedOptionList)
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+            });
+
             logger.Info("PolarDriveDbContext.OnModelCreating", "Model building completed successfully").Wait();
         }
         catch (Exception ex)
         {
             logger.Error("PolarDriveDbContext.OnModelCreating", "Error during model creation", ex.ToString()).Wait();
-            throw; // rethrow to crash the app in dev scenario
+            throw;
         }
     }
 }

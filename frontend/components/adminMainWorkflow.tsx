@@ -49,7 +49,6 @@ export default function AdminMainWorkflow({
   const [showForm, setShowForm] = useState(false);
   const [isStatusChanging, setIsStatusChanging] = useState(false);
   const { t } = useTranslation("");
-  const [isGenerating, setIsGenerating] = useState(false);
 
   const { query, setQuery, filteredData } = useSearchFilter<WorkflowRow>(
     internalWorkflowData,
@@ -364,61 +363,6 @@ export default function AdminMainWorkflow({
           {showForm
             ? t("admin.mainWorkflow.button.undoAddNewVehicle")
             : t("admin.mainWorkflow.button.addNewVehicle")}
-        </button>
-
-        <button
-          className={`flex items-center justify-center gap-2 px-6 py-2 rounded text-softWhite ${
-            isGenerating
-              ? "bg-indigo-400 cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700"
-          }`}
-          title="Genera PDF report per tutti i clienti (mese scorso)"
-          disabled={isGenerating}
-          onClick={async () => {
-            const confirm = window.confirm(
-              t("admin.mainWorkflow.button.generateMonthlyReportsAlert")
-            );
-            if (!confirm) return;
-
-            setIsGenerating(true);
-
-            try {
-              const res = await fetch(
-                `${API_BASE_URL}/api/admin/jobs/monthly-report`,
-                {
-                  method: "POST",
-                }
-              );
-              if (!res.ok) throw new Error(await res.text());
-
-              alert(
-                t("admin.mainWorkflow.button.successGenerateMonthlyReports")
-              );
-              logFrontendEvent(
-                "AdminMainWorkflow",
-                "INFO",
-                "Manual report generation triggered via UI"
-              );
-            } catch (err) {
-              console.error("Errore generazione report mensile:", err);
-              logFrontendEvent(
-                "AdminMainWorkflow",
-                "ERROR",
-                "Failed to trigger monthly report job via UI",
-                err instanceof Error ? err.message : String(err)
-              );
-              alert(t("admin.mainWorkflow.button.errorGenerateMonthlyReports"));
-            } finally {
-              setIsGenerating(false);
-            }
-          }}
-        >
-          {isGenerating ? (
-            <div className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin" />
-          ) : (
-            "📄"
-          )}
-          {t("admin.mainWorkflow.button.generateMonthlyReports")}
         </button>
       </div>
 

@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PolarDrive.Data.DbContexts;
-using PolarDrive.Data.Entities;
+﻿using PolarDrive.Data.DbContexts;
 
 Console.WriteLine("🚀 Starting PolarDrive DB initialization...");
 
