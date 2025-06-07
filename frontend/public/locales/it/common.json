@@ -209,6 +209,18 @@
   "admin.vehicleReports.notesModalTitle": "Gestione nota per: riga in Tabella Reports PDF",
   "admin.vehicleReports.downloadSinglePdf": "Singolo PDF",
 
+  "admin.scheduler.tableHeader": "Schedulatore Files",
+  "admin.scheduler.requestedAt": "Data richiesta",
+  "admin.scheduler.status": "Stato",
+  "admin.scheduler.period": "Periodo",
+  "admin.scheduler.duration": "Durata",
+  "admin.scheduler.generatedCount": "Numero files generati",
+  "admin.scheduler.fileTypes": "Tipologia files",
+  "admin.scheduler.companies": "Cliente",
+  "admin.scheduler.brand": "Brand",
+  "admin.scheduler.message": "Messaggio",
+  "admin.scheduler.startedAtcompletedAt": "Inizio / Fine",
+
   "admin.validation.invalidVat": "Inserisci una Partita IVA valida composta da 11 cifre",
   "admin.validation.companyName": "Inserisci un Nome Azienda valido",
   "admin.validation.referentName": "Inserisci un Nome Referente valido",

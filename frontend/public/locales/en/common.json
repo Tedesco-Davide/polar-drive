@@ -209,6 +209,18 @@
   "admin.vehicleReports.notesModalTitle": "Manage note for: row in PDF Reports Table",
   "admin.vehicleReports.downloadSinglePdf": "Sinlge PDF",
 
+  "admin.scheduler.tableHeader": "File Scheduler",
+  "admin.scheduler.requestedAt": "Requested At",
+  "admin.scheduler.status": "Status",
+  "admin.scheduler.period": "Period",
+  "admin.scheduler.duration": "Duration",
+  "admin.scheduler.generatedCount": "Generated files count",
+  "admin.scheduler.fileTypes": "File types",
+  "admin.scheduler.companies": "Company",
+  "admin.scheduler.brand": "Brand",
+  "admin.scheduler.message": "Message",
+  "admin.scheduler.startedAtcompletedAt": "Start / End",
+
   "admin.validation.invalidVat": "Please enter a valid Company VAT consisting of 11 digits",
   "admin.validation.companyName": "Please enter a valid Company Name",
   "admin.validation.referentName": "Please enter a valid Referent Name",

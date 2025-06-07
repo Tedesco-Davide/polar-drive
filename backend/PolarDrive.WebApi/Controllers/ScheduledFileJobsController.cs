@@ -7,7 +7,7 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ScheduledFileJobsController(PolarDriveDbContext db) : ControllerBase
+public class Scheduler(PolarDriveDbContext db) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IEnumerable<ScheduledFileJob>>> GetAll()

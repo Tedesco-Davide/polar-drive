@@ -158,15 +158,15 @@ export default function AdminDashboard() {
           vehiclesRes,
           consentsRes,
           outagesRes,
-          schedulerRes,
           reportsRes,
+          schedulerRes,
         ] = await Promise.all([
           fetch(`${API_BASE_URL}/api/clientcompanies`),
           fetch(`${API_BASE_URL}/api/clientvehicles`),
           fetch(`${API_BASE_URL}/api/clientconsents`),
           fetch(`${API_BASE_URL}/api/outageperiods`),
-          fetch(`${API_BASE_URL}/api/scheduler`),
           fetch(`${API_BASE_URL}/api/pdfreports`),
+          fetch(`${API_BASE_URL}/api/scheduler`),
         ]);
 
         const clientsData: ClientCompany[] = await clientsRes.json();
@@ -174,8 +174,8 @@ export default function AdminDashboard() {
           await vehiclesRes.json();
         const consentsData: ClientConsent[] = await consentsRes.json();
         const outagesData: OutagePeriod[] = await outagesRes.json();
-        const schedulerData: ScheduledFileJob[] = await schedulerRes.json();
         const reportsData: PdfReport[] = await reportsRes.json();
+        const schedulerData: ScheduledFileJob[] = await schedulerRes.json();
 
         setClients(clientsData);
         setVehicles(
@@ -198,14 +198,14 @@ export default function AdminDashboard() {
         );
         setClientConsents(consentsData);
         setOutagePeriods(outagesData);
-        setScheduledJobs(schedulerData);
         setPdfReports(reportsData);
+        setScheduledJobs(schedulerData);
 
         logFrontendEvent(
           "AdminDashboard",
           "INFO",
           "Dati caricati correttamente da tutte le API",
-          `Clienti: ${clientsData.length}, Veicoli: ${vehiclesData.length}, Consensi: ${consentsData.length}, Outage: ${outagesData.length}, Jobs: ${schedulerData.length}, Report: ${reportsData.length}`
+          `Clienti: ${clientsData.length}, Veicoli: ${vehiclesData.length}, Consensi: ${consentsData.length}, Outage: ${outagesData.length}, Report: ${reportsData.length}, Jobs: ${schedulerData.length}`
         );
       } catch (err) {
         console.error("API fetch error:", err);
@@ -338,6 +338,7 @@ export default function AdminDashboard() {
                           return updatedOutagePeriods;
                         }}
                       />
+                      <AdminPdfReports t={t} reports={pdfReports} />
                       <AdminSchedulerTable
                         jobs={scheduledJobs}
                         t={t}
@@ -350,7 +351,6 @@ export default function AdminDashboard() {
                           return updatedScheduledJobs;
                         }}
                       />
-                      <AdminPdfReports t={t} reports={pdfReports} />
                     </div>
                   </div>
                 )}

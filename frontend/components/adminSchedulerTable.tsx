@@ -5,12 +5,12 @@ import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useEffect, useState } from "react";
 import { FileArchive, NotebookPen, Download } from "lucide-react";
+import { API_BASE_URL } from "@/utils/api";
+import { logFrontendEvent } from "@/utils/logger";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import Chip from "@/components/chip";
 import NotesModal from "./notesModal";
-import { API_BASE_URL } from "@/utils/api";
-import { logFrontendEvent } from "@/utils/logger";
 
 // Status options for jobs
 const JOB_STATUS = {
@@ -66,6 +66,28 @@ export default function AdminSchedulerTable({ t, jobs, refreshJobs }: Props) {
   const [localJobs, setLocalJobs] = useState<ScheduledFileJob[]>([]);
   const [selectedJobForNotes, setSelectedJobForNotes] =
     useState<ScheduledFileJob | null>(null);
+
+  const handleRefreshJobs = async () => {
+    if (refreshJobs) {
+      try {
+        const updatedJobs = await refreshJobs();
+        setLocalJobs(updatedJobs);
+        logFrontendEvent(
+          "AdminSchedulerTable",
+          "INFO",
+          "Jobs refreshed successfully",
+          `Updated ${updatedJobs.length} job records`
+        );
+      } catch (error) {
+        logFrontendEvent(
+          "AdminSchedulerTable",
+          "ERROR",
+          "Failed to refresh jobs",
+          `Error: ${error}`
+        );
+      }
+    }
+  };
 
   useEffect(() => {
     setLocalJobs(jobs);
@@ -159,20 +181,34 @@ export default function AdminSchedulerTable({ t, jobs, refreshJobs }: Props) {
       <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
-            <th className="p-4">{t("admin.actions")}</th>
-            <th className="p-4">ID</th>
+            <th className="p-4">
+              {refreshJobs && (
+                <button
+                  onClick={handleRefreshJobs}
+                  className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                  title="Refresh jobs"
+                >
+                  <span className="uppercase text-xs tracking-widest">
+                    REFRESH
+                  </span>
+                </button>
+              )}{" "}
+              {t("admin.actions")}
+            </th>
+            <th className="p-4">{t("admin.scheduler.requestedAt")}</th>
             <th className="p-4">{t("admin.scheduler.status")}</th>
             <th className="p-4">{t("admin.scheduler.period")}</th>
             <th className="p-4">{t("admin.scheduler.duration")}</th>
             <th className="p-4">{t("admin.scheduler.generatedCount")}</th>
             <th className="p-4">{t("admin.scheduler.fileTypes")}</th>
             <th className="p-4">{t("admin.scheduler.companies")}</th>
-            <th className="p-4">{t("admin.scheduler.brands")}</th>
+            <th className="p-4">{t("admin.scheduler.brand")}</th>
             <th className="p-4">{t("admin.scheduler.message")}</th>
+            <th className="p-4">{t("admin.scheduler.startedAtcompletedAt")}</th>
           </tr>
         </thead>
         <tbody>
-          {currentPageData.map((job, index) => (
+          {currentPageData.map((job) => (
             <tr
               key={job.id}
               className="border-b border-gray-300 dark:border-gray-600"
@@ -213,7 +249,9 @@ export default function AdminSchedulerTable({ t, jobs, refreshJobs }: Props) {
                 </button>
               </td>
 
-              <td className="p-4 font-mono text-xs">{job.id}</td>
+              <td className="p-4 text-xs">
+                {formatDateToDisplay(job.requestedAt)}
+              </td>
 
               <td className="p-4">
                 <Chip className={getStatusColor(job.status)}>{job.status}</Chip>
@@ -296,6 +334,10 @@ export default function AdminSchedulerTable({ t, jobs, refreshJobs }: Props) {
                 <div className="truncate" title={job.infoMessage || "-"}>
                   {job.infoMessage || "-"}
                 </div>
+              </td>
+
+              <td className="p-4">
+                {formatJobDuration(job.startedAt, job.completedAt)}
               </td>
             </tr>
           ))}
