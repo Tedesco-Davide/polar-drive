@@ -7,11 +7,8 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ✅ Aggiungi il Tesla Data Pusher
-builder.Services.AddTeslaDataPusher();
-
-// ✅ Aggiungi il Mock Vehicle Data Generator (se non già presente)
-builder.Services.AddSingleton<MockVehicleDataGenerator>();
+// ✅ Registra tutti i servizi Tesla Mock
+builder.Services.AddTeslaMockServices();
 
 var app = builder.Build();
 
@@ -22,8 +19,19 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// ✅ Abilita CORS
+app.UseCors("AllowWebAPI");
+
 app.UseHttpsRedirection();
 app.UseAuthorization();
 app.MapControllers();
+
+// ✅ Gestisci shutdown gracefully per salvare lo stato
+var lifetime = app.Services.GetRequiredService<IHostApplicationLifetime>();
+lifetime.ApplicationStopping.Register(() =>
+{
+    var stateManager = app.Services.GetRequiredService<VehicleStateManager>();
+    stateManager.ForceSave();
+});
 
 app.Run();
