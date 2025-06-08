@@ -1,4 +1,4 @@
-### PolarDrive 🚗❄️
+# PolarDrive 🚗❄️
 
 Repository unificato per il progetto **PolarDrive**.
 
@@ -27,6 +27,15 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 
 ---
 
+### 🚗 TESLA MOCK API SERVICE
+
+_(Tasto destro sulla cartella `backend/PolarDrive.TeslaMockApiService` → Open in integrated Terminal)_
+
+- `dotnet run` → Avvia il servizio di push dati verso la WebAPI
+  > Simula i dati Tesla e li invia automaticamente alla WebAPI principale per test e sviluppo.
+
+---
+
 ### 🧠 BACKEND MISTRAL AI
 
 _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated Terminal)_
@@ -39,7 +48,7 @@ _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated
 #### 🧪 DEBUG LOCALE (opzionale)
 
 - `ollama run mistral` → Esegue **Mistral** in modalità chat interattiva (terminal-based)
-  > ⚠️ Solo per test manuali: non adatto all’uso via codice .NET.
+  > ⚠️ Solo per test manuali: non adatto all'uso via codice .NET.
 
 #### ✅ UTILIZZO CORRETTO IN BACKEND
 
