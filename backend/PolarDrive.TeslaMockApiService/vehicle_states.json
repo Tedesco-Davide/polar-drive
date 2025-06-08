@@ -4,7 +4,7 @@
     "vehicleId": 99999,
     "displayName": "Model 3 Mock",
     "color": "Midnight Silver Metallic",
-    "batteryLevel": 74,
+    "batteryLevel": 73,
     "isCharging": false,
     "chargingState": "Disconnected",
     "chargeRate": 0,
@@ -40,14 +40,14 @@
     "solarPower": 3500,
     "energyLeft": 18020.89,
     "totalPackEnergy": 39343,
-    "lastUpdate": "2025-06-08T15:57:35.2941404Z"
+    "lastUpdate": "2025-06-08T16:57:35.9124346Z"
   },
   "5YJ3000000NEXUS02": {
     "vin": null,
     "vehicleId": 99999,
     "displayName": "Model 3 Mock",
     "color": "Midnight Silver Metallic",
-    "batteryLevel": 74,
+    "batteryLevel": 73,
     "isCharging": false,
     "chargingState": "Disconnected",
     "chargeRate": 0,
@@ -83,26 +83,26 @@
     "solarPower": 3500,
     "energyLeft": 18020.89,
     "totalPackEnergy": 39343,
-    "lastUpdate": "2025-06-08T15:57:35.30851Z"
+    "lastUpdate": "2025-06-08T16:57:35.9203086Z"
   },
   "5YJ3000000NEXUS03": {
     "vin": null,
     "vehicleId": 99999,
     "displayName": "Model 3 Mock",
     "color": "Midnight Silver Metallic",
-    "batteryLevel": 74,
+    "batteryLevel": 71,
     "isCharging": false,
     "chargingState": "Disconnected",
     "chargeRate": 0,
     "chargeEnergyAdded": 0,
     "latitude": 41.902320118243876824,
     "longitude": 12.49823764254066326,
-    "isMoving": true,
+    "isMoving": false,
     "heading": 93,
-    "speed": 73,
+    "speed": null,
     "odometer": 15029,
     "insideTemp": 22.0,
-    "outsideTemp": 18.0,
+    "outsideTemp": 16.334543375739152,
     "isClimateOn": false,
     "driverTempSetting": 21,
     "passengerTempSetting": 21,
@@ -126,14 +126,14 @@
     "solarPower": 3500,
     "energyLeft": 18020.89,
     "totalPackEnergy": 39343,
-    "lastUpdate": "2025-06-08T15:57:35.3094126Z"
+    "lastUpdate": "2025-06-08T16:57:35.9213864Z"
   },
   "5YJ3000000NEXUS04": {
     "vin": null,
     "vehicleId": 99999,
     "displayName": "Model 3 Mock",
     "color": "Midnight Silver Metallic",
-    "batteryLevel": 74,
+    "batteryLevel": 73,
     "isCharging": false,
     "chargingState": "Disconnected",
     "chargeRate": 0,
@@ -169,23 +169,23 @@
     "solarPower": 3500,
     "energyLeft": 18020.89,
     "totalPackEnergy": 39343,
-    "lastUpdate": "2025-06-08T15:57:35.3196389Z"
+    "lastUpdate": "2025-06-08T16:57:35.9314521Z"
   },
   "5YJ3000000NEXUS05": {
     "vin": null,
     "vehicleId": 99999,
     "displayName": "Model 3 Mock",
     "color": "Midnight Silver Metallic",
-    "batteryLevel": 74,
+    "batteryLevel": 71,
     "isCharging": false,
     "chargingState": "Disconnected",
     "chargeRate": 0,
     "chargeEnergyAdded": 0,
     "latitude": 41.902955328836850112,
     "longitude": 12.49813112826157789,
-    "isMoving": true,
+    "isMoving": false,
     "heading": 167,
-    "speed": 53,
+    "speed": null,
     "odometer": 15048,
     "insideTemp": 22.0,
     "outsideTemp": 18.0,
@@ -212,6 +212,6 @@
     "solarPower": 3500,
     "energyLeft": 18020.89,
     "totalPackEnergy": 39343,
-    "lastUpdate": "2025-06-08T15:57:35.3202901Z"
+    "lastUpdate": "2025-06-08T16:57:35.9411818Z"
   }
 }

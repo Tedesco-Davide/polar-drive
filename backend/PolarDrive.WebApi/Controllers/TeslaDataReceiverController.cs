@@ -20,7 +20,7 @@ public class TeslaDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// Riceve i dati dal Tesla Mock Service ogni ora
+    /// Riceve i dati dal Tesla Mock Service e li salva come RawJson
     /// </summary>
     [HttpPost("ReceiveVehicleData/{vin}")]
     public async Task<IActionResult> ReceiveVehicleData(string vin, [FromBody] JsonElement data)
@@ -37,30 +37,44 @@ public class TeslaDataReceiverController : ControllerBase
                 return NotFound($"Vehicle with VIN {vin} not found");
             }
 
-            // Log dei dati ricevuti per debug
-            await _logger.Info(source,
-                $"Received Tesla mock data for VIN: {vin}",
-                $"Data size: {data.GetRawText().Length} chars");
-
-            // Estrai informazioni chiave dai dati
-            var extractedData = ExtractKeyVehicleData(data);
-
-            if (extractedData != null)
+            // Verifica che il veicolo sia attivo e in fetching
+            if (!vehicle.IsActiveFlag || !vehicle.IsFetchingDataFlag)
             {
-                await _logger.Debug(source,
-                    $"Extracted vehicle data for {vin}",
-                    $"Battery: {extractedData.BatteryLevel}%, Charging: {extractedData.IsCharging}, Location: {extractedData.Latitude},{extractedData.Longitude}");
-
-                // Qui potresti salvare i dati estratti nel database
-                // o processarli come necessario per la tua applicazione
-                await ProcessVehicleData(vehicle, extractedData);
+                await _logger.Info(source, $"Vehicle {vin} is not active or not fetching data. Ignoring.");
+                return Ok(new { success = true, message = "Vehicle not active/fetching, data ignored" });
             }
+
+            // Log e salva il JSON grezzo
+            var rawJsonText = data.GetRawText();
+            await _logger.Info(source,
+                $"Received Tesla data for VIN: {vin}",
+                $"Data size: {rawJsonText.Length} chars");
+
+            // Salva nel database
+            var vehicleDataRecord = new VehicleData
+            {
+                VehicleId = vehicle.Id,
+                Timestamp = DateTime.UtcNow,
+                RawJson = rawJsonText
+            };
+
+            _db.VehiclesData.Add(vehicleDataRecord);
+
+            // Aggiorna il timestamp di ultimo aggiornamento
+            vehicle.LastDataUpdate = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+
+            await _logger.Info(source,
+                $"Raw JSON data saved for VIN: {vin}",
+                $"Record ID: {vehicleDataRecord.Id}, Timestamp: {vehicleDataRecord.Timestamp}");
 
             return Ok(new
             {
                 success = true,
-                message = $"Data received for VIN {vin}",
-                timestamp = DateTime.UtcNow
+                message = $"Data received and saved for VIN {vin}",
+                recordId = vehicleDataRecord.Id,
+                timestamp = vehicleDataRecord.Timestamp
             });
         }
         catch (Exception ex)
@@ -75,107 +89,6 @@ public class TeslaDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// Estrae i dati chiave dal JSON complesso del Mock Service
-    /// </summary>
-    private VehicleDataExtract? ExtractKeyVehicleData(JsonElement data)
-    {
-        try
-        {
-            // Il Mock Service invia dati in formato response.data[]
-            if (!data.TryGetProperty("response", out var response) ||
-                !response.TryGetProperty("data", out var dataArray))
-            {
-                return null;
-            }
-
-            var extract = new VehicleDataExtract();
-
-            // Cerca vehicle_endpoints per i dati del veicolo
-            foreach (var item in dataArray.EnumerateArray())
-            {
-                if (item.TryGetProperty("type", out var type) &&
-                    type.GetString() == "vehicle_endpoints" &&
-                    item.TryGetProperty("content", out var content))
-                {
-                    // Estrai dati dalla vehicle_data
-                    if (content.TryGetProperty("vehicle_data", out var vehicleData) &&
-                        vehicleData.TryGetProperty("response", out var vehicleResponse))
-                    {
-                        // Battery/Charging info
-                        if (vehicleResponse.TryGetProperty("charge_state", out var chargeState))
-                        {
-                            if (chargeState.TryGetProperty("battery_level", out var battery))
-                                extract.BatteryLevel = battery.GetInt32();
-
-                            if (chargeState.TryGetProperty("charging_state", out var charging))
-                                extract.ChargingState = charging.GetString();
-
-                            extract.IsCharging = extract.ChargingState == "Charging";
-                        }
-
-                        // Location info
-                        if (vehicleResponse.TryGetProperty("drive_state", out var driveState))
-                        {
-                            if (driveState.TryGetProperty("latitude", out var lat))
-                                extract.Latitude = lat.GetDecimal();
-
-                            if (driveState.TryGetProperty("longitude", out var lng))
-                                extract.Longitude = lng.GetDecimal();
-
-                            if (driveState.TryGetProperty("speed", out var speed))
-                                extract.Speed = speed.ValueKind != JsonValueKind.Null ? speed.GetInt32() : null;
-                        }
-
-                        // Climate info
-                        if (vehicleResponse.TryGetProperty("climate_state", out var climateState))
-                        {
-                            if (climateState.TryGetProperty("inside_temp", out var insideTemp))
-                                extract.InsideTemp = insideTemp.GetDecimal();
-
-                            if (climateState.TryGetProperty("outside_temp", out var outsideTemp))
-                                extract.OutsideTemp = outsideTemp.GetDecimal();
-                        }
-
-                        // Vehicle state
-                        if (vehicleResponse.TryGetProperty("vehicle_state", out var vehicleState))
-                        {
-                            if (vehicleState.TryGetProperty("locked", out var locked))
-                                extract.IsLocked = locked.GetBoolean();
-
-                            if (vehicleState.TryGetProperty("sentry_mode", out var sentry))
-                                extract.SentryMode = sentry.GetBoolean();
-                        }
-                    }
-                    break;
-                }
-            }
-
-            extract.LastUpdated = DateTime.UtcNow;
-            return extract;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Processa i dati estratti (aggiorna database, triggerera notifiche, etc.)
-    /// </summary>
-    private async Task ProcessVehicleData(ClientVehicle vehicle, VehicleDataExtract data)
-    {
-        // Qui potresti:
-        // 1. Aggiornare record del veicolo nel database
-        // 2. Salvare telemetria in una tabella separata
-        // 3. Triggere notifiche se necessario
-        // 4. Calcolare statistiche
-
-        // Esempio: aggiorna ultimo aggiornamento
-        vehicle.LastDataUpdate = data.LastUpdated;
-        await _db.SaveChangesAsync();
-    }
-
-    /// <summary>
     /// GET endpoint per verificare l'ultimo dato ricevuto per un VIN
     /// </summary>
     [HttpGet("LastData/{vin}")]
@@ -187,29 +100,67 @@ public class TeslaDataReceiverController : ControllerBase
             return NotFound($"Vehicle with VIN {vin} not found");
         }
 
+        var latestRecord = await _db.VehiclesData
+            .Where(vd => vd.VehicleId == vehicle.Id)
+            .OrderByDescending(vd => vd.Timestamp)
+            .FirstOrDefaultAsync();
+
         return Ok(new
         {
             vin = vehicle.Vin,
-            last_update = vehicle.LastDataUpdate,
+            lastUpdate = vehicle.LastDataUpdate,
+            latestRecordId = latestRecord?.Id,
+            latestRecordTimestamp = latestRecord?.Timestamp,
+            totalRecords = await _db.VehiclesData.CountAsync(vd => vd.VehicleId == vehicle.Id),
             status = vehicle.LastDataUpdate.HasValue ? "Data received" : "No data yet"
         });
     }
-}
 
-/// <summary>
-/// Classe per i dati estratti dai payload complessi del Mock Service
-/// </summary>
-public class VehicleDataExtract
-{
-    public int BatteryLevel { get; set; }
-    public string? ChargingState { get; set; }
-    public bool IsCharging { get; set; }
-    public decimal Latitude { get; set; }
-    public decimal Longitude { get; set; }
-    public int? Speed { get; set; }
-    public decimal InsideTemp { get; set; }
-    public decimal OutsideTemp { get; set; }
-    public bool IsLocked { get; set; }
-    public bool SentryMode { get; set; }
-    public DateTime LastUpdated { get; set; }
+    /// <summary>
+    /// GET endpoint per ottenere statistiche sui dati ricevuti
+    /// </summary>
+    [HttpGet("Stats/{vin}")]
+    public async Task<IActionResult> GetDataStats(string vin)
+    {
+        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+        if (vehicle == null)
+        {
+            return NotFound($"Vehicle with VIN {vin} not found");
+        }
+
+        var totalRecords = await _db.VehiclesData.CountAsync(vd => vd.VehicleId == vehicle.Id);
+
+        if (totalRecords == 0)
+        {
+            return Ok(new
+            {
+                vin = vehicle.Vin,
+                stats = new
+                {
+                    TotalRecords = 0,
+                    FirstRecord = (DateTime?)null,
+                    LastRecord = (DateTime?)null,
+                    TotalDataSize = 0
+                }
+            });
+        }
+
+        var stats = await _db.VehiclesData
+            .Where(vd => vd.VehicleId == vehicle.Id)
+            .GroupBy(vd => 1)
+            .Select(g => new
+            {
+                TotalRecords = g.Count(),
+                FirstRecord = (DateTime?)g.Min(vd => vd.Timestamp),
+                LastRecord = (DateTime?)g.Max(vd => vd.Timestamp),
+                TotalDataSize = g.Sum(vd => vd.RawJson.Length)
+            })
+            .FirstOrDefaultAsync();
+
+        return Ok(new
+        {
+            vin = vehicle.Vin,
+            stats = stats
+        });
+    }
 }
