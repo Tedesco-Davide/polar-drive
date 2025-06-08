@@ -153,11 +153,19 @@ public class VehicleOAuthController : ControllerBase
                 UpdatedAt = DateTime.UtcNow
             });
 
+            // ✅ AGGIUNGI QUESTE RIGHE:
             vehicle.ClientOAuthAuthorized = true;
+            vehicle.IsActiveFlag = true;
+            vehicle.IsFetchingDataFlag = true;
+            vehicle.FirstActivationAt = DateTime.UtcNow;
+
             await _db.SaveChangesAsync();
 
-            await _logger.Info(source, "OAuth authorization completed", $"Brand: {brand}, VIN: {vehicle.Vin}");
-
+            await _logger.Info(
+                source,
+                "OAuth authorization completed with automatic activation",
+                $"Brand: {brand}, VIN: {vehicle.Vin}, IsActive: true, IsFetching: true"
+            );
             return Redirect("http://localhost:3000/admin");
         }
         catch (Exception ex)
