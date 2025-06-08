@@ -68,24 +68,6 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = entity.Id }, entity.Id);
     }
 
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> Delete(int id)
-    {
-        var entity = await db.ClientCompanies.FindAsync(id);
-        if (entity == null)
-        {
-            await _logger.Warning("ClientCompaniesController.Delete", "Attempt to delete a non-existing company.", $"CompanyId: {id}");
-            return NotFound();
-        }
-
-        db.ClientCompanies.Remove(entity);
-        await db.SaveChangesAsync();
-
-        await _logger.Info("ClientCompaniesController.Delete", "Client company deleted successfully.", $"CompanyId: {id}");
-
-        return NoContent();
-    }
-
     [HttpPut("{id}")]
     public async Task<IActionResult> Put(int id, [FromBody] ClientCompanyDTO updated)
     {

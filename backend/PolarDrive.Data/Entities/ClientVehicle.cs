@@ -33,4 +33,5 @@ public class ClientVehicle
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public ClientCompany? ClientCompany { get; set; }
+    public DateTime? LastDataUpdate { get; set; }
 }
