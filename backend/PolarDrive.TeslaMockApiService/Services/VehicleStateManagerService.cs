@@ -89,6 +89,13 @@ public class VehicleStateManager
                 {
                     foreach (var (vin, state) in states)
                     {
+                        // ✅ FIX: Assicurati che il VIN sia impostato
+                        if (string.IsNullOrEmpty(state.Vin))
+                        {
+                            state.Vin = vin;
+                            _logger.LogWarning("Fixed null VIN for vehicle {Vin}", vin);
+                        }
+
                         _vehicles.TryAdd(vin, state);
                     }
 
@@ -96,11 +103,7 @@ public class VehicleStateManager
                         states.Count, _stateFilePath);
                 }
             }
-            else
-            {
-                _logger.LogInformation("No existing state file found at {FilePath}. Starting with empty state.",
-                    _stateFilePath);
-            }
+            // ... resto del codice
         }
         catch (Exception ex)
         {
@@ -119,7 +122,6 @@ public class VehicleStateManager
             var json = JsonSerializer.Serialize(states, new JsonSerializerOptions
             {
                 WriteIndented = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
             });
 
             File.WriteAllText(_stateFilePath, json);

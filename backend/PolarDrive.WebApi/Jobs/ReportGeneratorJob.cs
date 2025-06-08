@@ -28,6 +28,30 @@ public class ReportGeneratorJob(PolarDriveDbContext db)
     }
 
     /// <summary>
+    /// Test rapido - genera report per gli ultimi 5 minuti (per testing con dati ogni 1 minuto)
+    /// </summary>
+    public async Task RunTestAsync()
+    {
+        var now = DateTime.UtcNow;
+        var periodStart = now.AddMinutes(-5); // Ultimi 5 minuti per catturare 4-5 records
+        var periodEnd = now;
+
+        await RunForPeriodAsync(periodStart, periodEnd, "Test");
+    }
+
+    /// <summary>
+    /// Test ultra-rapido - genera report per gli ultimi 2 minuti (minimo per avere dati)
+    /// </summary>
+    public async Task RunQuickTestAsync()
+    {
+        var now = DateTime.UtcNow;
+        var periodStart = now.AddMinutes(-2); // Ultimi 2 minuti per 1-2 records
+        var periodEnd = now;
+
+        await RunForPeriodAsync(periodStart, periodEnd, "QuickTest");
+    }
+
+    /// <summary>
     /// Genera report per un periodo personalizzato
     /// </summary>
     public async Task RunForPeriodAsync(DateTime periodStart, DateTime periodEnd, string reportType = "Custom")

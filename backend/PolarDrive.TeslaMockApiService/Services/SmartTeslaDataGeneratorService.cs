@@ -820,7 +820,6 @@ public static partial class SmartTeslaDataGeneratorService
             fleet_telemetry_error_vins = new[]
             {
                 "5YJ3000000NEXUS01",
-                "5YJ3000000NEXUS02"
             },
             fleet_telemetry_errors = new[]
             {
@@ -828,11 +827,6 @@ public static partial class SmartTeslaDataGeneratorService
                     name = "evotesla-client",
                     error = "Unable to parse GPS data",
                     vin = "5YJ3000000NEXUS01"
-                },
-                new {
-                    name = "evotesla-client",
-                    error = "Battery status timeout",
-                    vin = "5YJ3000000NEXUS02"
                 }
             },
             public_key = "0437d832a7a695151f5a671780a276aa4cf2d6be3b2786465397612a342fcf418e98022d3cedf4e9a6f4b3b160472dee4ca022383d9b4cc4001a0f3023caec58fa"
@@ -841,6 +835,11 @@ public static partial class SmartTeslaDataGeneratorService
 
     private static object GenerateVehicleEndpoints(VehicleSimulationState state, DateTime ts)
     {
+        if (string.IsNullOrEmpty(state.Vin))
+        {
+            throw new ArgumentException($"VehicleSimulationState.Vin is null or empty for vehicle {state.VehicleId}");
+        }
+
         var timestampMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds();
 
         return new

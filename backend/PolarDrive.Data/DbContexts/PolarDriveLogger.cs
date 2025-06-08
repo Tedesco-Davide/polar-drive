@@ -7,6 +7,14 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
 {
     private readonly PolarDriveDbContext _dbContext = dbContext;
 
+    // ✅ TIMEZONE ITALIANO
+    private static readonly TimeZoneInfo ItalianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+
+    private static DateTime GetItalianTime()
+    {
+        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ItalianTimeZone);
+    }
+
     public async Task LogAsync(string source, PolarDriveLogLevel level, string message, string? details = null)
     {
         WriteToFile(source, level, message, details);
@@ -20,7 +28,7 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
 
             _dbContext.PolarDriveLogs.Add(new PolarDriveLog
             {
-                Timestamp = DateTime.UtcNow,
+                Timestamp = GetItalianTime(), // ✅ USA ORARIO ITALIANO
                 Source = source,
                 Level = level,
                 Message = message,
@@ -38,7 +46,6 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
             Console.WriteLine($"❌ FATAL ERROR → IMPOSSIBLE TO SAVE IN PolarDriveLogger: {ex.Message}\nDetails: {ex.InnerException?.Message}");
         }
     }
-
 
     public Task Info(string source, string message, string? details = null) =>
         LogAsync(source, PolarDriveLogLevel.INFO, message, details);
@@ -60,8 +67,9 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
             if (!Directory.Exists(logDirectory))
                 Directory.CreateDirectory(logDirectory);
 
-            var logFilePath = Path.Combine(logDirectory, $"log_{DateTime.UtcNow:yyyyMMdd}.txt");
-            var logEntry = $"[{DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}] [{level}] [{source}] {message}";
+            var italianTime = GetItalianTime(); // ✅ USA ORARIO ITALIANO
+            var logFilePath = Path.Combine(logDirectory, $"log_{italianTime:yyyyMMdd}.txt");
+            var logEntry = $"[{italianTime:yyyy-MM-dd HH:mm:ss}] [{level}] [{source}] {message}";
 
             if (!string.IsNullOrWhiteSpace(details))
                 logEntry += $" | Details: {details}";
@@ -102,5 +110,4 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
             return false;
         }
     }
-
 }

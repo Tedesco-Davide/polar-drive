@@ -5,21 +5,29 @@ namespace PolarDrive.TeslaMockApiService.Services;
 public class TeslaDataPusherService : BackgroundService
 {
     private readonly ILogger<TeslaDataPusherService> _logger;
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly VehicleStateManager _vehicleStateManager;
+    private readonly HttpClient _httpClient;
     private readonly Random _random = new();
 
     public TeslaDataPusherService(
         ILogger<TeslaDataPusherService> logger,
-        IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         VehicleStateManager vehicleStateManager)
     {
         _logger = logger;
-        _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _vehicleStateManager = vehicleStateManager;
+
+        // ✅ CONFIGURA HTTPCLIENT PER IGNORARE CERTIFICATI SSL
+        var handler = new HttpClientHandler()
+        {
+            ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => true
+        };
+        _httpClient = new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(30)
+        };
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -176,7 +184,7 @@ public class TeslaDataPusherService : BackgroundService
 
         return new VehicleSimulationState
         {
-            Vin = vin,
+            Vin = vin, // ✅ IMPORTANTE: Imposta esplicitamente il VIN
             VehicleId = vehicleId,
             DisplayName = $"Model {modelType} - {vin[^2..]}",
             Color = GetRandomColor(),
@@ -231,9 +239,6 @@ public class TeslaDataPusherService : BackgroundService
 
     private async Task PushTeslaDataToWebAPI(string webApiBaseUrl, CancellationToken cancellationToken)
     {
-        using var httpClient = _httpClientFactory.CreateClient();
-        httpClient.Timeout = TimeSpan.FromSeconds(30);
-
         var allVehicles = _vehicleStateManager.GetAllVehicles();
 
         foreach (var (vin, state) in allVehicles)
@@ -245,7 +250,8 @@ public class TeslaDataPusherService : BackgroundService
 
                 var content = new StringContent(rawJson, Encoding.UTF8, "application/json");
 
-                var response = await httpClient.PostAsync(
+                // ✅ USA L'HTTPCLIENT CONFIGURATO CON SSL BYPASS
+                var response = await _httpClient.PostAsync(
                     $"{webApiBaseUrl}/api/TeslaDataReceiver/ReceiveVehicleData/{vin}",
                     content,
                     cancellationToken);
@@ -275,11 +281,16 @@ public class TeslaDataPusherService : BackgroundService
     private List<string> GetSimulatedVehicleVins()
     {
         var vins = _configuration.GetSection("TeslaDataPusher:SimulatedVins").Get<List<string>>();
-        return vins ?? new List<string>
-        {
-            "5YJ3000000NEXUS01",
-            "5YJ3000000NEXUS02",
-            "5YJ3000000NEXUS03"
-        };
+        return vins ??
+        [
+            "5YJ3000000NEXUS01"
+        ];
+    }
+
+    // ✅ IMPORTANTE: Dispose dell'HttpClient
+    public override void Dispose()
+    {
+        _httpClient?.Dispose();
+        base.Dispose();
     }
 }

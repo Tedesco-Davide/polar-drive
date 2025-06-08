@@ -310,18 +310,13 @@ public static class FakeTeslaJsonDataFetch
     {
         return new
         {
-            fleet_telemetry_error_vins = new[] { "5YJ3000000NEXUS01", "5YJ3000000NEXUS02" },
+            fleet_telemetry_error_vins = new[] { "5YJ3000000NEXUS01" },
             fleet_telemetry_errors = new[]
             {
             new {
                 name = "evotesla-client",
                 error = "Unable to parse GPS data",
                 vin = "5YJ3000000NEXUS01"
-            },
-            new {
-                name = "evotesla-client",
-                error = "Battery status timeout",
-                vin = "5YJ3000000NEXUS02"
             }
         },
             public_key = "0437d832a7a695151f5a671780a276aa4cf2d6be3b2786465397612a342fcf418e98022d3cedf4e9a6f4b3b160472dee4ca022383d9b4cc4001a0f3023caec58fa"
@@ -909,8 +904,7 @@ public static class FakeTeslaJsonDataFetch
                     skipped_vehicles = new
                     {
                         missing_key = Array.Empty<string>(),
-                        unsupported_hardware = new[] { "5YJ3000000NEXUS02" },
-                        unsupported_firmware = new[] { "5YJ3000000NEXUS02" },
+                        unsupported_hardware = new[] { "5YJ3000000NEXUS01" },
                         max_configs = Array.Empty<string>()
                     }
                 }
@@ -961,8 +955,7 @@ public static class FakeTeslaJsonDataFetch
                     skipped_vehicles = new
                     {
                         missing_key = Array.Empty<string>(),
-                        unsupported_hardware = new[] { "5YJ3000000NEXUS02" },
-                        unsupported_firmware = new[] { "5YJ3000000NEXUS02" },
+                        unsupported_hardware = new[] { "5YJ3000000NEXUS01" },
                         max_configs = Array.Empty<string>()
                     }
                 }
@@ -973,8 +966,7 @@ public static class FakeTeslaJsonDataFetch
                 {
                     fleet_telemetry_errors = new[]
                     {
-                        new { name = "partner-client-id", error = "msg", vin = "5YJ3000000NEXUS01" },
-                        new { name = "partner-client-id", error = "msg2", vin = "5YJ3000000NEXUS01" }
+                        new { name = "partner-client-id", error = "msg", vin = "5YJ3000000NEXUS01" }
                     }
                 }
             },
