@@ -36,7 +36,7 @@ public class VehicleOAuthController : ControllerBase
         brand = brand.Trim().ToLowerInvariant();
 
         string clientId;
-        string redirectUri = "https://datapolar.dev/api/OAuthCallback";
+        string redirectUri = "https://localhost:5041/api/VehicleOAuth/OAuthCallback";
         string scopes;
         string authBaseUrl;
 
@@ -158,7 +158,7 @@ public class VehicleOAuthController : ControllerBase
 
             await _logger.Info(source, "OAuth authorization completed", $"Brand: {brand}, VIN: {vehicle.Vin}");
 
-            return Redirect("https://datapolar.dev/admin");
+            return Redirect("http://localhost:3000/admin");
         }
         catch (Exception ex)
         {
@@ -195,7 +195,7 @@ public class VehicleOAuthController : ControllerBase
                     ["grant_type"] = "authorization_code",
                     ["client_id"] = "ownerapi",
                     ["code"] = code,
-                    ["redirect_uri"] = "https://datapolar.dev/api/OAuthCallback"
+                    ["redirect_uri"] = "https://localhost:5041/api/OAuthCallback"
                 });
             }
 
