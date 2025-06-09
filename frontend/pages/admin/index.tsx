@@ -166,7 +166,7 @@ export default function AdminDashboard() {
           fetch(`${API_BASE_URL}/api/clientconsents`),
           fetch(`${API_BASE_URL}/api/outageperiods`),
           fetch(`${API_BASE_URL}/api/pdfreports`),
-          fetch(`${API_BASE_URL}/api/scheduler`),
+          fetch(`${API_BASE_URL}/api/adminscheduler`),
         ]);
 
         const clientsData: ClientCompany[] = await clientsRes.json();
@@ -344,7 +344,7 @@ export default function AdminDashboard() {
                         t={t}
                         refreshJobs={async () => {
                           const res = await fetch(
-                            `${API_BASE_URL}/api/scheduler`
+                            `${API_BASE_URL}/api/adminscheduler`
                           );
                           const updatedScheduledJobs = await res.json();
                           setScheduledJobs(updatedScheduledJobs);

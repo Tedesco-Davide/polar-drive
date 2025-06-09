@@ -149,7 +149,7 @@ export default function AdminSchedulerTable({ t, jobs, refreshJobs }: Props) {
       } else {
         // Otherwise construct API endpoint
         window.open(
-          `${API_BASE_URL}/api/scheduler/${job.id}/download`,
+          `${API_BASE_URL}/api/adminscheduler/${job.id}/download`,
           "_blank"
         );
       }
@@ -366,11 +366,14 @@ export default function AdminSchedulerTable({ t, jobs, refreshJobs }: Props) {
           notesField="infoMessage"
           onSave={async (updated) => {
             try {
-              await fetch(`${API_BASE_URL}/api/scheduler/${updated.id}/notes`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ infoMessage: updated.infoMessage }),
-              });
+              await fetch(
+                `${API_BASE_URL}/api/adminscheduler/${updated.id}/notes`,
+                {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ infoMessage: updated.infoMessage }),
+                }
+              );
 
               setLocalJobs((prev) =>
                 prev.map((j) =>

@@ -75,7 +75,7 @@ public class TeslaDataPusherService : BackgroundService
         }
     }
 
-    private async Task InitializeVehicleStates()
+    private Task InitializeVehicleStates()
     {
         var vins = GetSimulatedVehicleVins();
 
@@ -88,6 +88,8 @@ public class TeslaDataPusherService : BackgroundService
                 _logger.LogInformation("Initialized vehicle state for VIN: {Vin}", vin);
             }
         }
+
+        return Task.CompletedTask;
     }
 
     private async Task UpdateVehicleStates()
@@ -102,7 +104,7 @@ public class TeslaDataPusherService : BackgroundService
         }
     }
 
-    private async Task SimulateVehicleChanges(VehicleSimulationState state)
+    private Task SimulateVehicleChanges(VehicleSimulationState state)
     {
         // Simula consumo batteria nel tempo
         if (!state.IsCharging && state.BatteryLevel > 5)
@@ -171,6 +173,8 @@ public class TeslaDataPusherService : BackgroundService
 
         // Aggiorna timestamp
         state.LastUpdate = DateTime.UtcNow;
+
+        return Task.CompletedTask;
     }
 
     private VehicleSimulationState CreateInitialVehicleState(string vin)
@@ -252,7 +256,7 @@ public class TeslaDataPusherService : BackgroundService
 
                 // ✅ USA L'HTTPCLIENT CONFIGURATO CON SSL BYPASS
                 var response = await _httpClient.PostAsync(
-                    $"{webApiBaseUrl}/api/TeslaDataReceiver/ReceiveVehicleData/{vin}",
+                    $"{webApiBaseUrl}/api/TeslaFakeDataReceiver/ReceiveVehicleData/{vin}",
                     content,
                     cancellationToken);
 

@@ -124,7 +124,8 @@ try
     for (int i = 0; i < vehicles.Length; i++)
     {
         var vehicle = vehicles[i];
-        var currentCompany = companies[i];
+        // ✅ CORREZIONE: Usa sempre companies[0] dato che hai solo 1 company
+        var currentCompany = companies[0];
 
         // ✅ Inserisco SEMPRE il consenso ZIP
         var consent = new ClientConsent
@@ -190,7 +191,7 @@ try
         new()
         {
             VehicleId = allVehicles[0].Id,
-            ClientCompanyId = allVehicles[0].ClientCompanyId,
+            ClientCompanyId = allVehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
             AutoDetected = true,
             OutageType = "Outage Vehicle",
             OutageBrand = "Tesla",
@@ -203,7 +204,7 @@ try
         new()
         {
             VehicleId = allVehicles[0].Id,
-            ClientCompanyId = allVehicles[1].ClientCompanyId,
+            ClientCompanyId = allVehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
             AutoDetected = false,
             OutageType = "Outage Vehicle",
             OutageBrand = "Tesla",
@@ -215,7 +216,7 @@ try
         new()
         {
             VehicleId = allVehicles[0].Id,
-            ClientCompanyId = allVehicles[2].ClientCompanyId,
+            ClientCompanyId = allVehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
             AutoDetected = true,
             OutageType = "Outage Vehicle",
             OutageBrand = "Tesla",
