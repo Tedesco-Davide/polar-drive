@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 
-namespace PolarDrive.WebApi.Controllers;
+namespace PolarDrive.WebApi.ControllersFake;
 
 [ApiController]
 [Route("api/[controller]")]

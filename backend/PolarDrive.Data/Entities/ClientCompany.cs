@@ -23,6 +23,11 @@ public class ClientCompany
     public string? ReferentEmail { get; set; }
 
     public string? ReferentPecAddress { get; set; }
-    
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    public virtual ICollection<ClientVehicle> ClientVehicles { get; set; } = [];
+
+    public virtual ICollection<PdfReport> PdfReports { get; set; } = [];
 }
