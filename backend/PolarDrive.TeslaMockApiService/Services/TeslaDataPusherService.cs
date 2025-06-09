@@ -58,7 +58,7 @@ public class TeslaDataPusherService : BackgroundService
                 // 2. Invia i dati aggiornati alla WebAPI
                 await PushTeslaDataToWebAPI(webApiBaseUrl, stoppingToken);
 
-                _logger.LogInformation("Successfully pushed Tesla mock data to WebAPI at {Time}", DateTime.UtcNow);
+                _logger.LogInformation("Successfully pushed Tesla mock data to WebAPI at {Time}", DateTime.Now);
 
                 await Task.Delay(TimeSpan.FromMinutes(pushIntervalMinutes), stoppingToken);
             }
