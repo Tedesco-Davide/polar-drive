@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using PolarDrive.Data.DbContexts;
+using PolarDrive.WebApi.Production;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -37,6 +38,23 @@ builder.Services.AddDbContext<PolarDriveDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}")
 );
 
+// ✅ HTTP CLIENT per Tesla API
+builder.Services.AddHttpClient();
+
+// === SERVIZI MULTI-BRAND ===
+builder.Services.AddScoped<VehicleDataService>();
+
+// Servizi API per i vari brand
+builder.Services.AddScoped<TeslaApiService>();
+// builder.Services.AddScoped<PolestarApiService>(); // TODO: Implementare
+// builder.Services.AddScoped<PorscheApiService>();  // TODO: Implementare
+
+// ✅ REGISTRY per gestire tutti i servizi API
+builder.Services.AddScoped<VehicleApiServiceRegistry>();
+
+// Background Service per produzione
+builder.Services.AddHostedService<ProductionScheduler>();
+
 var app = builder.Build();
 
 // Use Swagger only in development
@@ -61,6 +79,16 @@ using (var scope = app.Services.CreateScope())
     try
     {
         await logger.Info("Program.Main", "PolarDrive Web API is starting...", $"DB Path: {dbPath}");
+
+        // ✅ LOG INFO SUI SERVIZI REGISTRATI
+        var vehicleDataService = scope.ServiceProvider.GetRequiredService<VehicleDataService>();
+        var stats = await vehicleDataService.GetVehicleCountByBrandAsync();
+
+        await logger.Info("Program.Main", "Vehicle statistics at startup:");
+        foreach (var (brand, count) in stats)
+        {
+            await logger.Info("Program.Main", $"  - {brand}: {count} active vehicles");
+        }
     }
     catch (Exception ex)
     {

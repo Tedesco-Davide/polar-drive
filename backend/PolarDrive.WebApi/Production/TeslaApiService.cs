@@ -80,9 +80,106 @@ public class TeslaApiService
     }
 
     /// <summary>
+    /// ✅ NUOVO METODO: Fetch dati per un singolo veicolo tramite VIN
+    /// </summary>
+    public async Task<VehicleFetchResult> FetchDataForVehicleAsync(string vin)
+    {
+        const string source = "TeslaApiService.FetchDataForVehicle";
+
+        var vehicle = await _db.ClientVehicles
+            .FirstOrDefaultAsync(v => v.Vin == vin && v.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase));
+
+        if (vehicle == null)
+        {
+            await _logger.Warning(source, $"Vehicle with VIN {vin} not found");
+            return VehicleFetchResult.Error;
+        }
+
+        return await FetchDataForSingleVehicleAsync(vehicle);
+    }
+
+    /// <summary>
+    /// ✅ NUOVO METODO: Verifica se il servizio Tesla è disponibile
+    /// </summary>
+    public async Task<bool> IsServiceAvailableAsync()
+    {
+        const string source = "TeslaApiService.IsServiceAvailable";
+
+        try
+        {
+            // Controlla se abbiamo almeno un token valido
+            var hasValidTokens = await _db.ClientTokens
+                .AnyAsync(t => t.AccessTokenExpiresAt > DateTime.UtcNow);
+
+            if (!hasValidTokens)
+            {
+                await _logger.Debug(source, "No valid Tesla tokens found");
+                return false;
+            }
+
+            // Test semplice di connettività (senza autenticazione)
+            using var testClient = new HttpClient();
+            testClient.Timeout = TimeSpan.FromSeconds(10);
+
+            var response = await testClient.GetAsync("https://owner-api.teslamotors.com/api/1/status");
+            var isAvailable = response.IsSuccessStatusCode;
+
+            await _logger.Debug(source, $"Tesla API availability check: {isAvailable}");
+            return isAvailable;
+        }
+        catch (Exception ex)
+        {
+            await _logger.Warning(source, "Tesla API availability check failed", ex.Message);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO METODO: Ottieni statistiche di utilizzo del servizio Tesla
+    /// </summary>
+    public async Task<ServiceUsageStats> GetUsageStatsAsync()
+    {
+        const string source = "TeslaApiService.GetUsageStats";
+
+        try
+        {
+            var activeVehicles = await _db.ClientVehicles
+                .CountAsync(v => v.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase) && v.IsActiveFlag);
+
+            var lastFetch = await _db.ClientVehicles
+                .Where(v => v.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase) && v.LastDataUpdate.HasValue)
+                .MaxAsync(v => (DateTime?)v.LastDataUpdate) ?? DateTime.MinValue;
+
+            var isHealthy = await IsServiceAvailableAsync();
+
+            return new ServiceUsageStats
+            {
+                BrandName = "Tesla",
+                ActiveVehicles = activeVehicles,
+                LastFetch = lastFetch,
+                IsHealthy = isHealthy,
+                LastError = null // TODO: Potresti salvare l'ultimo errore nel DB
+            };
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Error getting Tesla usage stats", ex.ToString());
+
+            return new ServiceUsageStats
+            {
+                BrandName = "Tesla",
+                ActiveVehicles = 0,
+                LastFetch = DateTime.MinValue,
+                IsHealthy = false,
+                LastError = ex.Message
+            };
+        }
+    }
+
+    /// <summary>
     /// Chiama Tesla API per un singolo veicolo
     /// </summary>
-    public async Task<VehicleFetchResult> FetchDataForSingleVehicleAsync(ClientVehicle vehicle)
+    private async Task<VehicleFetchResult> FetchDataForSingleVehicleAsync(ClientVehicle vehicle)
     {
         const string source = "TeslaApiService.FetchDataForSingleVehicle";
 
@@ -182,7 +279,7 @@ public class TeslaApiService
         var json = await response.Content.ReadAsStringAsync();
         var data = JsonSerializer.Deserialize<TeslaVehiclesResponse>(json);
 
-        return data?.Response ?? new List<TeslaVehicleInfo>();
+        return data?.Response ?? [];
     }
 
     private async Task<bool> WakeUpVehicleAsync(long vehicleId, string accessToken)
@@ -207,7 +304,7 @@ public class TeslaApiService
                 var vehicles = await GetTeslaVehiclesAsync(accessToken);
                 var vehicle = vehicles.FirstOrDefault(v => v.Id == vehicleId);
 
-                if (vehicle != null && vehicle.State.ToLower() == "online")
+                if (vehicle != null && vehicle.State.Equals("online", StringComparison.CurrentCultureIgnoreCase))
                 {
                     await _logger.Info(source, $"Vehicle ID {vehicleId} successfully woken up");
                     return true;
@@ -308,7 +405,7 @@ public enum VehicleFetchResult
     Error       // Errore durante l'operazione
 }
 
-// DTOs per Tesla API
+// ✅ DTOs per Tesla API
 public class TeslaVehiclesResponse
 {
     public List<TeslaVehicleInfo> Response { get; set; } = [];

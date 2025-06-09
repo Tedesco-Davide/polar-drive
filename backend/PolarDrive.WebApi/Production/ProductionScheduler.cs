@@ -4,7 +4,7 @@ using PolarDrive.WebApi.Jobs;
 namespace PolarDrive.WebApi.Production;
 
 /// <summary>
-/// Scheduler per produzione - gestisce i task automatici
+/// Scheduler per produzione - gestisce i task automatici multi-brand
 /// </summary>
 public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<ProductionScheduler> logger, IWebHostEnvironment env) : BackgroundService
 {
@@ -20,7 +20,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             return;
         }
 
-        _logger.LogInformation("ProductionScheduler: Starting production schedulers");
+        _logger.LogInformation("ProductionScheduler: Starting multi-brand production schedulers");
 
         // Avvia i task paralleli
         var dataFetchTask = RunDataFetchScheduler(stoppingToken);
@@ -30,7 +30,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// Scheduler per il fetch dati Tesla (ogni ora)
+    /// Scheduler per il fetch dati multi-brand (ogni ora)
     /// </summary>
     private async Task RunDataFetchScheduler(CancellationToken stoppingToken)
     {
@@ -39,15 +39,21 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             try
             {
                 using var scope = _serviceProvider.CreateScope();
-                var teslaApiService = scope.ServiceProvider.GetRequiredService<TeslaApiService>();
+                var vehicleDataService = scope.ServiceProvider.GetRequiredService<VehicleDataService>();
 
-                _logger.LogInformation("ProductionScheduler: Starting hourly Tesla data fetch");
-                await teslaApiService.FetchDataForAllActiveVehiclesAsync();
-                _logger.LogInformation("ProductionScheduler: Completed hourly Tesla data fetch");
+                _logger.LogInformation("ProductionScheduler: Starting hourly multi-brand data fetch");
+
+                // Fetch dati per tutti i brand
+                await vehicleDataService.FetchDataForAllBrandsAsync();
+
+                // Log statistiche
+                await LogVehicleStatistics(vehicleDataService);
+
+                _logger.LogInformation("ProductionScheduler: Completed hourly multi-brand data fetch");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ProductionScheduler: Error in data fetch cycle");
+                _logger.LogError(ex, "ProductionScheduler: Error in multi-brand data fetch cycle");
             }
 
             // Aspetta 1 ora
@@ -85,6 +91,27 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
             // Aspetta 24 ore
             await Task.Delay(TimeSpan.FromDays(1), stoppingToken);
+        }
+    }
+
+    /// <summary>
+    /// Log statistiche veicoli per brand
+    /// </summary>
+    private async Task LogVehicleStatistics(VehicleDataService vehicleDataService)
+    {
+        try
+        {
+            var stats = await vehicleDataService.GetVehicleCountByBrandAsync();
+
+            _logger.LogInformation("ProductionScheduler: Vehicle statistics by brand:");
+            foreach (var (brand, count) in stats)
+            {
+                _logger.LogInformation($"  - {brand}: {count} active vehicles");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ProductionScheduler: Failed to log vehicle statistics");
         }
     }
 }
