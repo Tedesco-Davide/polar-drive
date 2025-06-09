@@ -1,9 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
-using PolarDriveInitDBMockData.Cli;
 using System.IO.Compression;
-using static PolarDrive.Data.DbContexts.DbInitHelper;
 
 var basePath = AppContext.BaseDirectory;
 var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));
@@ -24,7 +22,6 @@ try
     // 1. Pulisce tabelle
     // ───────────────────────────────
     await DbMockDataHelper.ClearMockDataAsync(db);
-
     await logger.Info("PolarDriveInitDBMockData.Cli", "Cleared all client-related tables");
 
     // ───────────────────────────────
@@ -33,8 +30,6 @@ try
     var companies = new[]
     {
         new ClientCompany { Name = "Paninoteca Rossi", VatNumber = "00000000001", ReferentName = "Luca Rossi", ReferentEmail = "luca@paninotecarossi.com", ReferentMobileNumber = "3201234567" },
-        new ClientCompany { Name = "TechZone", VatNumber = "00000000002", ReferentName = "Marco Bianchi", ReferentEmail = "marco.b@techzone.it", ReferentMobileNumber = "3351234567" },
-        new ClientCompany { Name = "DataPolar", VatNumber = "00000000003", ReferentName = "Tedesco Davide", ReferentEmail = "support@datapolar.dev", ReferentMobileNumber = "3289876543" }
     };
 
     db.ClientCompanies.AddRange(companies);
@@ -94,22 +89,12 @@ try
     // 4. 🚘 Mock Vehicles
     // ───────────────────────────────
     var allVehicles = new List<ClientVehicle>();
-    string GenerateMockVin(string prefix, char filler)
-    {
-        var random = new Random();
-        var chars = "ABCDEFGHJKLMNPRSTUVWXYZ0123456789";
-        var remainingLength = 17 - prefix.Length;
-        var suffix = new string([.. Enumerable.Range(0, remainingLength).Select(_ => chars[random.Next(chars.Length)])]);
-
-        return (prefix + suffix).Substring(0, 17);
-    }
-
     var vehicles = new[]
     {
         new ClientVehicle
         {
             ClientCompanyId = companies[0].Id,
-            Vin = GenerateMockVin("2CNBJ1365W", '0'),
+            Vin = "5YJ3000000NEXUS01",
             FuelType = "Electric",
             Brand = "Tesla",
             Model = "Model 3",
@@ -119,36 +104,6 @@ try
             IsFetchingDataFlag = false,
             ClientOAuthAuthorized = false,
             FirstActivationAt = null,
-            CreatedAt = DateTime.UtcNow
-        },
-        new ClientVehicle
-        {
-            ClientCompanyId = companies[1].Id,
-            Vin = GenerateMockVin("5YJW54513", '1'),
-            FuelType = "Electric",
-            Brand = "Polestar",
-            Model = "Polestar 4",
-            Trim = "Long range Single motor",
-            Color = "Snow",
-            IsActiveFlag = true,
-            IsFetchingDataFlag = true,
-            ClientOAuthAuthorized = true,
-            FirstActivationAt = DateTime.Today,
-            CreatedAt = DateTime.UtcNow
-        },
-        new ClientVehicle
-        {
-            ClientCompanyId = companies[2].Id,
-            Vin = GenerateMockVin("5YJT82333", '2'),
-            FuelType = "Combustion",
-            Brand = "Porsche",
-            Model = "718 Cayman",
-            Trim = "GT4RS",
-            Color = "Racing Yellow",
-            IsActiveFlag = true,
-            IsFetchingDataFlag = true,
-            ClientOAuthAuthorized = true,
-            FirstActivationAt = DateTime.Today,
             CreatedAt = DateTime.UtcNow
         }
     };
@@ -164,43 +119,7 @@ try
     );
 
     // ───────────────────────────────
-    // 5. 📄 Mock PDF Reports
-    // ───────────────────────────────
-    var reports = new List<PdfReport>
-    {
-        new()
-        {
-            ClientCompanyId = companies[1].Id,
-            ClientVehicleId = allVehicles[1].Id,
-            ReportPeriodStart = new DateTime(2025, 4, 1),
-            ReportPeriodEnd = new DateTime(2025, 4, 30),
-            GeneratedAt = DateTime.UtcNow,
-            Notes = "Primo report per veicolo Polestar"
-        },
-        new()
-        {
-            ClientCompanyId = companies[2].Id,
-            ClientVehicleId = allVehicles[2].Id,
-            ReportPeriodStart = new DateTime(2025, 4, 1),
-            ReportPeriodEnd = new DateTime(2025, 4, 30),
-            GeneratedAt = DateTime.UtcNow,
-            Notes = "Monitoraggio uso esclusivo veicolo sportivo"
-        }
-    };
-
-    db.PdfReports.AddRange(reports);
-    await db.SaveChangesAsync();
-
-    await logger.Info(
-        "PolarDriveInitDBMockData.Cli",
-        "Inserted mock PDF reports",
-        string.Join(", ", reports.Select(r =>
-            $"CompanyId={r.ClientCompanyId}, VehicleId={r.ClientVehicleId}, Period={r.ReportPeriodStart:yyyy-MM-dd}→{r.ReportPeriodEnd:yyyy-MM-dd}"
-        ))
-    );
-
-    // ───────────────────────────────
-    // 6. 🔑🔐 Insert token + consent for vehicles that are authorized
+    // 6. 🔑🔐 Consent for vehicles that are authorized
     // ───────────────────────────────
     for (int i = 0; i < vehicles.Length; i++)
     {
@@ -219,37 +138,6 @@ try
             Notes = "Mock consent automatico"
         };
         db.ClientConsents.Add(consent);
-
-        // ✅ Inserisco il token SOLO se autorizzato
-        if (vehicle.ClientOAuthAuthorized)
-        {
-            var token = new ClientToken
-            {
-                VehicleId = vehicle.Id,
-                AccessToken = $"access_token_{vehicle.Id}",
-                RefreshToken = $"refresh_token_{vehicle.Id}",
-                AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
-                RefreshTokenExpiresAt = null,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
-            };
-            db.ClientTokens.Add(token);
-
-            await logger.Info(
-                "PolarDriveInitDBMockData.Cli",
-                "Inserted mock token and consent for authorized vehicle",
-                $"CompanyId={currentCompany.Id}, VehicleId={vehicle.Id}, VIN={vehicle.Vin}, ConsentHash={consent.ConsentHash}"
-            );
-        }
-        else
-        {
-            await logger.Info(
-                "PolarDriveInitDBMockData.Cli",
-                "Inserted mock consent only - vehicle pending OAuth",
-                $"CompanyId={currentCompany.Id}, VehicleId={vehicle.Id}, VIN={vehicle.Vin}, ConsentHash={consent.ConsentHash}"
-            );
-        }
-
         await db.SaveChangesAsync();
     }
 
@@ -314,11 +202,11 @@ try
         },
         new()
         {
-            VehicleId = allVehicles[1].Id,
+            VehicleId = allVehicles[0].Id,
             ClientCompanyId = allVehicles[1].ClientCompanyId,
             AutoDetected = false,
             OutageType = "Outage Vehicle",
-            OutageBrand = "Polestar",
+            OutageBrand = "Tesla",
             CreatedAt = DateTime.Parse("2025-04-21T09:45:00Z").AddSeconds(offset),
             OutageStart = DateTime.Parse("2025-04-15T00:00:00Z").AddSeconds(offset),
             OutageEnd = DateTime.Parse("2025-04-20T23:50:00Z").AddSeconds(offset),
@@ -326,11 +214,11 @@ try
         },
         new()
         {
-            VehicleId = allVehicles[2].Id,
+            VehicleId = allVehicles[0].Id,
             ClientCompanyId = allVehicles[2].ClientCompanyId,
             AutoDetected = true,
             OutageType = "Outage Vehicle",
-            OutageBrand = "Porsche",
+            OutageBrand = "Tesla",
             CreatedAt = DateTime.Parse("2025-04-24T07:10:00Z").AddSeconds(offset),
             OutageStart = DateTime.Parse("2025-04-23T22:00:00Z").AddSeconds(offset),
             OutageEnd = null,
@@ -367,36 +255,9 @@ try
     await db.SaveChangesAsync();
     await logger.Info("PolarDriveInitDBMockData.Cli", $"Inserted {outages.Count} mock outage records.");
 
-    // ───────────────────────────────
-    // 9. Insert mock VehicleData for authorized vehicles
-    // ───────────────────────────────
-    var random = new Random();
-    var startDate = DateTime.Today.AddDays(-30);
-    var totalHours = 30 * 24;
-
-    foreach (var vehicle in vehicles.Where(v => v.ClientOAuthAuthorized))
-    {
-        for (int i = 0; i < totalHours; i++)
-        {
-            var ts = startDate.AddHours(i);
-            var rawJson = FakeTeslaJsonDataFetch.GenerateRawVehicleJson(ts, random);
-
-            db.VehiclesData.Add(new VehicleData
-            {
-                VehicleId = vehicle.Id,
-                Timestamp = ts,
-                RawJson = rawJson
-            });
-        }
-
-        await logger.Info("PolarDriveInitDBMockData.Cli", $"Mock VehicleData generated for vehicle VIN: {vehicle.Vin}, total hours: {totalHours}");
-    }
-
-    await db.SaveChangesAsync();
-    db.ChangeTracker.Clear();
-
     await logger.Info("PolarDriveInitDBMockData.Cli", "Mock VehicleData successfully inserted and change tracker cleared.");
     await logger.Info("PolarDriveInitDBMockData.Cli", "✅ Mock data initialization completed successfully!");
+
     Console.WriteLine("🏁 Mock data initialization completed successfully!");
 }
 catch (Exception ex)

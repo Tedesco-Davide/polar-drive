@@ -1,6 +1,6 @@
 namespace PolarDrive.Data.Entities;
 
-public class ScheduledFileJob
+public class AdminScheduler
 {
     public int Id { get; set; }
 

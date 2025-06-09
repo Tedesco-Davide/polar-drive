@@ -8,12 +8,12 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TeslaDataReceiverController : ControllerBase
+public class TeslaFakeDataReceiverController : ControllerBase
 {
     private readonly PolarDriveDbContext _db;
     private readonly PolarDriveLogger _logger;
 
-    public TeslaDataReceiverController(PolarDriveDbContext db)
+    public TeslaFakeDataReceiverController(PolarDriveDbContext db)
     {
         _db = db;
         _logger = new PolarDriveLogger(_db);

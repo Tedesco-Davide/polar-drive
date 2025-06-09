@@ -40,31 +40,49 @@ public class TeslaApiService
         await _logger.Info(source, "Starting Tesla API data fetch for all active vehicles");
 
         var activeVehicles = await _db.ClientVehicles
-            .Where(v => v.ClientOAuthAuthorized && v.IsActiveFlag && v.IsFetchingDataFlag)
+            .Where(v => v.ClientOAuthAuthorized && v.IsActiveFlag && v.IsFetchingDataFlag && v.Brand.ToLower() == "tesla")
             .Include(v => v.ClientCompany)
             .ToListAsync();
 
-        await _logger.Debug(source, $"Found {activeVehicles.Count} active vehicles for data fetching");
+        await _logger.Debug(source, $"Found {activeVehicles.Count} active Tesla vehicles for data fetching");
+
+        int successCount = 0;
+        int errorCount = 0;
+        int skippedCount = 0;
 
         foreach (var vehicle in activeVehicles)
         {
             try
             {
-                await FetchDataForSingleVehicleAsync(vehicle);
+                var result = await FetchDataForSingleVehicleAsync(vehicle);
+                switch (result)
+                {
+                    case VehicleFetchResult.Success:
+                        successCount++;
+                        break;
+                    case VehicleFetchResult.Skipped:
+                        skippedCount++;
+                        break;
+                    case VehicleFetchResult.Error:
+                        errorCount++;
+                        break;
+                }
             }
             catch (Exception ex)
             {
-                await _logger.Error(source, $"Error fetching data for vehicle {vehicle.Vin}", ex.ToString());
+                errorCount++;
+                await _logger.Error(source, $"Unexpected error fetching data for vehicle {vehicle.Vin}", ex.ToString());
             }
         }
 
-        await _logger.Info(source, "Completed Tesla API data fetch cycle");
+        await _logger.Info(source, "Completed Tesla API data fetch cycle",
+            $"Success: {successCount}, Skipped: {skippedCount}, Errors: {errorCount}");
     }
 
     /// <summary>
     /// Chiama Tesla API per un singolo veicolo
     /// </summary>
-    public async Task FetchDataForSingleVehicleAsync(ClientVehicle vehicle)
+    public async Task<VehicleFetchResult> FetchDataForSingleVehicleAsync(ClientVehicle vehicle)
     {
         const string source = "TeslaApiService.FetchDataForSingleVehicle";
 
@@ -73,7 +91,7 @@ public class TeslaApiService
         if (token == null)
         {
             await _logger.Warning(source, $"No OAuth token found for vehicle {vehicle.Vin}");
-            return;
+            return VehicleFetchResult.Skipped;
         }
 
         // Controlla se il token è scaduto
@@ -84,7 +102,7 @@ public class TeslaApiService
             if (!refreshed)
             {
                 await _logger.Error(source, $"Failed to refresh token for vehicle {vehicle.Vin}");
-                return;
+                return VehicleFetchResult.Error;
             }
         }
 
@@ -97,23 +115,59 @@ public class TeslaApiService
             if (teslaVehicle == null)
             {
                 await _logger.Warning(source, $"Vehicle {vehicle.Vin} not found in Tesla account");
-                return;
+                return VehicleFetchResult.Skipped;
             }
 
-            // 2. Sveglia il veicolo se dormiente
-            await WakeUpVehicleAsync(teslaVehicle.Id, token.AccessToken);
+            await _logger.Debug(source, $"Vehicle {vehicle.Vin} current state: {teslaVehicle.State}");
+
+            // 2. ✅ GESTIONE INTELLIGENTE DELLO STATO
+            switch (teslaVehicle.State.ToLower())
+            {
+                case "offline":
+                    await _logger.Info(source, $"Vehicle {vehicle.Vin} is offline, skipping data fetch to save API quota");
+                    return VehicleFetchResult.Skipped;
+
+                case "asleep":
+                    await _logger.Info(source, $"Vehicle {vehicle.Vin} is asleep, attempting to wake up");
+                    var wakeUpSuccess = await WakeUpVehicleAsync(teslaVehicle.Id, token.AccessToken);
+                    if (!wakeUpSuccess)
+                    {
+                        await _logger.Warning(source, $"Failed to wake up vehicle {vehicle.Vin}, skipping data fetch");
+                        return VehicleFetchResult.Skipped;
+                    }
+                    // Aspetta più tempo per veicoli che erano dormienti
+                    await Task.Delay(10000);
+                    break;
+
+                case "online":
+                    await _logger.Debug(source, $"Vehicle {vehicle.Vin} is already online, proceeding with data fetch");
+                    // Nessun wake-up necessario, procedi direttamente
+                    break;
+
+                default:
+                    await _logger.Warning(source, $"Vehicle {vehicle.Vin} has unknown state '{teslaVehicle.State}', attempting data fetch anyway");
+                    break;
+            }
 
             // 3. Ottieni dati completi del veicolo
             var vehicleData = await GetVehicleDataAsync(teslaVehicle.Id, token.AccessToken);
 
-            // 4. Salva nel database via TeslaDataReceiverController
+            // 4. Salva nel database
             await SaveVehicleDataAsync(vehicle.Vin, vehicleData);
 
             await _logger.Info(source, $"Successfully fetched and saved data for vehicle {vehicle.Vin}");
+            return VehicleFetchResult.Success;
+        }
+        catch (HttpRequestException httpEx)
+        {
+            await _logger.Error(source, $"HTTP error fetching data for vehicle {vehicle.Vin}",
+                $"Status: {httpEx.Message}");
+            return VehicleFetchResult.Error;
         }
         catch (Exception ex)
         {
             await _logger.Error(source, $"Error in Tesla API call for vehicle {vehicle.Vin}", ex.ToString());
+            return VehicleFetchResult.Error;
         }
     }
 
@@ -131,16 +185,50 @@ public class TeslaApiService
         return data?.Response ?? new List<TeslaVehicleInfo>();
     }
 
-    private async Task WakeUpVehicleAsync(long vehicleId, string accessToken)
+    private async Task<bool> WakeUpVehicleAsync(long vehicleId, string accessToken)
     {
-        _httpClient.DefaultRequestHeaders.Clear();
-        _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
+        const string source = "TeslaApiService.WakeUpVehicle";
 
-        // Prova a svegliare il veicolo
-        var wakeUpResponse = await _httpClient.PostAsync($"https://owner-api.teslamotors.com/api/1/vehicles/{vehicleId}/wake_up", null);
+        try
+        {
+            _httpClient.DefaultRequestHeaders.Clear();
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-        // Aspetta un po' che si svegli
-        await Task.Delay(5000);
+            var wakeUpResponse = await _httpClient.PostAsync($"https://owner-api.teslamotors.com/api/1/vehicles/{vehicleId}/wake_up", null);
+
+            if (wakeUpResponse.IsSuccessStatusCode)
+            {
+                await _logger.Debug(source, $"Wake-up command sent successfully for vehicle ID {vehicleId}");
+
+                // Aspetta un po' che si svegli
+                await Task.Delay(5000);
+
+                // ✅ VERIFICA SE SI È EFFETTIVAMENTE SVEGLIATO
+                var vehicles = await GetTeslaVehiclesAsync(accessToken);
+                var vehicle = vehicles.FirstOrDefault(v => v.Id == vehicleId);
+
+                if (vehicle != null && vehicle.State.ToLower() == "online")
+                {
+                    await _logger.Info(source, $"Vehicle ID {vehicleId} successfully woken up");
+                    return true;
+                }
+                else
+                {
+                    await _logger.Warning(source, $"Vehicle ID {vehicleId} wake-up command sent but vehicle state is still: {vehicle?.State ?? "unknown"}");
+                    return false;
+                }
+            }
+            else
+            {
+                await _logger.Warning(source, $"Wake-up command failed for vehicle ID {vehicleId}: {wakeUpResponse.StatusCode}");
+                return false;
+            }
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error waking up vehicle ID {vehicleId}", ex.ToString());
+            return false;
+        }
     }
 
     private async Task<JsonElement> GetVehicleDataAsync(long vehicleId, string accessToken)
@@ -157,9 +245,38 @@ public class TeslaApiService
 
     private async Task SaveVehicleDataAsync(string vin, JsonElement data)
     {
-        // Chiama il nostro TeslaDataReceiverController interno
-        var receiverController = new Controllers.TeslaDataReceiverController(_db);
-        await receiverController.ReceiveVehicleData(vin, data);
+        // ✅ SALVA DIRETTAMENTE NEL DATABASE (più efficiente che simulare chiamata HTTP)
+        const string source = "TeslaApiService.SaveVehicleData";
+
+        try
+        {
+            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+            if (vehicle == null)
+            {
+                await _logger.Warning(source, $"Vehicle with VIN {vin} not found for data saving");
+                return;
+            }
+
+            var vehicleDataRecord = new VehicleData
+            {
+                VehicleId = vehicle.Id,
+                Timestamp = DateTime.UtcNow,
+                RawJson = data.GetRawText()
+            };
+
+            _db.VehiclesData.Add(vehicleDataRecord);
+            vehicle.LastDataUpdate = DateTime.UtcNow;
+
+            await _db.SaveChangesAsync();
+
+            await _logger.Debug(source, $"Saved vehicle data for VIN {vin}",
+                $"Record ID: {vehicleDataRecord.Id}, Data size: {vehicleDataRecord.RawJson.Length} chars");
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error saving vehicle data for VIN {vin}", ex.ToString());
+            throw; // Re-throw per far sapere al chiamante che il salvataggio è fallito
+        }
     }
 
     private async Task<bool> RefreshTokenAsync(ClientToken token)
@@ -175,17 +292,26 @@ public class TeslaApiService
             await _db.SaveChangesAsync();
             return true;
         }
-        catch
+        catch (Exception ex)
         {
+            await _logger.Error("TeslaApiService.RefreshToken", "Failed to refresh access token", ex.ToString());
             return false;
         }
     }
 }
 
+// ✅ ENUM PER RISULTATI PIÙ CHIARI
+public enum VehicleFetchResult
+{
+    Success,    // Dati recuperati e salvati con successo
+    Skipped,    // Operazione saltata (veicolo offline, token mancante, etc.)
+    Error       // Errore durante l'operazione
+}
+
 // DTOs per Tesla API
 public class TeslaVehiclesResponse
 {
-    public List<TeslaVehicleInfo> Response { get; set; } = new();
+    public List<TeslaVehicleInfo> Response { get; set; } = [];
 }
 
 public class TeslaVehicleInfo

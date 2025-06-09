@@ -17,7 +17,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
-    public DbSet<ScheduledFileJob> ScheduledFileJobs => Set<ScheduledFileJob>();
+    public DbSet<AdminScheduler> ScheduledFileJobs => Set<AdminScheduler>();
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -164,7 +164,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasDefaultValue(PolarDriveLogLevel.INFO);
             });
 
-            modelBuilder.Entity<ScheduledFileJob>(entity =>
+            modelBuilder.Entity<AdminScheduler>(entity =>
             {
                 entity.Property(e => e.FileTypeList)
                     .HasConversion(
