@@ -37,7 +37,7 @@ public class ClientVehicle
     public DateTime? LastDataUpdate { get; set; }
 
     // Navigation properties
-    public virtual ICollection<ClientVehicle> ClientVehicles { get; set; } = [];
+    public virtual ICollection<VehicleData> VehiclesData { get; set; } = [];
 
     public virtual ICollection<PdfReport> PdfReports { get; set; } = [];
 }

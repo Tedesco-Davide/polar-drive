@@ -14,7 +14,7 @@ public class AiReportGenerator(PolarDriveDbContext dbContext)
         await _logger.Info("AiReportGenerator.GenerateSummaryFromRawJson",
             "Avvio generazione report AI", $"Dati in input: {rawJsonList.Count} record JSON");
 
-        // Usa il nuovo parser per dati mock
+        // Usa RawDataPreparser universale (gestisce sia dati reali che mock)
         var parsedPrompt = RawDataPreparser.GenerateInsightPrompt(rawJsonList);
         var dataStats = GenerateDataStatistics(rawJsonList);
 
