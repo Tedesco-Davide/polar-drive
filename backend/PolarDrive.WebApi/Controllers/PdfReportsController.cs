@@ -13,83 +13,406 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 {
     private readonly PolarDriveLogger _logger = new(db);
 
+    /// <summary>
+    /// Ottiene la lista di tutti i report PDF
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PdfReportDTO>>> Get()
     {
         const string source = "PdfReportsController.Get";
-        await _logger.Info(source, "Requested list of PDF reports.");
 
-        var reports = await db.PdfReports
-            .Include(r => r.ClientCompany)
-            .Include(r => r.ClientVehicle)
-            .ToListAsync();
-
-        await _logger.Debug(source, "Fetched reports from DB.", $"Count: {reports.Count}");
-
-        var result = reports.Select(r => new PdfReportDTO
+        try
         {
-            Id = r.Id,
-            ReportPeriodStart = r.ReportPeriodStart.ToString("o"),
-            ReportPeriodEnd = r.ReportPeriodEnd.ToString("o"),
-            GeneratedAt = r.GeneratedAt?.ToString("o"),
-            CompanyVatNumber = r.ClientCompany?.VatNumber ?? "",
-            CompanyName = r.ClientCompany?.Name ?? "",
-            VehicleVin = r.ClientVehicle?.Vin ?? "",
-            VehicleModel = r.ClientVehicle?.Model ?? "",
-            Notes = r.Notes
-        });
+            await _logger.Info(source, "Richiesta lista report PDF");
 
-        return Ok(result);
+            var reports = await db.PdfReports
+                .Include(r => r.ClientCompany)
+                .Include(r => r.ClientVehicle)
+                .OrderByDescending(r => r.GeneratedAt)
+                .ToListAsync();
+
+            await _logger.Debug(source, "Report recuperati dal database", $"Count: {reports.Count}");
+
+            // ✅ MAPPING COMPLETO CON TUTTE LE NUOVE PROPRIETÀ
+            var result = new List<PdfReportDTO>();
+
+            foreach (var r in reports)
+            {
+                // Calcola i percorsi dei file
+                var pdfPath = GetReportFilePath(r, "pdf");
+                var htmlPath = GetReportFilePath(r, "html");
+
+                // Controlla esistenza e dimensioni
+                var pdfExists = System.IO.File.Exists(pdfPath);
+                var htmlExists = System.IO.File.Exists(htmlPath);
+                var pdfSize = pdfExists ? new FileInfo(pdfPath).Length : 0;
+                var htmlSize = htmlExists ? new FileInfo(htmlPath).Length : 0;
+
+                // Conta i record di dati
+                var dataCount = await db.VehiclesData
+                    .Where(vd => vd.VehicleId == r.ClientVehicleId &&
+                               vd.Timestamp >= r.ReportPeriodStart &&
+                               vd.Timestamp <= r.ReportPeriodEnd)
+                    .CountAsync();
+
+                // Calcola durata monitoraggio
+                var monitoringDuration = (r.ReportPeriodEnd - r.ReportPeriodStart).TotalHours;
+
+                // Determina se è rigenerato (euristica: file modificato dopo generazione)
+                var isRegenerated = false;
+                var lastModified = r.GeneratedAt?.ToString("o");
+
+                if (pdfExists)
+                {
+                    var pdfModified = System.IO.File.GetLastWriteTime(pdfPath);
+                    if (r.GeneratedAt.HasValue && pdfModified > r.GeneratedAt.Value.AddMinutes(5))
+                    {
+                        isRegenerated = true;
+                        lastModified = pdfModified.ToString("o");
+                    }
+                }
+
+                // Crea il DTO
+                var dto = new PdfReportDTO
+                {
+                    // Proprietà esistenti
+                    Id = r.Id,
+                    ReportPeriodStart = r.ReportPeriodStart.ToString("o"),
+                    ReportPeriodEnd = r.ReportPeriodEnd.ToString("o"),
+                    GeneratedAt = r.GeneratedAt?.ToString("o"),
+                    CompanyVatNumber = r.ClientCompany?.VatNumber ?? "",
+                    CompanyName = r.ClientCompany?.Name ?? "",
+                    VehicleVin = r.ClientVehicle?.Vin ?? "",
+                    VehicleModel = r.ClientVehicle?.Model ?? "",
+                    Notes = r.Notes,
+
+                    // ✅ Nuove proprietà
+                    HasPdfFile = pdfExists,
+                    HasHtmlFile = htmlExists,
+                    DataRecordsCount = dataCount,
+                    PdfFileSize = pdfSize,
+                    HtmlFileSize = htmlSize,
+                    MonitoringDurationHours = Math.Round(monitoringDuration, 1),
+                    LastModified = lastModified,
+                    IsRegenerated = isRegenerated,
+                    RegenerationCount = isRegenerated ? 1 : 0, // Semplificato per ora
+                    ReportType = DetermineReportType(r, isRegenerated, dataCount)
+                };
+
+                result.Add(dto);
+            }
+
+            await _logger.Info(source, "Mapping DTO completato", $"Processed: {result.Count} reports");
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Errore recupero lista report", ex.ToString());
+            return StatusCode(500, "Errore interno server");
+        }
     }
 
+    // ✅ METODO HELPER PER DETERMINARE IL TIPO DI REPORT
+    private static string DetermineReportType(Data.Entities.PdfReport report, bool isRegenerated, int dataCount)
+    {
+        if (isRegenerated)
+            return "Rigenerato";
+
+        if (dataCount == 0)
+            return "Vuoto";
+
+        if (dataCount < 10)
+            return "Test";
+
+        if (dataCount >= 100)
+            return "Completo";
+
+        return "Standard";
+    }
+
+    /// <summary>
+    /// Aggiorna le note di un report
+    /// </summary>
     [HttpPatch("{id}/notes")]
     public async Task<IActionResult> PatchNotes(int id, [FromBody] JsonElement body)
     {
         const string source = "PdfReportsController.PatchNotes";
-        var entity = await db.PdfReports.FindAsync(id);
 
-        if (entity == null)
+        try
         {
-            await _logger.Warning(source, "PDF report not found.", $"ReportId: {id}");
-            return NotFound("SERVER ERROR → NOT FOUND: PDF report not found!");
-        }
+            var entity = await db.PdfReports.FindAsync(id);
 
-        if (!body.TryGetProperty("notes", out var notesProp))
+            if (entity == null)
+            {
+                await _logger.Warning(source, "Report PDF non trovato", $"ReportId: {id}");
+                return NotFound($"Report {id} non trovato");
+            }
+
+            if (!body.TryGetProperty("notes", out var notesProp))
+            {
+                await _logger.Warning(source, "Campo 'notes' mancante", $"ReportId: {id}");
+                return BadRequest("Campo 'notes' richiesto nel body della richiesta");
+            }
+
+            var newNotes = notesProp.GetString() ?? string.Empty;
+            var oldNotes = entity.Notes ?? string.Empty;
+
+            entity.Notes = newNotes;
+            await db.SaveChangesAsync();
+
+            await _logger.Info(source, "Note del report aggiornate",
+                $"ReportId: {id}, OldLength: {oldNotes.Length}, NewLength: {newNotes.Length}");
+
+            return Ok(new
+            {
+                success = true,
+                message = "Note aggiornate con successo",
+                reportId = id,
+                notesLength = newNotes.Length
+            });
+        }
+        catch (Exception ex)
         {
-            await _logger.Warning(source, "Missing 'notes' field.", $"ReportId: {id}");
-            return BadRequest("SERVER ERROR → BAD REQUEST: Notes field missing!");
+            await _logger.Error(source, "Errore aggiornamento note", $"ReportId: {id}, Error: {ex}");
+            return StatusCode(500, "Errore interno server");
         }
-
-        entity.Notes = notesProp.GetString() ?? string.Empty;
-        await db.SaveChangesAsync();
-
-        await _logger.Debug(source, "PDF report notes updated.", $"ReportId: {id}, NotesLength: {entity.Notes.Length}");
-        return NoContent();
     }
 
+    /// <summary>
+    /// Download PDF con rigenerazione automatica se necessario
+    /// </summary>
     [HttpGet("{id}/download")]
     public async Task<IActionResult> DownloadPdf(int id)
     {
         const string source = "PdfReportsController.DownloadPdf";
 
-        var report = await db.PdfReports
-            .Include(r => r.ClientCompany)
-            .Include(r => r.ClientVehicle)
-            .FirstOrDefaultAsync(r => r.Id == id);
-
-        if (report == null)
+        try
         {
-            await _logger.Warning(source, "PDF report not found in DB.", $"ReportId: {id}");
-            return NotFound("SERVER ERROR → NOT FOUND: PDF report not found!");
+            await _logger.Info(source, "Richiesta download PDF", $"ReportId: {id}");
+
+            // 1. Trova il report
+            var report = await db.PdfReports
+                .Include(r => r.ClientCompany)
+                .Include(r => r.ClientVehicle)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (report == null)
+            {
+                await _logger.Warning(source, "Report non trovato in database", $"ReportId: {id}");
+                return NotFound($"Report {id} non trovato");
+            }
+
+            // 2. Controlla se rigenerare
+            var forceRegenerate = HttpContext.Request.Query["regenerate"].ToString().ToLower() == "true";
+            var pdfPath = GetReportFilePath(report, "pdf");
+            var htmlPath = GetReportFilePath(report, "html");
+
+            // 3. Rigenera se necessario
+            if (!System.IO.File.Exists(pdfPath) || forceRegenerate)
+            {
+                await _logger.Info(source, "Avvio rigenerazione PDF",
+                    $"ReportId: {id}, Force: {forceRegenerate}, FileExists: {System.IO.File.Exists(pdfPath)}");
+
+                var regenerationResult = await RegenerateReportFiles(report);
+
+                if (!regenerationResult.Success)
+                {
+                    var errorMessage = regenerationResult.ErrorMessage ?? "Errore sconosciuto durante la rigenerazione";
+                    await _logger.Error(source, "Rigenerazione fallita", $"ReportId: {id}, Error: {errorMessage}");
+                    return StatusCode(500, errorMessage);
+                }
+
+                // Aggiorna il path solo se la rigenerazione ha prodotto un nuovo file
+                if (!string.IsNullOrEmpty(regenerationResult.PdfPath))
+                {
+                    pdfPath = regenerationResult.PdfPath;
+                }
+            }
+
+            // 4. Leggi e invia il file
+            if (System.IO.File.Exists(pdfPath))
+            {
+                var pdfBytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
+                var fileName = $"PolarDrive_Report_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.pdf";
+
+                await _logger.Info(source, "PDF inviato con successo",
+                    $"ReportId: {id}, Size: {pdfBytes.Length} bytes, FileName: {fileName}");
+
+                return File(pdfBytes, "application/pdf", fileName);
+            }
+
+            // 5. Fallback: prova HTML
+            if (System.IO.File.Exists(htmlPath))
+            {
+                var htmlBytes = await System.IO.File.ReadAllBytesAsync(htmlPath);
+                var fileName = $"PolarDrive_Report_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.html";
+
+                await _logger.Info(source, "HTML inviato come fallback",
+                    $"ReportId: {id}, Size: {htmlBytes.Length} bytes");
+
+                return File(htmlBytes, "text/html", fileName);
+            }
+
+            // 6. Nessun file disponibile
+            await _logger.Warning(source, "Nessun file disponibile per il download", $"ReportId: {id}");
+            return NotFound("File del report non disponibile");
         }
-
-        var regenerate = HttpContext.Request.Query["regenerate"] == "true";
-
-        var pdfPath = Path.Combine("storage", "reports", report.ReportPeriodStart.Year.ToString(),
-            report.ReportPeriodStart.Month.ToString("D2"), $"PolarDrive_Report_{report.Id}.pdf");
-
-        if (!System.IO.File.Exists(pdfPath) || regenerate)
+        catch (Exception ex)
         {
+            await _logger.Error(source, "Errore generale download PDF", $"ReportId: {id}, Error: {ex}");
+            return StatusCode(500, "Errore interno server durante download");
+        }
+    }
+
+    /// <summary>
+    /// Forza la rigenerazione di un report
+    /// </summary>
+    [HttpPost("{id}/regenerate")]
+    public async Task<IActionResult> RegenerateReport(int id)
+    {
+        const string source = "PdfReportsController.RegenerateReport";
+
+        try
+        {
+            await _logger.Info(source, "Richiesta rigenerazione manuale", $"ReportId: {id}");
+
+            var report = await db.PdfReports
+                .Include(r => r.ClientCompany)
+                .Include(r => r.ClientVehicle)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (report == null)
+            {
+                return NotFound($"Report {id} non trovato");
+            }
+
+            var result = await RegenerateReportFiles(report);
+
+            if (result.Success)
+            {
+                await _logger.Info(source, "Rigenerazione completata con successo", $"ReportId: {id}");
+
+                return Ok(new
+                {
+                    success = true,
+                    message = "Report rigenerato con successo",
+                    reportId = id,
+                    pdfPath = result.PdfPath,
+                    htmlPath = result.HtmlPath,
+                    dataRecords = result.DataRecordsProcessed,
+                    regeneratedAt = DateTime.UtcNow
+                });
+            }
+            else
+            {
+                await _logger.Error(source, "Rigenerazione fallita", $"ReportId: {id}, Error: {result.ErrorMessage}");
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = result.ErrorMessage,
+                    reportId = id
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Errore rigenerazione manuale", $"ReportId: {id}, Error: {ex}");
+            return StatusCode(500, "Errore interno server");
+        }
+    }
+
+    /// <summary>
+    /// Ottiene le statistiche di un report
+    /// </summary>
+    [HttpGet("{id}/stats")]
+    public async Task<IActionResult> GetReportStats(int id)
+    {
+        const string source = "PdfReportsController.GetReportStats";
+
+        try
+        {
+            var report = await db.PdfReports
+                .Include(r => r.ClientCompany)
+                .Include(r => r.ClientVehicle)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (report == null)
+            {
+                return NotFound($"Report {id} non trovato");
+            }
+
+            var dataCount = await db.VehiclesData
+                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                           vd.Timestamp >= report.ReportPeriodStart &&
+                           vd.Timestamp <= report.ReportPeriodEnd)
+                .CountAsync();
+
+            var firstRecord = await db.VehiclesData
+                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                           vd.Timestamp >= report.ReportPeriodStart &&
+                           vd.Timestamp <= report.ReportPeriodEnd)
+                .OrderBy(vd => vd.Timestamp)
+                .Select(vd => vd.Timestamp)
+                .FirstOrDefaultAsync();
+
+            var lastRecord = await db.VehiclesData
+                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                           vd.Timestamp >= report.ReportPeriodStart &&
+                           vd.Timestamp <= report.ReportPeriodEnd)
+                .OrderByDescending(vd => vd.Timestamp)
+                .Select(vd => vd.Timestamp)
+                .FirstOrDefaultAsync();
+
+            var pdfPath = GetReportFilePath(report, "pdf");
+            var htmlPath = GetReportFilePath(report, "html");
+
+            var stats = new
+            {
+                reportId = id,
+                vehicleVin = report.ClientVehicle?.Vin,
+                companyName = report.ClientCompany?.Name,
+                periodStart = report.ReportPeriodStart,
+                periodEnd = report.ReportPeriodEnd,
+                generatedAt = report.GeneratedAt,
+                notes = report.Notes,
+                dataRecords = dataCount,
+                firstRecord = firstRecord,
+                lastRecord = lastRecord,
+                monitoringDuration = lastRecord != default ? (lastRecord - firstRecord).TotalHours : 0,
+                files = new
+                {
+                    pdfExists = System.IO.File.Exists(pdfPath),
+                    htmlExists = System.IO.File.Exists(htmlPath),
+                    pdfSize = System.IO.File.Exists(pdfPath) ? new FileInfo(pdfPath).Length : 0,
+                    htmlSize = System.IO.File.Exists(htmlPath) ? new FileInfo(htmlPath).Length : 0,
+                    pdfPath = System.IO.File.Exists(pdfPath) ? pdfPath : null,
+                    htmlPath = System.IO.File.Exists(htmlPath) ? htmlPath : null
+                }
+            };
+
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Errore recupero statistiche", $"ReportId: {id}, Error: {ex}");
+            return StatusCode(500, "Errore interno server");
+        }
+    }
+
+    #region Private Helper Methods
+
+    /// <summary>
+    /// Rigenera i file del report (HTML e PDF)
+    /// </summary>
+    private async Task<RegenerationResult> RegenerateReportFiles(Data.Entities.PdfReport report)
+    {
+        const string source = "PdfReportsController.RegenerateReportFiles";
+
+        try
+        {
+            // 1. Recupera i dati raw JSON
             var rawJsonList = await db.VehiclesData
                 .Where(d => d.VehicleId == report.ClientVehicleId &&
                             d.Timestamp >= report.ReportPeriodStart &&
@@ -98,30 +421,206 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 .Select(d => d.RawJson)
                 .ToListAsync();
 
-            if (rawJsonList.Count == 0)
+            if (!rawJsonList.Any())
             {
-                await _logger.Warning(source, "PDF file non trovato e nessun dato disponibile per rigenerarlo.", $"ReportId: {id}");
-                return NotFound("SERVER ERROR → PDF not found and no data to regenerate.");
+                return RegenerationResult.CreateFailure("Nessun dato veicolo disponibile per il periodo specificato");  // ✅ AGGIORNATO
             }
 
+            // 2. Genera AI insights
             var aiGenerator = new AiReportGenerator(db);
             var insights = await aiGenerator.GenerateSummaryFromRawJson(rawJsonList);
 
             if (string.IsNullOrWhiteSpace(insights))
             {
-                await _logger.Warning(source, "PDF rigenerazione fallita per mancanza di insights.", $"ReportId: {id}");
-                return NotFound("SERVER ERROR → No insights to regenerate PDF.");
+                return RegenerationResult.CreateFailure("Fallimento generazione insights AI");  // ✅ AGGIORNATO
             }
 
-            var generator = new PdfGenerationService(db);
-            var bytes = generator.GeneratePolardriveReportPdf(report, insights);
-            await System.IO.File.WriteAllBytesAsync(pdfPath, bytes);
-            await _logger.Info(source, "PDF rigenerato da zero per download.", $"ReportId: {id}");
+            // 3. Genera HTML
+            var htmlService = new HtmlReportService(db);
+            var htmlOptions = new HtmlReportOptions
+            {
+                ShowDetailedStats = true,
+                ShowRawData = false,
+                ReportType = "Regenerated Report",
+                AdditionalCss = GetCustomRegenerationStyles()
+            };
+
+            var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
+
+            // 4. Salva HTML
+            var htmlPath = GetReportFilePath(report, "html");
+            var htmlDirectory = Path.GetDirectoryName(htmlPath);
+            if (!string.IsNullOrEmpty(htmlDirectory))
+            {
+                Directory.CreateDirectory(htmlDirectory);
+            }
+            await System.IO.File.WriteAllTextAsync(htmlPath, htmlContent);
+
+            // 5. Genera PDF
+            var pdfService = new PdfGenerationService(db);
+            var pdfOptions = new PdfConversionOptions
+            {
+                PageFormat = "A4",
+                MarginTop = "2cm",
+                MarginBottom = "2cm",
+                MarginLeft = "1.5cm",
+                MarginRight = "1.5cm",
+                DisplayHeaderFooter = true,
+                HeaderTemplate = $@"
+                <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-bottom: 1px solid #ccc; padding-bottom: 5px;'>
+                    <span>PolarDrive Report - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
+                </div>",
+                FooterTemplate = @"
+                <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
+                    <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span></span>
+                </div>"
+            };
+
+            var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
+
+            // 6. Salva PDF
+            var pdfPath = GetReportFilePath(report, "pdf");
+            var pdfDirectory = Path.GetDirectoryName(pdfPath);
+            if (!string.IsNullOrEmpty(pdfDirectory))
+            {
+                Directory.CreateDirectory(pdfDirectory);
+            }
+            await System.IO.File.WriteAllBytesAsync(pdfPath, pdfBytes);
+
+            await _logger.Info(source, "Report rigenerato con successo",
+                $"ReportId: {report.Id}, PDF: {pdfBytes.Length} bytes, HTML: {htmlContent.Length} chars, Records: {rawJsonList.Count}");
+
+            return RegenerationResult.CreateSuccess(pdfPath, htmlPath, rawJsonList.Count);  // ✅ AGGIORNATO
         }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Errore rigenerazione report", $"ReportId: {report.Id}, Error: {ex}");
+            return RegenerationResult.CreateFailure($"Errore rigenerazione: {ex.Message}");  // ✅ AGGIORNATO
+        }
+    }
 
-        var pdfBytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
+    /// <summary>
+    /// Ottiene il percorso completo del file del report
+    /// </summary>
+    private string GetReportFilePath(Data.Entities.PdfReport report, string extension)
+    {
+        var outputDir = Path.Combine("storage", "reports",
+            report.ReportPeriodStart.Year.ToString(),
+            report.ReportPeriodStart.Month.ToString("D2"));
 
-        await _logger.Info(source, "PDF file inviato con successo.", $"ReportId: {id}, Size: {pdfBytes.Length}");
-        return File(pdfBytes, "application/pdf", $"PolarDrive_Report_{id}.pdf");
+        return Path.Combine(outputDir, $"PolarDrive_Report_{report.Id}.{extension}");
+    }
+
+    /// <summary>
+    /// Controlla se il file PDF esiste
+    /// </summary>
+    private bool CheckPdfFileExists(Data.Entities.PdfReport report)
+    {
+        var pdfPath = GetReportFilePath(report, "pdf");
+        return System.IO.File.Exists(pdfPath);
+    }
+
+    /// <summary>
+    /// Controlla se il file HTML esiste
+    /// </summary>
+    private bool CheckHtmlFileExists(Data.Entities.PdfReport report)
+    {
+        var htmlPath = GetReportFilePath(report, "html");
+        return System.IO.File.Exists(htmlPath);
+    }
+
+    /// <summary>
+    /// Conta i record di dati per un report
+    /// </summary>
+    private async Task<int> GetDataRecordsCount(Data.Entities.PdfReport report)
+    {
+        try
+        {
+            return await db.VehiclesData
+                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                           vd.Timestamp >= report.ReportPeriodStart &&
+                           vd.Timestamp <= report.ReportPeriodEnd)
+                .CountAsync();
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Stili CSS personalizzati per report rigenerati
+    /// </summary>
+    private string GetCustomRegenerationStyles()
+    {
+        return @"
+            .regenerated-badge {
+                background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+                color: #000;
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 11px;
+                font-weight: bold;
+                display: inline-block;
+                margin-left: 15px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            }
+            
+            .report-info::after {
+                content: ' 🔄 RIGENERATO';
+                background-color: #ffc107;
+                color: #000;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 10px;
+                font-weight: bold;
+                margin-left: 10px;
+            }
+            
+            .ai-insights {
+                border-left: 5px solid #ffc107;
+            }
+            
+            .ai-insights::before {
+                content: '🔄 Report Rigenerato • ';
+                color: #ffc107;
+                font-weight: bold;
+                font-size: 12px;
+            }";
+    }
+
+    #endregion
+}
+
+/// <summary>
+/// Risultato dell'operazione di rigenerazione
+/// </summary>
+public class RegenerationResult
+{
+    public bool Success { get; set; }
+    public string? ErrorMessage { get; set; }
+    public string? PdfPath { get; set; }
+    public string? HtmlPath { get; set; }
+    public int DataRecordsProcessed { get; set; }
+
+    // ✅ RINOMINA I METODI STATICI per evitare conflitto con la proprietà
+    public static RegenerationResult CreateSuccess(string pdfPath, string htmlPath, int recordsProcessed)
+    {
+        return new RegenerationResult
+        {
+            Success = true,
+            PdfPath = pdfPath,
+            HtmlPath = htmlPath,
+            DataRecordsProcessed = recordsProcessed
+        };
+    }
+
+    public static RegenerationResult CreateFailure(string errorMessage)
+    {
+        return new RegenerationResult
+        {
+            Success = false,
+            ErrorMessage = errorMessage
+        };
     }
 }
