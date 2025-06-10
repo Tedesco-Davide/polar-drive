@@ -199,7 +199,7 @@ export default function AdminPdfReports({
           onSave={async (updated) => {
             try {
               await fetch(
-                `${API_BASE_URL}/api/PdfReports/${updated.id}/notes`,
+                `${API_BASE_URL}/api/pdfreports/${updated.id}/notes`,
                 {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
