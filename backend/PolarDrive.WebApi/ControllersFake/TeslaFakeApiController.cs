@@ -1,10 +1,10 @@
-// Aggiorna TeslaFakeApiController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Jobs;
 
-namespace PolarDrive.WebApi.Controllers;
+namespace PolarDrive.WebApi.ControllersFake;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -21,7 +21,7 @@ public class TeslaFakeApiController : ControllerBase
 
     /// <summary>
     /// Forza la generazione di un report di test (ultimi 5 minuti - 4-5 records)
-    /// Aggiornato per usare UpdatedReportGeneratorJob
+    /// Aggiornato per usare ReportGeneratorJob
     /// </summary>
     [HttpPost("GenerateTestReport")]
     public async Task<IActionResult> GenerateTestReport()
@@ -32,7 +32,7 @@ public class TeslaFakeApiController : ControllerBase
         {
             await _logger.Info(source, "Manual test report generation triggered (5 min period)");
 
-            var reportJob = new UpdatedReportGeneratorJob(_db);
+            var reportJob = new ReportGeneratorJob(_db);
             await reportJob.RunTestAsync();
 
             await _logger.Info(source, "Manual test report generation completed");
@@ -69,7 +69,7 @@ public class TeslaFakeApiController : ControllerBase
         {
             await _logger.Info(source, "Manual quick report generation triggered (2 min period)");
 
-            var reportJob = new UpdatedReportGeneratorJob(_db);
+            var reportJob = new ReportGeneratorJob(_db);
             await reportJob.RunQuickTestAsync();
 
             await _logger.Info(source, "Manual quick report generation completed");
@@ -118,7 +118,7 @@ public class TeslaFakeApiController : ControllerBase
             await _logger.Info(source, "Manual custom report generation triggered",
                 $"Period: {startDate:yyyy-MM-dd HH:mm} to {endDate:yyyy-MM-dd HH:mm}");
 
-            var reportJob = new UpdatedReportGeneratorJob(_db);
+            var reportJob = new ReportGeneratorJob(_db);
             await reportJob.RunForPeriodAsync(startDate, endDate, "Custom-API");
 
             await _logger.Info(source, "Manual custom report generation completed");
@@ -167,7 +167,7 @@ public class TeslaFakeApiController : ControllerBase
 
             await _logger.Info(source, $"Vehicle report generation triggered for VIN {vehicle.Vin}");
 
-            var reportJob = new UpdatedReportGeneratorJob(_db);
+            var reportJob = new ReportGeneratorJob(_db);
             var report = await reportJob.GenerateForVehicleAsync(vehicleId, startDate, endDate);
 
             if (report != null)
@@ -315,9 +315,9 @@ public class TeslaFakeApiController : ControllerBase
 
         var pdfPath = PolarDrive.WebApi.Helpers.PdfStorageHelper.GetReportPdfPath(report);
 
-        if (File.Exists(pdfPath))
+        if (System.IO.File.Exists(pdfPath))
         {
-            var bytes = await File.ReadAllBytesAsync(pdfPath);
+            var bytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
             var fileName = $"PolarDrive_Report_{report.Id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.pdf";
 
             return File(bytes, "application/pdf", fileName);
@@ -325,9 +325,9 @@ public class TeslaFakeApiController : ControllerBase
 
         // Fallback: prova con file di testo
         var textPath = pdfPath.Replace(".pdf", ".txt");
-        if (File.Exists(textPath))
+        if (System.IO.File.Exists(textPath))
         {
-            var textContent = await File.ReadAllTextAsync(textPath);
+            var textContent = await System.IO.File.ReadAllTextAsync(textPath);
             var fileName = $"PolarDrive_Report_{report.Id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.txt";
 
             return File(System.Text.Encoding.UTF8.GetBytes(textContent), "text/plain", fileName);
@@ -340,7 +340,7 @@ public class TeslaFakeApiController : ControllerBase
     {
         var pdfPath = PolarDrive.WebApi.Helpers.PdfStorageHelper.GetReportPdfPath(report);
         var textPath = pdfPath.Replace(".pdf", ".txt");
-        return File.Exists(pdfPath) || File.Exists(textPath);
+        return System.IO.File.Exists(pdfPath) || System.IO.File.Exists(textPath);
     }
 
     private async Task<bool> CheckAiSystemAvailability()
@@ -362,7 +362,7 @@ public class TeslaFakeApiController : ControllerBase
     {
         var programFiles = Environment.GetEnvironmentVariable("ProgramFiles") ?? @"C:\Program Files";
         var npxPath = Path.Combine(programFiles, "nodejs", "npx.cmd");
-        return File.Exists(npxPath);
+        return System.IO.File.Exists(npxPath);
     }
 }
 
