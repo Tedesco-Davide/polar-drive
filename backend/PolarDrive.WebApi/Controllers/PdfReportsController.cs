@@ -122,11 +122,27 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         if (dataCount == 0)
             return "Vuoto";
 
+        // ✅ USA IL PARAMETRO REPORT PER LOGICA PIÙ SOFISTICATA
+        var duration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
+
+        // Determina tipo basato su durata + dati
+        if (duration >= 24 && dataCount >= 100)
+            return "Giornaliero Completo";
+
+        if (duration >= 168) // 7 giorni
+            return "Settimanale";
+
+        if (duration >= 720) // ~30 giorni
+            return "Mensile";
+
         if (dataCount < 10)
             return "Test";
 
         if (dataCount >= 100)
             return "Completo";
+
+        if (duration < 1) // Meno di 1 ora
+            return "Quick Test";
 
         return "Standard";
     }
