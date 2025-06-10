@@ -17,8 +17,9 @@ public interface IVehicleDataService
 
     /// <summary>
     /// Fetch dati per un veicolo specifico
+    /// ✅ CAMBIA QUESTA RIGA:
     /// </summary>
-    Task FetchDataForVehicleAsync(string vehicleId);
+    Task<VehicleFetchResult> FetchDataForVehicleAsync(string vehicleId);  // ← Era Task, ora Task<VehicleFetchResult>
 
     /// <summary>
     /// Verifica se il servizio è disponibile/configurato
@@ -84,7 +85,6 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
 
 /// <summary>
 /// Adapter per TeslaApiService per conformarsi all'interfaccia standard
-/// ✅ COMPLETAMENTE IMPLEMENTATO e CORRETTO
 /// </summary>
 public class TeslaApiServiceAdapter(TeslaApiService teslaService) : IVehicleDataService
 {
@@ -98,28 +98,19 @@ public class TeslaApiServiceAdapter(TeslaApiService teslaService) : IVehicleData
     }
 
     /// <summary>
-    /// ✅ IMPLEMENTATO: Fetch dati per un singolo veicolo
+    /// ✅ CAMBIA QUESTO METODO:
     /// </summary>
-    public async Task FetchDataForVehicleAsync(string vehicleId)
+    public async Task<VehicleFetchResult> FetchDataForVehicleAsync(string vehicleId)
     {
-        // TeslaApiService ora ha questo metodo implementato
-        var result = await _teslaService.FetchDataForVehicleAsync(vehicleId);
-
-        // Se vuoi gestire il risultato VehicleFetchResult, puoi farlo qui
-        // Per ora manteniamo la firma dell'interfaccia senza return value
+        // Ora ritorna il risultato invece di ignorarlo
+        return await _teslaService.FetchDataForVehicleAsync(vehicleId);
     }
 
-    /// <summary>
-    /// ✅ IMPLEMENTATO: Verifica disponibilità servizio Tesla
-    /// </summary>
     public async Task<bool> IsServiceAvailableAsync()
     {
         return await _teslaService.IsServiceAvailableAsync();
     }
 
-    /// <summary>
-    /// ✅ IMPLEMENTATO: Statistiche di utilizzo Tesla
-    /// </summary>
     public async Task<ServiceUsageStats> GetUsageStatsAsync()
     {
         return await _teslaService.GetUsageStatsAsync();

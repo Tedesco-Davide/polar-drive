@@ -4,7 +4,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Jobs;
 
-namespace PolarDrive.WebApi.ControllersFake;
+namespace PolarDrive.WebApi.Fake;
 
 [ApiController]
 [Route("api/[controller]")]

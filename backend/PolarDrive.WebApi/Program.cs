@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using PolarDrive.Data.DbContexts;
+using PolarDrive.WebApi.Fake;
 using PolarDrive.WebApi.Production;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,22 +39,23 @@ builder.Services.AddDbContext<PolarDriveDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}")
 );
 
-// ✅ HTTP CLIENT per Tesla API
+// ✅ SERVIZI MULTI-BRAND
 builder.Services.AddHttpClient();
-
-// === SERVIZI MULTI-BRAND ===
+builder.Services.AddScoped<TeslaApiService>();
+builder.Services.AddScoped<VehicleApiServiceRegistry>();
 builder.Services.AddScoped<VehicleDataService>();
 
-// Servizi API per i vari brand
-builder.Services.AddScoped<TeslaApiService>();
-// builder.Services.AddScoped<PolestarApiService>(); // TODO: Implementare
-// builder.Services.AddScoped<PorscheApiService>();  // TODO: Implementare
-
-// ✅ REGISTRY per gestire tutti i servizi API
-builder.Services.AddScoped<VehicleApiServiceRegistry>();
-
-// Background Service per produzione
-builder.Services.AddHostedService<ProductionScheduler>();
+// 🆕 SCHEDULERS: Uno per produzione, uno per development
+if (builder.Environment.IsDevelopment())
+{
+    // Development: Usa FakeProductionScheduler (report ogni 5 minuti)
+    builder.Services.AddHostedService<FakeProductionScheduler>();
+}
+else
+{
+    // Production: Usa ProductionScheduler normale (report mensili)
+    builder.Services.AddHostedService<ProductionScheduler>();
+}
 
 var app = builder.Build();
 
@@ -78,7 +80,8 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        await logger.Info("Program.Main", "PolarDrive Web API is starting...", $"DB Path: {dbPath}");
+        var schedulerType = app.Environment.IsDevelopment() ? "FakeProductionScheduler (5min reports)" : "ProductionScheduler (monthly reports)";
+        await logger.Info("Program.Main", $"PolarDrive Web API is starting with {schedulerType}...", $"DB Path: {dbPath}");
 
         // ✅ LOG INFO SUI SERVIZI REGISTRATI
         var vehicleDataService = scope.ServiceProvider.GetRequiredService<VehicleDataService>();
@@ -88,6 +91,25 @@ using (var scope = app.Services.CreateScope())
         foreach (var (brand, count) in stats)
         {
             await logger.Info("Program.Main", $"  - {brand}: {count} active vehicles");
+        }
+
+        // 🎯 DEVELOPMENT INFO
+        if (app.Environment.IsDevelopment())
+        {
+            Console.WriteLine();
+            Console.WriteLine("=== 🚀 DEVELOPMENT MODE ===");
+            Console.WriteLine("📊 FakeProductionScheduler: Reports every 5 minutes");
+            Console.WriteLine("🔧 Mock API Endpoints available:");
+            Console.WriteLine("   - GET  /api/TeslaFakeApi/DataStatus");
+            Console.WriteLine("   - POST /api/TeslaFakeApi/GenerateQuickReport");
+            Console.WriteLine("   - GET  /api/TeslaFakeApi/ReportStatus");
+            Console.WriteLine("   - GET  /api/TeslaFakeApi/DownloadReport/{id}");
+            Console.WriteLine();
+            Console.WriteLine("⏰ Test sequence:");
+            Console.WriteLine("   1. Wait ~7 minutes for first automatic report");
+            Console.WriteLine("   2. Or call POST /api/TeslaFakeApi/GenerateQuickReport manually");
+            Console.WriteLine("   3. Check GET /api/TeslaFakeApi/ReportStatus for results");
+            Console.WriteLine("===============================");
         }
     }
     catch (Exception ex)
