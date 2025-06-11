@@ -420,7 +420,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     #region Private Helper Methods
 
     /// <summary>
-    /// Rigenera i file del report (HTML e PDF)
+    /// Ora usa SEMPRE l'analisi progressiva
     /// </summary>
     private async Task<RegenerationResult> RegenerateReportFiles(Data.Entities.PdfReport report)
     {
@@ -428,42 +428,34 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
         try
         {
-            // 1. Recupera i dati raw JSON
-            var rawJsonList = await db.VehiclesData
-                .Where(d => d.VehicleId == report.ClientVehicleId &&
-                            d.Timestamp >= report.ReportPeriodStart &&
-                            d.Timestamp <= report.ReportPeriodEnd)
-                .OrderBy(d => d.Timestamp)
-                .Select(d => d.RawJson)
-                .ToListAsync();
+            await _logger.Info(source, "Avvio rigenerazione con analisi progressiva",
+                $"ReportId: {report.Id}, VehicleId: {report.ClientVehicleId}");
 
-            if (!rawJsonList.Any())
-            {
-                return RegenerationResult.CreateFailure("Nessun dato veicolo disponibile per il periodo specificato");  // ✅ AGGIORNATO
-            }
-
-            // 2. Genera AI insights
+            // ✅ USA SEMPRE L'ANALISI PROGRESSIVA
             var aiGenerator = new AiReportGenerator(db);
-            var insights = await aiGenerator.GenerateSummaryFromRawJson(rawJsonList);
+            var insights = await aiGenerator.GenerateProgressiveInsightsAsync(report.ClientVehicleId);
 
             if (string.IsNullOrWhiteSpace(insights))
             {
-                return RegenerationResult.CreateFailure("Fallimento generazione insights AI");  // ✅ AGGIORNATO
+                return RegenerationResult.CreateFailure("Fallimento generazione insights AI progressivi");
             }
 
-            // 3. Genera HTML
+            await _logger.Info(source, "Insights progressivi generati",
+                $"ReportId: {report.Id}, Insights length: {insights.Length} chars");
+
+            // 2. Genera HTML con insights progressivi
             var htmlService = new HtmlReportService(db);
             var htmlOptions = new HtmlReportOptions
             {
                 ShowDetailedStats = true,
                 ShowRawData = false,
-                ReportType = "Regenerated Report",
-                AdditionalCss = GetCustomRegenerationStyles()
+                ReportType = "Progressive AI Analysis", // ✅ Indica che è progressivo
+                AdditionalCss = GetProgressiveRegenerationStyles() // ✅ Stili dedicati
             };
 
             var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
 
-            // 4. Salva HTML
+            // 3. Salva HTML
             var htmlPath = GetReportFilePath(report, "html");
             var htmlDirectory = Path.GetDirectoryName(htmlPath);
             if (!string.IsNullOrEmpty(htmlDirectory))
@@ -472,7 +464,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             }
             await System.IO.File.WriteAllTextAsync(htmlPath, htmlContent);
 
-            // 5. Genera PDF
+            // 4. Genera PDF con header progressivo
             var pdfService = new PdfGenerationService(db);
             var pdfOptions = new PdfConversionOptions
             {
@@ -483,8 +475,8 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 MarginRight = "1.5cm",
                 DisplayHeaderFooter = true,
                 HeaderTemplate = $@"
-                <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-bottom: 1px solid #ccc; padding-bottom: 5px;'>
-                    <span>PolarDrive Report - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
+                <div style='font-size: 10px; width: 100%; text-align: center; color: #667eea; border-bottom: 1px solid #667eea; padding-bottom: 5px;'>
+                    <span>🧠 PolarDrive Progressive Analysis - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
                 </div>",
                 FooterTemplate = @"
                 <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
@@ -494,7 +486,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
             var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
 
-            // 6. Salva PDF
+            // 5. Salva PDF
             var pdfPath = GetReportFilePath(report, "pdf");
             var pdfDirectory = Path.GetDirectoryName(pdfPath);
             if (!string.IsNullOrEmpty(pdfDirectory))
@@ -503,16 +495,82 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             }
             await System.IO.File.WriteAllBytesAsync(pdfPath, pdfBytes);
 
-            await _logger.Info(source, "Report rigenerato con successo",
-                $"ReportId: {report.Id}, PDF: {pdfBytes.Length} bytes, HTML: {htmlContent.Length} chars, Records: {rawJsonList.Count}");
+            // 6. Aggiorna le note del report per indicare che è progressivo
+            report.Notes = $"[PROGRESSIVE] Regenerated with AI progressive analysis - {DateTime.UtcNow:yyyy-MM-dd HH:mm}";
+            await db.SaveChangesAsync();
 
-            return RegenerationResult.CreateSuccess(pdfPath, htmlPath, rawJsonList.Count);  // ✅ AGGIORNATO
+            await _logger.Info(source, "Report progressivo rigenerato con successo",
+                $"ReportId: {report.Id}, PDF: {pdfBytes.Length} bytes, HTML: {htmlContent.Length} chars");
+
+            return RegenerationResult.CreateSuccess(pdfPath, htmlPath, 0); // Non abbiamo più il count dei record raw
         }
         catch (Exception ex)
         {
-            await _logger.Error(source, "Errore rigenerazione report", $"ReportId: {report.Id}, Error: {ex}");
-            return RegenerationResult.CreateFailure($"Errore rigenerazione: {ex.Message}");  // ✅ AGGIORNATO
+            await _logger.Error(source, "Errore rigenerazione report progressivo",
+                $"ReportId: {report.Id}, Error: {ex}");
+            return RegenerationResult.CreateFailure($"Errore rigenerazione progressiva: {ex.Message}");
         }
+    }
+
+    /// <summary>
+    /// ✅ AGGIUNGI questo metodo per stili dedicati ai report progressivi rigenerati
+    /// </summary>
+    private string GetProgressiveRegenerationStyles()
+    {
+        return @"
+        .progressive-regenerated-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin: 10px 15px 10px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .report-info::after {
+            content: ' 🧠 ANALISI PROGRESSIVA';
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .ai-insights {
+            border-left: 5px solid #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 20px;
+            border-radius: 0 12px 12px 0;
+        }
+        
+        .ai-insights::before {
+            content: '🧠 Analisi Progressiva AI • ';
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .progressive-evolution {
+            border: 2px dashed #667eea;
+            padding: 15px;
+            margin: 20px 0;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px;
+        }
+        
+        .progressive-evolution::before {
+            content: '📈 Evoluzione nel Tempo • ';
+            color: #667eea;
+            font-weight: bold;
+        }";
     }
 
     /// <summary>
