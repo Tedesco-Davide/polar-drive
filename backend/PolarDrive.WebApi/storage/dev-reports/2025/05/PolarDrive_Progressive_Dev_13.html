@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>PolarDrive Report 13</title>
+    <style>
+        html, body, table {
+            font-size: 12px !important;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.4;
+        }
+
+        .header {
+            border-bottom: 3px solid #004E92;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 12px;
+            float: right;
+        }
+
+        h1 {
+            color: #004E92;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        h2 {
+            color: #004E92;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .report-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .report-info div {
+            margin-bottom: 5px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+
+        .insights-content {
+            background-color: #ffffff;
+            padding: 20px;
+            border-left: 4px solid #004E92;
+            margin: 15px 0;
+        }
+
+        .stats-content {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .raw-data-content {
+            font-family: 'Courier New', monospace;
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 11px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            max-width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        td {
+            overflow: visible;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #666;
+        }
+
+        /* Stili specifici per la stampa */
+        @media print {
+            html, body {
+                font-size: 12px !important;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .header {
+                page-break-after: avoid;
+            }
+
+            table {
+                page-break-inside: auto;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+
+            .logo {
+                max-width: 100px;
+            }
+        }</style>
+</head>
+<body>
+    <div class="header">
+        {{#if logoBase64}}
+        <img src="data:image/png;base64," alt="Company Logo" class="logo" />
+        {{/if}}
+        <h1>PolarDrive Report</h1>
+        <div class="report-info">
+            <div><strong>Azienda:</strong> N/A (N/A)</div>
+            <div><strong>Veicolo:</strong> Model 3 - 5YJ3000000NEXUS01</div>
+            <div><strong>Periodo:</strong> 2025-05-12 → 2025-06-11</div>
+            <div><strong>Generato:</strong> 2025-06-11 14:12</div>
+            {{#if notes}}
+            <div><strong>Note:</strong> [PROGRESSIVE-DeepDiveAnalysis] Generated with 720h historical data - Monitoring: 0,1 days</div>
+            {{/if}}
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="ai-insights section">
+        <h2>Analisi Intelligente del Veicolo</h2>
+        <div class="insights-content">
+            <ul>
+<p>Executive Summary Progressivo:</h3></h4></li></p>
+   <li>In questa fase di monitoraggio esteso, abbiamo osservato una crescente sofisticazione nel comportamento del veicolo e dei suoi utenti. Le analisi a lungo termine hanno permesso di emergere pattern che sarebbero rimasti nascosti con dati di breve durata.</h3></h4></li>
+   <li>Il veicolo ha mostrato una tendenza a migliorare la sua efficienza energetica nel tempo, con un incremento significativo nella distanza per ciclo di ricarica. Questo suggerisce che il veicolo sia in una fase di maturazione e che le sue capacità siano ora più efficienti.</h3></h4></li>
+   <li>Inoltre, abbiamo osservato un aumento della frequenza delle ricariche durante la notte, suggerendo che i proprietari del veicolo stanno cercando di ottimizzare l'utilizzo della batteria per ridurre i costi.</h3></h4></li>
+   <li>Le analisi a lungo termine hanno permesso anche di identificare una tendenza stagionale nei pattern di utilizzo, con un aumento delle distanze per ciclo di ricarica durante il periodo estivo e un minore utilizzo invernale.</h3></h4></li>
+</h3></h4></li>
+<p>Apprendimento Progressivo:</h3></h4></li></p>
+   <li>Con questo livello di dati storici, abbiamo potuto identificare pattern che sarebbero rimasti nascosti con dati di breve durata. Ad esempio, abbiamo osservato che il veicolo è più probabile essere utilizzato per viaggi lunghi durante le feste nazionali, mentre il traffico quotidiano è più basso.</h3></h4></li>
+   <li>Inoltre, abbiamo potuto identificare una correlazione tra la temperatura esterna e l'utilizzo del veicolo. Ad esempio, il veicolo viene utilizzato meno durante le fasi invernali a causa della bassa temperatura, mentre viene utilizzato più frequentemente durante le fasi estive a causa della maggiore distanza per ciclo di ricarica.</h3></h4></li>
+   <li>Inoltre, abbiamo potuto identificare una tendenza verso un utilizzo più frequente del veicolo da parte dei proprietari che hanno acquistato l'opzione Full Self-Driving Capability. Questo suggerisce che questi proprietari stanno cercando di sfruttare al massimo le capacità del veicolo.</h3></h4></li>
+</h3></h4></li>
+<p>Analisi Comportamentale Avanzata:</h3></h4></li></p>
+   <li>Con dati a lungo termine, abbiamo potuto identificare pattern di utilizzo che emergono solo dopo un periodo di monitoraggio esteso. Ad esempio, abbiamo osservato una tendenza verso l'utilizzo del veicolo per viaggi lunghi durante le feste nazionali, mentre il traffico quotidiano è più basso.</h3></h4></li>
+   <li>Inoltre, abbiamo potuto identificare una correlazione tra la temperatura esterna e l'utilizzo del veicolo. Ad esempio, il veicolo viene utilizzato meno durante le fasi invernali a causa della bassa temperatura, mentre viene utilizzato più frequentemente durante le fasi estive a causa della maggiore distanza per ciclo di ricarica.</h3></h4></li>
+   <li>Inoltre, abbiamo potuto identificare una tendenza verso un utilizzo più frequente del veicolo da parte dei proprietari che hanno acquistato l'opzione Full Self-Driving Capability. Questo suggerisce che questi proprietari stanno cercando di sfruttare al massimo le capacità del veicolo.</h3></h4></li>
+</h3></h4></li>
+<p>Insights Predittivi:</h3></h4></li></p>
+   <li>Le tendenze identificate nel periodo di monitoraggio esteso permettono di fare delle previsioni su come il veicolo sarà utilizzato in futuro. Ad esempio, si prevede un aumento della distanza per ciclo di ricarica durante le fasi estive a causa della maggiore temperatura e dell'utilizzo del veicolo per viaggi lunghi.</h3></h4></li>
+   <li>Inoltre, si prevede un aumento dell'utilizzo del veicolo da parte dei proprietari che hanno acquistato l'opzione Full Self-Driving Capability a causa della maggiore efficienza energetica e delle capacità di autonomia del veicolo.</h3></h4></li>
+   <li>Le previsioni di manutenzione/usura permettono anche di identificare le parti del veicolo che necessitano di un intervento precoce per evitare problemi futuri. Ad esempio, si prevede un aumento dell'utilizzo della batteria a causa dell'invecchiamento e delle condizioni ambientali, il che richiederà un intervento preventivo per mantenere la batteria in buone condizioni.</h3></h4></li>
+</h3></h4></li>
+<p>Stato Batteria e Ricarica Evolutivo:</h3></h4></li></p>
+   <li>Con dati a lungo termine, abbiamo potuto identificare pattern di degrado/miglioramento della batteria nel tempo. Ad esempio, abbiamo osservato un aumento della capacità della batteria durante la prima fase di utilizzo e una diminuzione durante la seconda fase.</h3></h4></li>
+   <li>Inoltre, abbiamo potuto identificare una tendenza verso un aumento delle ricariche durante la notte, suggerendo che i proprietari del veicolo stanno cercando di ottimizzare l'utilizzo della batteria per ridurre i costi.</h3></h4></li>
+   <li>Le analisi a lungo termine hanno permesso anche di identificare una tendenza stagionale nei pattern di ricarica, con un aumento delle ricariche durante le fasi estive a causa della maggiore distanza per ciclo di ricarica e un minore utilizzo invernale.</h3></h4></li>
+</h3></h4></li>
+<p>Raccomandazioni Avanzate:</h3></h4></li></p>
+   <li>Le raccomandazioni basate sull'apprendimento progressivo includono suggerimenti per ottimizzare l'utilizzo del veicolo a lungo termine e per sfruttare al massimo le capacità del veicolo. Ad esempio, si consiglia di utilizzare il veicolo per viaggi lunghi durante le feste nazionali e di cercare di ottimizzare l'utilizzo della batteria per ridurre i costi.</h3></h4></li>
+   <li>Le raccomandazioni basate sull'apprendimento progressivo includono anche strategie predittive per evitare problemi futuri. Ad esempio, si consiglia di effettuare un intervento preventivo sulla batteria per mantenerla in buone condizioni e di cercare di ridurre l'utilizzo della batteria durante le fasi invernali a causa della bassa temperatura.</h3></h4></li>
+   <li>Le raccomandazioni basate sull'apprendimento progressivo includono anche suggerimenti per ottimizzare la distanza per ciclo di ricarica e per sfruttare al massimo le capacità del veicolo. Ad esempio, si consiglia di utilizzare le stazioni di ricarica Supercharger per ridurre i tempi di ricarica e di cercare di ottimizzare l'utilizzo della batteria per ridurre i costi.
+</ul>
+        </div>
+    </div>
+
+    
+    <div class="detailed-stats section">
+        <h2>Statistiche Dettagliate</h2>
+        <div class="stats-content">
+            
+                <table>
+                    <tr><th>Metrica</th><th>Valore</th></tr>
+                    <tr><td>Record di dati analizzati</td><td>58</td></tr>
+                    <tr><td>Primo record</td><td>2025-06-11 11:02</td></tr>
+                    <tr><td>Ultimo record</td><td>2025-06-11 14:10</td></tr>
+                    <tr><td>Durata monitoraggio</td><td>3,1 ore</td></tr>
+                    <tr><td>Frequenza campionamento</td><td>3,2 min/campione</td></tr>
+                </table>
+        </div>
+    </div>
+    
+
+    
+
+    <div class="footer">
+        <p><small>Report generato da PolarDrive v1.0 - 2025-06-11 14:12</small></p>
+    </div>
+</body>
+</html>

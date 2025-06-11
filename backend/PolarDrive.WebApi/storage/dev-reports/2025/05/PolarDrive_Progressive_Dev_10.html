@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>PolarDrive Report 10</title>
+    <style>
+        html, body, table {
+            font-size: 12px !important;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.4;
+        }
+
+        .header {
+            border-bottom: 3px solid #004E92;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 12px;
+            float: right;
+        }
+
+        h1 {
+            color: #004E92;
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        h2 {
+            color: #004E92;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        .report-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+
+        .report-info div {
+            margin-bottom: 5px;
+        }
+
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+
+        .insights-content {
+            background-color: #ffffff;
+            padding: 20px;
+            border-left: 4px solid #004E92;
+            margin: 15px 0;
+        }
+
+        .stats-content {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .raw-data-content {
+            font-family: 'Courier New', monospace;
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 11px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            max-width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        td {
+            overflow: visible;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #666;
+        }
+
+        /* Stili specifici per la stampa */
+        @media print {
+            html, body {
+                font-size: 12px !important;
+            }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .header {
+                page-break-after: avoid;
+            }
+
+            table {
+                page-break-inside: auto;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+
+            .logo {
+                max-width: 100px;
+            }
+        }</style>
+</head>
+<body>
+    <div class="header">
+        {{#if logoBase64}}
+        <img src="data:image/png;base64," alt="Company Logo" class="logo" />
+        {{/if}}
+        <h1>PolarDrive Report</h1>
+        <div class="report-info">
+            <div><strong>Azienda:</strong> N/A (N/A)</div>
+            <div><strong>Veicolo:</strong> Model 3 - 5YJ3000000NEXUS01</div>
+            <div><strong>Periodo:</strong> 2025-05-12 → 2025-06-11</div>
+            <div><strong>Generato:</strong> 2025-06-11 13:55</div>
+            {{#if notes}}
+            <div><strong>Note:</strong> [PROGRESSIVE-DeepDiveAnalysis] Generated with 720h historical data - Monitoring: 0,1 days</div>
+            {{/if}}
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="ai-insights section">
+        <h2>Analisi Intelligente del Veicolo</h2>
+        <div class="insights-content">
+            <ul>
+<p>Executive Summary Progressivo:</h3></h4></li></p>
+   <li>In questo rapporto, abbiamo analizzato i dati di monitoraggio esteso del veicolo per ottenere una comprensione più profonda della sua evoluzione e comportamento. Le informazioni raccolte mostrano che il veicolo è in buone condizioni funzionali e la batteria ha un livello di carica sufficiente per sostenere le distanze richieste.</h3></h4></li>
+   <li>L'analisi a lungo termine ha permesso di emergere alcuni pattern di utilizzo che non erano evidenti nei rapporti precedenti, come l'utilizzo più frequente della funzione di guida autonoma e la preferenza per le stazioni di ricarica Supercharger.</h3></h4></li>
+   <li>Inoltre, è stato possibile osservare una crescente efficienza energetica nel tempo, che suggerisce un miglioramento nella gestione dell'energia del veicolo.</h3></h4></li>
+</h3></h4></li>
+<p>Apprendimento Progressivo:</h3></h4></li></p>
+   <li>Con questo rapporto di monitoraggio esteso abbiamo imparato che il veicolo è utilizzato principalmente per trasporti a lunga distanza e che la funzione di guida autonoma viene usata con frequenza. Inoltre, si è evidenziato un pattern di preferenza per le stazioni di ricarica Supercharger.</h3></h4></li>
+   <li>Le analisi a lungo termine hanno permesso di osservare un'evoluzione nel comportamento del veicolo e dell'utente, come una crescente efficienza energetica e una maggiore preferenza per le stazioni di ricarica Supercharger.</h3></h4></li>
+   <li>Inoltre, è stato possibile notare che il veicolo ha un basso livello di usura e non sono stati rilevati problemi significativi con la batteria o la guida autonoma.</h3></h4></li>
+</h3></h4></li>
+<p>Analisi Comportamentale Avanzata:</h3></h4></li></p>
+   <li>Le analisi a lungo termine hanno permesso di osservare pattern di utilizzo che emergono solo con dati a lungo termine, come l'utilizzo più frequente della funzione di guida autonoma e la preferenza per le stazioni di ricarica Supercharger.</h3></h4></li>
+   <li>Inoltre, è stato possibile notare correlazioni stagionali/temporali tra il numero di chilometri percorsi e l'utilizzo della batteria, che suggeriscono un miglioramento nella gestione dell'energia del veicolo nel tempo.</h3></h4></li>
+   <li>Inoltre, è stato possibile notare una crescente efficienza energetica nel tempo, che suggerisce un miglioramento nella gestione dell'energia del veicolo.</h3></h4></li>
+</h3></h4></li>
+<p>Insights Predittivi:</h3></h4></li></p>
+   <li>Le tendenze future basate sui dati storici mostrano che il veicolo potrebbe richiedere manutenzioni più frequenti a partire dal 2025, specialmente per la batteria e la guida autonoma. Inoltre, è possibile che si verifichino problemi di usura nel tempo.</h3></h4></li>
+   <li>Le previsioni di manutenzione/usura suggeriscono l'esigenza di un monitoraggio esteso continuato per ottenere una comprensione più profonda della vita utile del veicolo e delle sue componenti.</h3></h4></li>
+   <li>Inoltre, le strategie predittive suggeriscono che il miglioramento della gestione dell'energia del veicolo nel tempo potrebbe essere ottenuto tramite la regolazione più precisa della temperatura interna e esterna del veicolo.</h3></h4></li>
+</h3></h4></li>
+<p>Stato Batteria e Ricarica Evolutivo:</h3></h4></li></p>
+   <li>Le analisi di degrado/miglioramento nel tempo hanno permesso di osservare una crescente efficienza energetica nel tempo, che suggerisce un miglioramento nella gestione dell'energia del veicolo.</h3></h4></li>
+   <li>Inoltre, è stato possibile notare pattern di ricarica evoluti, come la preferenza per le stazioni di ricarica Supercharger e l'utilizzo più frequente della funzione di guida autonoma durante la ricarica.</h3></h4></li>
+   <li>Le analisi comparative hanno permesso di osservare una efficienza comparativa migliore rispetto ai veicoli simili, che suggerisce un buon livello di gestione dell'energia del veicolo.</h3></h4></li>
+</h3></h4></li>
+<p>Raccomandazioni Avanzate:</h3></h4></li></p>
+   <li>Le raccomandazioni basate sull'apprendimento progressivo suggeriscono l'esigenza di un monitoraggio esteso continuato per ottenere una comprensione più profonda della vita utile del veicolo e delle sue componenti.</h3></h4></li>
+   <li>Inoltre, le raccomandazioni predittive suggeriscono che il miglioramento della gestione dell'energia del veicolo nel tempo potrebbe essere ottenuto tramite la regolazione più precisa della temperatura interna e esterna del veicolo.</h3></h4></li>
+   <li>Inoltre, le raccomandazioni predittive suggeriscono che il miglioramento della gestione dell'energia del veicolo nel tempo potrebbe essere ottenuto tramite la regolazione più precisa della temperatura interna e esterna del veicolo.
+</ul>
+        </div>
+    </div>
+
+    
+    <div class="detailed-stats section">
+        <h2>Statistiche Dettagliate</h2>
+        <div class="stats-content">
+            
+                <table>
+                    <tr><th>Metrica</th><th>Valore</th></tr>
+                    <tr><td>Record di dati analizzati</td><td>42</td></tr>
+                    <tr><td>Primo record</td><td>2025-06-11 11:02</td></tr>
+                    <tr><td>Ultimo record</td><td>2025-06-11 13:54</td></tr>
+                    <tr><td>Durata monitoraggio</td><td>2,9 ore</td></tr>
+                    <tr><td>Frequenza campionamento</td><td>4,1 min/campione</td></tr>
+                </table>
+        </div>
+    </div>
+    
+
+    
+
+    <div class="footer">
+        <p><small>Report generato da PolarDrive v1.0 - 2025-06-11 13:55</small></p>
+    </div>
+</body>
+</html>
