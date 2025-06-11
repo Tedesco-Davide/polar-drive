@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
-using PolarDrive.WebApi.AiReports;
+using PolarDrive.WebApi.PolarAiReports;
 
 namespace PolarDrive.WebApi.Jobs;
 
@@ -140,7 +140,7 @@ public class ReportGeneratorJob(PolarDriveDbContext dbContext)
             await _logger.Info(source, $"Trovati {vehicleData.Count} record per veicolo {vehicle.Vin}");
 
             // 1. Genera insights AI
-            var aiGenerator = new AiReportGenerator(_db);
+            var aiGenerator = new PolarAiReportGenerator(_db);
             var rawJsonList = vehicleData.Select(vd => vd.RawJson).ToList();
             var aiInsights = await aiGenerator.GenerateSummaryFromRawJson(rawJsonList);
 

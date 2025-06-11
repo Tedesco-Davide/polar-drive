@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
-using PolarDrive.WebApi.AiReports;
+using PolarDrive.WebApi.PolarAiReports;
 
 namespace PolarDrive.WebApi.Production;
 
@@ -344,8 +344,8 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         _logger.LogInformation("🧠 Generating {AnalysisLevel} for vehicle {VIN} ({DataHours}h of data)",
             analysisLevel, vehicle.Vin, dataHours);
 
-        // Genera insights progressivi usando AiReportGenerator
-        var aiGenerator = new AiReportGenerator(db);
+        // Genera insights progressivi usando PolarAiReportGenerator
+        var aiGenerator = new PolarAiReportGenerator(db);
         var progressiveInsights = await aiGenerator.GenerateProgressiveInsightsAsync(vehicleId);
 
         if (string.IsNullOrWhiteSpace(progressiveInsights))

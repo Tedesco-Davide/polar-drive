@@ -2,7 +2,7 @@ using System.Diagnostics;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 
-namespace PolarDrive.WebApi.AiReports;
+namespace PolarDrive.WebApi.PolarAiReports;
 
 /// <summary>
 /// Servizio semplificato dedicato SOLO alla conversione HTML -> PDF

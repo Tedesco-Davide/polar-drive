@@ -3,7 +3,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Text;
 
-namespace PolarDrive.WebApi.AiReports;
+namespace PolarDrive.WebApi.PolarAiReports;
 
 /// <summary>
 /// Servizio dedicato alla generazione di report HTML altamente personalizzabili
@@ -53,7 +53,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// </summary>
     private async Task<string> LoadTemplateAsync(string templateName)
     {
-        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "AiReports", "templates");
+        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "PolarAiReports", "templates");
         var templatePath = Path.Combine(basePath, $"{templateName}.html");
 
         if (File.Exists(templatePath))
@@ -70,7 +70,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// </summary>
     private async Task<string> LoadStylesAsync(string styleName)
     {
-        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "AiReports", "styles");
+        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "PolarAiReports", "styles");
         var stylePath = Path.Combine(basePath, $"{styleName}.css");
 
         if (File.Exists(stylePath))

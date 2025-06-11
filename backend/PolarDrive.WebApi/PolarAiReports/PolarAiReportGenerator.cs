@@ -3,17 +3,17 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 
-namespace PolarDrive.WebApi.AiReports;
+namespace PolarDrive.WebApi.PolarAiReports;
 
-public class AiReportGenerator(PolarDriveDbContext dbContext)
+public class PolarAiReportGenerator(PolarDriveDbContext dbContext)
 {
     private readonly HttpClient _httpClient = new();
     private readonly PolarDriveLogger _logger = new(dbContext);
 
     public async Task<string> GenerateSummaryFromRawJson(List<string> rawJsonList)
     {
-        await _logger.Info("AiReportGenerator.GenerateSummaryFromRawJson",
-            "Avvio generazione report AI", $"Dati in input: {rawJsonList.Count} record JSON");
+        await _logger.Info("PolarAiReportGenerator.GenerateSummaryFromRawJson",
+            "Avvio generazione report con PolarAi", $"Dati in input: {rawJsonList.Count} record JSON");
 
         // Usa RawDataPreparser universale (gestisce sia dati reali che mock)
         var parsedPrompt = RawDataPreparser.GenerateInsightPrompt(rawJsonList);
@@ -24,7 +24,7 @@ public class AiReportGenerator(PolarDriveDbContext dbContext)
 
         if (string.IsNullOrWhiteSpace(aiResponse))
         {
-            await _logger.Warning("AiReportGenerator",
+            await _logger.Warning("PolarAiReportGenerator",
                 "Mistral non disponibile, uso generatore locale");
             aiResponse = GenerateLocalReport(parsedPrompt, dataStats, rawJsonList);
         }
@@ -96,7 +96,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         }
         catch (Exception ex)
         {
-            await _logger.Debug("AiReportGenerator",
+            await _logger.Debug("PolarAiReportGenerator",
                 "Mistral non raggiungibile", ex.Message);
         }
 
@@ -484,21 +484,21 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         return stats.ToString();
     }
 
-    // ✅ AGGIUNGI questi metodi al tuo AiReportGenerator.cs esistente
+    // ✅ AGGIUNGI questi metodi al tuo PolarAiReportGenerator.cs esistente
 
     /// <summary>
     /// NUOVO: Genera insights progressivi basati sull'età del veicolo nel sistema
     /// </summary>
     public async Task<string> GenerateProgressiveInsightsAsync(int vehicleId)
     {
-        await _logger.Info("AiReportGenerator.GenerateProgressiveInsights",
+        await _logger.Info("PolarAiReportGenerator.GenerateProgressiveInsights",
             "Avvio analisi progressiva", $"VehicleId: {vehicleId}");
 
         // Calcola periodo di monitoraggio
         var firstRecord = await GetFirstVehicleRecord(vehicleId);
         if (firstRecord == default)
         {
-            await _logger.Warning("AiReportGenerator.GenerateProgressiveInsights",
+            await _logger.Warning("PolarAiReportGenerator.GenerateProgressiveInsights",
                 "Nessun dato storico trovato, uso analisi standard");
             return await GenerateSummaryFromRawJson([]);
         }
@@ -507,7 +507,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         var dataHours = DetermineDataWindow(monitoringPeriod);
         var analysisLevel = GetAnalysisLevel(monitoringPeriod);
 
-        await _logger.Info("AiReportGenerator.GenerateProgressiveInsights",
+        await _logger.Info("PolarAiReportGenerator.GenerateProgressiveInsights",
             $"Analisi {analysisLevel}",
             $"Periodo: {monitoringPeriod.TotalDays:F1} giorni, Finestra: {dataHours}h");
 
@@ -516,7 +516,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
 
         if (!historicalData.Any())
         {
-            await _logger.Warning("AiReportGenerator.GenerateProgressiveInsights",
+            await _logger.Warning("PolarAiReportGenerator.GenerateProgressiveInsights",
                 "Nessun dato nel periodo specificato");
             return "Nessun dato disponibile per il periodo analizzato.";
         }
@@ -570,7 +570,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         }
         catch (Exception ex)
         {
-            await _logger.Error("AiReportGenerator.GetFirstVehicleRecord",
+            await _logger.Error("PolarAiReportGenerator.GetFirstVehicleRecord",
                 "Errore recupero primo record", ex.ToString());
             return default;
         }
@@ -585,7 +585,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         {
             var startTime = DateTime.UtcNow.AddHours(-hours);
 
-            await _logger.Info("AiReportGenerator.GetHistoricalData",
+            await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
                 $"Recupero dati storici: {hours}h",
                 $"Da: {startTime:yyyy-MM-dd HH:mm}");
 
@@ -595,14 +595,14 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
                 .Select(vd => vd.RawJson)
                 .ToListAsync();
 
-            await _logger.Info("AiReportGenerator.GetHistoricalData",
+            await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
                 $"Recuperati {data.Count} record storici");
 
             return data;
         }
         catch (Exception ex)
         {
-            await _logger.Error("AiReportGenerator.GetHistoricalData",
+            await _logger.Error("PolarAiReportGenerator.GetHistoricalData",
                 "Errore recupero dati storici", ex.ToString());
             return new List<string>();
         }
@@ -616,7 +616,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         if (!rawJsonList.Any())
             return "Nessun dato veicolo disponibile per l'analisi progressiva.";
 
-        await _logger.Info("AiReportGenerator.GenerateProgressiveSummary",
+        await _logger.Info("PolarAiReportGenerator.GenerateProgressiveSummary",
             $"Generazione analisi {analysisLevel}",
             $"Records: {rawJsonList.Count}, Ore: {dataHours}");
 
@@ -628,7 +628,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
 
         if (string.IsNullOrWhiteSpace(aiResponse))
         {
-            await _logger.Warning("AiReportGenerator.GenerateProgressiveSummary",
+            await _logger.Warning("PolarAiReportGenerator.GenerateProgressiveSummary",
                 "Mistral non disponibile, uso generatore locale progressivo");
             aiResponse = GenerateProgressiveLocalReport(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
         }
@@ -733,7 +733,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
                 var parsed = JsonDocument.Parse(jsonResponse);
                 var result = parsed.RootElement.GetProperty("response").GetString();
 
-                await _logger.Info("AiReportGenerator.TryGenerateProgressiveWithMistral",
+                await _logger.Info("PolarAiReportGenerator.TryGenerateProgressiveWithMistral",
                     $"Mistral {analysisLevel} completata",
                     $"Risposta: {result?.Length ?? 0} caratteri");
 
@@ -742,7 +742,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         }
         catch (Exception ex)
         {
-            await _logger.Debug("AiReportGenerator.TryGenerateProgressiveWithMistral",
+            await _logger.Debug("PolarAiReportGenerator.TryGenerateProgressiveWithMistral",
                 "Mistral non raggiungibile per analisi progressiva", ex.Message);
         }
 
@@ -794,7 +794,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         sb.AppendLine("---");
         sb.AppendLine($"*{analysisLevel} generata il {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC*");
         sb.AppendLine($"*Basata su {rawJsonList.Count:N0} campioni in {monitoringPeriod.TotalDays:F1} giorni di monitoraggio*");
-        sb.AppendLine($"*Livello AI: Progressivo con {dataHours}h di contesto storico*");
+        sb.AppendLine($"*Livello PolarAi: Progressivo con {dataHours}h di contesto storico*");
 
         return sb.ToString();
     }

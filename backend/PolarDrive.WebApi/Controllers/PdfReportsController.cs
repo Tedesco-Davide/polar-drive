@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
-using PolarDrive.WebApi.AiReports;
+using PolarDrive.WebApi.PolarAiReports;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -432,7 +432,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 $"ReportId: {report.Id}, VehicleId: {report.ClientVehicleId}");
 
             // ✅ USA SEMPRE L'ANALISI PROGRESSIVA
-            var aiGenerator = new AiReportGenerator(db);
+            var aiGenerator = new PolarAiReportGenerator(db);
             var insights = await aiGenerator.GenerateProgressiveInsightsAsync(report.ClientVehicleId);
 
             if (string.IsNullOrWhiteSpace(insights))
