@@ -528,43 +528,6 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     }
 
     /// <summary>
-    /// Controlla se il file PDF esiste
-    /// </summary>
-    private bool CheckPdfFileExists(Data.Entities.PdfReport report)
-    {
-        var pdfPath = GetReportFilePath(report, "pdf");
-        return System.IO.File.Exists(pdfPath);
-    }
-
-    /// <summary>
-    /// Controlla se il file HTML esiste
-    /// </summary>
-    private bool CheckHtmlFileExists(Data.Entities.PdfReport report)
-    {
-        var htmlPath = GetReportFilePath(report, "html");
-        return System.IO.File.Exists(htmlPath);
-    }
-
-    /// <summary>
-    /// Conta i record di dati per un report
-    /// </summary>
-    private async Task<int> GetDataRecordsCount(Data.Entities.PdfReport report)
-    {
-        try
-        {
-            return await db.VehiclesData
-                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
-                           vd.Timestamp >= report.ReportPeriodStart &&
-                           vd.Timestamp <= report.ReportPeriodEnd)
-                .CountAsync();
-        }
-        catch
-        {
-            return 0;
-        }
-    }
-
-    /// <summary>
     /// Stili CSS personalizzati per report rigenerati
     /// </summary>
     private string GetCustomRegenerationStyles()
@@ -604,8 +567,168 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 font-size: 12px;
             }";
     }
-
     #endregion
+
+    /// <summary>
+    /// Diagnostica delle capacità PDF del sistema
+    /// </summary>
+    [HttpGet("diagnostics/pdf")]
+    public async Task<IActionResult> DiagnosePdfCapabilities()
+    {
+        const string source = "PdfReportsController.DiagnosePdfCapabilities";
+
+        try
+        {
+            await _logger.Info(source, "Avvio diagnostica capacità PDF");
+
+            var pdfService = new PdfGenerationService(db);
+            var diagnostic = await pdfService.DiagnosePdfCapabilitiesAsync();
+
+            var result = new
+            {
+                timestamp = DateTime.UtcNow,
+                pdfCapabilities = new
+                {
+                    isAvailable = diagnostic.IsAvailable,
+                    errorMessage = diagnostic.ErrorMessage,
+                    nodeJs = new
+                    {
+                        path = diagnostic.NodeJsPath,
+                        exists = diagnostic.NodeJsExists,
+                        version = diagnostic.NodeVersion
+                    },
+                    npx = new
+                    {
+                        path = diagnostic.NpxPath,
+                        exists = diagnostic.NpxExists
+                    },
+                    puppeteer = new
+                    {
+                        testOutput = diagnostic.PuppeteerTestOutput,
+                        testError = diagnostic.PuppeteerTestError
+                    }
+                },
+                recommendations = GetPdfRecommendations(diagnostic)
+            };
+
+            await _logger.Info(source, "Diagnostica PDF completata",
+                $"Available: {diagnostic.IsAvailable}");
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Errore diagnostica PDF", ex.ToString());
+            return StatusCode(500, new { error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Fornisce raccomandazioni basate sui risultati della diagnostica
+    /// </summary>
+    private List<string> GetPdfRecommendations(PdfDiagnosticResult diagnostic)
+    {
+        var recommendations = new List<string>();
+
+        if (!diagnostic.IsAvailable)
+        {
+            if (!diagnostic.NodeJsExists)
+            {
+                recommendations.Add("Installa Node.js da https://nodejs.org/");
+                recommendations.Add($"Assicurati che sia installato in: {diagnostic.NodeJsPath}");
+            }
+
+            if (diagnostic.PuppeteerTestError?.Contains("puppeteer") == true)
+            {
+                recommendations.Add("Installa Puppeteer: npm install -g puppeteer");
+                recommendations.Add("Oppure: npm install puppeteer nella directory del progetto");
+            }
+
+            if (diagnostic.ErrorMessage?.Contains("timeout") == true)
+            {
+                recommendations.Add("Il sistema è lento. Considera di aumentare i timeout.");
+                recommendations.Add("Verifica che non ci siano antivirus che bloccano Node.js");
+            }
+
+            recommendations.Add("Al momento il sistema userà il fallback HTML");
+        }
+        else
+        {
+            recommendations.Add("✅ PDF generation funziona correttamente");
+        }
+
+        return recommendations;
+    }
+
+    // ✅ ENDPOINT PER TESTARE PDF VELOCEMENTE
+    /// <summary>
+    /// Test rapido di generazione PDF
+    /// </summary>
+    [HttpPost("test/pdf")]
+    public async Task<IActionResult> TestPdfGeneration()
+    {
+        const string source = "PdfReportsController.TestPdfGeneration";
+
+        try
+        {
+            await _logger.Info(source, "Test rapido generazione PDF");
+
+            var testHtml = @"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>PDF Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #004E92; }
+        .test-content { background: #f8f9fa; padding: 20px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 PDF Generation Test</h1>
+    <div class='test-content'>
+        <p><strong>Timestamp:</strong> " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + @" UTC</p>
+        <p><strong>System:</strong> PolarDrive PDF Service</p>
+        <p><strong>Status:</strong> Test in corso...</p>
+        <p>Se vedi questo file, la generazione PDF funziona correttamente! ✅</p>
+    </div>
+</body>
+</html>";
+
+            var pdfService = new PdfGenerationService(db);
+            var options = new PdfConversionOptions
+            {
+                PageFormat = "A4",
+                MarginTop = "2cm",
+                MarginBottom = "2cm"
+            };
+
+            var startTime = DateTime.UtcNow;
+            var pdfBytes = await pdfService.GeneratePdfFromHtmlAsync(testHtml, "test.pdf", options);
+            var duration = (DateTime.UtcNow - startTime).TotalSeconds;
+
+            await _logger.Info(source, "Test PDF completato con successo",
+                $"Size: {pdfBytes.Length} bytes, Duration: {duration:F1}s");
+
+            return File(pdfBytes, "application/pdf", $"PolarDrive_PDFTest_{DateTime.UtcNow:yyyyMMddHHmmss}.pdf");
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Test PDF fallito", ex.ToString());
+
+            // Fallback HTML
+            var fallbackHtml = $@"
+        <html><body>
+            <h1>PDF Test Fallito</h1>
+            <p>Errore: {ex.Message}</p>
+            <p>Timestamp: {DateTime.UtcNow}</p>
+        </body></html>";
+
+            return File(System.Text.Encoding.UTF8.GetBytes(fallbackHtml), "text/html",
+                $"PolarDrive_PDFTest_FALLBACK_{DateTime.UtcNow:yyyyMMddHHmmss}.html");
+        }
+    }
 }
 
 /// <summary>

@@ -42,9 +42,9 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     /// </summary>
     private async Task RunFakeReportScheduler(CancellationToken stoppingToken)
     {
-        // Aspetta 2 minuti all'avvio per permettere accumulo dati
-        _logger.LogInformation("⏳ Waiting 2 minutes for data accumulation before first report...");
-        await Task.Delay(TimeSpan.FromMinutes(2), stoppingToken);
+        // Aspetta 1 minuto all'avvio per permettere accumulo dati
+        _logger.LogInformation("⏳ Waiting 1 minutes for data accumulation before first report...");
+        await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
 
         while (!stoppingToken.IsCancellationRequested)
         {

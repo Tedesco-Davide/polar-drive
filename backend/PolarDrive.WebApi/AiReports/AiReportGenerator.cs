@@ -82,8 +82,8 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
 
             var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-            // Timeout breve per fallback rapido
-            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
+            // ✅ TIMEOUT AUMENTATO PER MISTRAL: 3 MINUTI
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
             var response = await _httpClient.PostAsync("http://localhost:11434/api/generate", content, cts.Token);
 
             if (response.IsSuccessStatusCode)
