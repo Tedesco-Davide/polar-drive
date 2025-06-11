@@ -342,7 +342,8 @@ public class ReportGeneratorJob(PolarDriveDbContext dbContext)
 
             var reportsByVehicle = await _db.PdfReports
                 .Include(r => r.ClientVehicle)
-                .GroupBy(r => r.ClientVehicle.Vin)
+                .Where(r => r.ClientVehicle != null && !string.IsNullOrEmpty(r.ClientVehicle.Vin))
+                .GroupBy(r => r.ClientVehicle!.Vin)
                 .Select(g => new { VIN = g.Key, Count = g.Count() })
                 .ToListAsync();
 

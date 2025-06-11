@@ -61,7 +61,7 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
             ZipFilePath = dto.ZipFilePath,
             ConsentHash = dto.ConsentHash,
             ConsentType = dto.ConsentType,
-            Notes = dto.Notes
+            Notes = dto.Notes ?? string.Empty
         };
 
         db.ClientConsents.Add(entity);
