@@ -25,7 +25,7 @@ export default function AdminLoader({ inline = false }: { inline?: boolean }) {
 
   if (inline) {
     return (
-      <div className="w-5 h-5 border-2 border-t-polarNight border-gray-300 dark:border-gray-700 dark:border-t-softWhite rounded-full animate-spin" />
+      <div className="w-4 h-4 border-2 border-t-polarNight border-gray-300 dark:border-gray-700 dark:border-t-softWhite rounded-full animate-spin" />
     );
   }
 
