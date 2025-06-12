@@ -131,6 +131,65 @@ export default function AdminDashboard() {
     }
   };
 
+  const refreshPdfReportsInternal = async (): Promise<PdfReport[]> => {
+    try {
+      const currentCount = pdfReports.length; // ✅ Salva count prima della fetch
+
+      logFrontendEvent(
+        "AdminDashboard",
+        "INFO",
+        "Starting PDF Reports refresh",
+        `Current count: ${currentCount}`
+      );
+
+      const res = await fetch(`${API_BASE_URL}/api/pdfreports`, {
+        headers: {
+          "Cache-Control": "no-cache",
+          Pragma: "no-cache",
+        },
+      });
+
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      const updatedPdfReports: PdfReport[] = await res.json();
+
+      // ✅ Debug più dettagliato
+      console.log("🔄 PDF Reports refresh details:", {
+        before: currentCount,
+        after: updatedPdfReports.length,
+        changed: currentCount !== updatedPdfReports.length,
+        timestamp: new Date().toISOString(),
+        firstReport: updatedPdfReports[0] || null,
+      });
+
+      setPdfReports([...updatedPdfReports]);
+
+      logFrontendEvent(
+        "AdminDashboard",
+        "INFO",
+        "PDF Reports refreshed successfully",
+        `${currentCount} → ${updatedPdfReports.length} reports`
+      );
+
+      return updatedPdfReports;
+    } catch (err) {
+      console.error("Error refreshing PDF reports:", err);
+      logFrontendEvent(
+        "AdminDashboard",
+        "ERROR",
+        "Failed to refresh PDF reports",
+        err instanceof Error ? err.message : String(err)
+      );
+      throw err;
+    }
+  };
+
+  const refreshPdfReports = async (): Promise<void> => {
+    await refreshPdfReportsInternal();
+  };
+
   useEffect(() => {
     refreshWorkflowData();
   }, []);
@@ -338,7 +397,11 @@ export default function AdminDashboard() {
                           return updatedOutagePeriods;
                         }}
                       />
-                      <AdminPdfReports t={t} reports={pdfReports} />
+                      <AdminPdfReports
+                        t={t}
+                        reports={pdfReports}
+                        refreshPdfReports={refreshPdfReports}
+                      />
                       <AdminSchedulerTable
                         jobs={scheduledJobs}
                         t={t}

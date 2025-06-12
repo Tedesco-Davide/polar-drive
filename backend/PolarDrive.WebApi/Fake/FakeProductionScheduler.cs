@@ -375,7 +375,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
             padding: 8px 16px;
             border-radius: 25px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 500; /* ✅ Ridotto da bold */
             display: inline-block;
             margin: 10px 15px 10px 0;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -396,8 +396,23 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
         .progressive-development::before {
             content: '🧪 Development Testing • 🧠 Progressive AI • ';
             color: #ff6b6b;
-            font-weight: bold;
+            font-weight: 500; /* ✅ Ridotto */
             font-size: 14px;
+        }
+        
+        /* ✅ CONTROLLO GLOBALE GRASSETTO PER DEVELOPMENT */
+        .progressive-development * {
+            font-weight: normal !important;
+        }
+        
+        .progressive-development h1, .progressive-development h2, 
+        .progressive-development h3, .progressive-development h4 {
+            font-weight: 500 !important;
+        }
+        
+        .progressive-development strong, .progressive-development b {
+            font-weight: 500 !important;
+            color: #ff6b6b;
         }
         
         .fake-scheduler-info {
@@ -408,11 +423,12 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
             margin: 15px 0;
             font-size: 12px;
             color: #856404;
+            font-weight: normal; /* ✅ Normale */
         }
         
         .fake-scheduler-info::before {
             content: '⚡ Fast Development Cycle: ';
-            font-weight: bold;
+            font-weight: 500; /* ✅ Ridotto */
         }";
     }
 

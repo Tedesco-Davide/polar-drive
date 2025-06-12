@@ -524,7 +524,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             padding: 8px 16px;
             border-radius: 25px;
             font-size: 12px;
-            font-weight: bold;
+            font-weight: 500; /* ✅ Ridotto da bold a 500 */
             display: inline-block;
             margin: 10px 15px 10px 0;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
@@ -537,7 +537,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 10px;
-            font-weight: bold;
+            font-weight: 500; /* ✅ Ridotto */
             margin-left: 10px;
         }
         
@@ -554,8 +554,22 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            font-weight: bold;
+            font-weight: 500; /* ✅ Ridotto da bold */
             font-size: 14px;
+        }
+        
+        /* ✅ OVERRIDE GLOBALE per tutti gli elementi nell'AI insights */
+        .ai-insights * {
+            font-weight: normal !important;
+        }
+        
+        .ai-insights h1, .ai-insights h2, .ai-insights h3, .ai-insights h4 {
+            font-weight: 500 !important; /* ✅ Headers più leggeri */
+        }
+        
+        .ai-insights strong, .ai-insights b {
+            font-weight: 500 !important; /* ✅ Grassetto controllato */
+            color: #667eea;
         }
         
         .progressive-evolution {
@@ -569,7 +583,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         .progressive-evolution::before {
             content: '📈 Evoluzione nel Tempo • ';
             color: #667eea;
-            font-weight: bold;
+            font-weight: 500; /* ✅ Ridotto */
         }";
     }
 

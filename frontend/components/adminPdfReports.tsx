@@ -15,9 +15,11 @@ import SearchBar from "@/components/searchBar";
 export default function AdminPdfReports({
   t,
   reports,
+  refreshPdfReports,
 }: {
   t: TFunction;
   reports: PdfReport[];
+  refreshPdfReports?: () => Promise<PdfReport[] | void>;
 }) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const [selectedReportForNotes, setSelectedReportForNotes] =
@@ -30,21 +32,15 @@ export default function AdminPdfReports({
     logFrontendEvent(
       "AdminPdfReports",
       "INFO",
-      "Component mounted and reports data initialized",
+      "Component reports updated from parent",
       `Loaded ${reports.length} reports`
     );
 
     // ✅ DEBUG: Mostra la struttura dati reale
     if (reports.length > 0) {
-      console.log("🔍 Report data structure:", {
+      console.log("🔍 Updated report data structure:", {
         firstReport: reports[0],
         availableProperties: Object.keys(reports[0]),
-        hasNewProps: {
-          HasPdfFile: "HasPdfFile" in reports[0],
-          hasPdfFile: "hasPdfFile" in reports[0],
-          Status: "Status" in reports[0],
-          DataRecordsCount: "DataRecordsCount" in reports[0],
-        },
       });
     }
   }, [reports]);
@@ -221,11 +217,13 @@ export default function AdminPdfReports({
     }
   };
 
-  // ✅ Rigenerazione con retry
+  // ✅ Rigenerazione con retry e refresh automatico
   const handleRegenerate = async (report: PdfReport) => {
     setRegeneratingId(report.id);
 
     try {
+      console.log("🔄 Starting regeneration for report:", report.id);
+
       logFrontendEvent(
         "AdminPdfReports",
         "INFO",
@@ -247,6 +245,7 @@ export default function AdminPdfReports({
       }
 
       const result = await response.json();
+      console.log("✅ Regeneration API response:", result);
 
       if (result.success) {
         logFrontendEvent(
@@ -255,6 +254,7 @@ export default function AdminPdfReports({
           "Regeneration completed",
           `ReportId: ${report.id}`
         );
+
         alert(
           t(
             "admin.vehicleReports.regenerationSuccess",
@@ -262,25 +262,59 @@ export default function AdminPdfReports({
           )
         );
 
-        // ✅ Aggiorna note per indicare rigenerazione
-        setLocalReports((prev) =>
-          prev.map((r) =>
+        // ✅ Aggiornamento locale con più dettagli
+        setLocalReports((prev) => {
+          const updated = prev.map((r) =>
             r.id === report.id
               ? {
                   ...r,
                   notes: `[RIGENERATO] ${new Date().toISOString()} - ${
                     r.notes || ""
                   }`,
+                  ...(result.updatedReport && result.updatedReport),
                 }
               : r
-          )
-        );
+          );
+          console.log("📝 Local reports updated after regeneration");
+          return updated;
+        });
+
+        // ✅ Refresh del parent con logging migliorato
+        if (refreshPdfReports) {
+          console.log("⏳ Scheduling parent refresh in 500ms...");
+          setTimeout(async () => {
+            try {
+              console.log("🔄 Executing parent refresh...");
+              await refreshPdfReports();
+              console.log("✅ Parent refresh completed successfully");
+              logFrontendEvent(
+                "AdminPdfReports",
+                "INFO",
+                "Parent refresh completed after regeneration",
+                `ReportId: ${report.id}`
+              );
+            } catch (refreshError) {
+              console.error("❌ Parent refresh failed:", refreshError);
+              logFrontendEvent(
+                "AdminPdfReports",
+                "ERROR",
+                "Parent refresh failed after regeneration",
+                refreshError instanceof Error
+                  ? refreshError.message
+                  : String(refreshError)
+              );
+            }
+          }, 500);
+        } else {
+          console.warn("⚠️ refreshPdfReports function not available");
+        }
       } else {
         throw new Error(result.message || "Rigenerazione fallita");
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
+      console.error("❌ Regeneration failed:", errorMessage);
       logFrontendEvent(
         "AdminPdfReports",
         "ERROR",
@@ -295,6 +329,54 @@ export default function AdminPdfReports({
       );
     } finally {
       setRegeneratingId(null);
+      console.log("🏁 Regeneration process completed for report:", report.id);
+    }
+  };
+
+  const handleNotesUpdate = async (updated: PdfReport) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/pdfreports/${updated.id}/notes`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ notes: updated.notes }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: Failed to update notes`);
+      }
+
+      // ✅ Aggiorna subito lo stato locale
+      setLocalReports((prev) =>
+        prev.map((r) =>
+          r.id === updated.id ? { ...r, notes: updated.notes } : r
+        )
+      );
+
+      setSelectedReportForNotes(null);
+
+      logFrontendEvent(
+        "AdminPdfReports",
+        "INFO",
+        "Notes updated",
+        `ReportId: ${updated.id}`
+      );
+
+      // ✅ Opzionale: refresh del parent per sincronizzazione
+      if (refreshPdfReports) {
+        setTimeout(() => refreshPdfReports(), 200);
+      }
+    } catch (err) {
+      const details = err instanceof Error ? err.message : String(err);
+      logFrontendEvent(
+        "AdminPdfReports",
+        "ERROR",
+        "Failed to update notes",
+        details
+      );
+      alert(t("admin.notesGenericError"));
     }
   };
 
@@ -330,15 +412,15 @@ export default function AdminPdfReports({
       0
     );
 
-    if (hasPdf)
-      return { text: "PDF Ready", color: "bg-green-100 text-green-800" };
-    if (hasHtml)
-      return { text: "HTML Only", color: "bg-yellow-100 text-yellow-800" };
-    if (dataCount > 0)
+    if (dataCount < 5)
       return {
         text: "Waiting for records",
         color: "bg-blue-100 text-blue-800",
       };
+    if (hasHtml)
+      return { text: "HTML Only", color: "bg-yellow-100 text-yellow-800" };
+    if (hasPdf)
+      return { text: "PDF Ready", color: "bg-green-100 text-green-800" };
     return { text: "No Data", color: "bg-red-100 text-red-800" };
   };
 
@@ -366,6 +448,26 @@ export default function AdminPdfReports({
           ({localReports.length}{" "}
           {t("admin.vehicleReports.totalReports", "report totali")})
         </span>
+        {/* 🚨 DEBUG BUTTON - Rimuovi in produzione */}
+        <button
+          onClick={async () => {
+            console.log("🔄 Manual refresh button clicked");
+            if (refreshPdfReports) {
+              try {
+                await refreshPdfReports();
+                console.log("✅ Manual refresh completed successfully");
+              } catch (error) {
+                console.error("❌ Manual refresh failed:", error);
+              }
+            } else {
+              console.warn("⚠️ refreshPdfReports function not available");
+            }
+          }}
+          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+          title="Debug: Refresh manuale"
+        >
+          🔄 Debug Refresh
+        </button>
       </div>
 
       {/* ✅ Tabella - Layout IDENTICO alle altre tabelle */}
@@ -397,11 +499,7 @@ export default function AdminPdfReports({
               "DataRecordsCount",
               0
             );
-            const isDownloadable = getReportProp<boolean>(
-              report,
-              "IsDownloadable",
-              true
-            );
+            const isDownloadable = dataCount > 5;
 
             return (
               <tr
@@ -535,40 +633,7 @@ export default function AdminPdfReports({
           isOpen={!!selectedReportForNotes}
           title={t("admin.vehicleReports.notesModalTitle")}
           notesField="notes"
-          onSave={async (updated) => {
-            try {
-              await fetch(
-                `${API_BASE_URL}/api/pdfreports/${updated.id}/notes`,
-                {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ notes: updated.notes }),
-                }
-              );
-
-              setLocalReports((prev) =>
-                prev.map((r) =>
-                  r.id === updated.id ? { ...r, notes: updated.notes } : r
-                )
-              );
-              setSelectedReportForNotes(null);
-              logFrontendEvent(
-                "AdminPdfReports",
-                "INFO",
-                "Notes updated",
-                `ReportId: ${updated.id}`
-              );
-            } catch (err) {
-              const details = err instanceof Error ? err.message : String(err);
-              logFrontendEvent(
-                "AdminPdfReports",
-                "ERROR",
-                "Failed to update notes",
-                details
-              );
-              alert(t("admin.notesGenericError"));
-            }
-          }}
+          onSave={handleNotesUpdate}
           onClose={() => setSelectedReportForNotes(null)}
           t={t}
         />

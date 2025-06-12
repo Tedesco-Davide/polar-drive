@@ -288,6 +288,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             font-family: Arial, sans-serif;
             margin: 20px;
             line-height: 1.4;
+            font-weight: normal; /* ✅ Assicura font normale di base */
         }
 
         .header {
@@ -307,6 +308,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             color: #004E92;
             margin-bottom: 15px;
             font-size: 24px;
+            font-weight: 700; /* ✅ Solo titoli principali in grassetto */
         }
 
         h2 {
@@ -314,8 +316,25 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             margin-top: 25px;
             margin-bottom: 15px;
             font-size: 18px;
+            font-weight: 600; /* ✅ Ridotto da bold (700) a 600 */
             border-bottom: 1px solid #ddd;
             padding-bottom: 5px;
+        }
+
+        h3 {
+            color: #004E92;
+            font-size: 16px;
+            font-weight: 500; /* ✅ Ancora più leggero per h3 */
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        h4 {
+            color: #333;
+            font-size: 14px;
+            font-weight: 500; /* ✅ Peso normale per h4 */
+            margin-top: 15px;
+            margin-bottom: 8px;
         }
 
         .report-info {
@@ -323,10 +342,16 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             padding: 15px;
             border-radius: 5px;
             margin-top: 10px;
+            font-weight: normal; /* ✅ Testo normale per info report */
         }
 
         .report-info div {
             margin-bottom: 5px;
+        }
+
+        /* ✅ GRASSETTO SOLO DOVE NECESSARIO */
+        .report-info strong {
+            font-weight: 600; /* ✅ Ridotto da bold (700) a 600 */
         }
 
         .section {
@@ -339,12 +364,31 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             padding: 20px;
             border-left: 4px solid #004E92;
             margin: 15px 0;
+            font-weight: normal; /* ✅ Contenuto insights normale */
+        }
+
+        /* ✅ GRASSETTO SELETTIVO NEGLI INSIGHTS */
+        .insights-content h1,
+        .insights-content h2,
+        .insights-content h3 {
+            font-weight: 600; /* ✅ Intestazioni insights più leggere */
+        }
+
+        .insights-content strong {
+            font-weight: 600; /* ✅ Strong più leggero */
+            color: #004E92; /* ✅ Usa colore invece di peso eccessivo */
+        }
+
+        .insights-content b {
+            font-weight: 500; /* ✅ Tag <b> ancora più leggero */
+            color: #004E92;
         }
 
         .stats-content {
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 5px;
+            font-weight: normal; /* ✅ Statistiche in peso normale */
         }
 
         .raw-data-content {
@@ -354,20 +398,24 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             border-radius: 5px;
             font-size: 11px;
             overflow-x: auto;
+            font-weight: normal; /* ✅ Dati raw normali */
         }
 
+        /* ✅ TABELLE CON GRASSETTO RIDOTTO */
         table {
             width: 100%;
             max-width: 100%;
             table-layout: fixed;
             border-collapse: collapse;
             margin-bottom: 20px;
+            font-weight: normal; /* ✅ Tabelle normali */
         }
 
         th, td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
+            font-weight: normal; /* ✅ Celle normali */
         }
 
         td {
@@ -378,8 +426,45 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
         th {
             background-color: #f2f2f2;
-            font-weight: bold;
+            font-weight: 600; /* ✅ Header tabelle un po' più pesanti ma non bold */
+            color: #333;
         }
+
+        /* ✅ PARAGRAFI E TESTO CORPO */
+        p {
+            font-weight: normal;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        /* ✅ LISTE CON PESO NORMALE */
+        ul, ol {
+            font-weight: normal;
+            margin-bottom: 15px;
+            padding-left: 20px;
+        }
+
+        li {
+            font-weight: normal;
+            margin-bottom: 5px;
+        }
+
+        /* ✅ ENFASI CONTROLLATA */
+        .important {
+            font-weight: 600; /* ✅ Solo per elementi veramente importanti */
+            color: #004E92;
+        }
+
+        .emphasis {
+            font-weight: 500; /* ✅ Enfasi leggera */
+            color: #333;
+        }
+
+        /* ✅ OVERRIDE PER MARKDOWN CONVERTITO */
+        .insights-content h1 { font-weight: 600; font-size: 20px; }
+        .insights-content h2 { font-weight: 500; font-size: 18px; }
+        .insights-content h3 { font-weight: 500; font-size: 16px; }
+        .insights-content h4 { font-weight: 400; font-size: 14px; }
 
         .footer {
             margin-top: 40px;
@@ -387,13 +472,21 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             border-top: 1px solid #ddd;
             text-align: center;
             color: #666;
+            font-weight: normal; /* ✅ Footer normale */
         }
 
-        /* Stili specifici per la stampa */
+        /* ✅ STILI SPECIFICI PER LA STAMPA */
         @media print {
             html, body {
                 font-size: 12px !important;
             }
+
+            /* ✅ Riduci ulteriormente i grassetti in stampa */
+            h1 { font-weight: 600; }
+            h2 { font-weight: 500; }
+            h3 { font-weight: 500; }
+            strong { font-weight: 500; }
+            th { font-weight: 500; }
 
             .section {
                 page-break-inside: avoid;
@@ -427,19 +520,29 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
         var html = insights;
 
-        // Conversioni markdown base
-        html = html.Replace("# ", "<h3>").Replace("\n", "</h3>\n");
-        html = html.Replace("## ", "<h4>").Replace("\n", "</h4>\n");
-        html = html.Replace("**", "<strong>").Replace("**", "</strong>");
-        html = html.Replace("- ", "<li>").Replace("\n", "</li>\n");
+        // ✅ CONVERSIONI MARKDOWN CON GRASSETTO CONTROLLATO
+
+        // Headers con peso ridotto
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^### (.+)$", "<h4 class='insight-h4'>$1</h4>", System.Text.RegularExpressions.RegexOptions.Multiline);
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$", "<h3 class='insight-h3'>$1</h3>", System.Text.RegularExpressions.RegexOptions.Multiline);
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$", "<h2 class='insight-h2'>$1</h2>", System.Text.RegularExpressions.RegexOptions.Multiline);
+
+        // ✅ GRASSETTO CONTROLLATO: ** diventa <span class='emphasis'> invece di <strong>
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*", "<span class='emphasis'>$1</span>");
+
+        // ✅ GRASSETTO FORTE: usa classe specifica solo quando necessario
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"__(.+?)__", "<span class='important'>$1</span>");
+
+        // Liste con stile normale
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^- (.+)$", "<li class='insight-li'>$1</li>", System.Text.RegularExpressions.RegexOptions.Multiline);
 
         // Avvolgi le liste
-        if (html.Contains("<li>"))
+        if (html.Contains("<li class='insight-li'>"))
         {
-            html = "<ul>\n" + html + "\n</ul>";
+            html = "<ul class='insight-list'>\n" + html + "\n</ul>";
         }
 
-        // Avvolgi in paragrafi i blocchi di testo
+        // Paragrafi normali
         var lines = html.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         var formattedLines = new List<string>();
 
@@ -448,7 +551,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             var trimmed = line.Trim();
             if (!trimmed.StartsWith("<") && !string.IsNullOrEmpty(trimmed))
             {
-                formattedLines.Add($"<p>{trimmed}</p>");
+                formattedLines.Add($"<p class='insight-p'>{trimmed}</p>");
             }
             else
             {
@@ -456,7 +559,23 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             }
         }
 
-        return string.Join("\n", formattedLines);
+        var result = string.Join("\n", formattedLines);
+
+        // ✅ AGGIUNGI STILI INLINE PER GLI INSIGHTS
+        var styledResult = @"
+<style>
+.insight-h2 { font-weight: 600; color: #004E92; font-size: 18px; margin: 20px 0 15px 0; }
+.insight-h3 { font-weight: 500; color: #004E92; font-size: 16px; margin: 15px 0 10px 0; }
+.insight-h4 { font-weight: 500; color: #333; font-size: 14px; margin: 15px 0 8px 0; }
+.insight-p { font-weight: normal; margin-bottom: 10px; line-height: 1.5; }
+.insight-list { font-weight: normal; margin: 15px 0; padding-left: 20px; }
+.insight-li { font-weight: normal; margin-bottom: 5px; }
+.emphasis { font-weight: 500; color: #004E92; }  /* ✅ Enfasi leggera invece di bold */
+.important { font-weight: 600; color: #d63384; } /* ✅ Solo per cose veramente importanti */
+</style>
+" + result;
+
+        return styledResult;
     }
 
     /// <summary>
