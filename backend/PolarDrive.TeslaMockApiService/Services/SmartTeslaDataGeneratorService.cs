@@ -5,7 +5,7 @@ namespace PolarDrive.TeslaMockApiService.Services;
 // ✅ Stato persistente completo per ogni veicolo simulato
 public class VehicleSimulationState
 {
-    public string Vin { get; set; }
+    public required string Vin { get; set; }
 
     // Basic Vehicle Info
     public int VehicleId { get; set; } = 99999;

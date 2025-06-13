@@ -332,17 +332,20 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ NUOVO: Genera report progressivo per un singolo veicolo in produzione
+    /// ✅ MIGLIORATO: Genera report progressivo ALLINEATO con fake scheduler
     /// </summary>
-    private async Task GenerateProgressiveReportForVehicleProduction(PolarDriveDbContext db, int vehicleId, string analysisLevel, int dataHours)
+    private async Task GenerateProgressiveReportForVehicleProduction(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
     {
         var vehicle = await db.ClientVehicles.FindAsync(vehicleId);
         if (vehicle == null) return;
 
         var now = DateTime.UtcNow;
 
-        _logger.LogInformation("🧠 Generating {AnalysisLevel} for vehicle {VIN} ({DataHours}h of data)",
-            analysisLevel, vehicle.Vin, dataHours);
+        // ✅ USA LA NUOVA LOGICA PROGRESSIVA
+        var reportPeriod = await DetermineProgressiveReportPeriod(db, vehicleId, analysisLevel, defaultDataHours);
+
+        _logger.LogInformation("🧠 Generating {AnalysisLevel} for vehicle {VIN} ({DataHours}h data, {MonitoringDays:F1} days monitoring)",
+            reportPeriod.AnalysisLevel, vehicle.Vin, reportPeriod.DataHours, reportPeriod.MonitoringDays);
 
         // Genera insights progressivi usando PolarAiReportGenerator
         var aiGenerator = new PolarAiReportGenerator(db);
@@ -354,10 +357,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             throw new InvalidOperationException($"No progressive insights generated for vehicle {vehicle.Vin}");
         }
 
-        // Determina il periodo del report
-        var reportPeriod = DetermineProductionReportPeriod(analysisLevel, dataHours);
-
-        // Crea record del report con metadati progressivi
+        // ✅ METADATI PIÙ RICCHI
         var progressiveReport = new Data.Entities.PdfReport
         {
             ClientVehicleId = vehicleId,
@@ -365,7 +365,8 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             ReportPeriodStart = reportPeriod.Start,
             ReportPeriodEnd = reportPeriod.End,
             GeneratedAt = now,
-            Notes = $"[PRODUCTION-PROGRESSIVE-{analysisLevel.Replace(" ", "")}] Generated with {dataHours}h analysis window"
+            Notes = $"[PRODUCTION-PROGRESSIVE-{reportPeriod.AnalysisLevel.Replace(" ", "")}] " +
+                    $"DataHours: {reportPeriod.DataHours}, MonitoringDays: {reportPeriod.MonitoringDays:F1}"
         };
 
         db.PdfReports.Add(progressiveReport);
@@ -377,7 +378,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         {
             ShowDetailedStats = true,
             ShowRawData = false,
-            ReportType = $"🧠 {analysisLevel} - Production",
+            ReportType = $"🧠 {reportPeriod.AnalysisLevel} - Production",
             AdditionalCss = GetProductionProgressiveStyles()
         };
 
@@ -392,7 +393,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         }
         await File.WriteAllTextAsync(htmlPath, htmlContent);
 
-        // Genera PDF con stili production
+        // ✅ HEADER PIÙ INFORMATIVO
         var pdfService = new PdfGenerationService(db);
         var pdfOptions = new PdfConversionOptions
         {
@@ -403,13 +404,13 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             MarginRight = "1.5cm",
             DisplayHeaderFooter = true,
             HeaderTemplate = $@"
-            <div style='font-size: 10px; width: 100%; text-align: center; color: #004E92; border-bottom: 1px solid #004E92; padding-bottom: 5px;'>
-                <span>🏭 PolarDrive {analysisLevel} - {vehicle.Vin} - {now:yyyy-MM-dd HH:mm}</span>
-            </div>",
+        <div style='font-size: 10px; width: 100%; text-align: center; color: #004E92; border-bottom: 1px solid #004E92; padding-bottom: 5px;'>
+            <span>🏭 PolarDrive {reportPeriod.AnalysisLevel} - {vehicle.Vin} - {reportPeriod.MonitoringDays:F1}d monitoring - {now:yyyy-MM-dd HH:mm}</span>
+        </div>",
             FooterTemplate = @"
-            <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
-                <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | Production Analysis</span>
-            </div>"
+        <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
+            <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | Production Progressive Analysis</span>
+        </div>"
         };
 
         var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, progressiveReport, pdfOptions);
@@ -423,8 +424,8 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         }
         await File.WriteAllBytesAsync(pdfPath, pdfBytes);
 
-        _logger.LogInformation("✅ Production progressive report generated for {VIN}: ReportId {ReportId}, Level: {Level}, Size: {Size} bytes",
-            vehicle.Vin, progressiveReport.Id, analysisLevel, pdfBytes.Length);
+        _logger.LogInformation("✅ Production progressive report generated for {VIN}: ReportId {ReportId}, Level: {Level}, Monitoring: {Days:F1}d, Size: {Size} bytes",
+            vehicle.Vin, progressiveReport.Id, reportPeriod.AnalysisLevel, reportPeriod.MonitoringDays, pdfBytes.Length);
     }
 
     /// <summary>
@@ -512,34 +513,70 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ NUOVO: Determina periodo del report per produzione
+    /// ✅ MIGLIORATO: Determina periodo del report progressivo ALLINEATO con fake
     /// </summary>
-    private ProductionReportPeriodInfo DetermineProductionReportPeriod(string analysisLevel, int dataHours)
+    private async Task<ProgressiveReportPeriodInfo> DetermineProgressiveReportPeriod(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
     {
+        // Cerca il primo record per questo veicolo per capire da quanto monitoriamo
+        var firstRecord = await db.VehiclesData
+            .Where(vd => vd.VehicleId == vehicleId)
+            .OrderBy(vd => vd.Timestamp)
+            .Select(vd => vd.Timestamp)
+            .FirstOrDefaultAsync();
+
         var now = DateTime.UtcNow;
 
-        return analysisLevel switch
+        if (firstRecord == default)
         {
-            "Analisi Giornaliera" => new ProductionReportPeriodInfo
+            // Fallback se non ci sono dati - usa il periodo standard
+            return new ProgressiveReportPeriodInfo
             {
-                Start = now.AddDays(-1).Date,
-                End = now.Date.AddDays(-1).AddHours(23).AddMinutes(59)
-            },
-            "Deep Dive Settimanale" => new ProductionReportPeriodInfo
-            {
-                Start = now.AddDays(-7 - (int)now.DayOfWeek + 1).Date, // Lunedì scorso
-                End = now.AddDays(-7 - (int)now.DayOfWeek + 1).Date.AddDays(6).AddHours(23).AddMinutes(59) // Domenica scorsa
-            },
-            "Analisi Comprensiva Mensile" => new ProductionReportPeriodInfo
-            {
-                Start = new DateTime(now.Year, now.Month, 1).AddMonths(-1),
-                End = new DateTime(now.Year, now.Month, 1).AddDays(-1).AddHours(23).AddMinutes(59)
-            },
-            _ => new ProductionReportPeriodInfo
-            {
-                Start = now.AddHours(-dataHours),
-                End = now
-            }
+                Start = now.AddHours(-defaultDataHours),
+                End = now,
+                DataHours = defaultDataHours,
+                AnalysisLevel = analysisLevel,
+                MonitoringDays = defaultDataHours / 24.0
+            };
+        }
+
+        var monitoringPeriod = now - firstRecord;
+
+        // Per produzione, usa logica più conservativa ma comunque progressiva
+        var (start, end, dataHours, finalAnalysisLevel) = analysisLevel switch
+        {
+            "Analisi Giornaliera" => (
+                now.AddDays(-1).Date,
+                now.Date.AddDays(-1).AddHours(23).AddMinutes(59),
+                24,
+                monitoringPeriod.TotalDays < 1 ? "Analisi Iniziale Giornaliera" : "Analisi Giornaliera"
+            ),
+            "Deep Dive Settimanale" => (
+                now.AddDays(-7 - (int)now.DayOfWeek + 1).Date,
+                now.AddDays(-7 - (int)now.DayOfWeek + 1).Date.AddDays(6).AddHours(23).AddMinutes(59),
+                168,
+                monitoringPeriod.TotalDays < 7 ? "Analisi Settimanale Parziale" : "Deep Dive Settimanale"
+            ),
+            "Analisi Comprensiva Mensile" => (
+                new DateTime(now.Year, now.Month, 1).AddMonths(-1),
+                new DateTime(now.Year, now.Month, 1).AddDays(-1).AddHours(23).AddMinutes(59),
+                720,
+                monitoringPeriod.TotalDays < 30 ? "Analisi Mensile Progressiva" : "Analisi Comprensiva Mensile"
+            ),
+            _ => (
+                now.AddHours(-defaultDataHours),
+                now,
+                defaultDataHours,
+                $"{analysisLevel} ({monitoringPeriod.TotalDays:F1} giorni di monitoraggio)"
+            )
+        };
+
+        return new ProgressiveReportPeriodInfo
+        {
+            Start = start,
+            End = end,
+            DataHours = dataHours,
+            AnalysisLevel = finalAnalysisLevel,
+            MonitoringDays = monitoringPeriod.TotalDays
         };
     }
 
@@ -549,68 +586,93 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     private string GetProductionProgressiveStyles()
     {
         return @"
-        .production-badge {
-            background: linear-gradient(135deg, #004E92 0%, #000428 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 12px;
-            font-weight: bold;
-            display: inline-block;
-            margin: 10px 15px 10px 0;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-        }
-        
-        .production-badge::before {
-            content: '🏭 PRODUCTION • ';
-        }
-        
-        .progressive-production {
-            background: linear-gradient(135deg, rgba(0, 78, 146, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
-            border: 2px solid #004E92;
-            padding: 20px;
-            margin: 20px 0;
-            border-radius: 12px;
-        }
-        
-        .progressive-production::before {
-            content: '🏭 Production Environment • 🧠 Progressive AI Analysis • ';
-            color: #004E92;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        
-        .ai-insights {
-            border-left: 5px solid #004E92;
-            background: linear-gradient(135deg, rgba(0, 78, 146, 0.05) 0%, rgba(102, 126, 234, 0.05) 100%);
-            padding: 25px;
-            border-radius: 0 12px 12px 0;
-        }
-        
-        .ai-insights::before {
-            content: '🧠 Analisi Progressiva AI Production • ';
-            background: linear-gradient(135deg, #004E92 0%, #667eea 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        
-        .production-info {
-            background: #e8f4fd;
-            border: 1px solid #004E92;
-            padding: 15px;
-            border-radius: 8px;
-            margin: 20px 0;
-            font-size: 13px;
-            color: #004E92;
-        }
-        
-        .production-info::before {
-            content: '🏭 Production Schedule: ';
-            font-weight: bold;
-        }";
+                .production-badge {
+                    background: linear-gradient(135deg, #004E92 0%, #000428 100%);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 25px;
+                    font-size: 12px;
+                    font-weight: 500; /* ✅ RIDOTTO da bold */
+                    display: inline-block;
+                    margin: 10px 15px 10px 0;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+                }
+                
+                .production-badge::before {
+                    content: '🏭 PRODUCTION • ';
+                }
+                
+                .progressive-production {
+                    background: linear-gradient(135deg, rgba(0, 78, 146, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
+                    border: 2px solid #004E92;
+                    padding: 20px;
+                    margin: 20px 0;
+                    border-radius: 12px;
+                }
+                
+                .progressive-production::before {
+                    content: '🏭 Production Environment • 🧠 Progressive AI Analysis • ';
+                    color: #004E92;
+                    font-weight: 500; /* ✅ RIDOTTO */
+                    font-size: 14px;
+                }
+                
+                /* ✅ CONTROLLO GLOBALE GRASSETTO PER PRODUCTION */
+                .progressive-production * {
+                    font-weight: normal !important;
+                }
+                
+                .progressive-production h1, .progressive-production h2, 
+                .progressive-production h3, .progressive-production h4 {
+                    font-weight: 500 !important;
+                }
+                
+                .progressive-production strong, .progressive-production b {
+                    font-weight: 500 !important;
+                    color: #004E92;
+                }
+                
+                .ai-insights {
+                    border-left: 5px solid #004E92;
+                    background: linear-gradient(135deg, rgba(0, 78, 146, 0.05) 0%, rgba(102, 126, 234, 0.05) 100%);
+                    padding: 25px;
+                    border-radius: 0 12px 12px 0;
+                }
+                
+                .ai-insights::before {
+                    content: '🧠 Analisi Progressiva AI Production • ';
+                    background: linear-gradient(135deg, #004E92 0%, #667eea 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    background-clip: text;
+                    font-weight: 500; /* ✅ RIDOTTO */
+                    font-size: 14px;
+                }
+                
+                /* ✅ CONTROLLO GRASSETTO GLOBALE per AI insights */
+                .ai-insights * {
+                    font-weight: normal !important;
+                }
+                
+                .ai-insights strong, .ai-insights b {
+                    font-weight: 500 !important;
+                }
+                
+                .production-info {
+                    background: #e8f4fd;
+                    border: 1px solid #004E92;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin: 20px 0;
+                    font-size: 13px;
+                    color: #004E92;
+                    font-weight: normal; /* ✅ AGGIUNTO */
+                }
+                
+                .production-info::before {
+                    content: '🏭 Production Schedule: ';
+                    font-weight: 500; /* ✅ RIDOTTO */
+                }";
     }
 
     /// <summary>
@@ -694,9 +756,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
             var totalReports = await db.PdfReports.CountAsync();
 
-            // ✅ NUOVO: Conta report progressivi production
+            // ✅ CONTEGGI PIÙ DETTAGLIATI come nel fake
             var progressiveProductionReports = await db.PdfReports
                 .Where(r => r.Notes != null && r.Notes.Contains("[PRODUCTION-PROGRESSIVE"))
+                .CountAsync();
+
+            var recentProgressiveReports = await db.PdfReports
+                .Where(r => r.GeneratedAt >= DateTime.UtcNow.AddHours(-24) &&
+                           r.Notes != null && r.Notes.Contains("[PRODUCTION-PROGRESSIVE"))
                 .CountAsync();
 
             var monthlyReports = await db.PdfReports
@@ -717,24 +784,25 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
             var totalData = await db.VehiclesData.CountAsync();
             var recentData = await db.VehiclesData
-                .Where(d => d.Timestamp >= DateTime.UtcNow.AddDays(-1))
+                .Where(d => d.Timestamp >= DateTime.UtcNow.AddHours(-1))
                 .CountAsync();
 
             var vehiclesWithRetries = _retryCount.Count(kv => kv.Value > 0);
             var vehiclesExceededRetries = _retryCount.Count(kv => kv.Value > MAX_RETRIES_PER_VEHICLE);
 
-            _logger.LogInformation("📈 ProductionScheduler Progressive Statistics:");
+            _logger.LogInformation("📈 ProductionScheduler Progressive Statistics (ALLINEATE):");
             _logger.LogInformation($"   Total Reports: {totalReports} (Progressive Production: {progressiveProductionReports})");
+            _logger.LogInformation($"   Last 24h Progressive: {recentProgressiveReports}");
             _logger.LogInformation($"   Recent Reports - Daily: {dailyReports}, Weekly: {weeklyReports}, Monthly: {monthlyReports}");
             _logger.LogInformation($"   Active Vehicles: {totalVehicles}");
-            _logger.LogInformation($"   Vehicle Data: {totalData} total (Last 24h: {recentData})");
+            _logger.LogInformation($"   Vehicle Data: {totalData} total (Last hour: {recentData})");
             _logger.LogInformation($"   Vehicles with retries: {vehiclesWithRetries}");
             _logger.LogInformation($"   Vehicles exceeded retries: {vehiclesExceededRetries}");
 
-            // ✅ NUOVO: Log dettagli retry se presenti
+            // ✅ LOG DETTAGLI RETRY come nel fake
             if (vehiclesWithRetries > 0)
             {
-                _logger.LogInformation("🔄 Production retry details:");
+                _logger.LogInformation("🔄 Production progressive retry details:");
                 foreach (var (vehicleId, retryCount) in _retryCount.Where(kv => kv.Value > 0))
                 {
                     var lastAttempt = _lastReportAttempts.GetValueOrDefault(vehicleId, DateTime.MinValue);
@@ -745,7 +813,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 }
             }
 
-            // ✅ NUOVO: Log prossimi eventi scheduled
+            // ✅ LOG EVENTI PROGRESSIVI come nel fake
             var now = DateTime.UtcNow;
             var nextDaily = new DateTime(now.Year, now.Month, now.Day, 2, 0, 0);
             if (nextDaily <= now) nextDaily = nextDaily.AddDays(1);
@@ -755,7 +823,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
             var nextMonthly = new DateTime(now.Year, now.Month, 1).AddMonths(1).AddHours(4);
 
-            _logger.LogInformation("⏰ Next Scheduled Events:");
+            _logger.LogInformation("⏰ Next Progressive Scheduled Events:");
             _logger.LogInformation($"   Daily Progressive Reports: {nextDaily:yyyy-MM-dd HH:mm} (in {(nextDaily - now).TotalHours:F1}h)");
             _logger.LogInformation($"   Weekly Progressive Reports: {nextWeekly:yyyy-MM-dd HH:mm} (in {(nextWeekly - now).TotalDays:F1} days)");
             _logger.LogInformation($"   Monthly Progressive Reports: {nextMonthly:yyyy-MM-dd HH:mm} (in {(nextMonthly - now).TotalDays:F1} days)");
@@ -812,8 +880,11 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 /// <summary>
 /// ✅ NUOVO: Classe helper per info periodo report production
 /// </summary>
-public class ProductionReportPeriodInfo
+public class ProgressiveReportPeriodInfo
 {
     public DateTime Start { get; set; }
     public DateTime End { get; set; }
+    public int DataHours { get; set; }
+    public string AnalysisLevel { get; set; } = "";
+    public double MonitoringDays { get; set; }
 }

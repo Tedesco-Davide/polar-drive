@@ -8,6 +8,7 @@ namespace PolarDrive.WebApi.Production;
 /// <summary>
 /// Service che chiama le API Tesla reali e salva i dati
 /// Usato in PRODUZIONE (non in development/mock)
+/// ✅ AGGIORNATO per integrazione con sistema progressivo
 /// </summary>
 public class TeslaApiService
 {
@@ -67,6 +68,9 @@ public class TeslaApiService
                         errorCount++;
                         break;
                 }
+
+                // ✅ NUOVO: Pausa tra veicoli per evitare rate limiting
+                await Task.Delay(TimeSpan.FromSeconds(2));
             }
             catch (Exception ex)
             {
@@ -80,7 +84,7 @@ public class TeslaApiService
     }
 
     /// <summary>
-    /// ✅ NUOVO METODO: Fetch dati per un singolo veicolo tramite VIN
+    /// ✅ AGGIORNATO: Fetch dati per un singolo veicolo tramite VIN con migliore gestione errori
     /// </summary>
     public async Task<VehicleFetchResult> FetchDataForVehicleAsync(string vin)
     {
@@ -99,7 +103,7 @@ public class TeslaApiService
     }
 
     /// <summary>
-    /// ✅ NUOVO METODO: Verifica se il servizio Tesla è disponibile
+    /// ✅ MIGLIORATO: Verifica disponibilità servizio con timeout e retry
     /// </summary>
     public async Task<bool> IsServiceAvailableAsync()
     {
@@ -117,15 +121,29 @@ public class TeslaApiService
                 return false;
             }
 
-            // Test semplice di connettività (senza autenticazione)
+            // Test di connettività con retry
             using var testClient = new HttpClient();
-            testClient.Timeout = TimeSpan.FromSeconds(10);
+            testClient.Timeout = TimeSpan.FromSeconds(5);
 
-            var response = await testClient.GetAsync("https://owner-api.teslamotors.com/api/1/status");
-            var isAvailable = response.IsSuccessStatusCode;
+            for (int attempt = 1; attempt <= 2; attempt++)
+            {
+                try
+                {
+                    var response = await testClient.GetAsync("https://owner-api.teslamotors.com/api/1/status");
+                    var isAvailable = response.IsSuccessStatusCode;
 
-            await _logger.Debug(source, $"Tesla API availability check: {isAvailable}");
-            return isAvailable;
+                    await _logger.Debug(source, $"Tesla API availability check (attempt {attempt}): {isAvailable}");
+
+                    if (isAvailable) return true;
+                }
+                catch (Exception ex) when (attempt == 1)
+                {
+                    await _logger.Debug(source, $"Tesla API availability check attempt {attempt} failed: {ex.Message}");
+                    await Task.Delay(1000); // Attendi 1 secondo prima del retry
+                }
+            }
+
+            return false;
         }
         catch (Exception ex)
         {
@@ -135,7 +153,7 @@ public class TeslaApiService
     }
 
     /// <summary>
-    /// ✅ NUOVO METODO: Ottieni statistiche di utilizzo del servizio Tesla
+    /// ✅ AGGIORNATO: Statistiche di utilizzo con informazioni progressive
     /// </summary>
     public async Task<ServiceUsageStats> GetUsageStatsAsync()
     {
@@ -146,19 +164,36 @@ public class TeslaApiService
             var activeVehicles = await _db.ClientVehicles
                 .CountAsync(v => v.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase) && v.IsActiveFlag);
 
+            var fetchingVehicles = await _db.ClientVehicles
+                .CountAsync(v => v.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase) && v.IsFetchingDataFlag);
+
             var lastFetch = await _db.ClientVehicles
                 .Where(v => v.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase) && v.LastDataUpdate.HasValue)
                 .MaxAsync(v => (DateTime?)v.LastDataUpdate) ?? DateTime.MinValue;
 
+            var totalDataRecords = await _db.VehiclesData
+                .CountAsync(vd => _db.ClientVehicles.Any(cv => cv.Id == vd.VehicleId && cv.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase)));
+
+            var recentDataRecords = await _db.VehiclesData
+                .CountAsync(vd => vd.Timestamp >= DateTime.UtcNow.AddHours(-24) &&
+                                 _db.ClientVehicles.Any(cv => cv.Id == vd.VehicleId && cv.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase)));
+
             var isHealthy = await IsServiceAvailableAsync();
+
+            // ✅ NUOVO: Ottieni info sui token
+            var tokenInfo = await GetTokenStatusAsync();
 
             return new ServiceUsageStats
             {
                 BrandName = "Tesla",
                 ActiveVehicles = activeVehicles,
+                FetchingVehicles = fetchingVehicles,
                 LastFetch = lastFetch,
+                TotalDataRecords = totalDataRecords,
+                RecentDataRecords = recentDataRecords,
                 IsHealthy = isHealthy,
-                LastError = null // TODO: Potresti salvare l'ultimo errore nel DB
+                LastError = null, // TODO: Potresti salvare l'ultimo errore nel DB
+                TokenStatus = tokenInfo
             };
         }
         catch (Exception ex)
@@ -169,10 +204,96 @@ public class TeslaApiService
             {
                 BrandName = "Tesla",
                 ActiveVehicles = 0,
+                FetchingVehicles = 0,
                 LastFetch = DateTime.MinValue,
+                TotalDataRecords = 0,
+                RecentDataRecords = 0,
                 IsHealthy = false,
-                LastError = ex.Message
+                LastError = ex.Message,
+                TokenStatus = new TokenStatus { ValidTokens = 0, ExpiredTokens = 0 }
             };
+        }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Ottieni status dei token OAuth
+    /// </summary>
+    public async Task<TokenStatus> GetTokenStatusAsync()
+    {
+        try
+        {
+            var now = DateTime.UtcNow;
+
+            var validTokens = await _db.ClientTokens
+                .CountAsync(t => t.AccessTokenExpiresAt > now);
+
+            var expiredTokens = await _db.ClientTokens
+                .CountAsync(t => t.AccessTokenExpiresAt <= now);
+
+            var nextExpiration = await _db.ClientTokens
+                .Where(t => t.AccessTokenExpiresAt > now)
+                .MinAsync(t => (DateTime?)t.AccessTokenExpiresAt);
+
+            return new TokenStatus
+            {
+                ValidTokens = validTokens,
+                ExpiredTokens = expiredTokens,
+                NextExpiration = nextExpiration
+            };
+        }
+        catch (Exception ex)
+        {
+            await _logger.Warning("TeslaApiService.GetTokenStatus", "Error getting token status", ex.Message);
+            return new TokenStatus { ValidTokens = 0, ExpiredTokens = 0 };
+        }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Metodo per refresh di tutti i token scaduti
+    /// </summary>
+    public async Task<int> RefreshExpiredTokensAsync()
+    {
+        const string source = "TeslaApiService.RefreshExpiredTokens";
+
+        try
+        {
+            var expiredTokens = await _db.ClientTokens
+                .Where(t => t.AccessTokenExpiresAt <= DateTime.UtcNow.AddMinutes(5)) // Refresh 5 minuti prima della scadenza
+                .ToListAsync();
+
+            var refreshedCount = 0;
+
+            foreach (var token in expiredTokens)
+            {
+                try
+                {
+                    var refreshed = await RefreshTokenAsync(token);
+                    if (refreshed)
+                    {
+                        refreshedCount++;
+                        await _logger.Debug(source, $"Successfully refreshed token for vehicle ID {token.VehicleId}");
+                    }
+                    else
+                    {
+                        await _logger.Warning(source, $"Failed to refresh token for vehicle ID {token.VehicleId}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    await _logger.Error(source, $"Error refreshing token for vehicle ID {token.VehicleId}", ex.ToString());
+                }
+
+                // Pausa tra i refresh per evitare rate limiting
+                await Task.Delay(1000);
+            }
+
+            await _logger.Info(source, $"Token refresh completed: {refreshedCount}/{expiredTokens.Count} tokens refreshed");
+            return refreshedCount;
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Error in bulk token refresh", ex.ToString());
+            return 0;
         }
     }
 
@@ -395,25 +516,4 @@ public class TeslaApiService
             return false;
         }
     }
-}
-
-// ✅ ENUM PER RISULTATI PIÙ CHIARI
-public enum VehicleFetchResult
-{
-    Success,    // Dati recuperati e salvati con successo
-    Skipped,    // Operazione saltata (veicolo offline, token mancante, etc.)
-    Error       // Errore durante l'operazione
-}
-
-// ✅ DTOs per Tesla API
-public class TeslaVehiclesResponse
-{
-    public List<TeslaVehicleInfo> Response { get; set; } = [];
-}
-
-public class TeslaVehicleInfo
-{
-    public long Id { get; set; }
-    public string Vin { get; set; } = string.Empty;
-    public string State { get; set; } = string.Empty;
 }
