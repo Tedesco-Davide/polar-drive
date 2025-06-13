@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>PolarDrive Report 2</title>
+    <style>
+        html, body, table {
+            font-size: 12px !important;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.4;
+            font-weight: normal; /* ✅ Assicura font normale di base */
+        }
+
+        .header {
+            border-bottom: 3px solid #004E92;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            width: 120px;
+            height: auto;
+            margin-bottom: 12px;
+            float: right;
+        }
+
+        h1 {
+            color: #004E92;
+            margin-bottom: 15px;
+            font-size: 24px;
+            font-weight: 700; /* ✅ Solo titoli principali in grassetto */
+        }
+
+        h2 {
+            color: #004E92;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 18px;
+            font-weight: 600; /* ✅ Ridotto da bold (700) a 600 */
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+
+        h3 {
+            color: #004E92;
+            font-size: 16px;
+            font-weight: 500; /* ✅ Ancora più leggero per h3 */
+            margin-top: 20px;
+            margin-bottom: 10px;
+        }
+
+        h4 {
+            color: #333;
+            font-size: 14px;
+            font-weight: 500; /* ✅ Peso normale per h4 */
+            margin-top: 15px;
+            margin-bottom: 8px;
+        }
+
+        .report-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: normal; /* ✅ Testo normale per info report */
+        }
+
+        .report-info div {
+            margin-bottom: 5px;
+        }
+
+        /* ✅ GRASSETTO SOLO DOVE NECESSARIO */
+        .report-info strong {
+            font-weight: 600; /* ✅ Ridotto da bold (700) a 600 */
+        }
+
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+
+        .insights-content {
+            background-color: #ffffff;
+            padding: 20px;
+            border-left: 4px solid #004E92;
+            margin: 15px 0;
+            font-weight: normal; /* ✅ Contenuto insights normale */
+        }
+
+        /* ✅ GRASSETTO SELETTIVO NEGLI INSIGHTS */
+        .insights-content h1,
+        .insights-content h2,
+        .insights-content h3 {
+            font-weight: 600; /* ✅ Intestazioni insights più leggere */
+        }
+
+        .insights-content strong {
+            font-weight: 600; /* ✅ Strong più leggero */
+            color: #004E92; /* ✅ Usa colore invece di peso eccessivo */
+        }
+
+        .insights-content b {
+            font-weight: 500; /* ✅ Tag <b> ancora più leggero */
+            color: #004E92;
+        }
+
+        .stats-content {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-weight: normal; /* ✅ Statistiche in peso normale */
+        }
+
+        .raw-data-content {
+            font-family: 'Courier New', monospace;
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 11px;
+            overflow-x: auto;
+            font-weight: normal; /* ✅ Dati raw normali */
+        }
+
+        /* ✅ TABELLE CON GRASSETTO RIDOTTO */
+        table {
+            width: 100%;
+            max-width: 100%;
+            table-layout: fixed;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-weight: normal; /* ✅ Tabelle normali */
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+            font-weight: normal; /* ✅ Celle normali */
+        }
+
+        td {
+            overflow: visible;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        th {
+            background-color: #f2f2f2;
+            font-weight: 600; /* ✅ Header tabelle un po' più pesanti ma non bold */
+            color: #333;
+        }
+
+        /* ✅ PARAGRAFI E TESTO CORPO */
+        p {
+            font-weight: normal;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        /* ✅ LISTE CON PESO NORMALE */
+        ul, ol {
+            font-weight: normal;
+            margin-bottom: 15px;
+            padding-left: 20px;
+        }
+
+        li {
+            font-weight: normal;
+            margin-bottom: 5px;
+        }
+
+        /* ✅ ENFASI CONTROLLATA */
+        .important {
+            font-weight: 600; /* ✅ Solo per elementi veramente importanti */
+            color: #004E92;
+        }
+
+        .emphasis {
+            font-weight: 500; /* ✅ Enfasi leggera */
+            color: #333;
+        }
+
+        /* ✅ OVERRIDE PER MARKDOWN CONVERTITO */
+        .insights-content h1 { font-weight: 600; font-size: 20px; }
+        .insights-content h2 { font-weight: 500; font-size: 18px; }
+        .insights-content h3 { font-weight: 500; font-size: 16px; }
+        .insights-content h4 { font-weight: 400; font-size: 14px; }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #666;
+            font-weight: normal; /* ✅ Footer normale */
+        }
+
+        /* ✅ STILI SPECIFICI PER LA STAMPA */
+        @media print {
+            html, body {
+                font-size: 12px !important;
+            }
+
+            /* ✅ Riduci ulteriormente i grassetti in stampa */
+            h1 { font-weight: 600; }
+            h2 { font-weight: 500; }
+            h3 { font-weight: 500; }
+            strong { font-weight: 500; }
+            th { font-weight: 500; }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .header {
+                page-break-after: avoid;
+            }
+
+            table {
+                page-break-inside: auto;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+
+            .logo {
+                max-width: 100px;
+            }
+        }</style>
+</head>
+<body>
+    <div class="header">
+        {{#if logoBase64}}
+        <img src="data:image/png;base64," alt="Company Logo" class="logo" />
+        {{/if}}
+        <h1>PolarDrive Report</h1>
+        <div class="report-info">
+            <div><strong>Azienda:</strong> Paninoteca Rossi (00000000001)</div>
+            <div><strong>Veicolo:</strong> Model 3 - 5YJ3000000NEXUS01</div>
+            <div><strong>Periodo:</strong> 2025-06-12 → 2025-06-12</div>
+            <div><strong>Generato:</strong> 2025-06-13 13:56</div>
+            {{#if notes}}
+            <div><strong>Note:</strong> [PROGRESSIVE] Regenerated with AI progressive analysis - 2025-06-13 12:09</div>
+            {{/if}}
+        </div>
+    </div>
+
+    <hr />
+
+    <div class="ai-insights section">
+        <h2>Analisi Intelligente del Veicolo</h2>
+        <div class="insights-content">
+            
+<style>
+.insight-h2 { font-weight: 600; color: #004E92; font-size: 18px; margin: 20px 0 15px 0; }
+.insight-h3 { font-weight: 500; color: #004E92; font-size: 16px; margin: 15px 0 10px 0; }
+.insight-h4 { font-weight: 500; color: #333; font-size: 14px; margin: 15px 0 8px 0; }
+.insight-p { font-weight: normal; margin-bottom: 10px; line-height: 1.5; }
+.insight-list { font-weight: normal; margin: 15px 0; padding-left: 20px; }
+.insight-li { font-weight: normal; margin-bottom: 5px; }
+.emphasis { font-weight: 500; color: #004E92; }  /* ✅ Enfasi leggera invece di bold */
+.important { font-weight: 600; color: #d63384; } /* ✅ Solo per cose veramente importanti */
+</style>
+<ul class='insight-list'>
+<h2 class='insight-h2'>REPORT PROGRESSIVO TESLA - VALUTAZIONE INIZIALE</h2>
+
+<h3 class='insight-h3'>EXECUTIVE SUMMARY PROGRESSIVO</h3>
+<p class='insight-p'>Analisi avanzata di <span class='emphasis'>114 campioni</span> raccolti in <span class='emphasis'>1,0 giorni</span> di monitoraggio continuo.</p>
+<p class='insight-p'>Questo valutazione iniziale rivela pattern comportamentali e insights predittivi impossibili da ottenere con analisi brevi.</p>
+<p class='insight-p'>Il veicolo dimostra pattern comportamentali iniziali stabiliti con evoluzione in fase di ottimizzazione con margini di miglioramento significativi.</p>
+
+<h3 class='insight-h3'>APPRENDIMENTO PROGRESSIVO</h3>
+
+<h4 class='insight-h4'>Insights dall'analisi estesa</h4>
+<p class='insight-p'>Il monitoraggio esteso di 1,0 giorni ha permesso di identificare:</p>
+
+<li class='insight-li'><span class='emphasis'>Pattern comportamentali evoluti</span>: L'analisi di 24 ore di dati rivela cicli di utilizzo sofisticati</li>
+<li class='insight-li'><span class='emphasis'>Correlazioni stagionali</span>: Temperature e utilizzo climatizzazione mostrano adattamenti intelligenti</li>
+<li class='insight-li'><span class='emphasis'>Efficienza progressiva</span>: Il veicolo/utente ha sviluppato strategie di ottimizzazione energetica</li>
+<li class='insight-li'><span class='emphasis'>Predittibilità elevata</span>: I pattern consolidati permettono previsioni affidabili</li>
+
+<h3 class='insight-h3'>ANALISI COMPORTAMENTALE AVANZATA</h3>
+<p class='insight-p'>L'analisi comportamentale avanzata su 24 ore rivela:</p>
+
+<span class='emphasis'>Evoluzione utilizzo</span>: Pattern di guida e sosta sempre più ottimizzati
+<span class='emphasis'>Gestione energetica</span>: Strategie di ricarica adattate alle necessità reali  
+<span class='emphasis'>Comfort intelligente</span>: Uso climatizzazione basato su apprendimento delle preferenze
+<span class='emphasis'>Sicurezza proattiva</span>: Modalità di protezione calibrate sull'ambiente d'uso
+
+<h3 class='insight-h3'>INSIGHTS PREDITTIVI</h3>
+<p class='insight-p'>Basandosi su 1,0 giorni di dati storici:</p>
+
+<span class='emphasis'>Previsioni energetiche</span>: Autonomia media stimata 0 km con trend stabile
+<span class='emphasis'>Manutenzione predittiva</span>: Pressioni pneumatici stabili, prossimo controllo consigliato tra 30 giorni
+<span class='emphasis'>Ottimizzazioni comportamentali</span>: Identificate 3 finestre temporali per ricariche più efficienti
+<span class='emphasis'>Efficienza futura</span>: Margine di miglioramento del 15% con adeguamenti comportamentali
+
+<h3 class='insight-h3'>RACCOMANDAZIONI STRATEGICHE</h3>
+<li class='insight-li'><span class='emphasis'>Monitoraggio</span>: Continuare il monitoraggio regolare per identificare pattern di utilizzo e ottimizzazioni</li>
+
+<p class='insight-p'>---</p>
+<p class='insight-p'>*Valutazione Iniziale generata il 2025-06-13 13:56 UTC*</p>
+<p class='insight-p'>*Basata su 114 campioni in 1,0 giorni di monitoraggio*</p>
+<p class='insight-p'>*Livello PolarAi: Progressivo con 24h di contesto storico*</p>
+</ul>
+        </div>
+    </div>
+
+    
+    <div class="detailed-stats section">
+        <h2>Statistiche Dettagliate</h2>
+        <div class="stats-content">
+            
+                <table>
+                    <tr><th>Metrica</th><th>Valore</th></tr>
+                    <tr><td>Record di dati analizzati</td><td>7</td></tr>
+                    <tr><td>Primo record</td><td>2025-06-12 14:13</td></tr>
+                    <tr><td>Ultimo record</td><td>2025-06-12 14:19</td></tr>
+                    <tr><td>Durata monitoraggio</td><td>0,1 ore</td></tr>
+                    <tr><td>Frequenza campionamento</td><td>0,9 min/campione</td></tr>
+                </table>
+        </div>
+    </div>
+    
+
+    
+
+    <div class="footer">
+        <p><small>Report generato da PolarDrive v1.0 - 2025-06-13 13:56</small></p>
+    </div>
+</body>
+</html>

@@ -4,9 +4,10 @@ import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
-import { NotebookPen, Download, RefreshCw } from "lucide-react";
+import { NotebookPen, FileBadge, RefreshCw } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
+import Chip from "@/components/chip";
 import AdminLoader from "@/components/adminLoader";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
@@ -49,6 +50,21 @@ export default function AdminPdfReports({
     ]
   );
 
+  const getStatusColor = (statusText: string) => {
+    switch (statusText) {
+      case "PDF-READY":
+        return "bg-green-100 text-green-700 border-green-500";
+      case "HTML Only":
+        return "bg-yellow-100 text-yellow-700 border-yellow-500";
+      case "WAITING-RECORDS":
+        return "bg-blue-100 text-blue-700 border-blue-500";
+      case "NO-DATA":
+        return "bg-red-100 text-red-700 border-red-500";
+      default:
+        return "bg-gray-100 text-polarNight border-gray-400";
+    }
+  };
+
   useEffect(() => {
     logFrontendEvent(
       "AdminPdfReports",
@@ -76,7 +92,6 @@ export default function AdminPdfReports({
     );
   }, [currentPage]);
 
-  // ✅ Download migliorato con fallback
   const handleDownload = async (
     report: PdfReport,
     forceRegenerate: boolean = false
@@ -92,7 +107,6 @@ export default function AdminPdfReports({
         `ReportId: ${report.id}, ForceRegenerate: ${forceRegenerate}`
       );
 
-      // ✅ Usa sempre regenerate=true per sicurezza se non sappiamo lo stato file
       const regenerateParam = forceRegenerate ? "?regenerate=true" : "";
       const downloadUrl = `${API_BASE_URL}/api/pdfreports/${report.id}/download${regenerateParam}`;
 
@@ -114,10 +128,9 @@ export default function AdminPdfReports({
 
       const blob = await response.blob();
       if (blob.size === 0) {
-        throw new Error("Il file ricevuto è vuoto");
+        throw new Error(t("admin.vehicleReports.blobCheck"));
       }
 
-      // ✅ Nome file con data
       let fileName = `PolarDrive_Report_${report.id}_${report.vehicleVin}_${
         report.reportPeriodStart.split("T")[0]
       }.pdf`;
@@ -166,12 +179,7 @@ export default function AdminPdfReports({
       );
 
       if (isHtml) {
-        alert(
-          t(
-            "admin.vehicleReports.downloadHtmlFallback",
-            "Download completato (formato HTML)"
-          )
-        );
+        alert(t("admin.vehicleReports.downloadHtmlFallback"));
       }
     } catch (error) {
       const errorMessage =
@@ -183,33 +191,20 @@ export default function AdminPdfReports({
         `ReportId: ${report.id}, Error: ${errorMessage}`
       );
 
-      let userMessage = t(
-        "admin.vehicleReports.downloadError",
-        "Errore durante il download"
-      );
+      let userMessage = t("admin.vehicleReports.downloadError");
       if (errorMessage.includes("500")) {
-        userMessage = t(
-          "admin.vehicleReports.serverError",
-          "Errore del server. Riprova tra qualche minuto."
-        );
+        userMessage = t("admin.vehicleReports.serverError");
       } else if (errorMessage.includes("404")) {
-        userMessage = t(
-          "admin.vehicleReports.reportNotFound",
-          "Report non trovato."
-        );
+        userMessage = t("admin.vehicleReports.reportNotFound");
       } else if (errorMessage.includes("timeout")) {
-        userMessage = t(
-          "admin.vehicleReports.timeoutError",
-          "Timeout. Il report è troppo grande, riprova."
-        );
+        userMessage = t("admin.vehicleReports.timeoutError");
       }
-      alert(`${userMessage}\n\nDettagli: ${errorMessage}`);
+      alert(`${userMessage}: ${errorMessage}`);
     } finally {
       setDownloadingId(null);
     }
   };
 
-  // ✅ Rigenerazione con retry e refresh automatico
   const handleRegenerate = async (report: PdfReport) => {
     setRegeneratingId(report.id);
 
@@ -237,9 +232,8 @@ export default function AdminPdfReports({
       const result = await response.json();
 
       if (result.success) {
-        alert("✅ Report rigenerato con successo!");
+        alert(t("admin.vehicleReports.regenerateReportSuccess"));
 
-        // 🔧 FIX: Aggiungi il refresh automatico del parent
         if (refreshPdfReports) {
           await refreshPdfReports();
         }
@@ -251,19 +245,22 @@ export default function AdminPdfReports({
           `ReportId: ${report.id}`
         );
       } else {
-        throw new Error(result.message || "Rigenerazione fallita");
+        throw new Error(
+          result.message || t("admin.vehicleReports.regenerateReportFail")
+        );
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : String(error);
-      console.error("❌ Regeneration failed:", errorMessage);
       logFrontendEvent(
         "AdminPdfReports",
         "ERROR",
         "Regeneration failed",
         `ReportId: ${report.id}, Error: ${errorMessage}`
       );
-      alert(`❌ Errore durante la rigenerazione\n\n${errorMessage}`);
+      alert(
+        `${t("admin.vehicleReports.regenerateReportError")}: ${errorMessage}`
+      );
     } finally {
       setRegeneratingId(null);
     }
@@ -281,10 +278,13 @@ export default function AdminPdfReports({
       );
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: Failed to update notes`);
+        throw new Error(
+          `HTTP ${response.status}: ${t(
+            "admin.vehicleReports.failedUpdateNotes"
+          )}`
+        );
       }
 
-      // ✅ Aggiorna subito lo stato locale
       setLocalReports((prev) =>
         prev.map((r) =>
           r.id === updated.id ? { ...r, notes: updated.notes } : r
@@ -300,7 +300,6 @@ export default function AdminPdfReports({
         `ReportId: ${updated.id}`
       );
 
-      // ✅ Opzionale: refresh del parent per sincronizzazione
       if (refreshPdfReports) {
         setTimeout(() => refreshPdfReports(), 200);
       }
@@ -316,7 +315,6 @@ export default function AdminPdfReports({
     }
   };
 
-  // ✅ Funzione helper per sicurezza - controlla sia PascalCase che camelCase
   const getReportProperty = <T,>(
     report: Record<string, unknown>,
     propName: string,
@@ -330,7 +328,6 @@ export default function AdminPdfReports({
     return fallback;
   };
 
-  // ✅ Cast prima a unknown, poi a Record
   const getReportStatus = (report: PdfReport) => {
     const hasPdf = getReportProperty<boolean>(
       report as unknown as Record<string, unknown>,
@@ -348,26 +345,21 @@ export default function AdminPdfReports({
       0
     );
 
-    // 🔧 FIX: Controlla PDF PRIMA di HTML e aggiungi più varianti
     if (dataCount < 5) {
-      return {
-        text: "Waiting for records",
-        color: "bg-blue-100 text-blue-800",
-      };
+      return { text: "WAITING-RECORDS" };
     }
 
     if (hasPdf) {
-      return { text: "PDF Ready", color: "bg-green-100 text-green-800" };
+      return { text: "PDF-READY" };
     }
 
     if (hasHtml) {
-      return { text: "HTML Only", color: "bg-yellow-100 text-yellow-800" };
+      return { text: "HTML Only" };
     }
 
-    return { text: "No Data", color: "bg-red-100 text-red-800" };
+    return { text: "NO-DATA" };
   };
 
-  // ✅ Helper che fa il cast automaticamente
   const getReportProp = <T,>(
     report: PdfReport,
     propName: string,
@@ -385,12 +377,9 @@ export default function AdminPdfReports({
       {/* ✅ Header con statistiche semplici */}
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.vehicleReports.tableHeader")}
+          {t("admin.vehicleReports.tableHeader")}: {localReports.length}{" "}
+          {t("admin.vehicleReports.tableHeaderTotals")}
         </h1>
-        <span className="text-sm text-gray-500">
-          ({localReports.length}{" "}
-          {t("admin.vehicleReports.totalReports", "report totali")})
-        </span>
       </div>
 
       <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
@@ -402,16 +391,15 @@ export default function AdminPdfReports({
                   onClick={async () => {
                     try {
                       await refreshPdfReports();
-                      alert("✅ PDF reports refresh completed successfully");
+                      alert(t("admin.vehicleReports.tableRefreshSuccess"));
                     } catch {
-                      alert("❌ PDF reports refresh failed");
+                      alert(t("admin.vehicleReports.tableRefreshFail"));
                     }
                   }}
                   className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-                  title="Refresh PDF reports"
                 >
                   <span className="uppercase text-xs tracking-widest">
-                    🔄REFRESH
+                    {t("admin.vehicleReports.tableRefreshButton")}
                   </span>
                 </button>
               )}{" "}
@@ -441,16 +429,20 @@ export default function AdminPdfReports({
               "DataRecordsCount",
               0
             );
-            const isDownloadable = dataCount > 5;
+
+            // Download abilitato SOLO se PDF-READY
+            const isDownloadable = status.text === "PDF-READY";
+
+            // Regenerate abilitato se ci sono abbastanza dati (anche senza PDF)
+            const isRegeneratable = dataCount > 5;
 
             return (
               <tr
                 key={report.id}
                 className="border-b border-gray-300 dark:border-gray-600"
               >
-                {/* ✅ Azioni - Layout identico alle altre tabelle */}
                 <td className="p-4 space-x-2 inline-flex">
-                  {/* Download button */}
+                  {/* Download button - Solo se PDF-READY */}
                   <button
                     className={`p-2 text-softWhite rounded ${
                       isDownloadable
@@ -468,27 +460,38 @@ export default function AdminPdfReports({
                     {downloadingId === report.id ? (
                       <AdminLoader inline />
                     ) : (
-                      <Download size={16} />
+                      <FileBadge size={16} />
                     )}
                   </button>
 
-                  {/* Regenerate button */}
+                  {/* Regenerate button - Se ci sono abbastanza dati */}
                   <button
                     className={`p-2 text-softWhite rounded ${
-                      isDownloadable
-                        ? "bg-orange-500 hover:bg-orange-600"
+                      isRegeneratable
+                        ? "bg-blue-500 hover:bg-blue-600"
                         : "bg-slate-500 cursor-not-allowed opacity-20 text-slate-200"
                     }`}
-                    title={t(
-                      "admin.vehicleReports.forceRegenerate",
-                      "Rigenera"
-                    )}
+                    title={t("admin.vehicleReports.forceRegenerate")}
                     disabled={
-                      !isDownloadable ||
+                      !isRegeneratable ||
                       downloadingId === report.id ||
                       regeneratingId === report.id
                     }
-                    onClick={() => handleRegenerate(report)}
+                    onClick={() => {
+                      const confirm = window.confirm(
+                        t("admin.vehicleReports.regenerateConfirmAction")
+                      );
+                      if (!confirm) {
+                        logFrontendEvent(
+                          "AdminPdfReports",
+                          "INFO",
+                          "User cancelled regeneration operation",
+                          `ReportId: ${report.id}, Status: ${status.text}`
+                        );
+                        return;
+                      }
+                      handleRegenerate(report);
+                    }}
                   >
                     {regeneratingId === report.id ? (
                       <AdminLoader inline />
@@ -497,9 +500,9 @@ export default function AdminPdfReports({
                     )}
                   </button>
 
-                  {/* Notes button */}
+                  {/* Notes button - Sempre abilitato */}
                   <button
-                    className="p-2 bg-gray-500 text-softWhite rounded hover:bg-gray-600"
+                    className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                     title={t("admin.openNotesModal")}
                     onClick={() => {
                       setSelectedReportForNotes(report);
@@ -533,9 +536,9 @@ export default function AdminPdfReports({
 
                 {/* Info File */}
                 <td className="p-4">
-                  <span className={`text-xs px-2 py-1 rounded ${status.color}`}>
+                  <Chip className={getStatusColor(status.text)}>
                     {status.text}
-                  </span>
+                  </Chip>
                 </td>
 
                 {/* Dati */}
@@ -553,7 +556,6 @@ export default function AdminPdfReports({
         </tbody>
       </table>
 
-      {/* ✅ Footer - Layout identico alle altre tabelle */}
       <div className="flex flex-wrap items-center gap-4 mt-4">
         <PaginationControls
           currentPage={currentPage}
@@ -568,7 +570,6 @@ export default function AdminPdfReports({
         />
       </div>
 
-      {/* Modal note */}
       {selectedReportForNotes && (
         <NotesModal
           entity={selectedReportForNotes}
