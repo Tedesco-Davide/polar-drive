@@ -35,14 +35,6 @@ export default function AdminPdfReports({
       "Component reports updated from parent",
       `Loaded ${reports.length} reports`
     );
-
-    // ✅ DEBUG: Mostra la struttura dati reale
-    if (reports.length > 0) {
-      console.log("🔍 Updated report data structure:", {
-        firstReport: reports[0],
-        availableProperties: Object.keys(reports[0]),
-      });
-    }
   }, [reports]);
 
   const { query, setQuery, filteredData } = useSearchFilter<PdfReport>(
@@ -222,8 +214,6 @@ export default function AdminPdfReports({
     setRegeneratingId(report.id);
 
     try {
-      console.log("🔄 Starting regeneration for report:", report.id);
-
       logFrontendEvent(
         "AdminPdfReports",
         "INFO",
@@ -245,16 +235,13 @@ export default function AdminPdfReports({
       }
 
       const result = await response.json();
-      console.log("✅ Regeneration API response:", result);
 
       if (result.success) {
         alert("✅ Report rigenerato con successo!");
 
-        // 🔧 FIX: Forza il refresh completo del parent invece di aggiornamento locale
+        // 🔧 FIX: Aggiungi il refresh automatico del parent
         if (refreshPdfReports) {
-          console.log("🔄 Forcing complete refresh after regeneration...");
           await refreshPdfReports();
-          console.log("✅ Complete refresh completed successfully");
         }
 
         logFrontendEvent(
@@ -361,15 +348,22 @@ export default function AdminPdfReports({
       0
     );
 
-    if (dataCount < 5)
+    // 🔧 FIX: Controlla PDF PRIMA di HTML e aggiungi più varianti
+    if (dataCount < 5) {
       return {
         text: "Waiting for records",
         color: "bg-blue-100 text-blue-800",
       };
-    if (hasHtml)
-      return { text: "HTML Only", color: "bg-yellow-100 text-yellow-800" };
-    if (hasPdf)
+    }
+
+    if (hasPdf) {
       return { text: "PDF Ready", color: "bg-green-100 text-green-800" };
+    }
+
+    if (hasHtml) {
+      return { text: "HTML Only", color: "bg-yellow-100 text-yellow-800" };
+    }
+
     return { text: "No Data", color: "bg-red-100 text-red-800" };
   };
 
