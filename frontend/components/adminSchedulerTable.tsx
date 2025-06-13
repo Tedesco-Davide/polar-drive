@@ -184,12 +184,19 @@ export default function AdminSchedulerTable({ t, jobs, refreshJobs }: Props) {
             <th className="p-4">
               {refreshJobs && (
                 <button
-                  onClick={handleRefreshJobs}
+                  onClick={async () => {
+                    try {
+                      await handleRefreshJobs();
+                      alert("✅ Jobs refresh completed successfully");
+                    } catch {
+                      alert("❌ Jobs refresh failed");
+                    }
+                  }}
                   className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
                   title="Refresh jobs"
                 >
                   <span className="uppercase text-xs tracking-widest">
-                    REFRESH
+                    🔄REFRESH
                   </span>
                 </button>
               )}{" "}

@@ -248,66 +248,21 @@ export default function AdminPdfReports({
       console.log("✅ Regeneration API response:", result);
 
       if (result.success) {
+        alert("✅ Report rigenerato con successo!");
+
+        // 🔧 FIX: Forza il refresh completo del parent invece di aggiornamento locale
+        if (refreshPdfReports) {
+          console.log("🔄 Forcing complete refresh after regeneration...");
+          await refreshPdfReports();
+          console.log("✅ Complete refresh completed successfully");
+        }
+
         logFrontendEvent(
           "AdminPdfReports",
           "INFO",
-          "Regeneration completed",
+          "Regeneration completed with full refresh",
           `ReportId: ${report.id}`
         );
-
-        alert(
-          t(
-            "admin.vehicleReports.regenerationSuccess",
-            "Report rigenerato con successo!"
-          )
-        );
-
-        // ✅ Aggiornamento locale con più dettagli
-        setLocalReports((prev) => {
-          const updated = prev.map((r) =>
-            r.id === report.id
-              ? {
-                  ...r,
-                  notes: `[RIGENERATO] ${new Date().toISOString()} - ${
-                    r.notes || ""
-                  }`,
-                  ...(result.updatedReport && result.updatedReport),
-                }
-              : r
-          );
-          console.log("📝 Local reports updated after regeneration");
-          return updated;
-        });
-
-        // ✅ Refresh del parent con logging migliorato
-        if (refreshPdfReports) {
-          console.log("⏳ Scheduling parent refresh in 500ms...");
-          setTimeout(async () => {
-            try {
-              console.log("🔄 Executing parent refresh...");
-              await refreshPdfReports();
-              console.log("✅ Parent refresh completed successfully");
-              logFrontendEvent(
-                "AdminPdfReports",
-                "INFO",
-                "Parent refresh completed after regeneration",
-                `ReportId: ${report.id}`
-              );
-            } catch (refreshError) {
-              console.error("❌ Parent refresh failed:", refreshError);
-              logFrontendEvent(
-                "AdminPdfReports",
-                "ERROR",
-                "Parent refresh failed after regeneration",
-                refreshError instanceof Error
-                  ? refreshError.message
-                  : String(refreshError)
-              );
-            }
-          }, 500);
-        } else {
-          console.warn("⚠️ refreshPdfReports function not available");
-        }
       } else {
         throw new Error(result.message || "Rigenerazione fallita");
       }
@@ -321,15 +276,9 @@ export default function AdminPdfReports({
         "Regeneration failed",
         `ReportId: ${report.id}, Error: ${errorMessage}`
       );
-      alert(
-        t(
-          "admin.vehicleReports.regenerationError",
-          "Errore durante la rigenerazione"
-        ) + `\n\n${errorMessage}`
-      );
+      alert(`❌ Errore durante la rigenerazione\n\n${errorMessage}`);
     } finally {
       setRegeneratingId(null);
-      console.log("🏁 Regeneration process completed for report:", report.id);
     }
   };
 
@@ -448,33 +397,32 @@ export default function AdminPdfReports({
           ({localReports.length}{" "}
           {t("admin.vehicleReports.totalReports", "report totali")})
         </span>
-        {/* 🚨 DEBUG BUTTON - Rimuovi in produzione */}
-        <button
-          onClick={async () => {
-            console.log("🔄 Manual refresh button clicked");
-            if (refreshPdfReports) {
-              try {
-                await refreshPdfReports();
-                console.log("✅ Manual refresh completed successfully");
-              } catch (error) {
-                console.error("❌ Manual refresh failed:", error);
-              }
-            } else {
-              console.warn("⚠️ refreshPdfReports function not available");
-            }
-          }}
-          className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
-          title="Debug: Refresh manuale"
-        >
-          🔄 Debug Refresh
-        </button>
       </div>
 
-      {/* ✅ Tabella - Layout IDENTICO alle altre tabelle */}
       <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
-            <th className="p-4">{t("admin.actions")}</th>
+            <th className="p-4">
+              {refreshPdfReports && (
+                <button
+                  onClick={async () => {
+                    try {
+                      await refreshPdfReports();
+                      alert("✅ PDF reports refresh completed successfully");
+                    } catch {
+                      alert("❌ PDF reports refresh failed");
+                    }
+                  }}
+                  className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                  title="Refresh PDF reports"
+                >
+                  <span className="uppercase text-xs tracking-widest">
+                    🔄REFRESH
+                  </span>
+                </button>
+              )}{" "}
+              {t("admin.actions")}
+            </th>
             <th className="p-4">{t("admin.vehicleReports.reportPeriod")}</th>
             <th className="p-4">
               {t("admin.vehicleReports.clientCompanyVATName")}
