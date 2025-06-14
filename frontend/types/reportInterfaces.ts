@@ -11,22 +11,22 @@ export interface PdfReport {
   vehicleModel: string;
   notes?: string;
 
-  // Nuove proprietà dal backend
-  HasPdfFile: boolean;
-  HasHtmlFile: boolean;
-  DataRecordsCount: number;
-  PdfFileSize: number;
-  HtmlFileSize: number;
-  MonitoringDurationHours: number;
-  LastModified?: string;
-  IsRegenerated: boolean;
-  RegenerationCount: number;
-  ReportType: string;
+  // ✅ NOMI CORRETTI - DEVONO ESSERE camelCase COME RICEVUTI DAL BACKEND
+  hasPdfFile: boolean;
+  hasHtmlFile: boolean;
+  dataRecordsCount: number;
+  pdfFileSize: number;
+  htmlFileSize: number;
+  monitoringDurationHours: number;
+  lastModified?: string;
+  isRegenerated: boolean;
+  regenerationCount: number;
+  reportType: string;
 
   // Proprietà calcolate dal backend
-  IsDownloadable: boolean;
-  Status: string;
-  AvailableFormats: string[];
+  isDownloadable: boolean;
+  status: string;
+  availableFormats: string[];
 }
 
 // ✅ Interface per le statistiche di download

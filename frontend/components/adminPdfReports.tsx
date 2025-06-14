@@ -28,25 +28,6 @@ export default function AdminPdfReports({
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<number | null>(null);
 
-  // Aggiungi questo useEffect subito dopo gli import:
-  useEffect(() => {
-    if (localReports.length > 0) {
-      const firstReport = localReports[0];
-
-      console.log("🔍 DEBUG - Primo report ricevuto:", firstReport);
-      console.log("🔍 DEBUG - Tutte le proprietà:", Object.keys(firstReport));
-      console.log("🔍 DEBUG - HasPdfFile:", firstReport.HasPdfFile);
-      console.log("🔍 DEBUG - HasHtmlFile:", firstReport.HasHtmlFile);
-      console.log("🔍 DEBUG - DataRecordsCount:", firstReport.DataRecordsCount);
-      console.log("🔍 DEBUG - Status:", firstReport.Status);
-      console.log("🔍 DEBUG - ReportType:", firstReport.ReportType);
-
-      // Test della funzione getReportStatus
-      const status = getReportStatus(firstReport);
-      console.log("🔍 DEBUG - getReportStatus result:", status);
-    }
-  }, [localReports]);
-
   useEffect(() => {
     setLocalReports(reports);
     logFrontendEvent(
@@ -122,7 +103,7 @@ export default function AdminPdfReports({
         "AdminPdfReports",
         "INFO",
         "Download iniziato",
-        `ReportId: ${report.id}, Type: ${report.ReportType}, HasPDF: ${report.HasPdfFile}, Force: ${forceRegenerate}`
+        `ReportId: ${report.id}, Type: ${report.reportType}, HasPDF: ${report.hasPdfFile}, Force: ${forceRegenerate}`
       );
 
       const regenerateParam = forceRegenerate ? "?regenerate=true" : "";
@@ -142,7 +123,7 @@ export default function AdminPdfReports({
       const isHtml = contentType.includes("text/html");
 
       // ✅ NOME FILE MIGLIORATO con info dal backend
-      const fileName = `PolarDrive_${report.ReportType.replace(/\s+/g, "_")}_${
+      const fileName = `PolarDrive_${report.reportType.replace(/\s+/g, "_")}_${
         report.id
       }_${report.vehicleVin}_${report.reportPeriodStart.split("T")[0]}${
         isHtml ? ".html" : ".pdf"
@@ -295,11 +276,10 @@ export default function AdminPdfReports({
     }
   };
 
-  // 2. ✅ FUNZIONE getReportStatus SEMPLIFICATA - USA DIRETTAMENTE IL BACKEND STATUS
   const getReportStatus = (report: PdfReport) => {
     // ✅ STRATEGIA 1: Usa direttamente lo status calcolato dal backend
-    if (report.Status) {
-      // Mappa gli status dal backend ai tuoi chip colorati
+    if (report.status) {
+      // ✅ era: Status
       const statusMapping: Record<string, string> = {
         "PDF Disponibile": "PDF-READY",
         "Solo HTML": "HTML-ONLY",
@@ -307,20 +287,19 @@ export default function AdminPdfReports({
         "Da Rigenerare": "WAITING-RECORDS",
       };
 
-      const mappedStatus = statusMapping[report.Status] || "NO-DATA";
+      const mappedStatus = statusMapping[report.status] || "NO-DATA";
       return { text: mappedStatus };
     }
 
-    // ✅ STRATEGIA 2: Fallback con le proprietà booleane esplicite
-    if (report.DataRecordsCount < 5) {
+    if (report.dataRecordsCount < 5) {
       return { text: "WAITING-RECORDS" };
     }
 
-    if (report.HasPdfFile) {
+    if (report.hasPdfFile) {
       return { text: "PDF-READY" };
     }
 
-    if (report.HasHtmlFile) {
+    if (report.hasHtmlFile) {
       return { text: "HTML-ONLY" };
     }
 
@@ -380,23 +359,13 @@ export default function AdminPdfReports({
           {currentPageData.map((report) => {
             const status = getReportStatus(report);
 
-            // USA DIRETTAMENTE LE PROPRIETÀ (non getReportProp)
-            const dataCount = report.DataRecordsCount;
-            const isDownloadable = report.HasPdfFile;
-            const isRegeneratable = dataCount > 5 || report.HasHtmlFile;
-            const reportType = report.ReportType;
-            const fileSize = report.HasPdfFile
-              ? report.PdfFileSize
-              : report.HtmlFileSize;
-
-            console.log(`🔍 Report ${report.id}:`, {
-              dataCount,
-              isDownloadable,
-              isRegeneratable,
-              status: status.text,
-              HasPdfFile: report.HasPdfFile,
-              HasHtmlFile: report.HasHtmlFile,
-            });
+            const dataCount = report.dataRecordsCount;
+            const isDownloadable = report.hasPdfFile;
+            const isRegeneratable = dataCount > 5 || report.hasHtmlFile;
+            const reportType = report.reportType;
+            const fileSize = report.hasPdfFile
+              ? report.pdfFileSize
+              : report.htmlFileSize;
 
             return (
               <tr
@@ -433,11 +402,11 @@ export default function AdminPdfReports({
                         : "bg-slate-500 cursor-not-allowed opacity-20"
                     }`}
                     title={`${t("admin.vehicleReports.forceRegenerate")} ${
-                      report.IsRegenerated ? "(Già rigenerato)" : ""
+                      report.isRegenerated ? "(Già rigenerato)" : ""
                     }`}
                     disabled={!isRegeneratable || regeneratingId === report.id}
                     onClick={() => {
-                      const message = report.IsRegenerated
+                      const message = report.isRegenerated
                         ? "Questo report è già stato rigenerato. Vuoi farlo di nuovo?"
                         : t("admin.vehicleReports.regenerateConfirmAction");
 
@@ -467,9 +436,9 @@ export default function AdminPdfReports({
                 <td className="p-4">
                   {formatDateToDisplay(report.reportPeriodStart)} -{" "}
                   {formatDateToDisplay(report.reportPeriodEnd)}
-                  {report.IsRegenerated && (
+                  {report.isRegenerated && (
                     <div className="text-xs text-orange-600 font-medium mt-1">
-                      🔄 Rigenerato {report.RegenerationCount}x
+                      🔄 Rigenerato {report.regenerationCount}x
                     </div>
                   )}
                 </td>
@@ -479,9 +448,9 @@ export default function AdminPdfReports({
                   <div>
                     {report.companyVatNumber} - {report.companyName}
                   </div>
-                  {report.ReportType && report.ReportType !== "Standard" && (
+                  {report.reportType && report.reportType !== "Standard" && (
                     <div className="text-xs text-blue-600 mt-1">
-                      {report.ReportType}
+                      {report.reportType}
                     </div>
                   )}
                 </td>
@@ -489,9 +458,9 @@ export default function AdminPdfReports({
                 {/* Vehicle */}
                 <td className="p-4">
                   {report.vehicleVin} - {report.vehicleModel}
-                  {report.MonitoringDurationHours > 0 && (
+                  {report.monitoringDurationHours > 0 && (
                     <div className="text-xs text-gray-600 mt-1">
-                      {report.MonitoringDurationHours.toFixed(1)}h monitoraggio
+                      {report.monitoringDurationHours.toFixed(1)}h monitoraggio
                     </div>
                   )}
                 </td>
@@ -504,10 +473,10 @@ export default function AdminPdfReports({
                     </Chip>
 
                     {/* ✅ INFO AGGIUNTIVE DAL BACKEND */}
-                    {report.AvailableFormats &&
-                      report.AvailableFormats.length > 0 && (
+                    {report.availableFormats &&
+                      report.availableFormats.length > 0 && (
                         <div className="text-xs text-gray-600">
-                          Formati: {report.AvailableFormats.join(", ")}
+                          Formati: {report.availableFormats.join(", ")}
                         </div>
                       )}
 
@@ -522,10 +491,10 @@ export default function AdminPdfReports({
                 {/* Data Info */}
                 <td className="p-4">
                   <div>{dataCount} record</div>
-                  {report.LastModified &&
-                    report.LastModified !== report.generatedAt && (
+                  {report.lastModified &&
+                    report.lastModified !== report.generatedAt && (
                       <div className="text-xs text-orange-600 mt-1">
-                        Aggiornato: {formatDateToDisplay(report.LastModified)}
+                        Aggiornato: {formatDateToDisplay(report.lastModified)}
                       </div>
                     )}
                 </td>
