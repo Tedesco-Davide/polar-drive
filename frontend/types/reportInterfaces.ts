@@ -1,6 +1,6 @@
 // ✅ Interface perfettamente allineata al PdfReportDTO backend
 export interface PdfReport {
-  // Proprietà esistenti (mapping diretto)
+  // Proprietà esistenti
   id: number;
   reportPeriodStart: string;
   reportPeriodEnd: string;
@@ -11,22 +11,22 @@ export interface PdfReport {
   vehicleModel: string;
   notes?: string;
 
-  // ✅ Nuove proprietà dal backend (ESATTI nomi PascalCase se non configurato camelCase)
+  // Nuove proprietà dal backend
   HasPdfFile: boolean;
   HasHtmlFile: boolean;
   DataRecordsCount: number;
-  PdfFileSize: number; // Backend: long -> Frontend: number
-  HtmlFileSize: number; // Backend: long -> Frontend: number
+  PdfFileSize: number;
+  HtmlFileSize: number;
   MonitoringDurationHours: number;
   LastModified?: string;
   IsRegenerated: boolean;
   RegenerationCount: number;
   ReportType: string;
 
-  // ✅ Proprietà calcolate dal backend
-  IsDownloadable: boolean; // Computed property dal backend
-  Status: string; // Computed property dal backend
-  AvailableFormats: string[]; // Computed property dal backend
+  // Proprietà calcolate dal backend
+  IsDownloadable: boolean;
+  Status: string;
+  AvailableFormats: string[];
 }
 
 // ✅ Interface per le statistiche di download

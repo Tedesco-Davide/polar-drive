@@ -223,14 +223,15 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Controlla dati con info progressive
+    /// ✅ CORRETTO: Controlla dati con supporto grace period
     /// </summary>
     [HttpGet("DataStatus")]
     public async Task<IActionResult> GetDataStatus()
     {
+        // ✅ CORREZIONE: Include veicoli in grace period (solo IsFetchingDataFlag)
         var vehicles = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .Where(v => v.ClientOAuthAuthorized && v.IsActiveFlag && v.IsFetchingDataFlag)
+            .Where(v => v.ClientOAuthAuthorized && v.IsFetchingDataFlag)  // ← Rimosso IsActiveFlag
             .ToListAsync();
 
         var result = new List<object>();
@@ -266,6 +267,9 @@ public class TeslaFakeApiController : ControllerBase
 
             var monitoringDays = firstDataRecord != default ? (DateTime.UtcNow - firstDataRecord).TotalDays : 0;
 
+            // ✅ NUOVO: Determina stato contrattuale
+            var contractStatus = GetContractStatus(vehicle);
+
             result.Add(new
             {
                 vehicleId = vehicle.Id,
@@ -277,11 +281,18 @@ public class TeslaFakeApiController : ControllerBase
                 lastUpdate = vehicle.LastDataUpdate,
                 isActive = vehicle.IsActiveFlag,
                 isFetching = vehicle.IsFetchingDataFlag,
+                contractStatus = contractStatus,  // ✅ NUOVO: Status contrattuale
+                isGracePeriod = !vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag,  // ✅ NUOVO: Flag grace period
                 monitoringDays = Math.Round(monitoringDays, 1),
                 progressiveReports = progressiveReports,
                 progressiveReportCount = progressiveReports.Count
             });
         }
+
+        // ✅ NUOVO: Statistiche separate per grace period
+        var totalVehicles = vehicles.Count;
+        var activeContractVehicles = vehicles.Count(v => v.IsActiveFlag && v.IsFetchingDataFlag);
+        var gracePeriodVehicles = vehicles.Count(v => !v.IsActiveFlag && v.IsFetchingDataFlag);
 
         return Ok(new
         {
@@ -290,13 +301,29 @@ public class TeslaFakeApiController : ControllerBase
             vehicles = result,
             summary = new
             {
-                totalVehicles = vehicles.Count,
+                totalVehicles = totalVehicles,
+                activeContracts = activeContractVehicles,
+                gracePeriodVehicles = gracePeriodVehicles,  // ✅ NUOVO
                 totalDataRecords = await _db.VehiclesData.CountAsync(),
                 totalReports = await _db.PdfReports.CountAsync(),
                 progressiveReports = await _db.PdfReports.CountAsync(r =>
                     r.Notes != null && (r.Notes.Contains("[PROGRESSIVE") || r.Notes.Contains("[PRODUCTION-PROGRESSIVE")))
             }
         });
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Helper per determinare stato contrattuale
+    /// </summary>
+    private string GetContractStatus(ClientVehicle vehicle)
+    {
+        return (vehicle.IsActiveFlag, vehicle.IsFetchingDataFlag) switch
+        {
+            (true, true) => "Active Contract - Data Collection Active",
+            (true, false) => "Active Contract - Data Collection Paused",
+            (false, true) => "Contract Terminated - Grace Period Active",  // ← Il tuo caso
+            (false, false) => "Contract Terminated - Data Collection Stopped"
+        };
     }
 
     /// <summary>

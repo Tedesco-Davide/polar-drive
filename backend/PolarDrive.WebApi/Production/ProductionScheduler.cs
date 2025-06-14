@@ -175,7 +175,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ NUOVO: Processa la generazione di report giornalieri progressivi
+    /// Processa la generazione di report giornalieri progressivi
     /// </summary>
     private async Task ProcessDailyProgressiveReports(PolarDriveDbContext db)
     {
@@ -184,23 +184,43 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
         _logger.LogInformation("🌅 Generating daily progressive reports for {Date}", yesterday.ToString("yyyy-MM-dd"));
 
-        var activeVehicles = await GetActiveVehiclesWithData(db, yesterday.AddDays(-1), now);
+        var fetchingVehicles = await GetActiveVehiclesWithData(db, yesterday.AddDays(-1), now);
 
-        if (!activeVehicles.Any())
+        if (!fetchingVehicles.Any())
         {
             _logger.LogInformation("ℹ️ No vehicles with data for daily progressive reports");
             return;
         }
 
-        _logger.LogInformation("🚗 Found {Count} vehicles for daily progressive reports", activeVehicles.Count);
+        // ✅ NUOVO: Separa veicoli per tipo contratto
+        var activeContractVehicles = fetchingVehicles.Count(v => v.IsActiveFlag);
+        var gracePeriodVehicles = fetchingVehicles.Count(v => !v.IsActiveFlag);
+
+        _logger.LogInformation("🚗 Found {Total} vehicles for daily progressive reports (Active: {Active}, Grace Period: {Grace})",
+            fetchingVehicles.Count, activeContractVehicles, gracePeriodVehicles);
+
+        // ✅ NUOVO: Warning se ci sono veicoli in grace period
+        if (gracePeriodVehicles > 0)
+        {
+            _logger.LogWarning("⏳ Grace Period Alert: {GracePeriodCount} vehicles with terminated contracts generating daily reports",
+                gracePeriodVehicles);
+        }
 
         var successCount = 0;
         var errorCount = 0;
 
-        foreach (var vehicle in activeVehicles)
+        foreach (var vehicle in fetchingVehicles)
         {
             try
             {
+                // ✅ NUOVO: Log contract status per ogni veicolo
+                var contractStatus = GetContractStatus(vehicle);
+                if (!vehicle.IsActiveFlag)
+                {
+                    _logger.LogInformation("⏳ Generating daily report for {VIN} in grace period - {Status}",
+                        vehicle.Vin, contractStatus);
+                }
+
                 await GenerateProgressiveReportForVehicleProduction(db, vehicle.Id, "Analisi Giornaliera", 24);
                 successCount++;
                 _lastReportAttempts[vehicle.Id] = DateTime.UtcNow;
@@ -221,12 +241,12 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             await Task.Delay(TimeSpan.FromMinutes(2));
         }
 
-        _logger.LogInformation("📊 Daily progressive report generation completed: {Success} success, {Errors} errors",
-            successCount, errorCount);
+        _logger.LogInformation("📊 Daily progressive report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
+            successCount, errorCount, gracePeriodVehicles);
     }
 
     /// <summary>
-    /// ✅ NUOVO: Processa la generazione di report settimanali progressivi
+    /// Processa la generazione di report settimanali progressivi con grace period
     /// </summary>
     private async Task ProcessWeeklyProgressiveReports(PolarDriveDbContext db)
     {
@@ -237,23 +257,40 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         _logger.LogInformation("📅 Generating weekly progressive reports for period: {Start} to {End}",
             startOfLastWeek.ToString("yyyy-MM-dd"), endOfLastWeek.ToString("yyyy-MM-dd"));
 
-        var activeVehicles = await GetActiveVehiclesWithData(db, startOfLastWeek, endOfLastWeek);
+        var fetchingVehicles = await GetActiveVehiclesWithData(db, startOfLastWeek, endOfLastWeek);
 
-        if (!activeVehicles.Any())
+        if (!fetchingVehicles.Any())
         {
             _logger.LogInformation("ℹ️ No vehicles with data for weekly progressive reports");
             return;
         }
 
-        _logger.LogInformation("🚗 Found {Count} vehicles for weekly progressive reports", activeVehicles.Count);
+        // ✅ NUOVO: Statistiche grace period
+        var activeContractVehicles = fetchingVehicles.Count(v => v.IsActiveFlag);
+        var gracePeriodVehicles = fetchingVehicles.Count(v => !v.IsActiveFlag);
+
+        _logger.LogInformation("🚗 Found {Total} vehicles for weekly progressive reports (Active: {Active}, Grace Period: {Grace})",
+            fetchingVehicles.Count, activeContractVehicles, gracePeriodVehicles);
+
+        if (gracePeriodVehicles > 0)
+        {
+            _logger.LogWarning("⏳ Grace Period Alert: {GracePeriodCount} vehicles with terminated contracts generating weekly reports",
+                gracePeriodVehicles);
+        }
 
         var successCount = 0;
         var errorCount = 0;
 
-        foreach (var vehicle in activeVehicles)
+        foreach (var vehicle in fetchingVehicles)
         {
             try
             {
+                // ✅ NUOVO: Log per veicoli in grace period
+                if (!vehicle.IsActiveFlag)
+                {
+                    _logger.LogInformation("⏳ Generating weekly report for {VIN} in grace period", vehicle.Vin);
+                }
+
                 await GenerateProgressiveReportForVehicleProduction(db, vehicle.Id, "Deep Dive Settimanale", 168); // 7 giorni
                 successCount++;
                 _lastReportAttempts[vehicle.Id] = DateTime.UtcNow;
@@ -274,12 +311,12 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             await Task.Delay(TimeSpan.FromMinutes(5));
         }
 
-        _logger.LogInformation("📊 Weekly progressive report generation completed: {Success} success, {Errors} errors",
-            successCount, errorCount);
+        _logger.LogInformation("📊 Weekly progressive report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
+            successCount, errorCount, gracePeriodVehicles);
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Processa la generazione di report mensili con analisi progressiva
+    /// Processa la generazione di report mensili con grace period
     /// </summary>
     private async Task ProcessMonthlyProgressiveReports(PolarDriveDbContext db)
     {
@@ -290,20 +327,38 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         _logger.LogInformation("🗓️ Generating monthly progressive reports for period: {Start} to {End}",
             startOfLastMonth.ToString("yyyy-MM-dd"), endOfLastMonth.ToString("yyyy-MM-dd"));
 
-        var activeVehicles = await GetActiveVehiclesWithData(db, startOfLastMonth, endOfLastMonth);
+        var fetchingVehicles = await GetActiveVehiclesWithData(db, startOfLastMonth, endOfLastMonth);
 
-        if (!activeVehicles.Any())
+        if (!fetchingVehicles.Any())
         {
             _logger.LogInformation("ℹ️ No vehicles with data for monthly progressive reports");
             return;
         }
 
-        _logger.LogInformation("🚗 Found {Count} vehicles for monthly progressive reports", activeVehicles.Count);
+        // ✅ NUOVO: Statistiche grace period dettagliate
+        var activeContractVehicles = fetchingVehicles.Count(v => v.IsActiveFlag);
+        var gracePeriodVehicles = fetchingVehicles.Count(v => !v.IsActiveFlag);
+
+        _logger.LogInformation("🚗 Found {Total} vehicles for monthly progressive reports (Active: {Active}, Grace Period: {Grace})",
+            fetchingVehicles.Count, activeContractVehicles, gracePeriodVehicles);
+
+        if (gracePeriodVehicles > 0)
+        {
+            _logger.LogWarning("⏳ Grace Period Alert: {GracePeriodCount} vehicles with terminated contracts generating monthly reports",
+                gracePeriodVehicles);
+
+            // ✅ NUOVO: Log dettagli veicoli in grace period per monthly (più importante)
+            foreach (var gracePeriodVehicle in fetchingVehicles.Where(v => !v.IsActiveFlag))
+            {
+                _logger.LogInformation("⏳ Monthly report for grace period vehicle: {VIN} (Company: {Company})",
+                    gracePeriodVehicle.Vin, gracePeriodVehicle.ClientCompany?.Name ?? "Unknown");
+            }
+        }
 
         var successCount = 0;
         var errorCount = 0;
 
-        foreach (var vehicle in activeVehicles)
+        foreach (var vehicle in fetchingVehicles)
         {
             try
             {
@@ -327,8 +382,8 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             await Task.Delay(TimeSpan.FromMinutes(10));
         }
 
-        _logger.LogInformation("📊 Monthly progressive report generation completed: {Success} success, {Errors} errors",
-            successCount, errorCount);
+        _logger.LogInformation("📊 Monthly progressive report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
+            successCount, errorCount, gracePeriodVehicles);
     }
 
     /// <summary>
@@ -498,13 +553,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     #region Helper Methods
 
     /// <summary>
-    /// ✅ NUOVO: Helper per ottenere veicoli attivi con dati nel periodo specificato
+    /// Helper per ottenere veicoli attivi con dati nel periodo specificato
     /// </summary>
     private async Task<List<Data.Entities.ClientVehicle>> GetActiveVehiclesWithData(PolarDriveDbContext db, DateTime startDate, DateTime endDate)
     {
+        // ✅ CORREZIONE: Include veicoli in grace period (solo IsFetchingDataFlag)
         return await db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .Where(v => v.IsActiveFlag)
+            .Where(v => v.IsFetchingDataFlag)  // ← Cambiato da IsActiveFlag a IsFetchingDataFlag
             .Where(v => db.VehiclesData.Any(vd =>
                 vd.VehicleId == v.Id &&
                 vd.Timestamp >= startDate &&
@@ -745,7 +801,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Log statistiche con info progressive
+    /// Log statistiche production con grace period
     /// </summary>
     private async Task LogProductionStatistics()
     {
@@ -778,9 +834,10 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 .Where(r => r.GeneratedAt >= DateTime.UtcNow.AddDays(-1))
                 .CountAsync();
 
-            var totalVehicles = await db.ClientVehicles
-                .Where(v => v.IsActiveFlag)
-                .CountAsync();
+            // ✅ NUOVO: Statistiche separate per grace period
+            var fetchingVehicles = await db.ClientVehicles.CountAsync(v => v.IsFetchingDataFlag);
+            var activeContractVehicles = await db.ClientVehicles.CountAsync(v => v.IsActiveFlag && v.IsFetchingDataFlag);
+            var gracePeriodVehicles = await db.ClientVehicles.CountAsync(v => !v.IsActiveFlag && v.IsFetchingDataFlag);
 
             var totalData = await db.VehiclesData.CountAsync();
             var recentData = await db.VehiclesData
@@ -790,14 +847,21 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             var vehiclesWithRetries = _retryCount.Count(kv => kv.Value > 0);
             var vehiclesExceededRetries = _retryCount.Count(kv => kv.Value > MAX_RETRIES_PER_VEHICLE);
 
-            _logger.LogInformation("📈 ProductionScheduler Progressive Statistics (ALLINEATE):");
+            _logger.LogInformation("📈 ProductionScheduler Progressive Statistics:");
+            _logger.LogInformation($"   Vehicles - Fetching: {fetchingVehicles}, Active Contracts: {activeContractVehicles}, Grace Period: {gracePeriodVehicles}");
             _logger.LogInformation($"   Total Reports: {totalReports} (Progressive Production: {progressiveProductionReports})");
             _logger.LogInformation($"   Last 24h Progressive: {recentProgressiveReports}");
             _logger.LogInformation($"   Recent Reports - Daily: {dailyReports}, Weekly: {weeklyReports}, Monthly: {monthlyReports}");
-            _logger.LogInformation($"   Active Vehicles: {totalVehicles}");
             _logger.LogInformation($"   Vehicle Data: {totalData} total (Last hour: {recentData})");
             _logger.LogInformation($"   Vehicles with retries: {vehiclesWithRetries}");
             _logger.LogInformation($"   Vehicles exceeded retries: {vehiclesExceededRetries}");
+
+            // ✅ NUOVO: Alert grace period nel logging
+            if (gracePeriodVehicles > 0)
+            {
+                _logger.LogWarning("⏳ Grace Period Alert: {GracePeriodCount} vehicles with terminated contracts still generating reports",
+                    gracePeriodVehicles);
+            }
 
             // ✅ LOG DETTAGLI RETRY come nel fake
             if (vehiclesWithRetries > 0)
@@ -832,6 +896,20 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         {
             _logger.LogWarning(ex, "⚠️ ProductionScheduler: Failed to log progressive statistics");
         }
+    }
+
+    /// <summary>
+    /// Helper per determinare stato contrattuale (come nel fake)
+    /// </summary>
+    private string GetContractStatus(Data.Entities.ClientVehicle vehicle)
+    {
+        return (vehicle.IsActiveFlag, vehicle.IsFetchingDataFlag) switch
+        {
+            (true, true) => "Active Contract - Data Collection Active",
+            (true, false) => "Active Contract - Data Collection Paused",
+            (false, true) => "Contract Terminated - Grace Period Active",  // ← Il tuo caso
+            (false, false) => "Contract Terminated - Data Collection Stopped"
+        };
     }
 
     /// <summary>

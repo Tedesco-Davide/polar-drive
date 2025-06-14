@@ -59,7 +59,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
 
                 _logger.LogInformation("📊 FakeProductionScheduler: Starting progressive report generation cycle");
 
-                // ✅ MIGLIORATO: Processo di generazione con risultati dettagliati
+                // ✅ Processo di generazione con risultati dettagliati
                 var results = await ProcessProgressiveReportGeneration(db);
 
                 // Log statistiche sui report generati
@@ -70,7 +70,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
                 _logger.LogError(ex, "❌ FakeProductionScheduler: Error in progressive report generation cycle");
             }
 
-            // ⚡ FREQUENZA VELOCE: Controlla ogni 1 minuto per retry, genera nuovi ogni 5 minuti
+            // ⚡ FREQUENZA VELOCE: Controlla ogni 1 minuto per retry, genera nuovi ogni 1 minuti
             _logger.LogInformation("⏰ Next progressive check in 1 minute...");
             await Task.Delay(TimeSpan.FromMinutes(1), stoppingToken);
         }
@@ -99,17 +99,17 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
                 results.NewReportsErrors = generationResults.ErrorCount;
 
                 // Aggiorna il timestamp per tutti i veicoli attivi
-                var activeVehicles = await db.ClientVehicles
-                    .Where(v => v.IsActiveFlag && v.IsFetchingDataFlag)
+                var fetchingVehicles = await db.ClientVehicles
+                    .Where(v => v.IsFetchingDataFlag)  // ← Solo fetching per includere grace period
                     .Select(v => v.Id)
                     .ToListAsync();
 
-                foreach (var vehicleId in activeVehicles)
+                foreach (var vehicleId in fetchingVehicles)
                 {
                     _lastReportAttempts[vehicleId] = now;
                     if (generationResults.SuccessfulVehicles.Contains(vehicleId))
                     {
-                        _retryCount[vehicleId] = 0; // Reset retry count on successful generation
+                        _retryCount[vehicleId] = 0;
                     }
                 }
 
@@ -121,12 +121,12 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
                 _logger.LogError(ex, "❌ Error in progressive report generation");
 
                 // Marca come fallito ma non resetta il timer per permettere retry
-                var activeVehicles = await db.ClientVehicles
-                    .Where(v => v.IsActiveFlag && v.IsFetchingDataFlag)
+                var fetchingVehicles = await db.ClientVehicles
+                    .Where(v => v.IsFetchingDataFlag)  // ← Solo fetching per includere grace period
                     .Select(v => v.Id)
                     .ToListAsync();
 
-                foreach (var vehicleId in activeVehicles)
+                foreach (var vehicleId in fetchingVehicles)
                 {
                     if (!_lastReportAttempts.ContainsKey(vehicleId))
                     {
@@ -135,7 +135,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
                     _retryCount[vehicleId] = _retryCount.GetValueOrDefault(vehicleId, 0) + 1;
                 }
 
-                results.NewReportsErrors = activeVehicles.Count;
+                results.NewReportsErrors = fetchingVehicles.Count;
             }
         }
 
@@ -155,14 +155,14 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     {
         var results = new GenerationResults();
 
-        var activeVehicles = await db.ClientVehicles
-            .Where(v => v.IsActiveFlag && v.IsFetchingDataFlag)
+        var fetchingVehicles = await db.ClientVehicles
+            .Where(v => v.IsFetchingDataFlag)  // ← Solo fetching per includere grace period
             .ToListAsync();
 
-        results.TotalProcessed = activeVehicles.Count;
-        _logger.LogInformation("🧠 Processing {VehicleCount} vehicles for progressive analysis", activeVehicles.Count);
+        results.TotalProcessed = fetchingVehicles.Count;
+        _logger.LogInformation("🧠 Processing {VehicleCount} vehicles for progressive analysis", fetchingVehicles.Count);
 
-        foreach (var vehicle in activeVehicles)
+        foreach (var vehicle in fetchingVehicles)
         {
             try
             {
@@ -183,12 +183,19 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Genera report progressivo con controlli di sicurezza
+    /// Genera report progressivo con controlli di sicurezza
     /// </summary>
     private async Task GenerateProgressiveReportForVehicle(PolarDriveDbContext db, int vehicleId, DateTime now)
     {
         var vehicle = await db.ClientVehicles.FindAsync(vehicleId);
         if (vehicle == null) return;
+
+        // ✅ NUOVO: Log grace period
+        if (!vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag)
+        {
+            _logger.LogInformation("⏳ Grace Period - Generating report for {VIN} with terminated contract - awaiting token revocation",
+                vehicle.Vin);
+        }
 
         // Determina il periodo del report progressivo
         var reportPeriod = await DetermineProgressiveReportPeriod(db, vehicleId);
@@ -610,7 +617,12 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
             var vehiclesWithRetries = _retryCount.Count(kv => kv.Value > 0);
             var vehiclesExceededRetries = _retryCount.Count(kv => kv.Value > MAX_RETRIES_PER_VEHICLE);
 
+            var fetchingVehicles = await db.ClientVehicles.CountAsync(v => v.IsFetchingDataFlag);
+            var activeContracts = await db.ClientVehicles.CountAsync(v => v.IsActiveFlag && v.IsFetchingDataFlag);
+            var gracePeriodVehicles = await db.ClientVehicles.CountAsync(v => !v.IsActiveFlag && v.IsFetchingDataFlag);
+
             _logger.LogInformation("📈 FakeProductionScheduler Progressive Statistics:");
+            _logger.LogInformation($"   Vehicles - Fetching: {fetchingVehicles}, Active Contracts: {activeContracts}, Grace Period: {gracePeriodVehicles}");
             _logger.LogInformation($"   Cycle Results - New: {results.NewReportsGenerated} success, {results.NewReportsErrors} errors");
             _logger.LogInformation($"   Cycle Results - Retries: {results.RetriesSuccessful}/{results.RetriesProcessed} successful");
             _logger.LogInformation($"   Total Reports: {totalReports} (Fake Progressive: {fakeProgressiveReports})");
@@ -618,6 +630,13 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
             _logger.LogInformation($"   Total Vehicle Data: {totalVehicleData} (Last 10min: {recentData})");
             _logger.LogInformation($"   Vehicles with active retries: {vehiclesWithRetries}");
             _logger.LogInformation($"   Vehicles exceeded max retries: {vehiclesExceededRetries}");
+
+            // Alert per grace period
+            if (gracePeriodVehicles > 0)
+            {
+                _logger.LogWarning("⏳ Grace Period Alert: {GracePeriodCount} vehicles with terminated contracts still sending data",
+                    gracePeriodVehicles);
+            }
 
             // Log dettagli retry se presenti
             if (vehiclesWithRetries > 0)
@@ -703,8 +722,15 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
                 RecentReportsGenerated = await db.PdfReports
                     .CountAsync(r => r.GeneratedAt >= DateTime.UtcNow.AddHours(-1) &&
                                r.Notes != null && r.Notes.Contains("[FAKE-PROGRESSIVE")),
-                ActiveVehicles = await db.ClientVehicles
+
+                // ✅ NUOVO: Statistiche separate
+                FetchingVehicles = await db.ClientVehicles
+                    .CountAsync(v => v.IsFetchingDataFlag),
+                ActiveContracts = await db.ClientVehicles
                     .CountAsync(v => v.IsActiveFlag && v.IsFetchingDataFlag),
+                GracePeriodVehicles = await db.ClientVehicles
+                    .CountAsync(v => !v.IsActiveFlag && v.IsFetchingDataFlag),
+
                 LastReportAttempts = _lastReportAttempts.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
                 RetryCounters = _retryCount.ToDictionary(kvp => kvp.Key, kvp => kvp.Value)
             };
@@ -721,6 +747,17 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
                 ErrorMessage = ex.Message
             };
         }
+    }
+
+    private string GetContractStatus(Data.Entities.ClientVehicle vehicle)
+    {
+        return (vehicle.IsActiveFlag, vehicle.IsFetchingDataFlag) switch
+        {
+            (true, true) => "Active Contract - Data Collection Active",
+            (true, false) => "Active Contract - Data Collection Paused",
+            (false, true) => "Contract Terminated - Grace Period Active",  // ← Il tuo caso
+            (false, false) => "Contract Terminated - Data Collection Stopped"
+        };
     }
 
     #endregion
@@ -773,8 +810,10 @@ public class FakeSchedulerStatistics
     public int VehiclesExceededRetries { get; set; }
     public int TotalReportsGenerated { get; set; }
     public int RecentReportsGenerated { get; set; }
-    public int ActiveVehicles { get; set; }
-    public Dictionary<int, DateTime> LastReportAttempts { get; set; } = new();
-    public Dictionary<int, int> RetryCounters { get; set; } = new();
+    public int FetchingVehicles { get; set; }
+    public int ActiveContracts { get; set; }
+    public int GracePeriodVehicles { get; set; }
+    public Dictionary<int, DateTime> LastReportAttempts { get; set; } = [];
+    public Dictionary<int, int> RetryCounters { get; set; } = [];
     public string? ErrorMessage { get; set; }
 }

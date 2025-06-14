@@ -66,20 +66,22 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 return BadRequest($"Vehicle {vin} is not a Tesla vehicle (Brand: {vehicle.Brand})");
             }
 
-            // Verifica che il veicolo sia attivo e in fetching
-            if (!vehicle.IsActiveFlag || !vehicle.IsFetchingDataFlag)
+            if (!vehicle.IsFetchingDataFlag)  // ✅ Solo questo flag conta per i dati
             {
-                await _logger.Info(source, $"Vehicle {vin} is not active or not fetching data. Ignoring.");
+                await _logger.Info(source, $"Vehicle {vin} is not fetching data. Ignoring.");
                 return Ok(new
                 {
                     success = true,
-                    message = "Vehicle not active/fetching, data ignored",
-                    vehicleStatus = new
-                    {
-                        IsActive = vehicle.IsActiveFlag,
-                        IsFetching = vehicle.IsFetchingDataFlag
-                    }
+                    message = "Vehicle not fetching data, data ignored",
+                    contractStatus = vehicle.IsActiveFlag ? "Contract active" : "Contract terminated - data collection ending soon"
                 });
+            }
+
+            // ✅ Aggiungi warning se contratto scaduto ma dati ancora attivi
+            if (!vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag)
+            {
+                await _logger.Warning(source,
+                    $"Collecting data for vehicle {vin} with terminated contract - awaiting client token revocation");
             }
 
             // ✅ NUOVO: Validazione contenuto JSON

@@ -279,123 +279,54 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
-    /// Script Puppeteer PORTABILE per qualsiasi ambiente
+    /// Script Puppeteer
     /// </summary>
     private string GenerateOptimizedPuppeteerScript(PdfConversionOptions options)
     {
         return $@"
-// ✅ SOLUZIONE PORTABILE: Auto-discovery di Puppeteer
+// ✅ FORZA L'USO DI CHROME DI SISTEMA
 const path = require('path');
 const fs = require('fs');
 
-console.log('🔍 Auto-discovering Puppeteer...');
-console.log('Working directory:', process.cwd());
-console.log('Script __dirname:', __dirname);
+console.log('🔍 Using system Chrome instead of Puppeteer download...');
 
-// Funzione per cercare Puppeteer dinamicamente
-function findPuppeteer() {{
-    const searchPaths = [];
-    
-    // 1. Directory corrente e parent
-    let currentDir = process.cwd();
-    for (let i = 0; i < 5; i++) {{
-        searchPaths.push(path.join(currentDir, 'node_modules', 'puppeteer'));
-        const parentDir = path.dirname(currentDir);
-        if (parentDir === currentDir) break; // Root raggiunta
-        currentDir = parentDir;
-    }}
-    
-    // 2. Directory dello script e parent
-    if (__dirname) {{
-        let scriptDir = __dirname;
-        for (let i = 0; i < 5; i++) {{
-            searchPaths.push(path.join(scriptDir, 'node_modules', 'puppeteer'));
-            const parentDir = path.dirname(scriptDir);
-            if (parentDir === scriptDir) break;
-            scriptDir = parentDir;
+// Lista di possibili path di Chrome nel sistema
+const systemChromePaths = [
+    'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+    'C:\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+    'C:\\\\Users\\\\' + (process.env.USERNAME || 'Default') + '\\\\AppData\\\\Local\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+    'C:\\\\Program Files\\\\Chromium\\\\Application\\\\chrome.exe',
+    'C:\\\\Program Files (x86)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'
+];
+
+// Trova Chrome nel sistema
+function findSystemChrome() {{
+    for (const chromePath of systemChromePaths) {{
+        if (fs.existsSync(chromePath)) {{
+            console.log(`✅ Found system Chrome: ${{chromePath}}`);
+            return chromePath;
         }}
     }}
-    
-    // 3. Path globali comuni
-    const userProfile = process.env.USERPROFILE || process.env.HOME || '';
-    const programFiles = process.env.ProgramFiles || 'C:\\\\Program Files';
-    
-    if (userProfile) {{
-        searchPaths.push(path.join(userProfile, 'AppData', 'Roaming', 'npm', 'node_modules', 'puppeteer'));
-    }}
-    
-    searchPaths.push(path.join(programFiles, 'nodejs', 'node_modules', 'puppeteer'));
-    
-    // 4. Fallback globale
-    searchPaths.push('puppeteer');
-    
-    console.log('Search paths:', searchPaths.slice(0, 10)); // Log solo i primi 10
-    
-    // Cerca in tutti i path
-    for (const puppeteerPath of searchPaths) {{
-        try {{
-            console.log(`Trying: ${{puppeteerPath}}`);
-            
-            // Per path relativi come 'puppeteer', non controllare fs.existsSync
-            if (puppeteerPath !== 'puppeteer' && !fs.existsSync(puppeteerPath)) {{
-                console.log(`❌ Path not found: ${{puppeteerPath}}`);
-                continue;
-            }}
-            
-            // Tenta require
-            const puppeteer = require(puppeteerPath);
-            console.log(`✅ SUCCESS! Puppeteer loaded from: ${{puppeteerPath}}`);
-            return {{ puppeteer, path: puppeteerPath }};
-            
-        }} catch (err) {{
-            console.log(`❌ Failed ${{puppeteerPath}}: ${{err.message}}`);
-        }}
-    }}
-    
-    return null;
+    throw new Error('❌ No Chrome browser found in system');
 }}
 
-// Cerca Puppeteer
-const result = findPuppeteer();
-
-if (!result) {{
-    console.error('💥 FATAL: Cannot find Puppeteer module!');
-    
-    // Debug info
-    console.error('Environment info:');
-    console.error('- NODE_PATH:', process.env.NODE_PATH || 'not set');
-    console.error('- Working dir:', process.cwd());
-    console.error('- Script dir:', __dirname || 'unknown');
-    console.error('- User profile:', process.env.USERPROFILE || process.env.HOME || 'unknown');
-    
-    // Lista node_modules disponibili
-    const possibleNodeModules = [
-        path.join(process.cwd(), 'node_modules'),
-        path.join(__dirname || '', 'node_modules')
-    ];
-    
-    possibleNodeModules.forEach(nmPath => {{
-        try {{
-            if (fs.existsSync(nmPath)) {{
-                const contents = fs.readdirSync(nmPath);
-                console.error(`node_modules at ${{nmPath}}:`, contents.slice(0, 20));
-            }}
-        }} catch (err) {{
-            console.error(`Error reading ${{nmPath}}: ${{err.message}}`);
-        }}
-    }});
-    
-    process.exit(1);
+// ✅ USA PUPPETEER-CORE INVECE DI PUPPETEER COMPLETO
+let puppeteer;
+try {{
+    // Prova prima puppeteer normale
+    puppeteer = require('puppeteer');
+    console.log('✅ Using full Puppeteer');
+}} catch (err1) {{
+    try {{
+        // Fallback a puppeteer-core
+        puppeteer = require('puppeteer-core');
+        console.log('✅ Using Puppeteer-core');
+    }} catch (err2) {{
+        console.error('💥 Neither puppeteer nor puppeteer-core found!');
+        console.error('Install with: npm install puppeteer');
+        process.exit(1);
+    }}
 }}
-
-const puppeteer = result.puppeteer;
-const usedPath = result.path;
-
-console.log(`🚀 Puppeteer info:`, {{
-    version: puppeteer.version || 'unknown',
-    loadedFrom: usedPath,
-    executablePath: puppeteer.executablePath?.() || 'default'
-}});
 
 (async () => {{
   const [htmlPath, pdfPath] = process.argv.slice(2);
@@ -411,7 +342,7 @@ console.log(`🚀 Puppeteer info:`, {{
   
   let browser;
   try {{
-    console.log('Launching browser...');
+    console.log('🚀 Launching browser...');
     
     const launchOptions = {{
       headless: true,
@@ -430,9 +361,14 @@ console.log(`🚀 Puppeteer info:`, {{
       timeout: 20000
     }};
     
-    // In production potrebbe essere necessario specificare executablePath
-    // launchOptions.executablePath = '/usr/bin/chromium-browser'; // Linux
-    // launchOptions.executablePath = 'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe'; // Windows
+    // ✅ FORZA L'USO DI CHROME DI SISTEMA
+    try {{
+        const systemChrome = findSystemChrome();
+        launchOptions.executablePath = systemChrome;
+        console.log(`🎯 Using system Chrome: ${{systemChrome}}`);
+    }} catch (chromeError) {{
+        console.log('⚠️ No system Chrome found, using Puppeteer default');
+    }}
     
     browser = await puppeteer.launch(launchOptions);
     console.log('✅ Browser launched successfully');
@@ -441,19 +377,8 @@ console.log(`🚀 Puppeteer info:`, {{
     await page.setViewport({{ width: 1024, height: 768 }});
     await page.setDefaultTimeout(15000);
     
-    // Disabilita risorse non necessarie per performance
-    await page.setRequestInterception(true);
-    page.on('request', (req) => {{
-      const resourceType = req.resourceType();
-      if (['image', 'font', 'media', 'stylesheet'].includes(resourceType)) {{
-        req.abort();
-      }} else {{
-        req.continue();
-      }}
-    }});
-    
     // Leggi e carica HTML
-    console.log('Loading HTML content...');
+    console.log('📄 Loading HTML content...');
     const htmlContent = fs.readFileSync(htmlPath, 'utf8');
     console.log(`HTML content loaded (${{htmlContent.length}} chars)`);
     
@@ -467,11 +392,11 @@ console.log(`🚀 Puppeteer info:`, {{
     const outputDir = path.dirname(pdfPath);
     if (!fs.existsSync(outputDir)) {{
       fs.mkdirSync(outputDir, {{ recursive: true }});
-      console.log(`Created output directory: ${{outputDir}}`);
+      console.log(`📁 Created output directory: ${{outputDir}}`);
     }}
     
     // Genera PDF
-    console.log('Generating PDF...');
+    console.log('🎨 Generating PDF...');
     await page.pdf({{
       path: pdfPath,
       format: '{options.PageFormat}',
@@ -492,11 +417,11 @@ console.log(`🚀 Puppeteer info:`, {{
     // Verifica risultato
     if (fs.existsSync(pdfPath)) {{
       const stats = fs.statSync(pdfPath);
-      console.log(`✅ PDF generated successfully!`);
+      console.log(`🎉 PDF generated successfully!`);
       console.log(`   File: ${{pdfPath}}`);
       console.log(`   Size: ${{stats.size}} bytes`);
     }} else {{
-      throw new Error('PDF file was not created');
+      throw new Error('❌ PDF file was not created');
     }}
     
   }} catch (error) {{

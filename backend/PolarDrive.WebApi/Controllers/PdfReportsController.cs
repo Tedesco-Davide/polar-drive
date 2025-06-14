@@ -49,11 +49,58 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 var htmlSize = htmlExists ? new FileInfo(htmlPath).Length : 0;
 
                 // Conta i record di dati
-                var dataCount = await db.VehiclesData
-                    .Where(vd => vd.VehicleId == r.ClientVehicleId &&
-                               vd.Timestamp >= r.ReportPeriodStart &&
-                               vd.Timestamp <= r.ReportPeriodEnd)
+                var dataCount = 0;
+                var totalVehicleData = await db.VehiclesData
+                    .Where(vd => vd.VehicleId == r.ClientVehicleId)
                     .CountAsync();
+
+                if (totalVehicleData > 0)
+                {
+                    // Trova il range reale dei dati per questo veicolo
+                    var actualDataRange = await db.VehiclesData
+                        .Where(vd => vd.VehicleId == r.ClientVehicleId)
+                        .GroupBy(vd => vd.VehicleId)
+                        .Select(g => new
+                        {
+                            FirstRecord = g.Min(vd => vd.Timestamp),
+                            LastRecord = g.Max(vd => vd.Timestamp)
+                        })
+                        .FirstOrDefaultAsync();
+
+                    if (actualDataRange != null)
+                    {
+                        // Interseca il periodo del report con i dati reali
+                        var effectiveStartDate = r.ReportPeriodStart > actualDataRange.FirstRecord
+                            ? r.ReportPeriodStart
+                            : actualDataRange.FirstRecord;
+
+                        var effectiveEndDate = r.ReportPeriodEnd < actualDataRange.LastRecord
+                            ? r.ReportPeriodEnd
+                            : actualDataRange.LastRecord;
+
+                        // Conta solo se c'è sovrapposizione
+                        if (effectiveStartDate <= effectiveEndDate)
+                        {
+                            dataCount = await db.VehiclesData
+                                .Where(vd => vd.VehicleId == r.ClientVehicleId &&
+                                           vd.Timestamp >= effectiveStartDate &&
+                                           vd.Timestamp <= effectiveEndDate)
+                                .CountAsync();
+                        }
+
+                        await _logger.Debug(source, $"Smart data count for report {r.Id}",
+                            $"Original: {r.ReportPeriodStart:yyyy-MM-dd HH:mm} to {r.ReportPeriodEnd:yyyy-MM-dd HH:mm}, " +
+                            $"Actual: {actualDataRange.FirstRecord:yyyy-MM-dd HH:mm} to {actualDataRange.LastRecord:yyyy-MM-dd HH:mm}, " +
+                            $"Effective: {effectiveStartDate:yyyy-MM-dd HH:mm} to {effectiveEndDate:yyyy-MM-dd HH:mm}, " +
+                            $"Count: {dataCount}");
+                    }
+                }
+
+                if (dataCount == 0)
+                {
+                    await _logger.Warning(source, $"Zero records for report {r.Id}",
+                        $"VehicleId: {r.ClientVehicleId}, TotalVehicleData: {totalVehicleData}");
+                }
 
                 // Calcola durata monitoraggio
                 var monitoringDuration = (r.ReportPeriodEnd - r.ReportPeriodStart).TotalHours;

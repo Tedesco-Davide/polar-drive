@@ -28,6 +28,25 @@ export default function AdminPdfReports({
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<number | null>(null);
 
+  // Aggiungi questo useEffect subito dopo gli import:
+  useEffect(() => {
+    if (localReports.length > 0) {
+      const firstReport = localReports[0];
+
+      console.log("🔍 DEBUG - Primo report ricevuto:", firstReport);
+      console.log("🔍 DEBUG - Tutte le proprietà:", Object.keys(firstReport));
+      console.log("🔍 DEBUG - HasPdfFile:", firstReport.HasPdfFile);
+      console.log("🔍 DEBUG - HasHtmlFile:", firstReport.HasHtmlFile);
+      console.log("🔍 DEBUG - DataRecordsCount:", firstReport.DataRecordsCount);
+      console.log("🔍 DEBUG - Status:", firstReport.Status);
+      console.log("🔍 DEBUG - ReportType:", firstReport.ReportType);
+
+      // Test della funzione getReportStatus
+      const status = getReportStatus(firstReport);
+      console.log("🔍 DEBUG - getReportStatus result:", status);
+    }
+  }, [localReports]);
+
   useEffect(() => {
     setLocalReports(reports);
     logFrontendEvent(
@@ -54,7 +73,7 @@ export default function AdminPdfReports({
     switch (statusText) {
       case "PDF-READY":
         return "bg-green-100 text-green-700 border-green-500";
-      case "HTML Only":
+      case "HTML-ONLY":
         return "bg-yellow-100 text-yellow-700 border-yellow-500";
       case "WAITING-RECORDS":
         return "bg-blue-100 text-blue-700 border-blue-500";
@@ -97,14 +116,13 @@ export default function AdminPdfReports({
     forceRegenerate: boolean = false
   ) => {
     setDownloadingId(report.id);
-    const startTime = Date.now();
 
     try {
       logFrontendEvent(
         "AdminPdfReports",
         "INFO",
-        "Download initiated",
-        `ReportId: ${report.id}, ForceRegenerate: ${forceRegenerate}`
+        "Download iniziato",
+        `ReportId: ${report.id}, Type: ${report.ReportType}, HasPDF: ${report.HasPdfFile}, Force: ${forceRegenerate}`
       );
 
       const regenerateParam = forceRegenerate ? "?regenerate=true" : "";
@@ -112,53 +130,25 @@ export default function AdminPdfReports({
 
       const response = await fetch(downloadUrl, {
         method: "GET",
-        headers: {
-          Accept: "application/pdf,text/html,*/*",
-        },
+        headers: { Accept: "application/pdf,text/html,*/*" },
       });
 
       if (!response.ok) {
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-          const errorText = await response.text();
-          if (errorText) errorMessage = errorText;
-        } catch {}
-        throw new Error(errorMessage);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const blob = await response.blob();
-      if (blob.size === 0) {
-        throw new Error(t("admin.vehicleReports.blobCheck"));
-      }
-
-      let fileName = `PolarDrive_Report_${report.id}_${report.vehicleVin}_${
-        report.reportPeriodStart.split("T")[0]
-      }.pdf`;
-
-      const contentDisposition = response.headers.get("Content-Disposition");
-      if (contentDisposition) {
-        const fileNameMatch = contentDisposition.match(
-          /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
-        );
-        if (fileNameMatch) {
-          fileName = fileNameMatch[1].replace(/['"]/g, "");
-        }
-      }
-
       const contentType = response.headers.get("Content-Type") || "";
       const isHtml = contentType.includes("text/html");
 
-      if (isHtml) {
-        fileName = fileName.replace(".pdf", ".html");
-        logFrontendEvent(
-          "AdminPdfReports",
-          "WARNING",
-          "PDF not available, downloading HTML fallback",
-          `ReportId: ${report.id}`
-        );
-      }
+      // ✅ NOME FILE MIGLIORATO con info dal backend
+      const fileName = `PolarDrive_${report.ReportType.replace(/\s+/g, "_")}_${
+        report.id
+      }_${report.vehicleVin}_${report.reportPeriodStart.split("T")[0]}${
+        isHtml ? ".html" : ".pdf"
+      }`;
 
-      // ✅ Download
+      // Download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -168,38 +158,28 @@ export default function AdminPdfReports({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      const downloadTime = Date.now() - startTime;
       logFrontendEvent(
         "AdminPdfReports",
         "INFO",
-        "Download completed successfully",
-        `ReportId: ${report.id}, Size: ${
-          blob.size
-        } bytes, Time: ${downloadTime}ms, Type: ${isHtml ? "HTML" : "PDF"}`
+        "Download completato",
+        `ReportId: ${report.id}, Size: ${blob.size} bytes, Type: ${
+          isHtml ? "HTML" : "PDF"
+        }`
       );
 
-      if (isHtml) {
-        alert(t("admin.vehicleReports.downloadHtmlFallback"));
+      if (isHtml && !forceRegenerate) {
+        alert(
+          "PDF non disponibile, scaricato HTML. Prova la rigenerazione per ottenere il PDF."
+        );
       }
     } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
       logFrontendEvent(
         "AdminPdfReports",
         "ERROR",
-        "Download failed",
-        `ReportId: ${report.id}, Error: ${errorMessage}`
+        "Download fallito",
+        `ReportId: ${report.id}, Error: ${error}`
       );
-
-      let userMessage = t("admin.vehicleReports.downloadError");
-      if (errorMessage.includes("500")) {
-        userMessage = t("admin.vehicleReports.serverError");
-      } else if (errorMessage.includes("404")) {
-        userMessage = t("admin.vehicleReports.reportNotFound");
-      } else if (errorMessage.includes("timeout")) {
-        userMessage = t("admin.vehicleReports.timeoutError");
-      }
-      alert(`${userMessage}: ${errorMessage}`);
+      alert(`Errore download: ${error}`);
     } finally {
       setDownloadingId(null);
     }
@@ -315,61 +295,36 @@ export default function AdminPdfReports({
     }
   };
 
-  const getReportProperty = <T,>(
-    report: Record<string, unknown>,
-    propName: string,
-    fallback: T
-  ): T => {
-    const pascalCase = propName;
-    const camelCase = propName.charAt(0).toLowerCase() + propName.slice(1);
-
-    if (report[pascalCase] !== undefined) return report[pascalCase] as T;
-    if (report[camelCase] !== undefined) return report[camelCase] as T;
-    return fallback;
-  };
-
+  // 2. ✅ FUNZIONE getReportStatus SEMPLIFICATA - USA DIRETTAMENTE IL BACKEND STATUS
   const getReportStatus = (report: PdfReport) => {
-    const hasPdf = getReportProperty<boolean>(
-      report as unknown as Record<string, unknown>,
-      "HasPdfFile",
-      false
-    );
-    const hasHtml = getReportProperty<boolean>(
-      report as unknown as Record<string, unknown>,
-      "HasHtmlFile",
-      false
-    );
-    const dataCount = getReportProperty<number>(
-      report as unknown as Record<string, unknown>,
-      "DataRecordsCount",
-      0
-    );
+    // ✅ STRATEGIA 1: Usa direttamente lo status calcolato dal backend
+    if (report.Status) {
+      // Mappa gli status dal backend ai tuoi chip colorati
+      const statusMapping: Record<string, string> = {
+        "PDF Disponibile": "PDF-READY",
+        "Solo HTML": "HTML-ONLY",
+        "Nessun Dato": "NO-DATA",
+        "Da Rigenerare": "WAITING-RECORDS",
+      };
 
-    if (dataCount < 5) {
+      const mappedStatus = statusMapping[report.Status] || "NO-DATA";
+      return { text: mappedStatus };
+    }
+
+    // ✅ STRATEGIA 2: Fallback con le proprietà booleane esplicite
+    if (report.DataRecordsCount < 5) {
       return { text: "WAITING-RECORDS" };
     }
 
-    if (hasPdf) {
+    if (report.HasPdfFile) {
       return { text: "PDF-READY" };
     }
 
-    if (hasHtml) {
-      return { text: "HTML Only" };
+    if (report.HasHtmlFile) {
+      return { text: "HTML-ONLY" };
     }
 
     return { text: "NO-DATA" };
-  };
-
-  const getReportProp = <T,>(
-    report: PdfReport,
-    propName: string,
-    fallback: T
-  ): T => {
-    return getReportProperty<T>(
-      report as unknown as Record<string, unknown>,
-      propName,
-      fallback
-    );
   };
 
   return (
@@ -424,37 +379,43 @@ export default function AdminPdfReports({
         <tbody>
           {currentPageData.map((report) => {
             const status = getReportStatus(report);
-            const dataCount = getReportProp<number>(
-              report,
-              "DataRecordsCount",
-              0
-            );
 
-            // Download abilitato SOLO se PDF-READY
-            const isDownloadable = status.text === "PDF-READY";
+            // USA DIRETTAMENTE LE PROPRIETÀ (non getReportProp)
+            const dataCount = report.DataRecordsCount;
+            const isDownloadable = report.HasPdfFile;
+            const isRegeneratable = dataCount > 5 || report.HasHtmlFile;
+            const reportType = report.ReportType;
+            const fileSize = report.HasPdfFile
+              ? report.PdfFileSize
+              : report.HtmlFileSize;
 
-            // Regenerate abilitato se ci sono abbastanza dati (anche senza PDF)
-            const isRegeneratable = dataCount > 5;
+            console.log(`🔍 Report ${report.id}:`, {
+              dataCount,
+              isDownloadable,
+              isRegeneratable,
+              status: status.text,
+              HasPdfFile: report.HasPdfFile,
+              HasHtmlFile: report.HasHtmlFile,
+            });
 
             return (
               <tr
                 key={report.id}
                 className="border-b border-gray-300 dark:border-gray-600"
               >
+                {/* Actions Column */}
                 <td className="p-4 space-x-2 inline-flex">
-                  {/* Download button - Solo se PDF-READY */}
+                  {/* Download Button */}
                   <button
                     className={`p-2 text-softWhite rounded ${
                       isDownloadable
                         ? "bg-blue-500 hover:bg-blue-600"
-                        : "bg-slate-500 cursor-not-allowed opacity-20 text-slate-200"
+                        : "bg-slate-500 cursor-not-allowed opacity-20"
                     }`}
-                    title={t("admin.vehicleReports.downloadSinglePdf")}
-                    disabled={
-                      !isDownloadable ||
-                      downloadingId === report.id ||
-                      regeneratingId === report.id
-                    }
+                    title={`${t("admin.vehicleReports.downloadSinglePdf")} ${
+                      reportType ? `(${reportType})` : ""
+                    }`}
+                    disabled={!isDownloadable || downloadingId === report.id}
                     onClick={() => handleDownload(report, false)}
                   >
                     {downloadingId === report.id ? (
@@ -464,33 +425,25 @@ export default function AdminPdfReports({
                     )}
                   </button>
 
-                  {/* Regenerate button - Se ci sono abbastanza dati */}
+                  {/* Regenerate Button */}
                   <button
                     className={`p-2 text-softWhite rounded ${
                       isRegeneratable
-                        ? "bg-blue-500 hover:bg-blue-600"
-                        : "bg-slate-500 cursor-not-allowed opacity-20 text-slate-200"
+                        ? "bg-orange-500 hover:bg-orange-600" // Colore diverso per evidenziare la rigenerazione
+                        : "bg-slate-500 cursor-not-allowed opacity-20"
                     }`}
-                    title={t("admin.vehicleReports.forceRegenerate")}
-                    disabled={
-                      !isRegeneratable ||
-                      downloadingId === report.id ||
-                      regeneratingId === report.id
-                    }
+                    title={`${t("admin.vehicleReports.forceRegenerate")} ${
+                      report.IsRegenerated ? "(Già rigenerato)" : ""
+                    }`}
+                    disabled={!isRegeneratable || regeneratingId === report.id}
                     onClick={() => {
-                      const confirm = window.confirm(
-                        t("admin.vehicleReports.regenerateConfirmAction")
-                      );
-                      if (!confirm) {
-                        logFrontendEvent(
-                          "AdminPdfReports",
-                          "INFO",
-                          "User cancelled regeneration operation",
-                          `ReportId: ${report.id}, Status: ${status.text}`
-                        );
-                        return;
+                      const message = report.IsRegenerated
+                        ? "Questo report è già stato rigenerato. Vuoi farlo di nuovo?"
+                        : t("admin.vehicleReports.regenerateConfirmAction");
+
+                      if (window.confirm(message)) {
+                        handleRegenerate(report);
                       }
-                      handleRegenerate(report);
                     }}
                   >
                     {regeneratingId === report.id ? (
@@ -500,49 +453,82 @@ export default function AdminPdfReports({
                     )}
                   </button>
 
-                  {/* Notes button - Sempre abilitato */}
+                  {/* Notes Button */}
                   <button
                     className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                     title={t("admin.openNotesModal")}
-                    onClick={() => {
-                      setSelectedReportForNotes(report);
-                      logFrontendEvent(
-                        "AdminPdfReports",
-                        "INFO",
-                        "Notes modal opened",
-                        `ReportId: ${report.id}`
-                      );
-                    }}
+                    onClick={() => setSelectedReportForNotes(report)}
                   >
                     <NotebookPen size={16} />
                   </button>
                 </td>
 
-                {/* Periodo */}
+                {/* Period */}
                 <td className="p-4">
                   {formatDateToDisplay(report.reportPeriodStart)} -{" "}
                   {formatDateToDisplay(report.reportPeriodEnd)}
+                  {report.IsRegenerated && (
+                    <div className="text-xs text-orange-600 font-medium mt-1">
+                      🔄 Rigenerato {report.RegenerationCount}x
+                    </div>
+                  )}
                 </td>
 
                 {/* Company */}
                 <td className="p-4">
-                  {report.companyVatNumber} - {report.companyName}
+                  <div>
+                    {report.companyVatNumber} - {report.companyName}
+                  </div>
+                  {report.ReportType && report.ReportType !== "Standard" && (
+                    <div className="text-xs text-blue-600 mt-1">
+                      {report.ReportType}
+                    </div>
+                  )}
                 </td>
 
                 {/* Vehicle */}
                 <td className="p-4">
                   {report.vehicleVin} - {report.vehicleModel}
+                  {report.MonitoringDurationHours > 0 && (
+                    <div className="text-xs text-gray-600 mt-1">
+                      {report.MonitoringDurationHours.toFixed(1)}h monitoraggio
+                    </div>
+                  )}
                 </td>
 
-                {/* Info File */}
+                {/* File Info */}
                 <td className="p-4">
-                  <Chip className={getStatusColor(status.text)}>
-                    {status.text}
-                  </Chip>
+                  <div className="space-y-1">
+                    <Chip className={getStatusColor(status.text)}>
+                      {status.text}
+                    </Chip>
+
+                    {/* ✅ INFO AGGIUNTIVE DAL BACKEND */}
+                    {report.AvailableFormats &&
+                      report.AvailableFormats.length > 0 && (
+                        <div className="text-xs text-gray-600">
+                          Formati: {report.AvailableFormats.join(", ")}
+                        </div>
+                      )}
+
+                    {fileSize > 0 && (
+                      <div className="text-xs text-gray-500">
+                        {(fileSize / 1024).toFixed(1)} KB
+                      </div>
+                    )}
+                  </div>
                 </td>
 
-                {/* Dati */}
-                <td className="p-4">{dataCount} record</td>
+                {/* Data Info */}
+                <td className="p-4">
+                  <div>{dataCount} record</div>
+                  {report.LastModified &&
+                    report.LastModified !== report.generatedAt && (
+                      <div className="text-xs text-orange-600 mt-1">
+                        Aggiornato: {formatDateToDisplay(report.LastModified)}
+                      </div>
+                    )}
+                </td>
 
                 {/* Generated At */}
                 <td className="p-4">
