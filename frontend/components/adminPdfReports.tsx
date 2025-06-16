@@ -56,8 +56,6 @@ export default function AdminPdfReports({
         return "bg-green-100 text-green-700 border-green-500";
       case "HTML-ONLY":
         return "bg-yellow-100 text-yellow-700 border-yellow-500";
-      case "WAITING-RECORDS":
-        return "bg-blue-100 text-blue-700 border-blue-500";
       case "NO-DATA":
         return "bg-red-100 text-red-700 border-red-500";
       default:
@@ -361,7 +359,7 @@ export default function AdminPdfReports({
 
             const dataCount = report.dataRecordsCount;
             const isDownloadable = report.hasPdfFile;
-            const isRegeneratable = dataCount > 5 || report.hasHtmlFile;
+            const isRegeneratable = report.hasHtmlFile;
             const reportType = report.reportType;
             const fileSize = report.hasPdfFile
               ? report.pdfFileSize

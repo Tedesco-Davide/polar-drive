@@ -16,6 +16,8 @@ public class PdfReport
 
     public string Notes { get; set; } = string.Empty;
 
+    public int RegenerationCount { get; set; } = 0;
+
     public ClientCompany? ClientCompany { get; set; }
 
     public ClientVehicle? ClientVehicle { get; set; }
