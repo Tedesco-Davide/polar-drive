@@ -92,7 +92,6 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                     RegenerationCount = r.RegenerationCount,
                     ReportType = DetermineReportType(r, isRegenerated, dataCount),
                     Status = DetermineReportStatus(pdfExists, htmlExists, dataCount),
-                    AvailableFormats = GetAvailableFormats(pdfExists, htmlExists)
                 };
 
                 result.Add(dto);
@@ -106,20 +105,6 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             await _logger.Error(source, "Errore recupero lista report", ex.ToString());
             return StatusCode(500, "Errore interno server");
         }
-    }
-
-    /// <summary>
-    /// Formati disponibili
-    /// </summary>
-    private static List<string> GetAvailableFormats(bool pdfExists, bool htmlExists)
-    {
-        var formats = new List<string>();
-
-        if (pdfExists) formats.Add("PDF");
-        if (htmlExists) formats.Add("HTML");
-        if (!pdfExists && !htmlExists) formats.Add("NONE");
-
-        return formats;
     }
 
     /// <summary>
@@ -170,7 +155,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 return "Giornaliero Limitato";
         }
 
-        if (duration < 1) // Meno di 1 ora
+        if (duration < 1)
             return "Test Rapido";
 
         if (dataCount < 5)

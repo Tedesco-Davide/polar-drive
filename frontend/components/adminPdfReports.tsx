@@ -455,18 +455,9 @@ export default function AdminPdfReports({
                     <Chip className={getStatusColor(status.text)}>
                       {status.text}
                     </Chip>
-
-                    {/* ✅ INFO AGGIUNTIVE DAL BACKEND */}
-                    {report.availableFormats &&
-                      report.availableFormats.length > 0 && (
-                        <div className="text-xs text-gray-600">
-                          Formati: {report.availableFormats.join(", ")}
-                        </div>
-                      )}
-
                     {fileSize > 0 && (
-                      <div className="text-xs text-gray-500">
-                        {(fileSize / 1024).toFixed(1)} KB
+                      <div className="text-xs text-gray-600">
+                        {(fileSize / (1024 * 1024)).toFixed(2)} MB
                       </div>
                     )}
                   </div>

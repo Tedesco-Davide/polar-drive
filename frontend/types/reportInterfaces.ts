@@ -26,7 +26,6 @@ export interface PdfReport {
   // Proprietà calcolate dal backend
   isDownloadable: boolean;
   status: string;
-  availableFormats: string[];
 }
 
 // ✅ Interface per le statistiche di download

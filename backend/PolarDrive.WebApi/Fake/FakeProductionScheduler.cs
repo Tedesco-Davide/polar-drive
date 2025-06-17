@@ -301,14 +301,14 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
 
         var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
 
-        // Salva PDF
-        var pdfPath = GetReportFilePath(report, "pdf");
-        var pdfDirectory = Path.GetDirectoryName(pdfPath);
-        if (!string.IsNullOrEmpty(pdfDirectory))
-        {
-            Directory.CreateDirectory(pdfDirectory);
-        }
-        await File.WriteAllBytesAsync(pdfPath, pdfBytes);
+        // Salva PDF solo nella directory "reports", NON in dev-reports
+        var pdfPath = Path.Combine("storage", "reports",
+            report.ReportPeriodStart.Year.ToString(),
+            report.ReportPeriodStart.Month.ToString("D2"),
+            $"PolarDrive_Report_{report.Id}.pdf");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(pdfPath)!);
+        await System.IO.File.WriteAllBytesAsync(pdfPath, pdfBytes);
 
         _logger.LogDebug("📄 Generated HTML and PDF files for report {ReportId}, PDF size: {Size} bytes",
             report.Id, pdfBytes.Length);
@@ -576,15 +576,28 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Path per report development
+    /// Path per report development
     /// </summary>
     private string GetReportFilePath(Data.Entities.PdfReport report, string extension)
     {
-        var outputDir = Path.Combine("storage", "dev-reports",
-            report.ReportPeriodStart.Year.ToString(),
-            report.ReportPeriodStart.Month.ToString("D2"));
+        var fileName = $"PolarDrive_Report_{report.Id}.{extension}";
 
-        return Path.Combine(outputDir, $"PolarDrive_Report_{report.Id}.{extension}");
+        if (extension == "html")
+        {
+            // HTML va in dev-reports
+            return Path.Combine("storage", "dev-reports",
+                report.ReportPeriodStart.Year.ToString(),
+                report.ReportPeriodStart.Month.ToString("D2"),
+                fileName);
+        }
+        else
+        {
+            // PDF e altri formati solo in reports
+            return Path.Combine("storage", "reports",
+                report.ReportPeriodStart.Year.ToString(),
+                report.ReportPeriodStart.Month.ToString("D2"),
+                fileName);
+        }
     }
 
     /// <summary>
