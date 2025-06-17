@@ -484,21 +484,19 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         return stats.ToString();
     }
 
-    // ✅ AGGIUNGI questi metodi al tuo PolarAiReportGenerator.cs esistente
-
     /// <summary>
-    /// NUOVO: Genera insights progressivi basati sull'età del veicolo nel sistema
+    /// Genera insights basati sull'età del veicolo nel sistema
     /// </summary>
     public async Task<string> GenerateInsightsAsync(int vehicleId)
     {
-        await _logger.Info("PolarAiReportGenerator.GenerateProgressiveInsights",
-            "Avvio analisi progressiva", $"VehicleId: {vehicleId}");
+        await _logger.Info("PolarAiReportGenerator.GenerateInsights",
+            "Avvio analisi", $"VehicleId: {vehicleId}");
 
         // Calcola periodo di monitoraggio
         var firstRecord = await GetFirstVehicleRecord(vehicleId);
         if (firstRecord == default)
         {
-            await _logger.Warning("PolarAiReportGenerator.GenerateProgressiveInsights",
+            await _logger.Warning("PolarAiReportGenerator.GenerateInsights",
                 "Nessun dato storico trovato, uso analisi standard");
             return await GenerateSummaryFromRawJson([]);
         }
@@ -507,7 +505,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         var dataHours = DetermineDataWindow(monitoringPeriod);
         var analysisLevel = GetAnalysisLevel(monitoringPeriod);
 
-        await _logger.Info("PolarAiReportGenerator.GenerateProgressiveInsights",
+        await _logger.Info("PolarAiReportGenerator.GenerateInsights",
             $"Analisi {analysisLevel}",
             $"Periodo: {monitoringPeriod.TotalDays:F1} giorni, Finestra: {dataHours}h");
 
@@ -516,13 +514,13 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
 
         if (!historicalData.Any())
         {
-            await _logger.Warning("PolarAiReportGenerator.GenerateProgressiveInsights",
+            await _logger.Warning("PolarAiReportGenerator.GenerateInsights",
                 "Nessun dato nel periodo specificato");
             return "Nessun dato disponibile per il periodo analizzato.";
         }
 
-        // Genera analisi progressiva
-        return await GenerateProgressiveSummary(historicalData, monitoringPeriod, analysisLevel, dataHours);
+        // Genera analisi
+        return await GenerateSummary(historicalData, monitoringPeriod, analysisLevel, dataHours);
     }
 
     /// <summary>
@@ -609,40 +607,40 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
     }
 
     /// <summary>
-    /// Genera summary con prompt progressivo ottimizzato per Mistral locale
+    /// Genera summary con prompt ottimizzato per Mistral locale
     /// </summary>
-    private async Task<string> GenerateProgressiveSummary(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
+    private async Task<string> GenerateSummary(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
         if (!rawJsonList.Any())
-            return "Nessun dato veicolo disponibile per l'analisi progressiva.";
+            return "Nessun dato veicolo disponibile per l'analisi.";
 
-        await _logger.Info("PolarAiReportGenerator.GenerateProgressiveSummary",
+        await _logger.Info("PolarAiReportGenerator.GenerateSummary",
             $"Generazione analisi {analysisLevel}",
             $"Records: {rawJsonList.Count}, Ore: {dataHours}");
 
-        // ✅ PROMPT PROGRESSIVO ottimizzato per il tuo Mistral locale
-        var progressivePrompt = BuildProgressivePrompt(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
+        // ✅ PROMPT ottimizzato per il tuo Mistral locale
+        var prompt = BuildPrompt(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
 
-        // Prima prova con Mistral usando il prompt progressivo
-        var aiResponse = await TryGenerateProgressiveWithMistral(progressivePrompt, monitoringPeriod, analysisLevel);
+        // Prima prova con Mistral usando il prompt
+        var aiResponse = await TryGenerateWithMistral(prompt, monitoringPeriod, analysisLevel);
 
         if (string.IsNullOrWhiteSpace(aiResponse))
         {
-            await _logger.Warning("PolarAiReportGenerator.GenerateProgressiveSummary",
-                "Mistral non disponibile, uso generatore locale progressivo");
-            aiResponse = GenerateProgressiveLocalReport(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
+            await _logger.Warning("PolarAiReportGenerator.GenerateSummary",
+                "Mistral non disponibile, uso generatore locale");
+            aiResponse = GenerateLocalReport(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
         }
 
         return aiResponse;
     }
 
     /// <summary>
-    /// Costruisce il prompt progressivo per Mistral
+    /// Costruisce il prompt per Mistral
     /// </summary>
-    private string BuildProgressivePrompt(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
+    private string BuildPrompt(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
         var parsedPrompt = RawDataPreparser.GenerateInsightPrompt(rawJsonList);
-        var progressiveStats = GenerateProgressiveDataStatistics(rawJsonList, monitoringPeriod, dataHours);
+        var stats = GenerateDataStatistics(rawJsonList, monitoringPeriod, dataHours);
 
         return $@"
 Agisci come un consulente esperto in mobilità elettrica e analisi dati Tesla con capacità di APPRENDIMENTO PROGRESSIVO.
@@ -651,12 +649,12 @@ CONTESTO ANALISI PROGRESSIVA:
 - Livello Analisi: {analysisLevel}
 - Periodo Monitoraggio: {monitoringPeriod.TotalDays:F1} giorni
 - Finestra Dati: {dataHours} ore ({rawJsonList.Count:N0} record)
-- Tipo: {GetProgressiveAnalysisType(dataHours)}
+- Tipo: {GetAnalysisType(dataHours)}
 
-{progressiveStats}
+{stats}
 
 FOCUS PROGRESSIVO:
-{GetProgressiveFocus(analysisLevel, dataHours)}
+{GetFocus(analysisLevel, dataHours)}
 
 DATI DETTAGLIATI:
 {parsedPrompt}
@@ -702,29 +700,29 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
     }
 
     /// <summary>
-    /// Prova a generare con Mistral usando prompt progressivo
+    /// Prova a generare con Mistral usando prompt
     /// </summary>
-    private async Task<string?> TryGenerateProgressiveWithMistral(string progressivePrompt, TimeSpan monitoringPeriod, string analysisLevel)
+    private async Task<string?> TryGenerateWithMistral(string prompt, TimeSpan monitoringPeriod, string analysisLevel)
     {
         try
         {
             var requestBody = new
             {
                 model = "mistral",
-                prompt = progressivePrompt,
+                prompt = prompt,
                 stream = false,
                 options = new
                 {
                     temperature = 0.4, // Più creativo per analisi progressive
                     top_p = 0.9,
-                    max_tokens = 6000  // ✅ Più token per analisi dettagliate
+                    max_tokens = 6000  // Più token per analisi dettagliate
                 }
             };
 
             var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-            // ✅ TIMEOUT ESTESO per analisi progressive: 5 minuti
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            // ✅ TIMEOUT ESTESO per analisi progressive: 10 minuti
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
             var response = await _httpClient.PostAsync("http://localhost:11434/api/generate", content, cts.Token);
 
             if (response.IsSuccessStatusCode)
@@ -733,7 +731,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
                 var parsed = JsonDocument.Parse(jsonResponse);
                 var result = parsed.RootElement.GetProperty("response").GetString();
 
-                await _logger.Info("PolarAiReportGenerator.TryGenerateProgressiveWithMistral",
+                await _logger.Info("PolarAiReportGenerator.TryGenerateWithMistral",
                     $"Mistral {analysisLevel} completata",
                     $"Risposta: {result?.Length ?? 0} caratteri");
 
@@ -742,36 +740,36 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         }
         catch (Exception ex)
         {
-            await _logger.Debug("PolarAiReportGenerator.TryGenerateProgressiveWithMistral",
-                "Mistral non raggiungibile per analisi progressiva", ex.Message);
+            await _logger.Debug("PolarAiReportGenerator.TryGenerateWithMistral",
+                "Mistral non raggiungibile per analisi", ex.Message);
         }
 
         return null;
     }
 
     /// <summary>
-    /// Fallback locale per analisi progressiva 
+    /// Fallback locale per analisi 
     /// </summary>
-    private string GenerateProgressiveLocalReport(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
+    private string GenerateLocalReport(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
         var sb = new StringBuilder();
         var analysis = AnalyzeRawData(rawJsonList);
 
-        sb.AppendLine($"# REPORT PROGRESSIVO TESLA - {analysisLevel.ToUpper()}");
+        sb.AppendLine($"# REPORT TESLA - {analysisLevel.ToUpper()}");
         sb.AppendLine();
 
-        // Executive Summary Progressivo
-        sb.AppendLine("## EXECUTIVE SUMMARY PROGRESSIVO");
+        // Executive Summary
+        sb.AppendLine("## EXECUTIVE SUMMARY");
         sb.AppendLine($"Analisi avanzata di **{rawJsonList.Count:N0} campioni** raccolti in **{monitoringPeriod.TotalDays:F1} giorni** di monitoraggio continuo. ");
         sb.AppendLine($"Questo {analysisLevel.ToLower()} rivela pattern comportamentali e insights predittivi impossibili da ottenere con analisi brevi. ");
-        sb.AppendLine($"Il veicolo dimostra {GetProgressiveUsagePattern(analysis, dataHours)} con evoluzione {GetProgressiveEfficiencyTrend(analysis, dataHours)}.");
+        sb.AppendLine($"Il veicolo dimostra {GetUsagePattern(analysis, dataHours)} con evoluzione {GetEfficiencyTrend(analysis, dataHours)}.");
         sb.AppendLine();
 
-        // Apprendimento Progressivo
-        sb.AppendLine("## APPRENDIMENTO PROGRESSIVO");
+        // Apprendimento
+        sb.AppendLine("## APPRENDIMENTO");
         sb.AppendLine();
         sb.AppendLine("### Insights dall'analisi estesa");
-        sb.AppendLine(GetProgressiveLearningInsights(analysis, monitoringPeriod, dataHours));
+        sb.AppendLine(GetLearningInsights(analysis, monitoringPeriod, dataHours));
         sb.AppendLine();
 
         // Resto del report...
@@ -784,8 +782,8 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         sb.AppendLine();
 
         sb.AppendLine("## RACCOMANDAZIONI STRATEGICHE");
-        var progressiveRecommendations = GenerateProgressiveRecommendations(analysis, monitoringPeriod, dataHours);
-        foreach (var rec in progressiveRecommendations)
+        var recommendations = GenerateRecommendations(analysis, monitoringPeriod, dataHours);
+        foreach (var rec in recommendations)
         {
             sb.AppendLine($"- **{rec.Category}**: {rec.Text}");
         }
@@ -799,9 +797,9 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         return sb.ToString();
     }
 
-    // ✅ METODI HELPER per analisi progressiva
+    // ✅ METODI HELPER per analisi
 
-    private string GetProgressiveAnalysisType(int dataHours)
+    private string GetAnalysisType(int dataHours)
     {
         return dataHours switch
         {
@@ -813,7 +811,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         };
     }
 
-    private string GetProgressiveFocus(string analysisLevel, int dataHours)
+    private string GetFocus(string analysisLevel, int dataHours)
     {
         return analysisLevel switch
         {
@@ -826,7 +824,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         };
     }
 
-    private string GenerateProgressiveDataStatistics(List<string> rawJsonList, TimeSpan monitoringPeriod, int dataHours)
+    private string GenerateDataStatistics(List<string> rawJsonList, TimeSpan monitoringPeriod, int dataHours)
     {
         var sb = new StringBuilder();
         sb.AppendLine("STATISTICHE PROGRESSIVE:");
@@ -838,7 +836,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         return sb.ToString();
     }
 
-    private string GetProgressiveUsagePattern(VehicleDataAnalysis analysis, int dataHours)
+    private string GetUsagePattern(VehicleDataAnalysis analysis, int dataHours)
     {
         return dataHours switch
         {
@@ -849,7 +847,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         };
     }
 
-    private string GetProgressiveEfficiencyTrend(VehicleDataAnalysis analysis, int dataHours)
+    private string GetEfficiencyTrend(VehicleDataAnalysis analysis, int dataHours)
     {
         return analysis.AvgBatteryLevel switch
         {
@@ -859,7 +857,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         };
     }
 
-    private string GetProgressiveLearningInsights(VehicleDataAnalysis analysis, TimeSpan monitoringPeriod, int dataHours)
+    private string GetLearningInsights(VehicleDataAnalysis analysis, TimeSpan monitoringPeriod, int dataHours)
     {
         return $@"Il monitoraggio esteso di {monitoringPeriod.TotalDays:F1} giorni ha permesso di identificare:
 
@@ -889,7 +887,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
 **Efficienza futura**: Margine di miglioramento del 15% con adeguamenti comportamentali";
     }
 
-    private List<(string Category, string Text)> GenerateProgressiveRecommendations(VehicleDataAnalysis analysis, TimeSpan monitoringPeriod, int dataHours)
+    private List<(string Category, string Text)> GenerateRecommendations(VehicleDataAnalysis analysis, TimeSpan monitoringPeriod, int dataHours)
     {
         var recommendations = new List<(string, string)>();
 

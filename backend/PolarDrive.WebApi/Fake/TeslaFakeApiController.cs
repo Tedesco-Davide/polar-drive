@@ -37,7 +37,7 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Forza la generazione di un report progressivo di test
+    /// ✅ AGGIORNATO: Forza la generazione di un report di test
     /// </summary>
     [HttpPost("GenerateReport")]
     public async Task<IActionResult> GenerateReport()
@@ -88,7 +88,7 @@ public class TeslaFakeApiController : ControllerBase
                 message = $"Report generation completed for {activeVehicles.Count} vehicles",
                 timestamp = DateTime.UtcNow,
                 results = new { successCount, errorCount },
-                note = "Reports generated using Progressive AI Analysis system"
+                note = "Reports generated using AI Analysis system"
             });
         }
         catch (Exception ex)
@@ -103,7 +103,7 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Forza report progressivo per un singolo veicolo
+    /// Forza report per un singolo veicolo
     /// </summary>
     [HttpPost("GenerateVehicleReport/{vehicleId}")]
     public async Task<IActionResult> GenerateVehicleReport(int vehicleId, [FromBody] ReportRequest? request = null)

@@ -5,8 +5,8 @@ using PolarDrive.WebApi.PolarAiReports;
 namespace PolarDrive.WebApi.Production;
 
 /// <summary>
-/// Scheduler per produzione - gestisce i task automatici con analisi progressiva e retry logic
-/// AGGIORNATO per usare il nuovo sistema di analisi progressiva AI
+/// Scheduler per produzione - gestisce i task automatici con analisi e retry logic
+/// AGGIORNATO per usare il nuovo sistema di analisi Polar AI
 /// </summary>
 public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<ProductionScheduler> logger, IWebHostEnvironment env) : BackgroundService
 {
@@ -15,8 +15,8 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     private readonly IWebHostEnvironment _env = env;
     private readonly Dictionary<int, DateTime> _lastReportAttempts = new();
     private readonly Dictionary<int, int> _retryCount = new();
-    private const int MAX_RETRIES_PER_VEHICLE = 5; // Più retry in produzione
-    private const int RETRY_DELAY_HOURS = 6; // Retry ogni 6 ore in produzione
+    private const int MAX_RETRIES_PER_VEHICLE = 5;
+    private const int RETRY_DELAY_HOURS = 6;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -26,25 +26,25 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             return;
         }
 
-        _logger.LogInformation("🏭 ProductionScheduler: Starting PRODUCTION progressive schedulers");
-        _logger.LogInformation("📋 Progressive Report generation: Daily at 02:00, Weekly on Mondays, Monthly on 1st day");
-        _logger.LogInformation("🧠 Using Progressive AI Analysis for all reports");
+        _logger.LogInformation("🏭 ProductionScheduler: Starting PRODUCTION schedulers");
+        _logger.LogInformation("📋 Report generation: Daily at 02:00, Weekly on Mondays, Monthly on 1st day");
+        _logger.LogInformation("🧠 Using Polar AI Analysis for all reports");
         _logger.LogInformation("🔄 Retry logic: Up to {MaxRetries} retries per vehicle with {RetryDelay}h delays",
             MAX_RETRIES_PER_VEHICLE, RETRY_DELAY_HOURS);
 
         // Avvia i task paralleli
-        var dailyReportTask = RunDailyProgressiveReportScheduler(stoppingToken);
-        var weeklyReportTask = RunWeeklyProgressiveReportScheduler(stoppingToken);
-        var monthlyReportTask = RunMonthlyProgressiveReportScheduler(stoppingToken);
-        var retryTask = RunProgressiveRetryScheduler(stoppingToken);
+        var dailyReportTask = RunDailyReportScheduler(stoppingToken);
+        var weeklyReportTask = RunWeeklyReportScheduler(stoppingToken);
+        var monthlyReportTask = RunMonthlyReportScheduler(stoppingToken);
+        var retryTask = RunRetryScheduler(stoppingToken);
 
         await Task.WhenAll(dailyReportTask, weeklyReportTask, monthlyReportTask, retryTask);
     }
 
     /// <summary>
-    /// Scheduler per i report giornalieri progressivi (ogni giorno alle 02:00)
+    /// Scheduler per i report giornalieri (ogni giorno alle 02:00)
     /// </summary>
-    private async Task RunDailyProgressiveReportScheduler(CancellationToken stoppingToken)
+    private async Task RunDailyReportScheduler(CancellationToken stoppingToken)
     {
         // Aspetta fino alle 2:00 del mattino del primo avvio
         await WaitUntilTargetTime(2, 0);
@@ -53,14 +53,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         {
             try
             {
-                _logger.LogInformation("🌅 ProductionScheduler: Starting daily progressive report generation");
+                _logger.LogInformation("🌅 ProductionScheduler: Starting daily report generation");
 
                 using var scope = _serviceProvider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-                await ProcessDailyProgressiveReports(db);
+                await ProcessDailyReports(db);
 
-                _logger.LogInformation("✅ ProductionScheduler: Completed daily progressive report generation");
+                _logger.LogInformation("✅ ProductionScheduler: Completed daily report generation");
             }
             catch (Exception ex)
             {
@@ -73,9 +73,9 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// Scheduler per i report settimanali progressivi (ogni lunedì alle 03:00)
+    /// Scheduler per i report settimanali (ogni lunedì alle 03:00)
     /// </summary>
-    private async Task RunWeeklyProgressiveReportScheduler(CancellationToken stoppingToken)
+    private async Task RunWeeklyReportScheduler(CancellationToken stoppingToken)
     {
         // Aspetta fino alle 3:00 del primo lunedì
         await WaitUntilTargetDayAndTime(DayOfWeek.Monday, 3, 0);
@@ -84,14 +84,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         {
             try
             {
-                _logger.LogInformation("📅 ProductionScheduler: Starting weekly progressive report generation");
+                _logger.LogInformation("📅 ProductionScheduler: Starting weekly report generation");
 
                 using var scope = _serviceProvider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-                await ProcessWeeklyProgressiveReports(db);
+                await ProcessWeeklyReports(db);
 
-                _logger.LogInformation("✅ ProductionScheduler: Completed weekly progressive report generation");
+                _logger.LogInformation("✅ ProductionScheduler: Completed weekly report generation");
             }
             catch (Exception ex)
             {
@@ -104,9 +104,9 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// Scheduler per i report mensili progressivi (primo giorno del mese alle 04:00)
+    /// Scheduler per i report mensili (primo giorno del mese alle 04:00)
     /// </summary>
-    private async Task RunMonthlyProgressiveReportScheduler(CancellationToken stoppingToken)
+    private async Task RunMonthlyReportScheduler(CancellationToken stoppingToken)
     {
         // Aspetta fino alle 4:00 del primo giorno del mese
         await WaitUntilFirstDayOfMonthAndTime(4, 0);
@@ -120,14 +120,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 // Genera report solo il primo giorno del mese alle 04:00
                 if (now.Day == 1)
                 {
-                    _logger.LogInformation("🗓️ ProductionScheduler: Starting monthly progressive report generation");
+                    _logger.LogInformation("🗓️ ProductionScheduler: Starting monthly report generation");
 
                     using var scope = _serviceProvider.CreateScope();
                     var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-                    await ProcessMonthlyProgressiveReports(db);
+                    await ProcessMonthlyReports(db);
 
-                    _logger.LogInformation("✅ ProductionScheduler: Completed monthly progressive report generation");
+                    _logger.LogInformation("✅ ProductionScheduler: Completed monthly report generation");
                 }
                 else
                 {
@@ -148,9 +148,9 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// Scheduler per i retry progressivi (controlla ogni 6 ore)
+    /// Scheduler per i retry (controlla ogni 6 ore)
     /// </summary>
-    private async Task RunProgressiveRetryScheduler(CancellationToken stoppingToken)
+    private async Task RunRetryScheduler(CancellationToken stoppingToken)
     {
         // Offset per non coincidere con gli altri scheduler
         await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
@@ -162,11 +162,11 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 using var scope = _serviceProvider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-                await ProcessProgressiveRetries(db);
+                await ProcessRetries(db);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ ProductionScheduler: Error in progressive retry cycle");
+                _logger.LogError(ex, "❌ ProductionScheduler: Error in retry cycle");
             }
 
             // Controllo retry ogni 6 ore
@@ -175,31 +175,31 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// Processa la generazione di report giornalieri progressivi
+    /// Processa la generazione di report giornalieri
     /// </summary>
-    private async Task ProcessDailyProgressiveReports(PolarDriveDbContext db)
+    private async Task ProcessDailyReports(PolarDriveDbContext db)
     {
         var now = DateTime.UtcNow;
         var yesterday = now.AddDays(-1);
 
-        _logger.LogInformation("🌅 Generating daily progressive reports for {Date}", yesterday.ToString("yyyy-MM-dd"));
+        _logger.LogInformation("🌅 Generating daily reports for {Date}", yesterday.ToString("yyyy-MM-dd"));
 
         var fetchingVehicles = await GetActiveVehiclesWithData(db, yesterday.AddDays(-1), now);
 
         if (!fetchingVehicles.Any())
         {
-            _logger.LogInformation("ℹ️ No vehicles with data for daily progressive reports");
+            _logger.LogInformation("ℹ️ No vehicles with data for daily reports");
             return;
         }
 
-        // ✅ NUOVO: Separa veicoli per tipo contratto
+        // Separa veicoli per tipo contratto
         var activeContractVehicles = fetchingVehicles.Count(v => v.IsActiveFlag);
         var gracePeriodVehicles = fetchingVehicles.Count(v => !v.IsActiveFlag);
 
-        _logger.LogInformation("🚗 Found {Total} vehicles for daily progressive reports (Active: {Active}, Grace Period: {Grace})",
+        _logger.LogInformation("🚗 Found {Total} vehicles for daily reports (Active: {Active}, Grace Period: {Grace})",
             fetchingVehicles.Count, activeContractVehicles, gracePeriodVehicles);
 
-        // ✅ NUOVO: Warning se ci sono veicoli in grace period
+        // Warning se ci sono veicoli in grace period
         if (gracePeriodVehicles > 0)
         {
             _logger.LogWarning("⏳ Grace Period Alert: {GracePeriodCount} vehicles with terminated contracts generating daily reports",
@@ -213,7 +213,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         {
             try
             {
-                // ✅ NUOVO: Log contract status per ogni veicolo
+                // Log contract status per ogni veicolo
                 var contractStatus = GetContractStatus(vehicle);
                 if (!vehicle.IsActiveFlag)
                 {
@@ -221,12 +221,12 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                         vehicle.Vin, contractStatus);
                 }
 
-                await GenerateProgressiveReportForVehicleProduction(db, vehicle.Id, "Analisi Giornaliera", 24);
+                await GenerateReportForVehicleProduction(db, vehicle.Id, "Analisi Giornaliera", 24);
                 successCount++;
                 _lastReportAttempts[vehicle.Id] = DateTime.UtcNow;
                 _retryCount[vehicle.Id] = 0;
 
-                _logger.LogInformation("✅ Daily progressive report generated for vehicle {VIN}", vehicle.Vin);
+                _logger.LogInformation("✅ Daily report generated for vehicle {VIN}", vehicle.Vin);
             }
             catch (Exception ex)
             {
@@ -234,42 +234,42 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 _retryCount[vehicle.Id] = _retryCount.GetValueOrDefault(vehicle.Id, 0) + 1;
                 _lastReportAttempts[vehicle.Id] = DateTime.UtcNow;
 
-                _logger.LogError(ex, "❌ Error generating daily progressive report for vehicle {VIN}", vehicle.Vin);
+                _logger.LogError(ex, "❌ Error generating daily report for vehicle {VIN}", vehicle.Vin);
             }
 
             // Pausa tra veicoli per non sovraccaricare il sistema
             await Task.Delay(TimeSpan.FromMinutes(2));
         }
 
-        _logger.LogInformation("📊 Daily progressive report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
+        _logger.LogInformation("📊 Daily report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
             successCount, errorCount, gracePeriodVehicles);
     }
 
     /// <summary>
-    /// Processa la generazione di report settimanali progressivi con grace period
+    /// Processa la generazione di report settimanali con grace period
     /// </summary>
-    private async Task ProcessWeeklyProgressiveReports(PolarDriveDbContext db)
+    private async Task ProcessWeeklyReports(PolarDriveDbContext db)
     {
         var now = DateTime.UtcNow;
         var startOfLastWeek = now.AddDays(-7 - (int)now.DayOfWeek + 1); // Lunedì scorso
         var endOfLastWeek = startOfLastWeek.AddDays(6); // Domenica scorsa
 
-        _logger.LogInformation("📅 Generating weekly progressive reports for period: {Start} to {End}",
+        _logger.LogInformation("📅 Generating weekly reports for period: {Start} to {End}",
             startOfLastWeek.ToString("yyyy-MM-dd"), endOfLastWeek.ToString("yyyy-MM-dd"));
 
         var fetchingVehicles = await GetActiveVehiclesWithData(db, startOfLastWeek, endOfLastWeek);
 
         if (!fetchingVehicles.Any())
         {
-            _logger.LogInformation("ℹ️ No vehicles with data for weekly progressive reports");
+            _logger.LogInformation("ℹ️ No vehicles with data for weekly reports");
             return;
         }
 
-        // ✅ NUOVO: Statistiche grace period
+        // Statistiche grace period
         var activeContractVehicles = fetchingVehicles.Count(v => v.IsActiveFlag);
         var gracePeriodVehicles = fetchingVehicles.Count(v => !v.IsActiveFlag);
 
-        _logger.LogInformation("🚗 Found {Total} vehicles for weekly progressive reports (Active: {Active}, Grace Period: {Grace})",
+        _logger.LogInformation("🚗 Found {Total} vehicles for weekly reports (Active: {Active}, Grace Period: {Grace})",
             fetchingVehicles.Count, activeContractVehicles, gracePeriodVehicles);
 
         if (gracePeriodVehicles > 0)
@@ -285,18 +285,18 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         {
             try
             {
-                // ✅ NUOVO: Log per veicoli in grace period
+                // Log per veicoli in grace period
                 if (!vehicle.IsActiveFlag)
                 {
                     _logger.LogInformation("⏳ Generating weekly report for {VIN} in grace period", vehicle.Vin);
                 }
 
-                await GenerateProgressiveReportForVehicleProduction(db, vehicle.Id, "Deep Dive Settimanale", 168); // 7 giorni
+                await GenerateReportForVehicleProduction(db, vehicle.Id, "Deep Dive Settimanale", 168); // 7 giorni
                 successCount++;
                 _lastReportAttempts[vehicle.Id] = DateTime.UtcNow;
                 _retryCount[vehicle.Id] = 0;
 
-                _logger.LogInformation("✅ Weekly progressive report generated for vehicle {VIN}", vehicle.Vin);
+                _logger.LogInformation("✅ Weekly report generated for vehicle {VIN}", vehicle.Vin);
             }
             catch (Exception ex)
             {
@@ -304,42 +304,42 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 _retryCount[vehicle.Id] = _retryCount.GetValueOrDefault(vehicle.Id, 0) + 1;
                 _lastReportAttempts[vehicle.Id] = DateTime.UtcNow;
 
-                _logger.LogError(ex, "❌ Error generating weekly progressive report for vehicle {VIN}", vehicle.Vin);
+                _logger.LogError(ex, "❌ Error generating weekly report for vehicle {VIN}", vehicle.Vin);
             }
 
             // Pausa più lunga tra veicoli per report settimanali
             await Task.Delay(TimeSpan.FromMinutes(5));
         }
 
-        _logger.LogInformation("📊 Weekly progressive report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
+        _logger.LogInformation("📊 Weekly report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
             successCount, errorCount, gracePeriodVehicles);
     }
 
     /// <summary>
     /// Processa la generazione di report mensili con grace period
     /// </summary>
-    private async Task ProcessMonthlyProgressiveReports(PolarDriveDbContext db)
+    private async Task ProcessMonthlyReports(PolarDriveDbContext db)
     {
         var now = DateTime.UtcNow;
         var startOfLastMonth = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
         var endOfLastMonth = startOfLastMonth.AddMonths(1).AddDays(-1);
 
-        _logger.LogInformation("🗓️ Generating monthly progressive reports for period: {Start} to {End}",
+        _logger.LogInformation("🗓️ Generating monthly reports for period: {Start} to {End}",
             startOfLastMonth.ToString("yyyy-MM-dd"), endOfLastMonth.ToString("yyyy-MM-dd"));
 
         var fetchingVehicles = await GetActiveVehiclesWithData(db, startOfLastMonth, endOfLastMonth);
 
         if (!fetchingVehicles.Any())
         {
-            _logger.LogInformation("ℹ️ No vehicles with data for monthly progressive reports");
+            _logger.LogInformation("ℹ️ No vehicles with data for monthly reports");
             return;
         }
 
-        // ✅ NUOVO: Statistiche grace period dettagliate
+        // Statistiche grace period dettagliate
         var activeContractVehicles = fetchingVehicles.Count(v => v.IsActiveFlag);
         var gracePeriodVehicles = fetchingVehicles.Count(v => !v.IsActiveFlag);
 
-        _logger.LogInformation("🚗 Found {Total} vehicles for monthly progressive reports (Active: {Active}, Grace Period: {Grace})",
+        _logger.LogInformation("🚗 Found {Total} vehicles for monthly reports (Active: {Active}, Grace Period: {Grace})",
             fetchingVehicles.Count, activeContractVehicles, gracePeriodVehicles);
 
         if (gracePeriodVehicles > 0)
@@ -347,7 +347,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             _logger.LogWarning("⏳ Grace Period Alert: {GracePeriodCount} vehicles with terminated contracts generating monthly reports",
                 gracePeriodVehicles);
 
-            // ✅ NUOVO: Log dettagli veicoli in grace period per monthly (più importante)
+            // Log dettagli veicoli in grace period per monthly (più importante)
             foreach (var gracePeriodVehicle in fetchingVehicles.Where(v => !v.IsActiveFlag))
             {
                 _logger.LogInformation("⏳ Monthly report for grace period vehicle: {VIN} (Company: {Company})",
@@ -362,12 +362,12 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         {
             try
             {
-                await GenerateProgressiveReportForVehicleProduction(db, vehicle.Id, "Analisi Comprensiva Mensile", 720); // 30 giorni
+                await GenerateReportForVehicleProduction(db, vehicle.Id, "Analisi Comprensiva Mensile", 720); // 30 giorni
                 successCount++;
                 _lastReportAttempts[vehicle.Id] = DateTime.UtcNow;
                 _retryCount[vehicle.Id] = 0;
 
-                _logger.LogInformation("✅ Monthly progressive report generated for vehicle {VIN}", vehicle.Vin);
+                _logger.LogInformation("✅ Monthly report generated for vehicle {VIN}", vehicle.Vin);
             }
             catch (Exception ex)
             {
@@ -375,72 +375,69 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 _retryCount[vehicle.Id] = _retryCount.GetValueOrDefault(vehicle.Id, 0) + 1;
                 _lastReportAttempts[vehicle.Id] = DateTime.UtcNow;
 
-                _logger.LogError(ex, "❌ Error generating monthly progressive report for vehicle {VIN}", vehicle.Vin);
+                _logger.LogError(ex, "❌ Error generating monthly report for vehicle {VIN}", vehicle.Vin);
             }
 
             // Pausa più lunga tra veicoli per report mensili
             await Task.Delay(TimeSpan.FromMinutes(10));
         }
 
-        _logger.LogInformation("📊 Monthly progressive report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
+        _logger.LogInformation("📊 Monthly report generation completed: {Success} success, {Errors} errors (Grace Period: {Grace})",
             successCount, errorCount, gracePeriodVehicles);
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Genera report progressivo ALLINEATO con fake scheduler
+    /// Genera report ALLINEATO con fake scheduler
     /// </summary>
-    private async Task GenerateProgressiveReportForVehicleProduction(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
+    private async Task GenerateReportForVehicleProduction(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
     {
         var vehicle = await db.ClientVehicles.FindAsync(vehicleId);
         if (vehicle == null) return;
 
         var now = DateTime.UtcNow;
-
-        // ✅ USA LA NUOVA LOGICA PROGRESSIVA
-        var reportPeriod = await DetermineProgressiveReportPeriod(db, vehicleId, analysisLevel, defaultDataHours);
+        var reportPeriod = await DetermineReportPeriod(db, vehicleId, analysisLevel, defaultDataHours);
 
         _logger.LogInformation("🧠 Generating {AnalysisLevel} for vehicle {VIN} ({DataHours}h data, {MonitoringDays:F1} days monitoring)",
             reportPeriod.AnalysisLevel, vehicle.Vin, reportPeriod.DataHours, reportPeriod.MonitoringDays);
 
-        // Genera insights progressivi usando PolarAiReportGenerator
+        // Genera insights usando PolarAiReportGenerator
         var aiGenerator = new PolarAiReportGenerator(db);
-        var progressiveInsights = await aiGenerator.GenerateInsightsAsync(vehicleId);
+        var insights = await aiGenerator.GenerateInsightsAsync(vehicleId);
 
-        if (string.IsNullOrWhiteSpace(progressiveInsights))
+        if (string.IsNullOrWhiteSpace(insights))
         {
-            _logger.LogWarning("⚠️ No progressive insights generated for vehicle {VIN}", vehicle.Vin);
-            throw new InvalidOperationException($"No progressive insights generated for vehicle {vehicle.Vin}");
+            _logger.LogWarning("⚠️ No insights generated for vehicle {VIN}", vehicle.Vin);
+            throw new InvalidOperationException($"No insights generated for vehicle {vehicle.Vin}");
         }
 
         // ✅ METADATI PIÙ RICCHI
-        var progressiveReport = new Data.Entities.PdfReport
+        var report = new Data.Entities.PdfReport
         {
             ClientVehicleId = vehicleId,
             ClientCompanyId = vehicle.ClientCompanyId,
             ReportPeriodStart = reportPeriod.Start,
             ReportPeriodEnd = reportPeriod.End,
             GeneratedAt = now,
-            Notes = $"[PRODUCTION-PROGRESSIVE-{reportPeriod.AnalysisLevel.Replace(" ", "")}] " +
-                    $"DataHours: {reportPeriod.DataHours}, MonitoringDays: {reportPeriod.MonitoringDays:F1}"
+            Notes = $"DataHours: {reportPeriod.DataHours}, MonitoringDays: {reportPeriod.MonitoringDays:F1}"
         };
 
-        db.PdfReports.Add(progressiveReport);
+        db.PdfReports.Add(report);
         await db.SaveChangesAsync();
 
-        // Genera HTML con insights progressivi
+        // Genera HTML con insights
         var htmlService = new HtmlReportService(db);
         var htmlOptions = new HtmlReportOptions
         {
             ShowDetailedStats = true,
             ShowRawData = false,
             ReportType = $"🧠 {reportPeriod.AnalysisLevel} - Production",
-            AdditionalCss = GetProductionProgressiveStyles()
+            AdditionalCss = GetProductionStyles()
         };
 
-        var htmlContent = await htmlService.GenerateHtmlReportAsync(progressiveReport, progressiveInsights, htmlOptions);
+        var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
 
         // Salva HTML
-        var htmlPath = GetProductionReportFilePath(progressiveReport, "html");
+        var htmlPath = GetProductionReportFilePath(report, "html");
         var htmlDirectory = Path.GetDirectoryName(htmlPath);
         if (!string.IsNullOrEmpty(htmlDirectory))
         {
@@ -464,14 +461,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         </div>",
             FooterTemplate = @"
         <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
-            <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | Production Progressive Analysis</span>
+            <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | Production Analysis</span>
         </div>"
         };
 
-        var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, progressiveReport, pdfOptions);
+        var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
 
         // Salva PDF
-        var pdfPath = GetProductionReportFilePath(progressiveReport, "pdf");
+        var pdfPath = GetProductionReportFilePath(report, "pdf");
         var pdfDirectory = Path.GetDirectoryName(pdfPath);
         if (!string.IsNullOrEmpty(pdfDirectory))
         {
@@ -479,14 +476,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         }
         await File.WriteAllBytesAsync(pdfPath, pdfBytes);
 
-        _logger.LogInformation("✅ Production progressive report generated for {VIN}: ReportId {ReportId}, Level: {Level}, Monitoring: {Days:F1}d, Size: {Size} bytes",
-            vehicle.Vin, progressiveReport.Id, reportPeriod.AnalysisLevel, reportPeriod.MonitoringDays, pdfBytes.Length);
+        _logger.LogInformation("✅ Production report generated for {VIN}: ReportId {ReportId}, Level: {Level}, Monitoring: {Days:F1}d, Size: {Size} bytes",
+            vehicle.Vin, report.Id, reportPeriod.AnalysisLevel, reportPeriod.MonitoringDays, pdfBytes.Length);
     }
 
     /// <summary>
-    /// ✅ NUOVO: Gestisce i retry con analisi progressiva
+    /// Gestisce i retry con analisi
     /// </summary>
-    private async Task ProcessProgressiveRetries(PolarDriveDbContext db)
+    private async Task ProcessRetries(PolarDriveDbContext db)
     {
         var now = DateTime.UtcNow;
         var vehiclesToRetry = new List<int>();
@@ -507,11 +504,11 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
         if (!vehiclesToRetry.Any())
         {
-            _logger.LogInformation("🔄 No vehicles need progressive retry at this time");
+            _logger.LogInformation("🔄 No vehicles need retry at this time");
             return;
         }
 
-        _logger.LogInformation("🔄 Processing {Count} vehicle progressive retries", vehiclesToRetry.Count);
+        _logger.LogInformation("🔄 Processing {Count} vehicle retries", vehiclesToRetry.Count);
 
         foreach (var vehicleId in vehiclesToRetry)
         {
@@ -520,20 +517,20 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 var vehicle = await db.ClientVehicles.FindAsync(vehicleId);
                 if (vehicle == null) continue;
 
-                _logger.LogInformation("🔄 Progressive retry #{RetryNum} for vehicle {VIN}",
+                _logger.LogInformation("🔄 Retry #{RetryNum} for vehicle {VIN}",
                     _retryCount[vehicleId], vehicle.Vin);
 
                 // Per i retry, usa analisi settimanale (compromesso ragionevole)
-                await GenerateProgressiveReportForVehicleProduction(db, vehicleId, $"Retry-{_retryCount[vehicleId]}", 168);
+                await GenerateReportForVehicleProduction(db, vehicleId, $"Retry-{_retryCount[vehicleId]}", 168);
 
-                _logger.LogInformation("✅ Progressive retry successful for vehicle {VIN}", vehicle.Vin);
+                _logger.LogInformation("✅ Retry successful for vehicle {VIN}", vehicle.Vin);
                 _retryCount[vehicleId] = 0; // Reset on success
 
                 _lastReportAttempts[vehicleId] = now;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "❌ Error in progressive retry for vehicle {VehicleId}", vehicleId);
+                _logger.LogError(ex, "❌ Error in retry for vehicle {VehicleId}", vehicleId);
                 _retryCount[vehicleId]++;
                 _lastReportAttempts[vehicleId] = now;
             }
@@ -569,9 +566,9 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Determina periodo del report progressivo ALLINEATO con fake
+    /// ✅ MIGLIORATO: Determina periodo del report ALLINEATO con fake
     /// </summary>
-    private async Task<ReportPeriodInfo> DetermineProgressiveReportPeriod(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
+    private async Task<ReportPeriodInfo> DetermineReportPeriod(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
     {
         // Cerca il primo record per questo veicolo per capire da quanto monitoriamo
         var firstRecord = await db.VehiclesData
@@ -616,7 +613,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 new DateTime(now.Year, now.Month, 1).AddMonths(-1),
                 new DateTime(now.Year, now.Month, 1).AddDays(-1).AddHours(23).AddMinutes(59),
                 720,
-                monitoringPeriod.TotalDays < 30 ? "Analisi Mensile Progressiva" : "Analisi Comprensiva Mensile"
+                monitoringPeriod.TotalDays < 30 ? "Analisi Mensile" : "Analisi Comprensiva Mensile"
             ),
             _ => (
                 now.AddHours(-defaultDataHours),
@@ -637,9 +634,9 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ NUOVO: Stili CSS per report production
+    /// Stili CSS per report production
     /// </summary>
-    private string GetProductionProgressiveStyles()
+    private string GetProductionStyles()
     {
         return @"
                 .production-badge {
@@ -648,7 +645,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                     padding: 8px 16px;
                     border-radius: 25px;
                     font-size: 12px;
-                    font-weight: 500; /* ✅ RIDOTTO da bold */
+                    font-weight: 500;
                     display: inline-block;
                     margin: 10px 15px 10px 0;
                     box-shadow: 0 4px 8px rgba(0,0,0,0.3);
@@ -658,7 +655,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                     content: '🏭 PRODUCTION • ';
                 }
                 
-                .progressive-production {
+                .production {
                     background: linear-gradient(135deg, rgba(0, 78, 146, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
                     border: 2px solid #004E92;
                     padding: 20px;
@@ -666,24 +663,23 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                     border-radius: 12px;
                 }
                 
-                .progressive-production::before {
-                    content: '🏭 Production Environment • 🧠 Progressive AI Analysis • ';
+                .production::before {
+                    content: '🏭 Production Environment • 🧠 Polar AI Analysis • ';
                     color: #004E92;
-                    font-weight: 500; /* ✅ RIDOTTO */
+                    font-weight: 500;
                     font-size: 14px;
                 }
                 
-                /* ✅ CONTROLLO GLOBALE GRASSETTO PER PRODUCTION */
-                .progressive-production * {
+                .production * {
                     font-weight: normal !important;
                 }
                 
-                .progressive-production h1, .progressive-production h2, 
-                .progressive-production h3, .progressive-production h4 {
+                .production h1, .production h2, 
+                .production h3, .production h4 {
                     font-weight: 500 !important;
                 }
                 
-                .progressive-production strong, .progressive-production b {
+                .production strong, .production b {
                     font-weight: 500 !important;
                     color: #004E92;
                 }
@@ -696,16 +692,15 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 }
                 
                 .ai-insights::before {
-                    content: '🧠 Analisi Progressiva AI Production • ';
+                    content: '🧠 Analisi Polar AI Production • ';
                     background: linear-gradient(135deg, #004E92 0%, #667eea 100%);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
                     background-clip: text;
-                    font-weight: 500; /* ✅ RIDOTTO */
+                    font-weight: 500;
                     font-size: 14px;
                 }
                 
-                /* ✅ CONTROLLO GRASSETTO GLOBALE per AI insights */
                 .ai-insights * {
                     font-weight: normal !important;
                 }
@@ -722,17 +717,17 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                     margin: 20px 0;
                     font-size: 13px;
                     color: #004E92;
-                    font-weight: normal; /* ✅ AGGIUNTO */
+                    font-weight: normal;
                 }
                 
                 .production-info::before {
                     content: '🏭 Production Schedule: ';
-                    font-weight: 500; /* ✅ RIDOTTO */
+                    font-weight: 500;
                 }";
     }
 
     /// <summary>
-    /// ✅ NUOVO: Path per report production
+    /// Path per report production
     /// </summary>
     private string GetProductionReportFilePath(Data.Entities.PdfReport report, string extension)
     {
@@ -740,7 +735,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             report.ReportPeriodStart.Year.ToString(),
             report.ReportPeriodStart.Month.ToString("D2"));
 
-        return Path.Combine(outputDir, $"PolarDrive_Production_Progressive_{report.Id}.{extension}");
+        return Path.Combine(outputDir, $"PolarDrive_Production_{report.Id}.{extension}");
     }
 
     /// <summary>
@@ -763,7 +758,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ NUOVO: Aspetta fino al giorno specifico e orario target
+    /// Aspetta fino al giorno specifico e orario target
     /// </summary>
     private async Task WaitUntilTargetDayAndTime(DayOfWeek targetDay, int targetHour, int targetMinute)
     {
@@ -782,7 +777,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ NUOVO: Aspetta fino al primo giorno del mese
+    /// Aspetta fino al primo giorno del mese
     /// </summary>
     private async Task WaitUntilFirstDayOfMonthAndTime(int targetHour, int targetMinute)
     {
@@ -812,14 +807,10 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
             var totalReports = await db.PdfReports.CountAsync();
 
-            // ✅ CONTEGGI PIÙ DETTAGLIATI come nel fake
-            var progressiveProductionReports = await db.PdfReports
-                .Where(r => r.Notes != null && r.Notes.Contains("[PRODUCTION-PROGRESSIVE"))
-                .CountAsync();
+            var productionReports = await db.PdfReports.CountAsync();
 
-            var recentProgressiveReports = await db.PdfReports
-                .Where(r => r.GeneratedAt >= DateTime.UtcNow.AddHours(-24) &&
-                           r.Notes != null && r.Notes.Contains("[PRODUCTION-PROGRESSIVE"))
+            var recentReports = await db.PdfReports
+                .Where(r => r.GeneratedAt >= DateTime.UtcNow.AddHours(-24))
                 .CountAsync();
 
             var monthlyReports = await db.PdfReports
@@ -834,7 +825,6 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 .Where(r => r.GeneratedAt >= DateTime.UtcNow.AddDays(-1))
                 .CountAsync();
 
-            // ✅ NUOVO: Statistiche separate per grace period
             var fetchingVehicles = await db.ClientVehicles.CountAsync(v => v.IsFetchingDataFlag);
             var activeContractVehicles = await db.ClientVehicles.CountAsync(v => v.IsActiveFlag && v.IsFetchingDataFlag);
             var gracePeriodVehicles = await db.ClientVehicles.CountAsync(v => !v.IsActiveFlag && v.IsFetchingDataFlag);
@@ -847,10 +837,10 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             var vehiclesWithRetries = _retryCount.Count(kv => kv.Value > 0);
             var vehiclesExceededRetries = _retryCount.Count(kv => kv.Value > MAX_RETRIES_PER_VEHICLE);
 
-            _logger.LogInformation("📈 ProductionScheduler Progressive Statistics:");
+            _logger.LogInformation("📈 ProductionScheduler Statistics:");
             _logger.LogInformation($"   Vehicles - Fetching: {fetchingVehicles}, Active Contracts: {activeContractVehicles}, Grace Period: {gracePeriodVehicles}");
-            _logger.LogInformation($"   Total Reports: {totalReports} (Progressive Production: {progressiveProductionReports})");
-            _logger.LogInformation($"   Last 24h Progressive: {recentProgressiveReports}");
+            _logger.LogInformation($"   Total Reports: {totalReports} (Production: {productionReports})");
+            _logger.LogInformation($"   Last 24h: {recentReports}");
             _logger.LogInformation($"   Recent Reports - Daily: {dailyReports}, Weekly: {weeklyReports}, Monthly: {monthlyReports}");
             _logger.LogInformation($"   Vehicle Data: {totalData} total (Last hour: {recentData})");
             _logger.LogInformation($"   Vehicles with retries: {vehiclesWithRetries}");
@@ -866,7 +856,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             // ✅ LOG DETTAGLI RETRY come nel fake
             if (vehiclesWithRetries > 0)
             {
-                _logger.LogInformation("🔄 Production progressive retry details:");
+                _logger.LogInformation("🔄 Production retry details:");
                 foreach (var (vehicleId, retryCount) in _retryCount.Where(kv => kv.Value > 0))
                 {
                     var lastAttempt = _lastReportAttempts.GetValueOrDefault(vehicleId, DateTime.MinValue);
@@ -877,7 +867,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 }
             }
 
-            // ✅ LOG EVENTI PROGRESSIVI come nel fake
+            // LOG EVENTI come nel fake
             var now = DateTime.UtcNow;
             var nextDaily = new DateTime(now.Year, now.Month, now.Day, 2, 0, 0);
             if (nextDaily <= now) nextDaily = nextDaily.AddDays(1);
@@ -887,14 +877,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
             var nextMonthly = new DateTime(now.Year, now.Month, 1).AddMonths(1).AddHours(4);
 
-            _logger.LogInformation("⏰ Next Progressive Scheduled Events:");
-            _logger.LogInformation($"   Daily Progressive Reports: {nextDaily:yyyy-MM-dd HH:mm} (in {(nextDaily - now).TotalHours:F1}h)");
-            _logger.LogInformation($"   Weekly Progressive Reports: {nextWeekly:yyyy-MM-dd HH:mm} (in {(nextWeekly - now).TotalDays:F1} days)");
-            _logger.LogInformation($"   Monthly Progressive Reports: {nextMonthly:yyyy-MM-dd HH:mm} (in {(nextMonthly - now).TotalDays:F1} days)");
+            _logger.LogInformation("⏰ Next Scheduled Events:");
+            _logger.LogInformation($"   Daily Reports: {nextDaily:yyyy-MM-dd HH:mm} (in {(nextDaily - now).TotalHours:F1}h)");
+            _logger.LogInformation($"   Weekly Reports: {nextWeekly:yyyy-MM-dd HH:mm} (in {(nextWeekly - now).TotalDays:F1} days)");
+            _logger.LogInformation($"   Monthly Reports: {nextMonthly:yyyy-MM-dd HH:mm} (in {(nextMonthly - now).TotalDays:F1} days)");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "⚠️ ProductionScheduler: Failed to log progressive statistics");
+            _logger.LogWarning(ex, "⚠️ ProductionScheduler: Failed to log statistics");
         }
     }
 
@@ -907,13 +897,13 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         {
             (true, true) => "Active Contract - Data Collection Active",
             (true, false) => "Active Contract - Data Collection Paused",
-            (false, true) => "Contract Terminated - Grace Period Active",  // ← Il tuo caso
+            (false, true) => "Contract Terminated - Grace Period Active",
             (false, false) => "Contract Terminated - Data Collection Stopped"
         };
     }
 
     /// <summary>
-    /// ✅ NUOVO: Metodo pubblico per forzare un reset dei retry (utile per manutenzione)
+    /// Metodo pubblico per forzare un reset dei retry (utile per manutenzione)
     /// </summary>
     public void ResetRetryCounters()
     {
@@ -923,7 +913,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     }
 
     /// <summary>
-    /// ✅ NUOVO: Metodo pubblico per forzare la generazione di un report progressivo specifico
+    /// Metodo pubblico per forzare la generazione di un report specifico
     /// </summary>
     public async Task<bool> ForceReportAsync(int vehicleId, string analysisLevel = "Manual Generation")
     {
@@ -940,14 +930,14 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 _ => 168
             };
 
-            await GenerateProgressiveReportForVehicleProduction(db, vehicleId, analysisLevel, dataHours);
+            await GenerateReportForVehicleProduction(db, vehicleId, analysisLevel, dataHours);
 
-            _logger.LogInformation("✅ Manual progressive report forced for vehicle {VehicleId}", vehicleId);
+            _logger.LogInformation("✅ Manual report forced for vehicle {VehicleId}", vehicleId);
             return true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ Failed to force progressive report for vehicle {VehicleId}", vehicleId);
+            _logger.LogError(ex, "❌ Failed to force report for vehicle {VehicleId}", vehicleId);
             return false;
         }
     }

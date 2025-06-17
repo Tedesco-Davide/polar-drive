@@ -538,7 +538,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
         }
         
         .development::before {
-            content: '🧪 Development Testing • 🧠 AI • ';
+            content: '🧪 Development Testing • 🧠 Polar AI • ';
             color: #ff6b6b;
             font-weight: 500;
             font-size: 14px;

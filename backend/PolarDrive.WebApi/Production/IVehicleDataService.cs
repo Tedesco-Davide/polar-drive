@@ -2,7 +2,6 @@ namespace PolarDrive.WebApi.Production;
 
 /// <summary>
 /// Interfaccia standard per tutti i servizi API dei veicoli
-/// ✅ AGGIORNATA per allineamento con TeslaApiService
 /// </summary>
 public interface IVehicleDataService
 {
@@ -18,7 +17,6 @@ public interface IVehicleDataService
 
     /// <summary>
     /// Fetch dati per un veicolo specifico tramite VIN
-    /// ✅ AGGIORNATO: Ora restituisce VehicleFetchResult
     /// </summary>
     Task<VehicleFetchResult> FetchDataForVehicleAsync(string vin);
 
@@ -29,23 +27,22 @@ public interface IVehicleDataService
 
     /// <summary>
     /// Ottieni statistiche di utilizzo del servizio
-    /// ✅ AGGIORNATO: Ora usa interfaccia generica per statistiche
     /// </summary>
     Task<IVehicleServiceUsageStats> GetUsageStatsAsync();
 
     /// <summary>
-    /// ✅ NUOVO: Ottieni status dei token OAuth (se applicabile)
+    /// Ottieni status dei token OAuth (se applicabile)
     /// </summary>
     Task<TokenStatus> GetTokenStatusAsync();
 
     /// <summary>
-    /// ✅ NUOVO: Refresh token scaduti (se applicabile)
+    /// Refresh token scaduti (se applicabile)
     /// </summary>
     Task<int> RefreshExpiredTokensAsync();
 }
 
 /// <summary>
-/// ✅ NUOVA: Interfaccia generica per statistiche di utilizzo
+/// Interfaccia generica per statistiche di utilizzo
 /// </summary>
 public interface IVehicleServiceUsageStats
 {
@@ -61,7 +58,7 @@ public interface IVehicleServiceUsageStats
 }
 
 /// <summary>
-/// ✅ AGGIORNATA: Statistiche di utilizzo del servizio con più dettagli
+/// Statistiche di utilizzo del servizio con più dettagli
 /// </summary>
 public class ServiceUsageStats : IVehicleServiceUsageStats
 {
@@ -77,7 +74,7 @@ public class ServiceUsageStats : IVehicleServiceUsageStats
 }
 
 /// <summary>
-/// ✅ SPOSTATA QUI: Classe TokenStatus condivisa
+/// Classe TokenStatus condivisa
 /// </summary>
 public class TokenStatus
 {
@@ -87,7 +84,7 @@ public class TokenStatus
 }
 
 /// <summary>
-/// ✅ AGGIORNATO: Registro dei servizi API disponibili
+/// Registro dei servizi API disponibili
 /// </summary>
 public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger<VehicleApiServiceRegistry> logger)
 {
@@ -134,7 +131,7 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
     }
 
     /// <summary>
-    /// ✅ NUOVO: Ottieni servizio per brand specifico
+    /// Ottieni servizio per brand specifico
     /// </summary>
     public IVehicleDataService? GetServiceByBrand(string brandName)
     {
@@ -151,7 +148,7 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
     }
 
     /// <summary>
-    /// ✅ NUOVO: Verifica salute di tutti i servizi
+    /// Verifica salute di tutti i servizi
     /// </summary>
     public async Task<Dictionary<string, bool>> CheckAllServicesHealthAsync()
     {
@@ -176,7 +173,7 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
     }
 
     /// <summary>
-    /// ✅ NUOVO: Ottieni statistiche aggregate di tutti i servizi
+    /// Ottieni statistiche aggregate di tutti i servizi
     /// </summary>
     public async Task<VehicleApiRegistryStats> GetAggregatedStatsAsync()
     {
@@ -216,7 +213,7 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
 }
 
 /// <summary>
-/// ✅ AGGIORNATO: Adapter per TeslaApiService completamente allineato
+/// Adapter per TeslaApiService completamente allineato
 /// </summary>
 public class TeslaApiServiceAdapter(TeslaApiService teslaService) : IVehicleDataService
 {
@@ -230,7 +227,7 @@ public class TeslaApiServiceAdapter(TeslaApiService teslaService) : IVehicleData
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Ora restituisce VehicleFetchResult
+    /// Restituisce VehicleFetchResult
     /// </summary>
     public async Task<VehicleFetchResult> FetchDataForVehicleAsync(string vin)
     {
@@ -243,7 +240,7 @@ public class TeslaApiServiceAdapter(TeslaApiService teslaService) : IVehicleData
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Converte TeslaServiceUsageStats a interfaccia generica
+    /// Converte TeslaServiceUsageStats a interfaccia generica
     /// </summary>
     public async Task<IVehicleServiceUsageStats> GetUsageStatsAsync()
     {
@@ -265,7 +262,7 @@ public class TeslaApiServiceAdapter(TeslaApiService teslaService) : IVehicleData
     }
 
     /// <summary>
-    /// ✅ NUOVO: Delega al servizio Tesla
+    /// Delega al servizio Tesla
     /// </summary>
     public async Task<TokenStatus> GetTokenStatusAsync()
     {
@@ -273,7 +270,7 @@ public class TeslaApiServiceAdapter(TeslaApiService teslaService) : IVehicleData
     }
 
     /// <summary>
-    /// ✅ NUOVO: Delega al servizio Tesla
+    /// Delega al servizio Tesla
     /// </summary>
     public async Task<int> RefreshExpiredTokensAsync()
     {
@@ -282,7 +279,7 @@ public class TeslaApiServiceAdapter(TeslaApiService teslaService) : IVehicleData
 }
 
 /// <summary>
-/// ✅ NUOVA: Statistiche aggregate del registry
+/// Statistiche aggregate del registry
 /// </summary>
 public class VehicleApiRegistryStats
 {
@@ -298,7 +295,7 @@ public class VehicleApiRegistryStats
 }
 
 /// <summary>
-/// ✅ ENUM condiviso (se non già definito altrove)
+/// ENUM condiviso (se non già definito altrove)
 /// </summary>
 public enum VehicleFetchResult
 {

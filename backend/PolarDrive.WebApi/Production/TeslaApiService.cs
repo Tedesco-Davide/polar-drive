@@ -8,7 +8,6 @@ namespace PolarDrive.WebApi.Production;
 /// <summary>
 /// Service che chiama le API Tesla reali e salva i dati
 /// Usato in PRODUZIONE (non in development/mock)
-/// ✅ AGGIORNATO per integrazione con sistema progressivo
 /// </summary>
 public class TeslaApiService
 {

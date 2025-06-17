@@ -25,14 +25,14 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Riceve i dati dal Tesla Mock Service con validazione avanzata
+    /// Riceve i dati dal Tesla Mock Service con validazione avanzata
     /// </summary>
     [HttpPost("ReceiveVehicleData/{vin}")]
     public async Task<IActionResult> ReceiveVehicleData(string vin, [FromBody] JsonElement data)
     {
         const string source = "TeslaFakeDataReceiverController.ReceiveVehicleData";
 
-        // ✅ NUOVO: Controllo ambiente
+        // Controllo ambiente
         if (!_env.IsDevelopment())
         {
             await _logger.Warning(source, "Fake data receiver called in non-development environment");
@@ -41,7 +41,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
 
         try
         {
-            // ✅ MIGLIORATO: Validazione VIN
+            // Validazione VIN
             if (string.IsNullOrWhiteSpace(vin) || vin.Length != 17)
             {
                 await _logger.Warning(source, $"Invalid VIN format received: {vin}");
@@ -59,14 +59,14 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 return NotFound($"Vehicle with VIN {vin} not found");
             }
 
-            // ✅ MIGLIORATO: Verifica brand Tesla
+            // Verifica brand Tesla
             if (!vehicle.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase))
             {
                 await _logger.Warning(source, $"Received Tesla data for non-Tesla vehicle: {vin} (Brand: {vehicle.Brand})");
                 return BadRequest($"Vehicle {vin} is not a Tesla vehicle (Brand: {vehicle.Brand})");
             }
 
-            if (!vehicle.IsFetchingDataFlag)  // ✅ Solo questo flag conta per i dati
+            if (!vehicle.IsFetchingDataFlag)
             {
                 await _logger.Info(source, $"Vehicle {vin} is not fetching data. Ignoring.");
                 return Ok(new
@@ -77,14 +77,14 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 });
             }
 
-            // ✅ Aggiungi warning se contratto scaduto ma dati ancora attivi
+            // Aggiungi warning se contratto scaduto ma dati ancora attivi
             if (!vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag)
             {
                 await _logger.Warning(source,
                     $"Collecting data for vehicle {vin} with terminated contract - awaiting client token revocation");
             }
 
-            // ✅ NUOVO: Validazione contenuto JSON
+            // Validazione contenuto JSON
             var validationResult = ValidateVehicleData(data);
             if (!validationResult.IsValid)
             {
@@ -98,7 +98,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 $"Received Tesla mock data for VIN: {vin}",
                 $"Data size: {rawJsonText.Length} chars, Company: {vehicle.ClientCompany?.Name}");
 
-            // ✅ NUOVO: Controlla limite dati per veicolo (evita spam)
+            // Controlla limite dati per veicolo (evita spam)
             var recentDataCount = await _db.VehiclesData
                 .CountAsync(vd => vd.VehicleId == vehicle.Id &&
                                  vd.Timestamp >= DateTime.UtcNow.AddMinutes(-5));
@@ -133,7 +133,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 $"Mock Tesla data saved for VIN: {vin}",
                 $"Record ID: {vehicleDataRecord.Id}, Timestamp: {vehicleDataRecord.Timestamp}");
 
-            // ✅ NUOVO: Statistiche immediate per development
+            // Statistiche immediate per development
             var totalRecords = await _db.VehiclesData.CountAsync(vd => vd.VehicleId == vehicle.Id);
             var monitoringDuration = await GetMonitoringDuration(vehicle.Id);
 
@@ -172,7 +172,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Verifica ultimo dato con più dettagli per development
+    /// Verifica ultimo dato con più dettagli per development
     /// </summary>
     [HttpGet("LastData/{vin}")]
     public async Task<IActionResult> GetLastData(string vin)
@@ -198,11 +198,8 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 .CountAsync(vd => vd.VehicleId == vehicle.Id &&
                                  vd.Timestamp >= DateTime.UtcNow.AddHours(-1));
 
-            // ✅ NUOVO: Info sui report progressivi
-            var progressiveReports = await _db.PdfReports
-                .CountAsync(r => r.ClientVehicleId == vehicle.Id &&
-                               r.Notes != null && r.Notes.Contains("PROGRESSIVE"));
-
+            // Info sui report
+            var reports = await _db.PdfReports.CountAsync(r => r.ClientVehicleId == vehicle.Id);
             var monitoringDuration = await GetMonitoringDuration(vehicle.Id);
 
             return Ok(new
@@ -227,9 +224,9 @@ public class TeslaFakeDataReceiverController : ControllerBase
                     monitoringDuration = $"{monitoringDuration.TotalDays:F1} days",
                     status = vehicle.LastDataUpdate.HasValue ? "Data received" : "No data yet"
                 },
-                progressiveInfo = new
+                info = new
                 {
-                    progressiveReports = progressiveReports,
+                    reports = reports,
                     analysisLevel = DetermineAnalysisLevel(monitoringDuration)
                 },
                 environment = _env.EnvironmentName
@@ -243,7 +240,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Statistiche avanzate per development
+    /// Statistiche avanzate per development
     /// </summary>
     [HttpGet("Stats/{vin}")]
     public async Task<IActionResult> GetDataStats(string vin)
@@ -283,7 +280,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 });
             }
 
-            // ✅ MIGLIORATO: Statistiche più dettagliate
+            // Statistiche più dettagliate
             var stats = await _db.VehiclesData
                 .Where(vd => vd.VehicleId == vehicle.Id)
                 .GroupBy(vd => 1)
@@ -297,10 +294,10 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 })
                 .FirstOrDefaultAsync();
 
-            // ✅ NUOVO: Statistiche temporali
+            // Statistiche temporali
             var hourlyDistribution = await GetHourlyDataDistribution(vehicle.Id);
             var recentStats = await GetRecentDataStats(vehicle.Id);
-            var progressiveReportStats = await GetProgressiveReportStats(vehicle.Id);
+            var reportStats = await GetReportStats(vehicle.Id);
 
             var monitoringDuration = stats?.FirstRecord.HasValue == true
                 ? DateTime.UtcNow - stats.FirstRecord.Value
@@ -329,9 +326,9 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 },
                 recentActivity = recentStats,
                 hourlyDistribution = hourlyDistribution,
-                progressiveAnalysis = new
+                analysis = new
                 {
-                    reports = progressiveReportStats,
+                    reports = reportStats,
                     currentLevel = DetermineAnalysisLevel(monitoringDuration),
                     nextLevelIn = GetTimeToNextLevel(monitoringDuration)
                 },
@@ -367,10 +364,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
             var recentDataRecords = await _db.VehiclesData
                 .CountAsync(vd => vd.Timestamp >= DateTime.UtcNow.AddHours(-1));
 
-            var progressiveReports = await _db.PdfReports
-                .CountAsync(r => r.Notes != null && r.Notes.Contains("PROGRESSIVE"));
-
-            // ✅ NUOVO: Info sui servizi
+            var reports = await _db.PdfReports.CountAsync();
             var serviceStatus = await CheckDevelopmentServices();
 
             return Ok(new
@@ -390,10 +384,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
                     recentRecords = recentDataRecords,
                     avgRecordsPerVehicle = fetchingVehicles > 0 ? totalDataRecords / fetchingVehicles : 0
                 },
-                reports = new
-                {
-                    progressiveReports = progressiveReports
-                },
+                reports = reports,
                 services = serviceStatus
             });
         }
@@ -407,7 +398,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     #region Helper Methods
 
     /// <summary>
-    /// ✅ NUOVO: Validazione dati veicolo
+    /// Validazione dati veicolo
     /// </summary>
     private DataValidationResult ValidateVehicleData(JsonElement data)
     {
@@ -437,7 +428,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Calcola durata monitoraggio
+    /// Calcola durata monitoraggio
     /// </summary>
     private async Task<TimeSpan> GetMonitoringDuration(int vehicleId)
     {
@@ -449,7 +440,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Determina livello di analisi progressiva
+    /// Determina livello di analisi
     /// </summary>
     private string DetermineAnalysisLevel(TimeSpan monitoringDuration)
     {
@@ -464,7 +455,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Calcola tempo al prossimo livello
+    /// Calcola tempo al prossimo livello
     /// </summary>
     private string GetTimeToNextLevel(TimeSpan monitoringDuration)
     {
@@ -485,7 +476,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Statistiche distribuzione oraria
+    /// Statistiche distribuzione oraria
     /// </summary>
     private async Task<object> GetHourlyDataDistribution(int vehicleId)
     {
@@ -500,7 +491,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Statistiche dati recenti
+    /// Statistiche dati recenti
     /// </summary>
     private async Task<object> GetRecentDataStats(int vehicleId)
     {
@@ -515,25 +506,20 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Statistiche report progressivi
+    /// Statistiche report
     /// </summary>
-    private async Task<object> GetProgressiveReportStats(int vehicleId)
+    private async Task<object> GetReportStats(int vehicleId)
     {
         var totalReports = await _db.PdfReports.CountAsync(r => r.ClientVehicleId == vehicleId);
-        var progressiveReports = await _db.PdfReports
-            .CountAsync(r => r.ClientVehicleId == vehicleId &&
-                           r.Notes != null && r.Notes.Contains("PROGRESSIVE"));
 
         return new
         {
-            Total = totalReports,
-            Progressive = progressiveReports,
-            Traditional = totalReports - progressiveReports
+            Total = totalReports
         };
     }
 
     /// <summary>
-    /// ✅ NUOVO: Calcola rate di dati
+    /// Calcola rate di dati
     /// </summary>
     private string CalculateDataRate(int totalRecords, TimeSpan duration)
     {
@@ -544,7 +530,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Verifica servizi development
+    /// Verifica servizi development
     /// </summary>
     private async Task<object> CheckDevelopmentServices()
     {

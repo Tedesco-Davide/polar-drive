@@ -6,7 +6,6 @@ namespace PolarDrive.WebApi.Production;
 
 /// <summary>
 /// Servizio centrale per gestire il fetch dati di tutti i brand
-/// ✅ MIGLIORATO per integrazione con sistema progressivo
 /// </summary>
 public class VehicleDataService(IServiceProvider serviceProvider, ILogger<VehicleDataService> logger)
 {
@@ -14,7 +13,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     private readonly ILogger<VehicleDataService> _logger = logger;
 
     /// <summary>
-    /// ✅ MIGLIORATO: Fetch dati per tutti i brand attivi con risultati dettagliati
+    /// Fetch dati per tutti i brand attivi con risultati dettagliati
     /// </summary>
     public async Task<VehicleDataFetchResult> FetchDataForAllBrandsAsync()
     {
@@ -38,13 +37,13 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
             _logger.LogInformation("📊 VehicleDataService: Found {ServiceCount} vehicle API services", services.Count);
 
-            // ✅ NUOVO: Esegui fetch con risultati dettagliati
+            // Esegui fetch con risultati dettagliati
             var brandTasks = services.Select(service =>
                 FetchDataForBrandWithResultAsync(service)).ToList();
 
             var brandResults = await Task.WhenAll(brandTasks);
 
-            // ✅ NUOVO: Aggrega risultati
+            // Aggrega risultati
             result.BrandResults = brandResults.ToDictionary(br => br.BrandName, br => br);
             result.TotalBrands = services.Count;
             result.SuccessfulBrands = brandResults.Count(br => br.Success);
@@ -73,7 +72,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     }
 
     /// <summary>
-    /// ✅ NUOVO: Fetch dati per un brand specifico
+    /// Fetch dati per un brand specifico
     /// </summary>
     public async Task<BrandFetchResult> FetchDataForBrandAsync(string brandName)
     {
@@ -110,7 +109,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     }
 
     /// <summary>
-    /// ✅ NUOVO: Fetch dati per un singolo veicolo con risultato dettagliato
+    /// Fetch dati per un singolo veicolo con risultato dettagliato
     /// </summary>
     public async Task<VehicleFetchResult> FetchDataForVehicleAsync(string vin)
     {
@@ -154,7 +153,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Statistiche dettagliate per brand con più informazioni
+    /// Statistiche dettagliate per brand con più informazioni
     /// </summary>
     public async Task<VehicleStatsByBrand> GetDetailedVehicleStatsByBrandAsync()
     {
@@ -180,7 +179,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
         stats.BrandStats = brandStats;
 
-        // ✅ NUOVO: Statistiche sui dati recenti
+        // Statistiche sui dati recenti
         var recentDataStats = await db.VehiclesData
             .Where(vd => vd.Timestamp >= DateTime.UtcNow.AddHours(-24))
             .Join(db.ClientVehicles, vd => vd.VehicleId, cv => cv.Id, (vd, cv) => new { vd, cv.Brand })
@@ -190,15 +189,14 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
         stats.RecentDataRecordsByBrand = recentDataStats;
 
-        // ✅ NUOVO: Statistiche sui report progressivi
-        var progressiveReportStats = await db.PdfReports
-            .Where(r => r.Notes != null && (r.Notes.Contains("[PROGRESSIVE") || r.Notes.Contains("[PRODUCTION-PROGRESSIVE")))
+        // Statistiche sui report
+        var reportStats = await db.PdfReports
             .Join(db.ClientVehicles, r => r.ClientVehicleId, cv => cv.Id, (r, cv) => new { r, cv.Brand })
             .GroupBy(x => x.Brand)
             .Select(g => new { Brand = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Brand, x => x.Count);
 
-        stats.ProgressiveReportsByBrand = progressiveReportStats;
+        stats.ReportsByBrand = reportStats;
 
         // Totali
         stats.TotalVehicles = brandStats.Sum(bs => bs.TotalVehicles);
@@ -211,7 +209,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     }
 
     /// <summary>
-    /// ✅ NUOVO: Verifica salute di tutti i servizi con dettagli
+    /// Verifica salute di tutti i servizi con dettagli
     /// </summary>
     public async Task<ServiceHealthReport> CheckAllServicesHealthAsync()
     {
@@ -246,7 +244,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     }
 
     /// <summary>
-    /// ✅ METODO PRIVATO MIGLIORATO: Fetch con risultati dettagliati
+    /// Fetch con risultati dettagliati
     /// </summary>
     private async Task<BrandFetchResult> FetchDataForBrandWithResultAsync(IVehicleDataService service)
     {
@@ -278,9 +276,6 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
             // Esegui fetch
             await service.FetchDataForAllActiveVehiclesAsync();
-
-            // ✅ FUTURO: Potresti implementare conteggi success/error più dettagliati
-            // Per ora assumiamo successo se non ci sono eccezioni
             result.VehiclesSuccess = result.VehiclesProcessed;
             result.Success = true;
 
@@ -306,7 +301,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     }
 
     /// <summary>
-    /// ✅ LEGACY: Mantieni per compatibilità
+    /// Mantieni per compatibilità
     /// </summary>
     public async Task<Dictionary<string, int>> GetVehicleCountByBrandAsync()
     {
@@ -314,8 +309,6 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
         return detailedStats.BrandStats.ToDictionary(bs => bs.BrandName, bs => bs.ActiveVehicles);
     }
 }
-
-// ✅ NUOVE CLASSI per risultati dettagliati
 
 /// <summary>
 /// Risultato del fetch dati per tutti i brand
@@ -360,7 +353,7 @@ public class VehicleStatsByBrand
 {
     public List<BrandStats> BrandStats { get; set; } = new();
     public Dictionary<string, int> RecentDataRecordsByBrand { get; set; } = new();
-    public Dictionary<string, int> ProgressiveReportsByBrand { get; set; } = new();
+    public Dictionary<string, int> ReportsByBrand { get; set; } = new();
     public int TotalVehicles { get; set; }
     public int TotalActiveVehicles { get; set; }
     public int TotalFetchingVehicles { get; set; }
