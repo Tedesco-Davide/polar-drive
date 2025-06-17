@@ -404,7 +404,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
         // Genera insights progressivi usando PolarAiReportGenerator
         var aiGenerator = new PolarAiReportGenerator(db);
-        var progressiveInsights = await aiGenerator.GenerateProgressiveInsightsAsync(vehicleId);
+        var progressiveInsights = await aiGenerator.GenerateInsightsAsync(vehicleId);
 
         if (string.IsNullOrWhiteSpace(progressiveInsights))
         {
@@ -571,7 +571,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     /// <summary>
     /// ✅ MIGLIORATO: Determina periodo del report progressivo ALLINEATO con fake
     /// </summary>
-    private async Task<ProgressiveReportPeriodInfo> DetermineProgressiveReportPeriod(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
+    private async Task<ReportPeriodInfo> DetermineProgressiveReportPeriod(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
     {
         // Cerca il primo record per questo veicolo per capire da quanto monitoriamo
         var firstRecord = await db.VehiclesData
@@ -585,7 +585,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
         if (firstRecord == default)
         {
             // Fallback se non ci sono dati - usa il periodo standard
-            return new ProgressiveReportPeriodInfo
+            return new ReportPeriodInfo
             {
                 Start = now.AddHours(-defaultDataHours),
                 End = now,
@@ -626,7 +626,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             )
         };
 
-        return new ProgressiveReportPeriodInfo
+        return new ReportPeriodInfo
         {
             Start = start,
             End = end,
@@ -958,7 +958,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 /// <summary>
 /// ✅ NUOVO: Classe helper per info periodo report production
 /// </summary>
-public class ProgressiveReportPeriodInfo
+public class ReportPeriodInfo
 {
     public DateTime Start { get; set; }
     public DateTime End { get; set; }

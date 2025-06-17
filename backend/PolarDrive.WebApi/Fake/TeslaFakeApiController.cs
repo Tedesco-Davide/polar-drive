@@ -436,7 +436,7 @@ public class TeslaFakeApiController : ControllerBase
 
             // Genera insights progressivi
             var aiGenerator = new PolarAiReportGenerator(_db);
-            var progressiveInsights = await aiGenerator.GenerateProgressiveInsightsAsync(vehicleId);
+            var progressiveInsights = await aiGenerator.GenerateInsightsAsync(vehicleId);
 
             if (string.IsNullOrWhiteSpace(progressiveInsights))
             {

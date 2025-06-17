@@ -48,7 +48,7 @@ public class PdfReportDTO
     /// <summary>
     /// Stato del report in formato leggibile
     /// </summary>
-    public string Status => GetStatusDescription();
+    public string Status { get; set; } = string.Empty;
 
     /// <summary>
     /// Durata del monitoraggio in ore (calcolata dal periodo)
@@ -78,42 +78,7 @@ public class PdfReportDTO
     /// <summary>
     /// Lista dei formati file disponibili
     /// </summary>
-    public List<string> AvailableFormats => GetAvailableFormats();
-
-    // ✅ METODI HELPER
-
-    /// <summary>
-    /// Ottiene una descrizione dello stato del report
-    /// </summary>
-    private string GetStatusDescription()
-    {
-        if (HasPdfFile && HasHtmlFile)
-            return "Completo (PDF + HTML)";
-
-        if (HasPdfFile)
-            return "PDF Disponibile";
-
-        if (HasHtmlFile)
-            return "Solo HTML";
-
-        if (DataRecordsCount == 0)
-            return "Nessun Dato";
-
-        return "Da Rigenerare";
-    }
-
-    /// <summary>
-    /// Ottiene la lista dei formati disponibili per il download
-    /// </summary>
-    private List<string> GetAvailableFormats()
-    {
-        var formats = new List<string>();
-
-        if (HasPdfFile) formats.Add("PDF");
-        if (HasHtmlFile) formats.Add("HTML");
-
-        return formats;
-    }
+    public List<string> AvailableFormats { get; set; } = [];
 
     /// <summary>
     /// Ottiene informazioni di riepilogo per dashboard

@@ -58,6 +58,10 @@ export default function AdminPdfReports({
         return "bg-yellow-100 text-yellow-700 border-yellow-500";
       case "NO-DATA":
         return "bg-red-100 text-red-700 border-red-500";
+      case "READY":
+        return "bg-blue-100 text-blue-700 border-blue-500";
+      case "WAITING-RECORDS":
+        return "bg-orange-100 text-orange-700 border-orange-500";
       default:
         return "bg-gray-100 text-polarNight border-gray-400";
     }
@@ -275,22 +279,8 @@ export default function AdminPdfReports({
   };
 
   const getReportStatus = (report: PdfReport) => {
-    // ✅ STRATEGIA 1: Usa direttamente lo status calcolato dal backend
-    if (report.status) {
-      // ✅ era: Status
-      const statusMapping: Record<string, string> = {
-        "PDF Disponibile": "PDF-READY",
-        "Solo HTML": "HTML-ONLY",
-        "Nessun Dato": "NO-DATA",
-        "Da Rigenerare": "WAITING-RECORDS",
-      };
-
-      const mappedStatus = statusMapping[report.status] || "NO-DATA";
-      return { text: mappedStatus };
-    }
-
-    if (report.dataRecordsCount < 5) {
-      return { text: "WAITING-RECORDS" };
+    if (report.status && report.status !== "") {
+      return { text: report.status };
     }
 
     if (report.hasPdfFile) {
@@ -299,6 +289,14 @@ export default function AdminPdfReports({
 
     if (report.hasHtmlFile) {
       return { text: "HTML-ONLY" };
+    }
+
+    if (report.dataRecordsCount >= 5) {
+      return { text: "READY" };
+    }
+
+    if (report.dataRecordsCount < 5 && report.dataRecordsCount > 0) {
+      return { text: "WAITING-RECORDS" };
     }
 
     return { text: "NO-DATA" };
@@ -358,8 +356,7 @@ export default function AdminPdfReports({
             const status = getReportStatus(report);
 
             const dataCount = report.dataRecordsCount;
-            const isDownloadable = report.hasPdfFile;
-            const isRegeneratable = report.hasHtmlFile;
+            const isDownloadable = report.hasPdfFile || report.hasHtmlFile;
             const reportType = report.reportType;
             const fileSize = report.hasPdfFile
               ? report.pdfFileSize
@@ -374,11 +371,7 @@ export default function AdminPdfReports({
                 <td className="p-4 space-x-2 inline-flex">
                   {/* Download Button */}
                   <button
-                    className={`p-2 text-softWhite rounded ${
-                      isDownloadable
-                        ? "bg-blue-500 hover:bg-blue-600"
-                        : "bg-slate-500 cursor-not-allowed opacity-20"
-                    }`}
+                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600"
                     title={`${t("admin.vehicleReports.downloadSinglePdf")} ${
                       reportType ? `(${reportType})` : ""
                     }`}
@@ -394,20 +387,13 @@ export default function AdminPdfReports({
 
                   {/* Regenerate Button */}
                   <button
-                    className={`p-2 text-softWhite rounded ${
-                      isRegeneratable
-                        ? "bg-orange-500 hover:bg-orange-600" // Colore diverso per evidenziare la rigenerazione
-                        : "bg-slate-500 cursor-not-allowed opacity-20"
-                    }`}
-                    title={`${t("admin.vehicleReports.forceRegenerate")} ${
-                      report.isRegenerated ? "(Già rigenerato)" : ""
-                    }`}
-                    disabled={!isRegeneratable || regeneratingId === report.id}
+                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600"
+                    title={t("admin.vehicleReports.forceRegenerate")}
+                    disabled={regeneratingId === report.id}
                     onClick={() => {
-                      const message = report.isRegenerated
-                        ? "Questo report è già stato rigenerato. Vuoi farlo di nuovo?"
-                        : t("admin.vehicleReports.regenerateConfirmAction");
-
+                      const message = t(
+                        "admin.vehicleReports.regenerateConfirmAction"
+                      );
                       if (window.confirm(message)) {
                         handleRegenerate(report);
                       }

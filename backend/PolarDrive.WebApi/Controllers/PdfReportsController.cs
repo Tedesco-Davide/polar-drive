@@ -14,9 +14,8 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     private readonly PolarDriveLogger _logger = new(db);
 
     /// <summary>
-    /// Ottiene la lista di tutti i report PDF
+    /// Metodo Get semplificato
     /// </summary>
-    [HttpGet]
     [HttpGet]
     public async Task<ActionResult<IEnumerable<PdfReportDTO>>> Get()
     {
@@ -38,17 +37,15 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
             foreach (var r in reports)
             {
-                // ✅ USA IL METODO MIGLIORATO
                 var pdfPath = GetReportFilePath(r, "pdf");
                 var htmlPath = GetReportFilePath(r, "html");
 
-                // ✅ FALLBACK: Se non trova nel path calcolato, cerca in entrambe le directory
+                // Fallback: Se non trova nel path principale, cerca nell'alternativo
                 var pdfExists = System.IO.File.Exists(pdfPath);
                 var htmlExists = System.IO.File.Exists(htmlPath);
 
                 if (!pdfExists || !htmlExists)
                 {
-                    // ✅ FALLBACK: Prova entrambi i percorsi possibili
                     var alternatePaths = GetAlternateFilePaths(r);
 
                     if (!pdfExists && System.IO.File.Exists(alternatePaths.alternatePdfPath))
@@ -67,16 +64,12 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 var pdfSize = pdfExists ? new FileInfo(pdfPath).Length : 0;
                 var htmlSize = htmlExists ? new FileInfo(htmlPath).Length : 0;
 
-                // ✅ CONTA I RECORD - MIGLIORATO
                 var dataCount = await CountDataRecordsForReport(r);
 
-                // ✅ CALCOLA ALTRI CAMPI
                 var monitoringDuration = (r.ReportPeriodEnd - r.ReportPeriodStart).TotalHours;
                 var isRegenerated = r.RegenerationCount > 0;
                 var lastModified = r.GeneratedAt?.ToString("o");
-                var isProgressive = IsProgressiveReport(r);
 
-                // ✅ CREA IL DTO CON TUTTI I CAMPI
                 var dto = new PdfReportDTO
                 {
                     Id = r.Id,
@@ -97,11 +90,9 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                     LastModified = lastModified,
                     IsRegenerated = isRegenerated,
                     RegenerationCount = r.RegenerationCount,
-                    ReportType = DetermineReportType(r, isRegenerated, dataCount, isProgressive),
-                    Status = DetermineReportStatus(r, pdfExists, htmlExists, dataCount),
-                    CanRegenerate = dataCount > 0 || isProgressive, // ✅ I progressivi si possono sempre rigenerare
-                    AvailableFormats = GetAvailableFormats(pdfExists, htmlExists),
-                    IsProgressive = isProgressive // ✅ NUOVO CAMPO
+                    ReportType = DetermineReportType(r, isRegenerated, dataCount),
+                    Status = DetermineReportStatus(pdfExists, htmlExists, dataCount),
+                    AvailableFormats = GetAvailableFormats(pdfExists, htmlExists)
                 };
 
                 result.Add(dto);
@@ -118,31 +109,31 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Ottiene percorsi alternativi per fallback
+    /// Formati disponibili
     /// </summary>
+    private static List<string> GetAvailableFormats(bool pdfExists, bool htmlExists)
+    {
+        var formats = new List<string>();
+
+        if (pdfExists) formats.Add("PDF");
+        if (htmlExists) formats.Add("HTML");
+        if (!pdfExists && !htmlExists) formats.Add("NONE");
+
+        return formats;
+    }
+
+    /// <summary>
+    /// Fallback che cerca in directory alternative
+    /// </summary>
+    // Aggiorna anche GetAlternateFilePaths:
     private (string alternatePdfPath, string alternateHtmlPath) GetAlternateFilePaths(Data.Entities.PdfReport report)
     {
-        var isCurrentlyProgressive = IsProgressiveReport(report);
+        // Directory reports standard
+        var alternateDir = Path.Combine("storage", "reports",
+            report.ReportPeriodStart.Year.ToString(),
+            report.ReportPeriodStart.Month.ToString("D2"));
 
-        string alternateDir;
-        string alternateFileName;
-
-        if (isCurrentlyProgressive)
-        {
-            // Attualmente progressivo, prova path tradizionale
-            alternateDir = Path.Combine("storage", "reports",
-                report.ReportPeriodStart.Year.ToString(),
-                report.ReportPeriodStart.Month.ToString("D2"));
-            alternateFileName = $"PolarDrive_Report_{report.Id}";
-        }
-        else
-        {
-            // Attualmente tradizionale, prova path progressivo
-            alternateDir = Path.Combine("storage", "dev-progressive-reports",
-                report.ReportPeriodStart.Year.ToString(),
-                report.ReportPeriodStart.Month.ToString("D2"));
-            alternateFileName = $"PolarDrive_Progressive_Dev_{report.Id}";
-        }
+        var alternateFileName = $"PolarDrive_Report_{report.Id}";
 
         return (
             alternatePdfPath: Path.Combine(alternateDir, $"{alternateFileName}.pdf"),
@@ -150,7 +141,9 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         );
     }
 
-    // ✅ METODO HELPER PER DETERMINARE IL TIPO DI REPORT
+    /// <summary>
+    /// Determina il tipo di report
+    /// </summary>
     private static string DetermineReportType(Data.Entities.PdfReport report, bool isRegenerated, int dataCount)
     {
         if (isRegenerated)
@@ -161,7 +154,6 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
         var duration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
 
-        // ✅ LOGICA PIÙ CHIARA E COERENTE
         if (duration >= 720) // ~30 giorni
             return "Mensile";
 
@@ -178,7 +170,6 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 return "Giornaliero Limitato";
         }
 
-        // ✅ CASI BREVI
         if (duration < 1) // Meno di 1 ora
             return "Test Rapido";
 
@@ -189,6 +180,36 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             return "Completo";
 
         return "Standard";
+    }
+
+    /// <summary>
+    /// Determina lo status del report
+    /// </summary>
+    private static string DetermineReportStatus(bool pdfExists, bool htmlExists, int dataCount)
+    {
+        if (pdfExists)
+            return "PDF-READY";
+
+        if (htmlExists)
+            return "HTML-ONLY";
+
+        if (dataCount == 0)
+            return "NO-DATA";
+
+        if (dataCount < 5)
+            return "WAITING-RECORDS";
+
+        return "READY";
+    }
+
+    /// <summary>
+    /// Conta tutti i record del veicolo
+    /// </summary>
+    private async Task<int> CountDataRecordsForReport(Data.Entities.PdfReport report)
+    {
+        return await db.VehiclesData
+            .Where(vd => vd.VehicleId == report.ClientVehicleId)
+            .CountAsync();
     }
 
     /// <summary>
@@ -464,7 +485,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     #region Private Helper Methods
 
     /// <summary>
-    /// Ora usa SEMPRE l'analisi progressiva
+    /// Rigenerazione report con analisi AI
     /// </summary>
     private async Task<RegenerationResult> RegenerateReportFiles(Data.Entities.PdfReport report)
     {
@@ -472,12 +493,12 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
         try
         {
-            await _logger.Info(source, "Avvio rigenerazione con analisi progressiva",
+            await _logger.Info(source, "Avvio rigenerazione con analisi AI",
                 $"ReportId: {report.Id}, VehicleId: {report.ClientVehicleId}");
 
-            // ✅ USA SEMPRE L'ANALISI PROGRESSIVA
+            // Genera insights con AI
             var aiGenerator = new PolarAiReportGenerator(db);
-            var insights = await aiGenerator.GenerateProgressiveInsightsAsync(report.ClientVehicleId);
+            var insights = await aiGenerator.GenerateInsightsAsync(report.ClientVehicleId);
 
             if (string.IsNullOrWhiteSpace(insights))
             {
@@ -485,27 +506,27 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 <h2>Report Generato</h2>
                 <p>Report generato automaticamente per il veicolo.</p>
                 <p>Periodo: " + report.ReportPeriodStart.ToString("dd/MM/yyyy") +
-                    " - " + report.ReportPeriodEnd.ToString("dd/MM/yyyy") + @"</p>
+                        " - " + report.ReportPeriodEnd.ToString("dd/MM/yyyy") + @"</p>
                 <p>Al momento non sono disponibili dati sufficienti per un'analisi dettagliata.</p>
             ";
             }
 
-            await _logger.Info(source, "Insights progressivi generati",
+            await _logger.Info(source, "Insights AI generati",
                 $"ReportId: {report.Id}, Insights length: {insights.Length} chars");
 
-            // 2. Genera HTML con insights progressivi
+            // Genera HTML con insights AI
             var htmlService = new HtmlReportService(db);
             var htmlOptions = new HtmlReportOptions
             {
                 ShowDetailedStats = true,
                 ShowRawData = false,
-                ReportType = "Progressive AI Analysis", // ✅ Indica che è progressivo
-                AdditionalCss = GetProgressiveRegenerationStyles() // ✅ Stili dedicati
+                ReportType = "AI Analysis",
+                AdditionalCss = GetReportStyles()
             };
 
             var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
 
-            // 3. Salva HTML
+            // Salva HTML
             var htmlPath = GetReportFilePath(report, "html");
             var htmlDirectory = Path.GetDirectoryName(htmlPath);
             if (!string.IsNullOrEmpty(htmlDirectory))
@@ -514,7 +535,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             }
             await System.IO.File.WriteAllTextAsync(htmlPath, htmlContent);
 
-            // 4. Genera PDF con header progressivo
+            // Genera PDF
             var pdfService = new PdfGenerationService(db);
             var pdfOptions = new PdfConversionOptions
             {
@@ -526,7 +547,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 DisplayHeaderFooter = true,
                 HeaderTemplate = $@"
                 <div style='font-size: 10px; width: 100%; text-align: center; color: #667eea; border-bottom: 1px solid #667eea; padding-bottom: 5px;'>
-                    <span>🧠 PolarDrive Progressive Analysis - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
+                    <span>🧠 PolarDrive AI Analysis - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
                 </div>",
                 FooterTemplate = @"
                 <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
@@ -536,7 +557,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
             var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
 
-            // 5. Salva PDF
+            // Salva PDF
             var pdfPath = GetReportFilePath(report, "pdf");
             var pdfDirectory = Path.GetDirectoryName(pdfPath);
             if (!string.IsNullOrEmpty(pdfDirectory))
@@ -545,13 +566,9 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             }
             await System.IO.File.WriteAllBytesAsync(pdfPath, pdfBytes);
 
-            // Incrementa il contatore di rigenerazioni
+            // Aggiorna contatori
             report.RegenerationCount++;
-
-            // Aggiorna anche il timestamp
             report.GeneratedAt = DateTime.UtcNow;
-
-            // 6. Aggiorna le note del report per indicare che è progressivo
             report.Notes = $"Ultimo aggiornamento: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - Rigenerazione #{report.RegenerationCount}";
 
             await db.SaveChangesAsync();
@@ -570,31 +587,31 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     }
 
     /// <summary>
-    /// ✅ AGGIUNGI questo metodo per stili dedicati ai report progressivi rigenerati
+    /// Stili CSS per i report
     /// </summary>
-    private string GetProgressiveRegenerationStyles()
+    private string GetReportStyles()
     {
         return @"
-        .progressive-regenerated-badge {
+        .ai-report-badge {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 8px 16px;
             border-radius: 25px;
             font-size: 12px;
-            font-weight: 500; /* ✅ Ridotto da bold a 500 */
+            font-weight: 500;
             display: inline-block;
             margin: 10px 15px 10px 0;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
         }
         
         .report-info::after {
-            content: ' 🧠 ANALISI PROGRESSIVA';
+            content: ' 🧠 ANALISI AI';
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 4px 8px;
             border-radius: 12px;
             font-size: 10px;
-            font-weight: 500; /* ✅ Ridotto */
+            font-weight: 500;
             margin-left: 10px;
         }
         
@@ -606,30 +623,29 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         }
         
         .ai-insights::before {
-            content: '🧠 Analisi Progressiva AI • ';
+            content: '🧠 Analisi AI • ';
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            font-weight: 500; /* ✅ Ridotto da bold */
+            font-weight: 500;
             font-size: 14px;
         }
         
-        /* ✅ OVERRIDE GLOBALE per tutti gli elementi nell'AI insights */
         .ai-insights * {
             font-weight: normal !important;
         }
         
         .ai-insights h1, .ai-insights h2, .ai-insights h3, .ai-insights h4 {
-            font-weight: 500 !important; /* ✅ Headers più leggeri */
+            font-weight: 500 !important;
         }
         
         .ai-insights strong, .ai-insights b {
-            font-weight: 500 !important; /* ✅ Grassetto controllato */
+            font-weight: 500 !important;
             color: #667eea;
         }
         
-        .progressive-evolution {
+        .data-evolution {
             border: 2px dashed #667eea;
             padding: 15px;
             margin: 20px 0;
@@ -637,38 +653,51 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             border-radius: 8px;
         }
         
-        .progressive-evolution::before {
-            content: '📈 Evoluzione nel Tempo • ';
+        .data-evolution::before {
+            content: '📈 Evoluzione Dati • ';
             color: #667eea;
-            font-weight: 500; /* ✅ Ridotto */
+            font-weight: 500;
         }";
     }
 
     /// <summary>
-    /// Percorso file sempre progressivo
+    /// Percorso file semplificato
     /// </summary>
     private string GetReportFilePath(Data.Entities.PdfReport report, string extension)
     {
-        // Nessuna logica complessa
-        var outputDir = Path.Combine("storage", "dev-progressive-reports",
+        // Prima prova con il percorso standard dev-reports
+        var standardDir = Path.Combine("storage", "dev-reports",
             report.ReportPeriodStart.Year.ToString(),
             report.ReportPeriodStart.Month.ToString("D2"));
 
-        var fileName = $"PolarDrive_Progressive_Dev_{report.Id}.{extension}";
-        var fullPath = Path.Combine(outputDir, fileName);
+        var standardFileName = $"PolarDrive_Report_{report.Id}.{extension}";
+        var standardPath = Path.Combine(standardDir, standardFileName);
 
-        _logger.Debug("GetReportFilePath", $"Path calculated for report {report.Id}",
-            $"Path: {fullPath}");
+        if (System.IO.File.Exists(standardPath))
+        {
+            _logger.Debug("GetReportFilePath", $"Found file at standard path for report {report.Id}",
+                $"Path: {standardPath}");
+            return standardPath;
+        }
 
-        return fullPath;
-    }
+        // Se non trova, prova nella directory reports normale
+        var reportsDir = Path.Combine("storage", "reports",
+            report.ReportPeriodStart.Year.ToString(),
+            report.ReportPeriodStart.Month.ToString("D2"));
 
-    /// <summary>
-    /// Tutti i report sono sempre progressivi
-    /// </summary>
-    private static bool IsProgressiveReport(Data.Entities.PdfReport report)
-    {
-        return true;
+        var reportsPath = Path.Combine(reportsDir, standardFileName);
+
+        if (System.IO.File.Exists(reportsPath))
+        {
+            _logger.Debug("GetReportFilePath", $"Found file at reports path for report {report.Id}",
+                $"Path: {reportsPath}");
+            return reportsPath;
+        }
+
+        // Default: ritorna il percorso standard
+        _logger.Debug("GetReportFilePath", $"Using default path for report {report.Id}",
+            $"Path: {standardPath}");
+        return standardPath;
     }
 
     /// <summary>

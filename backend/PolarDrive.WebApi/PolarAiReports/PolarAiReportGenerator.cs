@@ -489,7 +489,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
     /// <summary>
     /// NUOVO: Genera insights progressivi basati sull'età del veicolo nel sistema
     /// </summary>
-    public async Task<string> GenerateProgressiveInsightsAsync(int vehicleId)
+    public async Task<string> GenerateInsightsAsync(int vehicleId)
     {
         await _logger.Info("PolarAiReportGenerator.GenerateProgressiveInsights",
             "Avvio analisi progressiva", $"VehicleId: {vehicleId}");
