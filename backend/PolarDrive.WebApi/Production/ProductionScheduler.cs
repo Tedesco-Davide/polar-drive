@@ -925,7 +925,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     /// <summary>
     /// ✅ NUOVO: Metodo pubblico per forzare la generazione di un report progressivo specifico
     /// </summary>
-    public async Task<bool> ForceProgressiveReportAsync(int vehicleId, string analysisLevel = "Manual Generation")
+    public async Task<bool> ForceReportAsync(int vehicleId, string analysisLevel = "Manual Generation")
     {
         try
         {

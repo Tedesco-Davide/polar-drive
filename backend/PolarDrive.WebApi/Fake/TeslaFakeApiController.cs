@@ -39,14 +39,14 @@ public class TeslaFakeApiController : ControllerBase
     /// <summary>
     /// ✅ AGGIORNATO: Forza la generazione di un report progressivo di test
     /// </summary>
-    [HttpPost("GenerateProgressiveReport")]
-    public async Task<IActionResult> GenerateProgressiveReport()
+    [HttpPost("GenerateReport")]
+    public async Task<IActionResult> GenerateReport()
     {
-        const string source = "TeslaFakeApiController.GenerateProgressiveReport";
+        const string source = "TeslaFakeApiController.GenerateReport";
 
         try
         {
-            await _logger.Info(source, "Manual progressive report generation triggered");
+            await _logger.Info(source, "Manual report generation triggered");
 
             var activeVehicles = await _db.ClientVehicles
                 .Where(v => v.IsActiveFlag && v.IsFetchingDataFlag)
@@ -69,24 +69,23 @@ public class TeslaFakeApiController : ControllerBase
             {
                 try
                 {
-                    // ✅ USA IL NUOVO SISTEMA PROGRESSIVO
-                    await GenerateProgressiveReportForVehicle(vehicle.Id, "Manual API Generation");
+                    await GenerateReportForVehicle(vehicle.Id, "Manual API Generation");
                     successCount++;
                 }
                 catch (Exception ex)
                 {
                     errorCount++;
-                    await _logger.Error(source, $"Error generating progressive report for vehicle {vehicle.Vin}", ex.ToString());
+                    await _logger.Error(source, $"Error generating report for vehicle {vehicle.Vin}", ex.ToString());
                 }
             }
 
-            await _logger.Info(source, "Manual progressive report generation completed",
+            await _logger.Info(source, "Manual report generation completed",
                 $"Success: {successCount}, Errors: {errorCount}");
 
             return Ok(new
             {
                 success = true,
-                message = $"Progressive report generation completed for {activeVehicles.Count} vehicles",
+                message = $"Report generation completed for {activeVehicles.Count} vehicles",
                 timestamp = DateTime.UtcNow,
                 results = new { successCount, errorCount },
                 note = "Reports generated using Progressive AI Analysis system"
@@ -94,7 +93,7 @@ public class TeslaFakeApiController : ControllerBase
         }
         catch (Exception ex)
         {
-            await _logger.Error(source, "Error in manual progressive report generation", ex.ToString());
+            await _logger.Error(source, "Error in manual report generation", ex.ToString());
             return StatusCode(500, new
             {
                 success = false,
@@ -106,10 +105,10 @@ public class TeslaFakeApiController : ControllerBase
     /// <summary>
     /// ✅ NUOVO: Forza report progressivo per un singolo veicolo
     /// </summary>
-    [HttpPost("GenerateVehicleProgressiveReport/{vehicleId}")]
-    public async Task<IActionResult> GenerateVehicleProgressiveReport(int vehicleId, [FromBody] ProgressiveReportRequest? request = null)
+    [HttpPost("GenerateVehicleReport/{vehicleId}")]
+    public async Task<IActionResult> GenerateVehicleReport(int vehicleId, [FromBody] ReportRequest? request = null)
     {
-        const string source = "TeslaFakeApiController.GenerateVehicleProgressiveReport";
+        const string source = "TeslaFakeApiController.GenerateVehicleReport";
 
         try
         {
@@ -119,22 +118,22 @@ public class TeslaFakeApiController : ControllerBase
                 return NotFound($"Vehicle with ID {vehicleId} not found");
             }
 
-            await _logger.Info(source, $"Progressive report generation triggered for VIN {vehicle.Vin}");
+            await _logger.Info(source, $"Report generation triggered for VIN {vehicle.Vin}");
 
             var analysisLevel = request?.AnalysisLevel ?? "Manual API Generation";
-            var reportId = await GenerateProgressiveReportForVehicle(vehicleId, analysisLevel);
+            var reportId = await GenerateReportForVehicle(vehicleId, analysisLevel);
 
             if (reportId.HasValue)
             {
                 return Ok(new
                 {
                     success = true,
-                    message = $"Progressive report generated for vehicle {vehicle.Vin}",
+                    message = $"Report generated for vehicle {vehicle.Vin}",
                     reportId = reportId.Value,
                     vehicleVin = vehicle.Vin,
                     analysisLevel = analysisLevel,
                     timestamp = DateTime.UtcNow,
-                    note = "Generated using Progressive AI Analysis"
+                    note = "Generated using AI Analysis"
                 });
             }
             else
@@ -142,13 +141,13 @@ public class TeslaFakeApiController : ControllerBase
                 return Ok(new
                 {
                     success = false,
-                    message = "Progressive report could not be generated - check logs for details"
+                    message = "Report could not be generated - check logs for details"
                 });
             }
         }
         catch (Exception ex)
         {
-            await _logger.Error(source, "Error in vehicle progressive report generation", ex.ToString());
+            await _logger.Error(source, "Error in vehicle report generation", ex.ToString());
             return StatusCode(500, new
             {
                 success = false,
@@ -196,13 +195,13 @@ public class TeslaFakeApiController : ControllerBase
                     bool result;
                     if (_env.IsDevelopment() && _fakeScheduler != null)
                     {
-                        // Non ha ForceProgressiveReportAsync, usiamo il metodo diretto
-                        await GenerateProgressiveReportForVehicle(vehicleId, "Forced via API");
+                        // Non ha ForceReportAsync, usiamo il metodo diretto
+                        await GenerateReportForVehicle(vehicleId, "Forced via API");
                         result = true;
                     }
                     else if (!_env.IsDevelopment() && _productionScheduler != null)
                     {
-                        result = await _productionScheduler.ForceProgressiveReportAsync(vehicleId, "Forced via API");
+                        result = await _productionScheduler.ForceReportAsync(vehicleId, "Forced via API");
                     }
                     else
                     {
@@ -223,7 +222,7 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ CORRETTO: Controlla dati con supporto grace period
+    /// Controlla dati con supporto grace period
     /// </summary>
     [HttpGet("DataStatus")]
     public async Task<IActionResult> GetDataStatus()
@@ -244,18 +243,15 @@ public class TeslaFakeApiController : ControllerBase
                 .OrderByDescending(vd => vd.Timestamp)
                 .FirstOrDefaultAsync();
 
-            // ✅ CONTA REPORT PROGRESSIVI SPECIFICAMENTE
-            var progressiveReports = await _db.PdfReports
-                .Where(r => r.ClientVehicleId == vehicle.Id &&
-                           (r.Notes != null && (r.Notes.Contains("[PROGRESSIVE") || r.Notes.Contains("[PRODUCTION-PROGRESSIVE"))))
+            var reports = await _db.PdfReports
+                .Where(r => r.ClientVehicleId == vehicle.Id)
                 .OrderByDescending(r => r.GeneratedAt)
                 .Take(3)
                 .Select(r => new
                 {
                     r.Id,
                     r.GeneratedAt,
-                    r.Notes,
-                    IsProgressive = r.Notes != null && (r.Notes.Contains("[PROGRESSIVE") || r.Notes.Contains("[PRODUCTION-PROGRESSIVE"))
+                    r.Notes
                 })
                 .ToListAsync();
 
@@ -266,8 +262,6 @@ public class TeslaFakeApiController : ControllerBase
                 .FirstOrDefaultAsync();
 
             var monitoringDays = firstDataRecord != default ? (DateTime.UtcNow - firstDataRecord).TotalDays : 0;
-
-            // ✅ NUOVO: Determina stato contrattuale
             var contractStatus = GetContractStatus(vehicle);
 
             result.Add(new
@@ -281,15 +275,14 @@ public class TeslaFakeApiController : ControllerBase
                 lastUpdate = vehicle.LastDataUpdate,
                 isActive = vehicle.IsActiveFlag,
                 isFetching = vehicle.IsFetchingDataFlag,
-                contractStatus = contractStatus,  // ✅ NUOVO: Status contrattuale
-                isGracePeriod = !vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag,  // ✅ NUOVO: Flag grace period
+                contractStatus = contractStatus,
+                isGracePeriod = !vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag,
                 monitoringDays = Math.Round(monitoringDays, 1),
-                progressiveReports = progressiveReports,
-                progressiveReportCount = progressiveReports.Count
+                reports = reports,
+                reportCount = reports.Count
             });
         }
 
-        // ✅ NUOVO: Statistiche separate per grace period
         var totalVehicles = vehicles.Count;
         var activeContractVehicles = vehicles.Count(v => v.IsActiveFlag && v.IsFetchingDataFlag);
         var gracePeriodVehicles = vehicles.Count(v => !v.IsActiveFlag && v.IsFetchingDataFlag);
@@ -303,11 +296,9 @@ public class TeslaFakeApiController : ControllerBase
             {
                 totalVehicles = totalVehicles,
                 activeContracts = activeContractVehicles,
-                gracePeriodVehicles = gracePeriodVehicles,  // ✅ NUOVO
+                gracePeriodVehicles = gracePeriodVehicles,
                 totalDataRecords = await _db.VehiclesData.CountAsync(),
                 totalReports = await _db.PdfReports.CountAsync(),
-                progressiveReports = await _db.PdfReports.CountAsync(r =>
-                    r.Notes != null && (r.Notes.Contains("[PROGRESSIVE") || r.Notes.Contains("[PRODUCTION-PROGRESSIVE")))
             }
         });
     }
@@ -321,13 +312,13 @@ public class TeslaFakeApiController : ControllerBase
         {
             (true, true) => "Active Contract - Data Collection Active",
             (true, false) => "Active Contract - Data Collection Paused",
-            (false, true) => "Contract Terminated - Grace Period Active",  // ← Il tuo caso
+            (false, true) => "Contract Terminated - Grace Period Active",
             (false, false) => "Contract Terminated - Data Collection Stopped"
         };
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Status con info progressive
+    /// Status con info
     /// </summary>
     [HttpGet("ReportStatus")]
     public async Task<IActionResult> GetReportStatus()
@@ -350,7 +341,6 @@ public class TeslaFakeApiController : ControllerBase
             periodEnd = r.ReportPeriodEnd,
             generatedAt = r.GeneratedAt,
             notes = r.Notes,
-            isProgressive = r.Notes != null && (r.Notes.Contains("[PROGRESSIVE") || r.Notes.Contains("[PRODUCTION-PROGRESSIVE")),
             pdfExists = CheckPdfExists(r)
         });
 
@@ -360,8 +350,6 @@ public class TeslaFakeApiController : ControllerBase
             environment = _env.IsDevelopment() ? "Development" : "Production",
             recentReports = result,
             totalReports = await _db.PdfReports.CountAsync(),
-            progressiveReports = await _db.PdfReports.CountAsync(r =>
-                r.Notes != null && (r.Notes.Contains("[PROGRESSIVE") || r.Notes.Contains("[PRODUCTION-PROGRESSIVE"))),
             systemStatus = new
             {
                 aiSystemAvailable = await CheckAiSystemAvailability(),
@@ -413,18 +401,18 @@ public class TeslaFakeApiController : ControllerBase
     #region Helper Methods
 
     /// <summary>
-    /// ✅ NUOVO: Genera report progressivo per veicolo (sostituisce il vecchio ReportGeneratorJob)
+    /// ✅ NUOVO: Genera report per veicolo (sostituisce il vecchio ReportGeneratorJob)
     /// </summary>
-    private async Task<int?> GenerateProgressiveReportForVehicle(int vehicleId, string analysisLevel)
+    private async Task<int?> GenerateReportForVehicle(int vehicleId, string analysisLevel)
     {
-        const string source = "TeslaFakeApiController.GenerateProgressiveReportForVehicle";
+        const string source = "TeslaFakeApiController.GenerateReportForVehicle";
 
         try
         {
             var vehicle = await _db.ClientVehicles.FindAsync(vehicleId);
             if (vehicle == null) return null;
 
-            // Determina periodo progressivo
+            // Determina periodo
             var firstRecord = await _db.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId)
                 .OrderBy(vd => vd.Timestamp)
@@ -434,37 +422,37 @@ public class TeslaFakeApiController : ControllerBase
             var now = DateTime.UtcNow;
             var monitoringPeriod = firstRecord != default ? now - firstRecord : TimeSpan.FromHours(24);
 
-            // Genera insights progressivi
+            // Genera insights
             var aiGenerator = new PolarAiReportGenerator(_db);
-            var progressiveInsights = await aiGenerator.GenerateInsightsAsync(vehicleId);
+            var insights = await aiGenerator.GenerateInsightsAsync(vehicleId);
 
-            if (string.IsNullOrWhiteSpace(progressiveInsights))
+            if (string.IsNullOrWhiteSpace(insights))
             {
-                await _logger.Warning(source, $"No progressive insights generated for vehicle {vehicle.Vin}");
+                await _logger.Warning(source, $"No insights generated for vehicle {vehicle.Vin}");
                 return null;
             }
 
             // Crea record del report
-            var progressiveReport = new PdfReport
+            var report = new PdfReport
             {
                 ClientVehicleId = vehicleId,
                 ClientCompanyId = vehicle.ClientCompanyId,
                 ReportPeriodStart = now.AddDays(-1),
                 ReportPeriodEnd = now,
                 GeneratedAt = now,
-                Notes = $"[API-PROGRESSIVE-{analysisLevel.Replace(" ", "")}] MonitoringDays: {monitoringPeriod.TotalDays:F1}"
+                Notes = $"[API-{analysisLevel.Replace(" ", "")}] MonitoringDays: {monitoringPeriod.TotalDays:F1}"
             };
 
-            _db.PdfReports.Add(progressiveReport);
+            _db.PdfReports.Add(report);
             await _db.SaveChangesAsync();
 
-            await _logger.Info(source, $"Progressive report generated for vehicle {vehicle.Vin}: ReportId {progressiveReport.Id}");
+            await _logger.Info(source, $"Report generated for vehicle {vehicle.Vin}: ReportId {report.Id}");
 
-            return progressiveReport.Id;
+            return report.Id;
         }
         catch (Exception ex)
         {
-            await _logger.Error(source, $"Error generating progressive report for vehicle {vehicleId}", ex.ToString());
+            await _logger.Error(source, $"Error generating report for vehicle {vehicleId}", ex.ToString());
             throw;
         }
     }
@@ -502,7 +490,7 @@ public class TeslaFakeApiController : ControllerBase
 }
 
 // ✅ NUOVI REQUEST MODELS
-public class ProgressiveReportRequest
+public class ReportRequest
 {
     public string AnalysisLevel { get; set; } = "Manual Generation";
 }
