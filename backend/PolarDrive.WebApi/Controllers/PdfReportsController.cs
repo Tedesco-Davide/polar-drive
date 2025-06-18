@@ -90,7 +90,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                     LastModified = lastModified,
                     IsRegenerated = isRegenerated,
                     RegenerationCount = r.RegenerationCount,
-                    ReportType = DetermineReportType(r, isRegenerated, dataCount),
+                    ReportType = DetermineReportType(r, dataCount),
                     Status = DetermineReportStatus(pdfExists, htmlExists, dataCount),
                 };
 
@@ -129,42 +129,23 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     /// <summary>
     /// Determina il tipo di report
     /// </summary>
-    private static string DetermineReportType(Data.Entities.PdfReport report, bool isRegenerated, int dataCount)
+    private static string DetermineReportType(Data.Entities.PdfReport report, int dataCount)
     {
-        if (isRegenerated)
-            return "Rigenerato";
-
         if (dataCount == 0)
-            return "Nessun Dato";
+            return "admin.vehicleReports.reportTypeNoData";
 
         var duration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
 
         if (duration >= 720) // ~30 giorni
-            return "Mensile";
+            return "admin.vehicleReports.reportTypeMonthly";
 
         if (duration >= 168) // 7 giorni  
-            return "Settimanale";
+            return "admin.vehicleReports.reportTypeWeekly";
 
         if (duration >= 24) // 1 giorno
-        {
-            if (dataCount >= 100)
-                return "Giornaliero Completo";
-            else if (dataCount >= 20)
-                return "Giornaliero Parziale";
-            else
-                return "Giornaliero Limitato";
-        }
+            return "admin.vehicleReports.reportTypeDaily";
 
-        if (duration < 1)
-            return "Test Rapido";
-
-        if (dataCount < 5)
-            return "Dati Insufficienti";
-
-        if (dataCount >= 50)
-            return "Completo";
-
-        return "Standard";
+        return "admin.vehicleReports.reportTypeStandard";
     }
 
     /// <summary>
@@ -496,7 +477,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             ";
             }
 
-            await _logger.Info(source, "Insights AI generati",
+            await _logger.Info(source, "Insights PolarAi generati",
                 $"ReportId: {report.Id}, Insights length: {insights.Length} chars");
 
             // Genera HTML con insights AI
@@ -505,7 +486,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             {
                 ShowDetailedStats = true,
                 ShowRawData = false,
-                ReportType = "AI Analysis",
+                ReportType = "PolarAi Analysis",
                 AdditionalCss = GetReportStyles()
             };
 
@@ -532,7 +513,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 DisplayHeaderFooter = true,
                 HeaderTemplate = $@"
                 <div style='font-size: 10px; width: 100%; text-align: center; color: #667eea; border-bottom: 1px solid #667eea; padding-bottom: 5px;'>
-                    <span>🧠 PolarDrive AI Analysis - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
+                    <span>🧠 PolarAi Analysis - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
                 </div>",
                 FooterTemplate = @"
                 <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
@@ -590,7 +571,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         }
         
         .report-info::after {
-            content: ' 🧠 ANALISI AI';
+            content: ' 🧠 Analisi PolarAi';
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 4px 8px;
@@ -608,7 +589,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         }
         
         .ai-insights::before {
-            content: '🧠 Analisi AI • ';
+            content: '🧠 Analisi PolarAi • ';
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -900,7 +881,6 @@ public class RegenerationResult
     public string? HtmlPath { get; set; }
     public int DataRecordsProcessed { get; set; }
 
-    // ✅ RINOMINA I METODI STATICI per evitare conflitto con la proprietà
     public static RegenerationResult CreateSuccess(string pdfPath, string htmlPath, int recordsProcessed)
     {
         return new RegenerationResult

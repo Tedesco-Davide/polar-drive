@@ -104,7 +104,7 @@ export default function AdminPdfReports({
       logFrontendEvent(
         "AdminPdfReports",
         "INFO",
-        "Download iniziato",
+        "Download started",
         `ReportId: ${report.id}, Type: ${report.reportType}, HasPDF: ${report.hasPdfFile}, Force: ${forceRegenerate}`
       );
 
@@ -123,8 +123,6 @@ export default function AdminPdfReports({
       const blob = await response.blob();
       const contentType = response.headers.get("Content-Type") || "";
       const isHtml = contentType.includes("text/html");
-
-      // ✅ NOME FILE MIGLIORATO con info dal backend
       const fileName = `PolarDrive_${report.reportType.replace(/\s+/g, "_")}_${
         report.id
       }_${report.vehicleVin}_${report.reportPeriodStart.split("T")[0]}${
@@ -144,22 +142,20 @@ export default function AdminPdfReports({
       logFrontendEvent(
         "AdminPdfReports",
         "INFO",
-        "Download completato",
+        "Download completed",
         `ReportId: ${report.id}, Size: ${blob.size} bytes, Type: ${
           isHtml ? "HTML" : "PDF"
         }`
       );
 
       if (isHtml && !forceRegenerate) {
-        alert(
-          "PDF non disponibile, scaricato HTML. Prova la rigenerazione per ottenere il PDF."
-        );
+        alert(t("admin.vehicleReports.pdfNotAvailable"));
       }
     } catch (error) {
       logFrontendEvent(
         "AdminPdfReports",
         "ERROR",
-        "Download fallito",
+        "Download failed",
         `ReportId: ${report.id}, Error: ${error}`
       );
       alert(`Errore download: ${error}`);
@@ -342,12 +338,7 @@ export default function AdminPdfReports({
             <th className="p-4">
               {t("admin.vehicleReports.vehicleVinDisplay")}
             </th>
-            <th className="p-4">
-              {t("admin.vehicleReports.fileInfo", "Info File")}
-            </th>
-            <th className="p-4">
-              {t("admin.vehicleReports.dataInfo", "Dati")}
-            </th>
+            <th className="p-4">{t("admin.vehicleReports.fileInfo")}</th>
             <th className="p-4">{t("admin.vehicleReports.generatedAt")}</th>
           </tr>
         </thead>
@@ -368,7 +359,7 @@ export default function AdminPdfReports({
                 className="border-b border-gray-300 dark:border-gray-600"
               >
                 {/* Actions Column */}
-                <td className="p-4 space-x-2 inline-flex">
+                <td className="p-4 space-x-2">
                   {/* Download Button */}
                   <button
                     className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600"
@@ -418,13 +409,13 @@ export default function AdminPdfReports({
 
                 {/* Period */}
                 <td className="p-4">
-                  {formatDateToDisplay(report.reportPeriodStart)} -{" "}
-                  {formatDateToDisplay(report.reportPeriodEnd)}
-                  {report.isRegenerated && (
-                    <div className="text-xs text-orange-600 font-medium mt-1">
-                      🔄 Rigenerato {report.regenerationCount}x
+                  <div>
+                    {formatDateToDisplay(report.reportPeriodStart)} -{" "}
+                    {formatDateToDisplay(report.reportPeriodEnd)}
+                    <div className="text-xs text-gray-400">
+                      {dataCount} {t("admin.vehicleReports.totalRecords")}
                     </div>
-                  )}
+                  </div>
                 </td>
 
                 {/* Company */}
@@ -432,19 +423,30 @@ export default function AdminPdfReports({
                   <div>
                     {report.companyVatNumber} - {report.companyName}
                   </div>
-                  {report.reportType && report.reportType !== "Standard" && (
-                    <div className="text-xs text-blue-600 mt-1">
-                      {report.reportType}
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center gap-1">
+                    {report.reportType &&
+                      report.reportType !==
+                        "admin.vehicleReports.reportTypeStandard" && (
+                        <div className="text-xs text-gray-400 mt-1">
+                          {t(report.reportType)}
+                        </div>
+                      )}
+                    {report.isRegenerated && (
+                      <div className="text-xs text-orange-600 font-medium mt-1">
+                        - {t("admin.vehicleReports.regenerated")}{" "}
+                        {report.regenerationCount}x
+                      </div>
+                    )}
+                  </div>
                 </td>
 
                 {/* Vehicle */}
                 <td className="p-4">
                   {report.vehicleVin} - {report.vehicleModel}
                   {report.monitoringDurationHours > 0 && (
-                    <div className="text-xs text-gray-600 mt-1">
-                      {report.monitoringDurationHours.toFixed(1)}h monitoraggio
+                    <div className="text-xs text-gray-400 mt-1">
+                      {report.monitoringDurationHours.toFixed(1)}h{" "}
+                      {t("admin.vehicleReports.monitored")}
                     </div>
                   )}
                 </td>
@@ -456,22 +458,11 @@ export default function AdminPdfReports({
                       {status.text}
                     </Chip>
                     {fileSize > 0 && (
-                      <div className="text-xs text-gray-600">
+                      <div className="text-xs text-gray-400">
                         {(fileSize / (1024 * 1024)).toFixed(2)} MB
                       </div>
                     )}
                   </div>
-                </td>
-
-                {/* Data Info */}
-                <td className="p-4">
-                  <div>{dataCount} record</div>
-                  {report.lastModified &&
-                    report.lastModified !== report.generatedAt && (
-                      <div className="text-xs text-orange-600 mt-1">
-                        Aggiornato: {formatDateToDisplay(report.lastModified)}
-                      </div>
-                    )}
                 </td>
 
                 {/* Generated At */}

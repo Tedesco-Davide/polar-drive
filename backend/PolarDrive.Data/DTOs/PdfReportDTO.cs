@@ -13,8 +13,6 @@ public class PdfReportDTO
     public string VehicleModel { get; set; } = string.Empty;
     public string? Notes { get; set; }
 
-    // ✅ NUOVE PROPRIETÀ AGGIUNTE
-
     /// <summary>
     /// Indica se il file PDF esiste fisicamente su disco
     /// </summary>

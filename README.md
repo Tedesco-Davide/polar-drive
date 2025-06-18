@@ -36,7 +36,7 @@ _(Tasto destro sulla cartella `backend/PolarDrive.TeslaMockApiService` → Open 
 
 ---
 
-### 🧠 BACKEND MISTRAL AI
+### 🧠 BACKEND MISTRAL PolarAi
 
 _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated Terminal)_
 

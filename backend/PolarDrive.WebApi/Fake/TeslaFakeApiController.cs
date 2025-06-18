@@ -133,7 +133,7 @@ public class TeslaFakeApiController : ControllerBase
                     vehicleVin = vehicle.Vin,
                     analysisLevel = analysisLevel,
                     timestamp = DateTime.UtcNow,
-                    note = "Generated using AI Analysis"
+                    note = "Generated using PolarAi Analysis"
                 });
             }
             else
@@ -304,7 +304,7 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Helper per determinare stato contrattuale
+    /// Helper per determinare stato contrattuale
     /// </summary>
     private string GetContractStatus(ClientVehicle vehicle)
     {

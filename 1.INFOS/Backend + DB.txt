@@ -294,14 +294,6 @@ se deve fare logout completo o rigenerazione manuale
 #################################################################################################################################################################
 #################################################################################################################################################################
 
-TESLA VIN MOCK: 5Y12365848Z411439
-
-MOCK ACCESS TOKEN: 
-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IlRlc3RBY2NvdW50IiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
-
-MOCK REFRESH TOKEN: 
-r3fr3sh-t0k3n.mock.eyJpc3MiOiJ0ZXNsYXVzZXIudGVzdCIsImV4cCI6MTcwMDAwMDAwMH0xMjM0NTY3ODkwYWJjZGVmZw===
-
 GPT DICE DI VALUTARE SCRIPT SCRAPING NEL CASO TESLA CAMBI GLI ENDPOINT IN FUTURO
 
 QUANDO SI ARRIVA ALLA GESTIONE OUTAGE, CONSENTIRE IL BRAND GENERICO PER OUTAGES BRAND.

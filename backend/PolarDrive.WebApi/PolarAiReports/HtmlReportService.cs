@@ -703,7 +703,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     <div class=""error"">
         <strong>Errore nella generazione del report:</strong> {errorMessage}
     </div>
-    <h2>Contenuto AI (Fallback)</h2>
+    <h2>Contenuto PolarAi (Fallback)</h2>
     <div>{insights}</div>
 </body>
 </html>";

@@ -1,13 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.WebApi.PolarAiReports;
-using PolarDrive.WebApi.Production; // ✅ Per ReportPeriodInfo condivisa
+using PolarDrive.WebApi.Production;
 
 namespace PolarDrive.WebApi.Fake;
 
 /// <summary>
 /// Scheduler FAKE per development - genera report molto frequentemente per testing
-/// ✅ MIGLIORATO con integrazione VehicleDataService e gestione errori avanzata
 /// </summary>
 public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<FakeProductionScheduler> logger, IWebHostEnvironment env) : BackgroundService
 {
@@ -30,11 +29,11 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
 
         _logger.LogInformation("🚀 FakeProductionScheduler: Starting DEVELOPMENT scheduler");
         _logger.LogInformation("📋 Report generation: Every 5 minutes for testing");
-        _logger.LogInformation("🧠 Using AI Analysis for all reports");
+        _logger.LogInformation("🧠 Using PolarAi Analysis for all reports");
         _logger.LogInformation("🔄 Retry logic: Up to {MaxRetries} retries per vehicle with {RetryDelay}min delays",
             MAX_RETRIES_PER_VEHICLE, RETRY_DELAY_MINUTES);
 
-        // ✅ NUOVO: Verifica servizi disponibili all'avvio
+        // Verifica servizi disponibili all'avvio
         await CheckServicesAvailability();
 
         // Avvia solo il report scheduler (non il data fetch, lo fa già TeslaMockApiService)
@@ -42,7 +41,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ RINOMINATO per chiarezza: Scheduler FAKE per report
+    /// Scheduler FAKE per report
     /// </summary>
     private async Task RunFakeReportScheduler(CancellationToken stoppingToken)
     {
@@ -77,7 +76,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Processo di generazione con risultati tracciati
+    /// Processo di generazione con risultati tracciati
     /// </summary>
     private async Task<FakeSchedulerResults> ProcessReportGeneration(PolarDriveDbContext db)
     {
@@ -149,7 +148,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Generazione con tracking dei risultati
+    /// Generazione con tracking dei risultati
     /// </summary>
     private async Task<GenerationResults> GenerateReportsForAllVehicles(PolarDriveDbContext db, DateTime now)
     {
@@ -253,7 +252,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ NUOVO: Generazione HTML e PDF separata con gestione errori
+    /// Generazione HTML e PDF separata con gestione errori
     /// </summary>
     private async Task GenerateHtmlAndPdfFiles(PolarDriveDbContext db, Data.Entities.PdfReport report,
         string insights, ReportPeriodInfo reportPeriod, Data.Entities.ClientVehicle vehicle, DateTime now)
@@ -315,7 +314,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Retry con tracking risultati
+    /// Retry con tracking risultati
     /// </summary>
     private async Task<RetryResults> ProcessRetries(PolarDriveDbContext db, DateTime now)
     {
@@ -381,7 +380,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Usa ReportPeriodInfo condivisa dal namespace Production
+    /// Usa ReportPeriodInfo condivisa dal namespace Production
     /// </summary>
     private async Task<ReportPeriodInfo> DetermineReportPeriod(PolarDriveDbContext db, int vehicleId)
     {
@@ -432,7 +431,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     #region Helper Methods
 
     /// <summary>
-    /// ✅ NUOVO: Verifica disponibilità servizi all'avvio
+    /// Verifica disponibilità servizi all'avvio
     /// </summary>
     private async Task CheckServicesAvailability()
     {
@@ -443,7 +442,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
 
             // Test AI service
             var aiAvailable = await CheckAiServiceAvailability();
-            _logger.LogInformation("🧠 AI Service availability: {Available}", aiAvailable ? "Available" : "Not Available");
+            _logger.LogInformation("🧠 PolarAi Service availability: {Available}", aiAvailable ? "Available" : "Not Available");
 
             // Test PDF services
             var pdfAvailable = await CheckFileGenerationServices();
@@ -467,7 +466,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ NUOVO: Verifica se AI service è disponibile
+    /// Verifica se AI service è disponibile
     /// </summary>
     private async Task<bool> CheckAiServiceAvailability()
     {
@@ -485,7 +484,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ NUOVO: Verifica se servizi di generazione file sono disponibili
+    /// Verifica se servizi di generazione file sono disponibili
     /// </summary>
     private async Task<bool> CheckFileGenerationServices()
     {
@@ -538,7 +537,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
         }
         
         .development::before {
-            content: '🧪 Development Testing • 🧠 Polar AI • ';
+            content: '🧪 Development Testing • 🧠 PolarAi • ';
             color: #ff6b6b;
             font-weight: 500;
             font-size: 14px;
@@ -601,7 +600,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     }
 
     /// <summary>
-    /// ✅ MIGLIORATO: Statistics con risultati dettagliati
+    /// Statistics con risultati dettagliati
     /// </summary>
     private async Task LogReportStatistics(PolarDriveDbContext db, FakeSchedulerResults results)
     {
@@ -613,19 +612,10 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
                 .CountAsync();
 
             // Conta report fake
-            var fakeReports = await db.PdfReports
-                .Where(r => r.Notes != null && r.Notes.Contains("[FAKE]"))
-                .CountAsync();
-
-            var recentFakeReports = await db.PdfReports
-                .Where(r => r.GeneratedAt >= DateTime.UtcNow.AddHours(-1) &&
-                           r.Notes != null && r.Notes.Contains("[FAKE]"))
-                .CountAsync();
-
+            var fakeReports = await db.PdfReports.CountAsync();
+            var recentFakeReports = await db.PdfReports.CountAsync();
             var totalVehicleData = await db.VehiclesData.CountAsync();
-            var recentData = await db.VehiclesData
-                .Where(d => d.Timestamp >= DateTime.UtcNow.AddMinutes(-10))
-                .CountAsync();
+            var recentData = await db.VehiclesData.CountAsync();
 
             var vehiclesWithRetries = _retryCount.Count(kv => kv.Value > 0);
             var vehiclesExceededRetries = _retryCount.Count(kv => kv.Value > MAX_RETRIES_PER_VEHICLE);
@@ -730,13 +720,9 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
                 IsRunning = !_env.IsDevelopment() ? false : true,
                 VehiclesWithRetries = _retryCount.Count(kv => kv.Value > 0),
                 VehiclesExceededRetries = _retryCount.Count(kv => kv.Value > MAX_RETRIES_PER_VEHICLE),
-                TotalReportsGenerated = await db.PdfReports
-                    .CountAsync(r => r.Notes != null && r.Notes.Contains("[FAKE]")),
-                RecentReportsGenerated = await db.PdfReports
-                    .CountAsync(r => r.GeneratedAt >= DateTime.UtcNow.AddHours(-1) &&
-                               r.Notes != null && r.Notes.Contains("[FAKE]")),
+                TotalReportsGenerated = await db.PdfReports.CountAsync(),
+                RecentReportsGenerated = await db.PdfReports.CountAsync(r => r.GeneratedAt >= DateTime.UtcNow.AddHours(-1)),
 
-                // ✅ NUOVO: Statistiche separate
                 FetchingVehicles = await db.ClientVehicles
                     .CountAsync(v => v.IsFetchingDataFlag),
                 ActiveContracts = await db.ClientVehicles
@@ -761,22 +747,10 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
             };
         }
     }
-
-    private string GetContractStatus(Data.Entities.ClientVehicle vehicle)
-    {
-        return (vehicle.IsActiveFlag, vehicle.IsFetchingDataFlag) switch
-        {
-            (true, true) => "Active Contract - Data Collection Active",
-            (true, false) => "Active Contract - Data Collection Paused",
-            (false, true) => "Contract Terminated - Grace Period Active",  // ← Il tuo caso
-            (false, false) => "Contract Terminated - Data Collection Stopped"
-        };
-    }
-
     #endregion
 }
 
-// ✅ NUOVE CLASSI per tracking risultati
+// Tracking risultati
 
 /// <summary>
 /// Risultati di un ciclo completo del fake scheduler
@@ -798,8 +772,8 @@ public class GenerationResults
     public int TotalProcessed { get; set; }
     public int SuccessCount { get; set; }
     public int ErrorCount { get; set; }
-    public List<int> SuccessfulVehicles { get; set; } = new();
-    public List<int> FailedVehicles { get; set; } = new();
+    public List<int> SuccessfulVehicles { get; set; } = [];
+    public List<int> FailedVehicles { get; set; } = [];
 }
 
 /// <summary>

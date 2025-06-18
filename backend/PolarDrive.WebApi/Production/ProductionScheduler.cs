@@ -6,7 +6,7 @@ namespace PolarDrive.WebApi.Production;
 
 /// <summary>
 /// Scheduler per produzione - gestisce i task automatici con analisi e retry logic
-/// AGGIORNATO per usare il nuovo sistema di analisi Polar AI
+/// AGGIORNATO per usare il nuovo sistema di analisi PolarAi
 /// </summary>
 public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<ProductionScheduler> logger, IWebHostEnvironment env) : BackgroundService
 {
@@ -28,7 +28,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
 
         _logger.LogInformation("🏭 ProductionScheduler: Starting PRODUCTION schedulers");
         _logger.LogInformation("📋 Report generation: Daily at 02:00, Weekly on Mondays, Monthly on 1st day");
-        _logger.LogInformation("🧠 Using Polar AI Analysis for all reports");
+        _logger.LogInformation("🧠 Using PolarAi Analysis for all reports");
         _logger.LogInformation("🔄 Retry logic: Up to {MaxRetries} retries per vehicle with {RetryDelay}h delays",
             MAX_RETRIES_PER_VEHICLE, RETRY_DELAY_HOURS);
 
@@ -664,7 +664,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 }
                 
                 .production::before {
-                    content: '🏭 Production Environment • 🧠 Polar AI Analysis • ';
+                    content: '🏭 Production Environment • 🧠 PolarAi Analysis • ';
                     color: #004E92;
                     font-weight: 500;
                     font-size: 14px;
@@ -692,7 +692,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
                 }
                 
                 .ai-insights::before {
-                    content: '🧠 Analisi Polar AI Production • ';
+                    content: '🧠 Analisi PolarAi Production • ';
                     background: linear-gradient(135deg, #004E92 0%, #667eea 100%);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
