@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.PolarAiReports.Templates;
 using System.Text;
 
 namespace PolarDrive.WebApi.PolarAiReports;
@@ -26,9 +27,9 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             await _logger.Info(source, "Inizio generazione report HTML",
                 $"ReportId: {report.Id}, Template: {options.TemplateName}");
 
-            // 1. Carica template e stili
-            var template = await LoadTemplateAsync(options.TemplateName);
-            var styles = await LoadStylesAsync(options.StyleName);
+            // 1. Carica template e stili dai template centralizzati
+            var template = DefaultHtmlTemplate.Value;
+            var styles = DefaultCssTemplate.Value;
 
             // 2. Prepara i dati per il template
             var templateData = await PrepareTemplateDataAsync(report, aiReportContentInsights, options);
@@ -46,40 +47,6 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             await _logger.Error(source, "Errore generazione report HTML", ex.ToString());
             return GenerateErrorFallbackHtml(report, aiReportContentInsights, ex.Message);
         }
-    }
-
-    /// <summary>
-    /// Carica il template HTML (con fallback integrato)
-    /// </summary>
-    private async Task<string> LoadTemplateAsync(string templateName)
-    {
-        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "PolarAiReports", "templates");
-        var templatePath = Path.Combine(basePath, $"{templateName}.html");
-
-        if (File.Exists(templatePath))
-        {
-            return await File.ReadAllTextAsync(templatePath);
-        }
-
-        // Fallback template integrato
-        return GetDefaultTemplate();
-    }
-
-    /// <summary>
-    /// Carica gli stili CSS (con fallback integrato)
-    /// </summary>
-    private async Task<string> LoadStylesAsync(string styleName)
-    {
-        var basePath = Path.Combine(Directory.GetCurrentDirectory(), "PolarAiReports", "styles");
-        var stylePath = Path.Combine(basePath, $"{styleName}.css");
-
-        if (File.Exists(stylePath))
-        {
-            return await File.ReadAllTextAsync(stylePath);
-        }
-
-        // Fallback stili integrati
-        return GetDefaultStyles();
     }
 
     /// <summary>
@@ -111,9 +78,6 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             ["reportType"] = options.ReportType,
             ["reportVersion"] = options.ReportVersion,
 
-            // Stili personalizzati
-            ["customStyles"] = options.AdditionalCss ?? "",
-
             // Configurazioni
             ["showDetailedStats"] = options.ShowDetailedStats,
             ["showCharts"] = options.ShowCharts,
@@ -144,7 +108,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     {
         var html = template;
 
-        // Inserisci gli stili
+        // Inserisci gli stili CSS centralizzati
         html = html.Replace("{{styles}}", $"<style>{styles}</style>");
 
         // Sostituisci tutti i placeholder con i dati
@@ -166,15 +130,14 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// </summary>
     private string ProcessConditionalBlocks(string html, Dictionary<string, object> data)
     {
-        // Implementazione semplificata per blocchi condizionali
-        // Puoi estendere questo per logica più complessa
-
-        // Esempio: {{#if showDetailedStats}}contenuto{{/if}}
         var patterns = new Dictionary<string, bool>
         {
             ["showDetailedStats"] = data.ContainsKey("detailedStats"),
             ["showCharts"] = (bool?)data.GetValueOrDefault("showCharts") ?? false,
-            ["showRawData"] = data.ContainsKey("rawDataSummary")
+            ["showRawData"] = data.ContainsKey("rawDataSummary"),
+            ["logoBase64"] = !string.IsNullOrEmpty(data.GetValueOrDefault("logoBase64")?.ToString()),
+            ["notes"] = !string.IsNullOrEmpty(data.GetValueOrDefault("notes")?.ToString()) &&
+                       data.GetValueOrDefault("notes")?.ToString() != "N/A"
         };
 
         foreach (var (condition, isTrue) in patterns)
@@ -212,328 +175,26 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
-    /// Template HTML di default integrato nel codice
-    /// </summary>
-    private string GetDefaultTemplate()
-    {
-        return @"<!DOCTYPE html>
-<html>
-<head>
-    <meta charset=""utf-8"" />
-    <title>PolarDrive Report {{reportId}}</title>
-    {{styles}}
-</head>
-<body>
-    <div class=""header"">
-        {{#if logoBase64}}
-        <img src=""data:image/png;base64,{{logoBase64}}"" alt=""Company Logo"" class=""logo"" />
-        {{/if}}
-        <h1>PolarDrive Report</h1>
-        <div class=""report-info"">
-            <div><strong>Azienda:</strong> {{companyName}} ({{vatNumber}})</div>
-            <div><strong>Veicolo:</strong> {{vehicleModel}} - {{vehicleVin}}</div>
-            <div><strong>Periodo:</strong> {{periodStart}} → {{periodEnd}}</div>
-            <div><strong>Generato:</strong> {{generatedAt}}</div>
-            {{#if notes}}
-            <div><strong>Note:</strong> {{notes}}</div>
-            {{/if}}
-        </div>
-    </div>
-
-    <hr />
-
-    <div class=""ai-insights section"">
-        <h2>Analisi Intelligente del Veicolo</h2>
-        <div class=""insights-content"">
-            {{insights}}
-        </div>
-    </div>
-
-    {{#if showDetailedStats}}
-    <div class=""detailed-stats section"">
-        <h2>Statistiche Dettagliate</h2>
-        <div class=""stats-content"">
-            {{detailedStats}}
-        </div>
-    </div>
-    {{/if}}
-
-    {{#if showRawData}}
-    <div class=""raw-data section"">
-        <h2>Riepilogo Dati Tecnici</h2>
-        <div class=""raw-data-content"">
-            {{rawDataSummary}}
-        </div>
-    </div>
-    {{/if}}
-
-    <div class=""footer"">
-        <p><small>Report generato da PolarDrive v{{reportVersion}} - {{generatedAt}}</small></p>
-    </div>
-</body>
-</html>";
-    }
-
-    /// <summary>
-    /// Stili CSS di default integrati nel codice
-    /// </summary>
-    private string GetDefaultStyles()
-    {
-        return @"
-        html, body, table {
-            font-size: 12px !important;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            line-height: 1.4;
-            font-weight: normal; /* ✅ Assicura font normale di base */
-        }
-
-        .header {
-            border-bottom: 3px solid #004E92;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-        }
-
-        .logo {
-            width: 120px;
-            height: auto;
-            margin-bottom: 12px;
-            float: right;
-        }
-
-        h1 {
-            color: #004E92;
-            margin-bottom: 15px;
-            font-size: 24px;
-            font-weight: 700; /* ✅ Solo titoli principali in grassetto */
-        }
-
-        h2 {
-            color: #004E92;
-            margin-top: 25px;
-            margin-bottom: 15px;
-            font-size: 18px;
-            font-weight: 600; /* ✅ Ridotto da bold (700) a 600 */
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
-        }
-
-        h3 {
-            color: #004E92;
-            font-size: 16px;
-            font-weight: 500; /* ✅ Ancora più leggero per h3 */
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
-
-        h4 {
-            color: #333;
-            font-size: 14px;
-            font-weight: 500; /* ✅ Peso normale per h4 */
-            margin-top: 15px;
-            margin-bottom: 8px;
-        }
-
-        .report-info {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-weight: normal; /* ✅ Testo normale per info report */
-        }
-
-        .report-info div {
-            margin-bottom: 5px;
-        }
-
-        /* ✅ GRASSETTO SOLO DOVE NECESSARIO */
-        .report-info strong {
-            font-weight: 600; /* ✅ Ridotto da bold (700) a 600 */
-        }
-
-        .section {
-            margin-bottom: 30px;
-            page-break-inside: avoid;
-        }
-
-        .insights-content {
-            background-color: #ffffff;
-            padding: 20px;
-            border-left: 4px solid #004E92;
-            margin: 15px 0;
-            font-weight: normal; /* ✅ Contenuto insights normale */
-        }
-
-        /* ✅ GRASSETTO SELETTIVO NEGLI INSIGHTS */
-        .insights-content h1,
-        .insights-content h2,
-        .insights-content h3 {
-            font-weight: 600; /* ✅ Intestazioni insights più leggere */
-        }
-
-        .insights-content strong {
-            font-weight: 600; /* ✅ Strong più leggero */
-            color: #004E92; /* ✅ Usa colore invece di peso eccessivo */
-        }
-
-        .insights-content b {
-            font-weight: 500; /* ✅ Tag <b> ancora più leggero */
-            color: #004E92;
-        }
-
-        .stats-content {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            font-weight: normal; /* ✅ Statistiche in peso normale */
-        }
-
-        .raw-data-content {
-            font-family: 'Courier New', monospace;
-            background-color: #f4f4f4;
-            padding: 15px;
-            border-radius: 5px;
-            font-size: 11px;
-            overflow-x: auto;
-            font-weight: normal; /* ✅ Dati raw normali */
-        }
-
-        /* ✅ TABELLE CON GRASSETTO RIDOTTO */
-        table {
-            width: 100%;
-            max-width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-            font-weight: normal; /* ✅ Tabelle normali */
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-            font-weight: normal; /* ✅ Celle normali */
-        }
-
-        td {
-            overflow: visible;
-            white-space: normal;
-            word-break: break-word;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            font-weight: 600; /* ✅ Header tabelle un po' più pesanti ma non bold */
-            color: #333;
-        }
-
-        /* ✅ PARAGRAFI E TESTO CORPO */
-        p {
-            font-weight: normal;
-            margin-bottom: 10px;
-            line-height: 1.5;
-        }
-
-        /* ✅ LISTE CON PESO NORMALE */
-        ul, ol {
-            font-weight: normal;
-            margin-bottom: 15px;
-            padding-left: 20px;
-        }
-
-        li {
-            font-weight: normal;
-            margin-bottom: 5px;
-        }
-
-        /* ✅ ENFASI CONTROLLATA */
-        .important {
-            font-weight: 600; /* ✅ Solo per elementi veramente importanti */
-            color: #004E92;
-        }
-
-        .emphasis {
-            font-weight: 500; /* ✅ Enfasi leggera */
-            color: #333;
-        }
-
-        /* ✅ OVERRIDE PER MARKDOWN CONVERTITO */
-        .insights-content h1 { font-weight: 600; font-size: 20px; }
-        .insights-content h2 { font-weight: 500; font-size: 18px; }
-        .insights-content h3 { font-weight: 500; font-size: 16px; }
-        .insights-content h4 { font-weight: 400; font-size: 14px; }
-
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            text-align: center;
-            color: #666;
-            font-weight: normal; /* ✅ Footer normale */
-        }
-
-        /* ✅ STILI SPECIFICI PER LA STAMPA */
-        @media print {
-            html, body {
-                font-size: 12px !important;
-            }
-
-            /* ✅ Riduci ulteriormente i grassetti in stampa */
-            h1 { font-weight: 600; }
-            h2 { font-weight: 500; }
-            h3 { font-weight: 500; }
-            strong { font-weight: 500; }
-            th { font-weight: 500; }
-
-            .section {
-                page-break-inside: avoid;
-            }
-
-            .header {
-                page-break-after: avoid;
-            }
-
-            table {
-                page-break-inside: auto;
-            }
-
-            tr {
-                page-break-inside: avoid;
-            }
-
-            .logo {
-                max-width: 100px;
-            }
-        }";
-    }
-
-    /// <summary>
     /// Formatta gli insights AI per HTML (converte markdown base in HTML)
+    /// NOTA: Non include più stili CSS inline - gli stili sono centralizzati in DefaultCssTemplate
     /// </summary>
     private string FormatInsightsForHtml(string insights)
     {
         if (string.IsNullOrWhiteSpace(insights))
-            return "<p>Nessun insight disponibile.</p>";
+            return "<p class='insight-empty'>Nessun insight disponibile.</p>";
 
         var html = insights;
 
-        // ✅ CONVERSIONI MARKDOWN CON GRASSETTO CONTROLLATO
-
-        // Headers con peso ridotto
+        // Headers con classi CSS centralizzate
         html = System.Text.RegularExpressions.Regex.Replace(html, @"^### (.+)$", "<h4 class='insight-h4'>$1</h4>", System.Text.RegularExpressions.RegexOptions.Multiline);
         html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$", "<h3 class='insight-h3'>$1</h3>", System.Text.RegularExpressions.RegexOptions.Multiline);
         html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$", "<h2 class='insight-h2'>$1</h2>", System.Text.RegularExpressions.RegexOptions.Multiline);
 
-        // ✅ GRASSETTO CONTROLLATO: ** diventa <span class='emphasis'> invece di <strong>
+        // Formattazione testo con classi CSS centralizzate
         html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*", "<span class='emphasis'>$1</span>");
-
-        // ✅ GRASSETTO FORTE: usa classe specifica solo quando necessario
         html = System.Text.RegularExpressions.Regex.Replace(html, @"__(.+?)__", "<span class='important'>$1</span>");
 
-        // Liste con stile normale
+        // Liste con classi CSS centralizzate
         html = System.Text.RegularExpressions.Regex.Replace(html, @"^- (.+)$", "<li class='insight-li'>$1</li>", System.Text.RegularExpressions.RegexOptions.Multiline);
 
         // Avvolgi le liste
@@ -542,7 +203,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             html = "<ul class='insight-list'>\n" + html + "\n</ul>";
         }
 
-        // Paragrafi normali
+        // Paragrafi normali con classi CSS centralizzate
         var lines = html.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         var formattedLines = new List<string>();
 
@@ -559,23 +220,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             }
         }
 
-        var result = string.Join("\n", formattedLines);
-
-        // ✅ AGGIUNGI STILI INLINE PER GLI INSIGHTS
-        var styledResult = @"
-<style>
-.insight-h2 { font-weight: 600; color: #004E92; font-size: 18px; margin: 20px 0 15px 0; }
-.insight-h3 { font-weight: 500; color: #004E92; font-size: 16px; margin: 15px 0 10px 0; }
-.insight-h4 { font-weight: 500; color: #333; font-size: 14px; margin: 15px 0 8px 0; }
-.insight-p { font-weight: normal; margin-bottom: 10px; line-height: 1.5; }
-.insight-list { font-weight: normal; margin: 15px 0; padding-left: 20px; }
-.insight-li { font-weight: normal; margin-bottom: 5px; }
-.emphasis { font-weight: 500; color: #004E92; }  /* ✅ Enfasi leggera invece di bold */
-.important { font-weight: 600; color: #d63384; } /* ✅ Solo per cose veramente importanti */
-</style>
-" + result;
-
-        return styledResult;
+        return string.Join("\n", formattedLines);
     }
 
     /// <summary>
@@ -634,7 +279,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
                 .FirstOrDefaultAsync();
 
             return $@"
-                <table>
+                <table class='stats-table'>
                     <tr><th>Metrica</th><th>Valore</th></tr>
                     <tr><td>Record di dati analizzati</td><td>{dataCount}</td></tr>
                     <tr><td>Primo record</td><td>{firstRecord:yyyy-MM-dd HH:mm}</td></tr>
@@ -645,7 +290,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
         }
         catch
         {
-            return "<p>Statistiche dettagliate non disponibili.</p>";
+            return "<p class='stats-error'>Statistiche dettagliate non disponibili.</p>";
         }
     }
 
@@ -666,45 +311,49 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
                 .ToListAsync();
 
             var sb = new StringBuilder();
+            sb.AppendLine("<div class='raw-data-summary'>");
 
             foreach (var data in recentData)
             {
-                sb.AppendLine($"[{data.Timestamp:yyyy-MM-dd HH:mm:ss}]");
-                sb.AppendLine($"Dimensione: {data.RawJson?.Length ?? 0} caratteri");
-                sb.AppendLine("---");
+                sb.AppendLine($"<div class='raw-data-entry'>");
+                sb.AppendLine($"<div class='raw-data-timestamp'>[{data.Timestamp:yyyy-MM-dd HH:mm:ss}]</div>");
+                sb.AppendLine($"<div class='raw-data-size'>Dimensione: {data.RawJson?.Length ?? 0} caratteri</div>");
+                sb.AppendLine("</div>");
             }
 
+            sb.AppendLine("</div>");
             return sb.ToString();
         }
         catch
         {
-            return "Dati grezzi non disponibili.";
+            return "<p class='raw-data-error'>Dati grezzi non disponibili.</p>";
         }
     }
 
     /// <summary>
     /// Genera HTML di fallback in caso di errore
+    /// Utilizza gli stili centralizzati anche per l'errore
     /// </summary>
     private string GenerateErrorFallbackHtml(PdfReport report, string insights, string errorMessage)
     {
+        var styles = DefaultCssTemplate.Value;
+
         return $@"<!DOCTYPE html>
 <html>
 <head>
     <meta charset=""utf-8"" />
     <title>PolarDrive Report {report.Id} - Errore</title>
-    <style>
-        body {{ font-family: Arial, sans-serif; margin: 40px; }}
-        .error {{ color: red; background-color: #ffe6e6; padding: 15px; border-radius: 5px; }}
-        h1 {{ color: #004E92; }}
-    </style>
+    <style>{styles}</style>
 </head>
 <body>
-    <h1>PolarDrive Report {report.Id}</h1>
-    <div class=""error"">
-        <strong>Errore nella generazione del report:</strong> {errorMessage}
+    <div class='error-container'>
+        <h1 class='error-title'>PolarDrive Report {report.Id}</h1>
+        <div class='error-message'>
+            <strong>Errore nella generazione del report:</strong> {errorMessage}
+        </div>
+        <h2>Contenuto PolarAi (Fallback)</h2>
+        <div class='error-fallback-content'>{insights}</div>
     </div>
-    <h2>Contenuto PolarAi (Fallback)</h2>
-    <div>{insights}</div>
 </body>
 </html>";
     }

@@ -136,14 +136,14 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
 
         var duration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
 
-        if (duration >= 720) // ~30 giorni
-            return "admin.vehicleReports.reporttypemonthly";
+        if (duration >= 24) // 1 giorno
+            return "admin.vehicleReports.reporttypedaily";
 
         if (duration >= 168) // 7 giorni  
             return "admin.vehicleReports.reporttypeweekly";
 
-        if (duration >= 24) // 1 giorno
-            return "admin.vehicleReports.reporttypedaily";
+        if (duration >= 720) // ~30 giorni
+            return "admin.vehicleReports.reporttypemonthly";
 
         return "admin.vehicleReports.reporttypedailypartial";
     }
@@ -469,12 +469,12 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
             if (string.IsNullOrWhiteSpace(insights))
             {
                 insights = @"
-                <h2>Report Generato</h2>
-                <p>Report generato automaticamente per il veicolo.</p>
-                <p>Periodo: " + report.ReportPeriodStart.ToString("dd/MM/yyyy") +
+            <h2>Report Generato</h2>
+            <p>Report generato automaticamente per il veicolo.</p>
+            <p>Periodo: " + report.ReportPeriodStart.ToString("dd/MM/yyyy") +
                         " - " + report.ReportPeriodEnd.ToString("dd/MM/yyyy") + @"</p>
-                <p>Al momento non sono disponibili dati sufficienti per un'analisi dettagliata.</p>
-            ";
+            <p>Al momento non sono disponibili dati sufficienti per un'analisi dettagliata.</p>
+        ";
             }
 
             await _logger.Info(source, "Insights PolarAi generati",
@@ -487,7 +487,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 ShowDetailedStats = true,
                 ShowRawData = false,
                 ReportType = "PolarAi Analysis",
-                AdditionalCss = GetReportStyles()
+                AdditionalCss = PolarAiReports.Templates.DefaultCssTemplate.Value
             };
 
             var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
@@ -512,13 +512,13 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 MarginRight = "1.5cm",
                 DisplayHeaderFooter = true,
                 HeaderTemplate = $@"
-                <div style='font-size: 10px; width: 100%; text-align: center; color: #667eea; border-bottom: 1px solid #667eea; padding-bottom: 5px;'>
-                    <span>🧠 PolarAi Analysis - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
-                </div>",
+            <div style='font-size: 10px; width: 100%; text-align: center; color: #667eea; border-bottom: 1px solid #667eea; padding-bottom: 5px;'>
+                <span>🧠 PolarAi Analysis - {report.ClientVehicle?.Vin} - Rigenerato {DateTime.UtcNow:yyyy-MM-dd HH:mm}</span>
+            </div>",
                 FooterTemplate = @"
-                <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
-                    <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span></span>
-                </div>"
+            <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
+                <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span></span>
+            </div>"
             };
 
             var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
@@ -550,80 +550,6 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
                 $"ReportId: {report.Id}, Error: {ex}");
             return RegenerationResult.CreateFailure($"Errore rigenerazione: {ex.Message}");
         }
-    }
-
-    /// <summary>
-    /// Stili CSS per i report
-    /// </summary>
-    private string GetReportStyles()
-    {
-        return @"
-        .ai-report-badge {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 12px;
-            font-weight: 500;
-            display: inline-block;
-            margin: 10px 15px 10px 0;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        .report-info::after {
-            content: ' 🧠 Analisi PolarAi';
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 500;
-            margin-left: 10px;
-        }
-        
-        .ai-insights {
-            border-left: 5px solid #667eea;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            padding: 20px;
-            border-radius: 0 12px 12px 0;
-        }
-        
-        .ai-insights::before {
-            content: '🧠 Analisi PolarAi • ';
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .ai-insights * {
-            font-weight: normal !important;
-        }
-        
-        .ai-insights h1, .ai-insights h2, .ai-insights h3, .ai-insights h4 {
-            font-weight: 500 !important;
-        }
-        
-        .ai-insights strong, .ai-insights b {
-            font-weight: 500 !important;
-            color: #667eea;
-        }
-        
-        .data-evolution {
-            border: 2px dashed #667eea;
-            padding: 15px;
-            margin: 20px 0;
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 8px;
-        }
-        
-        .data-evolution::before {
-            content: '📈 Evoluzione Dati • ';
-            color: #667eea;
-            font-weight: 500;
-        }";
     }
 
     /// <summary>
@@ -664,47 +590,6 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         _logger.Debug("GetReportFilePath", $"Using default path for report {report.Id}",
             $"Path: {standardPath}");
         return standardPath;
-    }
-
-    /// <summary>
-    /// Stili CSS personalizzati per report rigenerati
-    /// </summary>
-    private string GetCustomRegenerationStyles()
-    {
-        return @"
-            .regenerated-badge {
-                background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
-                color: #000;
-                padding: 6px 12px;
-                border-radius: 20px;
-                font-size: 11px;
-                font-weight: bold;
-                display: inline-block;
-                margin-left: 15px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            }
-            
-            .report-info::after {
-                content: ' 🔄 RIGENERATO';
-                background-color: #ffc107;
-                color: #000;
-                padding: 2px 6px;
-                border-radius: 4px;
-                font-size: 10px;
-                font-weight: bold;
-                margin-left: 10px;
-            }
-            
-            .ai-insights {
-                border-left: 5px solid #ffc107;
-            }
-            
-            .ai-insights::before {
-                content: '🔄 Report Rigenerato • ';
-                color: #ffc107;
-                font-weight: bold;
-                font-size: 12px;
-            }";
     }
     #endregion
 
