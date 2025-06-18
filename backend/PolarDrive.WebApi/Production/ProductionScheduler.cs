@@ -431,7 +431,6 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             ShowDetailedStats = true,
             ShowRawData = false,
             ReportType = $"🧠 {reportPeriod.AnalysisLevel} - Production",
-            AdditionalCss = GetProductionStyles()
         };
 
         var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
@@ -631,99 +630,6 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             AnalysisLevel = finalAnalysisLevel,
             MonitoringDays = monitoringPeriod.TotalDays
         };
-    }
-
-    /// <summary>
-    /// Stili CSS per report production
-    /// </summary>
-    private string GetProductionStyles()
-    {
-        return @"
-                .production-badge {
-                    background: linear-gradient(135deg, #004E92 0%, #000428 100%);
-                    color: white;
-                    padding: 8px 16px;
-                    border-radius: 25px;
-                    font-size: 12px;
-                    font-weight: 500;
-                    display: inline-block;
-                    margin: 10px 15px 10px 0;
-                    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-                }
-                
-                .production-badge::before {
-                    content: '🏭 PRODUCTION • ';
-                }
-                
-                .production {
-                    background: linear-gradient(135deg, rgba(0, 78, 146, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
-                    border: 2px solid #004E92;
-                    padding: 20px;
-                    margin: 20px 0;
-                    border-radius: 12px;
-                }
-                
-                .production::before {
-                    content: '🏭 Production Environment • 🧠 PolarAi Analysis • ';
-                    color: #004E92;
-                    font-weight: 500;
-                    font-size: 14px;
-                }
-                
-                .production * {
-                    font-weight: normal !important;
-                }
-                
-                .production h1, .production h2, 
-                .production h3, .production h4 {
-                    font-weight: 500 !important;
-                }
-                
-                .production strong, .production b {
-                    font-weight: 500 !important;
-                    color: #004E92;
-                }
-                
-                .ai-insights {
-                    border-left: 5px solid #004E92;
-                    background: linear-gradient(135deg, rgba(0, 78, 146, 0.05) 0%, rgba(102, 126, 234, 0.05) 100%);
-                    padding: 25px;
-                    border-radius: 0 12px 12px 0;
-                }
-                
-                .ai-insights::before {
-                    content: '🧠 Analisi PolarAi Production • ';
-                    background: linear-gradient(135deg, #004E92 0%, #667eea 100%);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                    font-weight: 500;
-                    font-size: 14px;
-                }
-                
-                .ai-insights * {
-                    font-weight: normal !important;
-                }
-                
-                .ai-insights strong, .ai-insights b {
-                    font-weight: 500 !important;
-                }
-                
-                .production-info {
-                    background: #e8f4fd;
-                    border: 1px solid #004E92;
-                    padding: 15px;
-                    border-radius: 8px;
-                    margin: 20px 0;
-                    font-size: 13px;
-                    color: #004E92;
-                    font-weight: normal;
-                }
-                
-                .production-info::before {
-                    content: '🏭 Production Schedule: ';
-                    font-weight: 500;
-                }";
     }
 
     /// <summary>

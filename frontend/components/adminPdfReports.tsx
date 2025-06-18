@@ -58,7 +58,7 @@ export default function AdminPdfReports({
         return "bg-yellow-100 text-yellow-700 border-yellow-500";
       case "NO-DATA":
         return "bg-red-100 text-red-700 border-red-500";
-      case "READY":
+      case "GENERATE-READY":
         return "bg-blue-100 text-blue-700 border-blue-500";
       case "WAITING-RECORDS":
         return "bg-orange-100 text-orange-700 border-orange-500";
@@ -288,7 +288,7 @@ export default function AdminPdfReports({
     }
 
     if (report.dataRecordsCount >= 5) {
-      return { text: "READY" };
+      return { text: "GENERATE-READY" };
     }
 
     if (report.dataRecordsCount < 5 && report.dataRecordsCount > 0) {
@@ -424,13 +424,11 @@ export default function AdminPdfReports({
                     {report.companyVatNumber} - {report.companyName}
                   </div>
                   <div className="flex flex-wrap items-center gap-1">
-                    {report.reportType &&
-                      report.reportType !==
-                        "admin.vehicleReports.reportTypeStandard" && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          {t(report.reportType)}
-                        </div>
-                      )}
+                    {report.reportType && (
+                      <div className="text-xs text-gray-400 mt-1">
+                        {t(report.reportType)}
+                      </div>
+                    )}
                     {report.isRegenerated && (
                       <div className="text-xs text-orange-600 font-medium mt-1">
                         - {t("admin.vehicleReports.regenerated")}{" "}
@@ -445,7 +443,7 @@ export default function AdminPdfReports({
                   {report.vehicleVin} - {report.vehicleModel}
                   {report.monitoringDurationHours > 0 && (
                     <div className="text-xs text-gray-400 mt-1">
-                      {report.monitoringDurationHours.toFixed(1)}h{" "}
+                      {Math.round(report.monitoringDurationHours)}h{" "}
                       {t("admin.vehicleReports.monitored")}
                     </div>
                   )}

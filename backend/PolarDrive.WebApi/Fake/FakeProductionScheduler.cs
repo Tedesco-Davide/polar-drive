@@ -264,7 +264,6 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
             ShowDetailedStats = true,
             ShowRawData = false,
             ReportType = $"🧠 {reportPeriod.AnalysisLevel} - Development Cycle",
-            AdditionalCss = GetFakeSchedulerStyles()
         };
 
         var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
@@ -504,74 +503,6 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
         {
             return false;
         }
-    }
-
-    /// <summary>
-    /// ✅ MIGLIORATO: Stili CSS per report fake scheduler
-    /// </summary>
-    private string GetFakeSchedulerStyles()
-    {
-        return @"
-        .development-badge {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 12px;
-            font-weight: 500;
-            display: inline-block;
-            margin: 10px 15px 10px 0;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-        
-        .development-badge::before {
-            content: '🧪 DEVELOPMENT • ';
-        }
-        
-        .development {
-            background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(102, 126, 234, 0.1) 100%);
-            border: 2px dashed #ff6b6b;
-            padding: 15px;
-            margin: 20px 0;
-            border-radius: 8px;
-        }
-        
-        .development::before {
-            content: '🧪 Development Testing • 🧠 PolarAi • ';
-            color: #ff6b6b;
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .development * {
-            font-weight: normal !important;
-        }
-        
-        .development h1, .development h2, 
-        .development h3, .development h4 {
-            font-weight: 500 !important;
-        }
-        
-        .development strong, .development b {
-            font-weight: 500 !important;
-            color: #ff6b6b;
-        }
-        
-        .fake-scheduler-info {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            padding: 12px;
-            border-radius: 6px;
-            margin: 15px 0;
-            font-size: 12px;
-            color: #856404;
-            font-weight: normal;
-        }
-        
-        .fake-scheduler-info::before {
-            content: '⚡ Fast Development Cycle: ';
-            font-weight: 500;
-        }";
     }
 
     /// <summary>

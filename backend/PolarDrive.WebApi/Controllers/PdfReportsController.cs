@@ -132,20 +132,20 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
     private static string DetermineReportType(Data.Entities.PdfReport report, int dataCount)
     {
         if (dataCount == 0)
-            return "admin.vehicleReports.reportTypeNoData";
+            return "admin.vehicleReports.reporttypenodata";
 
         var duration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
 
         if (duration >= 720) // ~30 giorni
-            return "admin.vehicleReports.reportTypeMonthly";
+            return "admin.vehicleReports.reporttypemonthly";
 
         if (duration >= 168) // 7 giorni  
-            return "admin.vehicleReports.reportTypeWeekly";
+            return "admin.vehicleReports.reporttypeweekly";
 
         if (duration >= 24) // 1 giorno
-            return "admin.vehicleReports.reportTypeDaily";
+            return "admin.vehicleReports.reporttypedaily";
 
-        return "admin.vehicleReports.reportTypeStandard";
+        return "admin.vehicleReports.reporttypedailypartial";
     }
 
     /// <summary>
@@ -165,7 +165,7 @@ public class PdfReportsController(PolarDriveDbContext db) : ControllerBase
         if (dataCount < 5)
             return "WAITING-RECORDS";
 
-        return "READY";
+        return "GENERATE-READY";
     }
 
     /// <summary>
