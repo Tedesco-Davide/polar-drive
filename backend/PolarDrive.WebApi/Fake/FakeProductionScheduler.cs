@@ -186,10 +186,12 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     /// </summary>
     private async Task GenerateReportForVehicle(PolarDriveDbContext db, int vehicleId, DateTime now)
     {
-        var vehicle = await db.ClientVehicles.FindAsync(vehicleId);
+        var vehicle = await db.ClientVehicles
+            .Include(v => v.ClientCompany)
+            .FirstOrDefaultAsync(v => v.Id == vehicleId);
+
         if (vehicle == null) return;
 
-        // ✅ NUOVO: Log grace period
         if (!vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag)
         {
             _logger.LogInformation("⏳ Grace Period - Generating report for {VIN} with terminated contract - awaiting token revocation",
@@ -227,7 +229,6 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
         db.PdfReports.Add(report);
         await db.SaveChangesAsync();
 
-        // ✅ NUOVO: Controllo se i servizi HTML/PDF sono disponibili
         var shouldGenerateFiles = await CheckFileGenerationServices();
 
         if (shouldGenerateFiles)
@@ -264,6 +265,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
             ShowDetailedStats = true,
             ShowRawData = false,
             ReportType = $"🧠 {reportPeriod.AnalysisLevel} - Development Cycle",
+            AdditionalCss = PolarAiReports.Templates.DefaultCssTemplate.Value
         };
 
         var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
@@ -299,7 +301,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
 
         var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
 
-        // Salva PDF solo nella directory "reports", NON in dev-reports
+        // Salva PDF solo nella directory "reports"
         var pdfPath = Path.Combine("storage", "reports",
             report.ReportPeriodStart.Year.ToString(),
             report.ReportPeriodStart.Month.ToString("D2"),

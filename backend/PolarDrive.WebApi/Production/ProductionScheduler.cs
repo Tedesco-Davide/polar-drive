@@ -391,7 +391,10 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
     /// </summary>
     private async Task GenerateReportForVehicleProduction(PolarDriveDbContext db, int vehicleId, string analysisLevel, int defaultDataHours)
     {
-        var vehicle = await db.ClientVehicles.FindAsync(vehicleId);
+        var vehicle = await db.ClientVehicles
+            .Include(v => v.ClientCompany)
+            .FirstOrDefaultAsync(v => v.Id == vehicleId);
+
         if (vehicle == null) return;
 
         var now = DateTime.UtcNow;
@@ -431,6 +434,7 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             ShowDetailedStats = true,
             ShowRawData = false,
             ReportType = $"🧠 {reportPeriod.AnalysisLevel} - Production",
+            AdditionalCss = PolarAiReports.Templates.DefaultCssTemplate.Value
         };
 
         var htmlContent = await htmlService.GenerateHtmlReportAsync(report, insights, htmlOptions);
@@ -455,25 +459,25 @@ public class ProductionScheduler(IServiceProvider serviceProvider, ILogger<Produ
             MarginRight = "1.5cm",
             DisplayHeaderFooter = true,
             HeaderTemplate = $@"
-        <div style='font-size: 10px; width: 100%; text-align: center; color: #004E92; border-bottom: 1px solid #004E92; padding-bottom: 5px;'>
-            <span>🏭 PolarDrive {reportPeriod.AnalysisLevel} - {vehicle.Vin} - {reportPeriod.MonitoringDays:F1}d monitoring - {now:yyyy-MM-dd HH:mm}</span>
-        </div>",
+            <div style='font-size: 10px; width: 100%; text-align: center; color: #004E92; border-bottom: 1px solid #004E92; padding-bottom: 5px;'>
+                <span>🧠 PolarDrive {reportPeriod.AnalysisLevel} - {vehicle.Vin} - {reportPeriod.MonitoringDays:F1}d monitoring - {now:yyyy-MM-dd HH:mm}</span>
+            </div>",
             FooterTemplate = @"
-        <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
-            <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | Production Analysis</span>
-        </div>"
+            <div style='font-size: 10px; width: 100%; text-align: center; color: #666; border-top: 1px solid #ccc; padding-top: 5px;'>
+                <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | Production Analysis</span>
+            </div>"
         };
 
         var pdfBytes = await pdfService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
 
-        // Salva PDF
-        var pdfPath = GetProductionReportFilePath(report, "pdf");
-        var pdfDirectory = Path.GetDirectoryName(pdfPath);
-        if (!string.IsNullOrEmpty(pdfDirectory))
-        {
-            Directory.CreateDirectory(pdfDirectory);
-        }
-        await File.WriteAllBytesAsync(pdfPath, pdfBytes);
+        // Salva PDF solo nella directory "reports"
+        var pdfPath = Path.Combine("storage", "reports",
+            report.ReportPeriodStart.Year.ToString(),
+            report.ReportPeriodStart.Month.ToString("D2"),
+            $"PolarDrive_Report_{report.Id}.pdf");
+
+        Directory.CreateDirectory(Path.GetDirectoryName(pdfPath)!);
+        await System.IO.File.WriteAllBytesAsync(pdfPath, pdfBytes);
 
         _logger.LogInformation("✅ Production report generated for {VIN}: ReportId {ReportId}, Level: {Level}, Monitoring: {Days:F1}d, Size: {Size} bytes",
             vehicle.Vin, report.Id, reportPeriod.AnalysisLevel, reportPeriod.MonitoringDays, pdfBytes.Length);

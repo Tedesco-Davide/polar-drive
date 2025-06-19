@@ -13,10 +13,10 @@ public static class DefaultHtmlTemplate
 <body>
     <div class=""report-container"">
         <!-- Header con logo aziendale -->
-        <header class=""report-header"">
+        <header class=""report-header header"">
             {{#if logoBase64}}
             <div class=""company-logo"">
-                <img src=""data:image/png;base64,{{logoBase64}}"" alt=""Logo Aziendale"" />
+                <img src=""data:image/png;base64,{{logoBase64}}"" alt=""Logo Aziendale"" class=""logo"" />
             </div>
             {{/if}}
             <h1 class=""report-title"">PolarDrive Report</h1>
@@ -24,7 +24,7 @@ public static class DefaultHtmlTemplate
         </header>
 
         <!-- Informazioni principali -->
-        <section class=""report-info"">
+        <section class=""section report-info"">
             <div class=""info-grid"">
                 <div class=""info-item"">
                     <strong>Azienda:</strong> {{companyName}} ({{vatNumber}})
@@ -47,7 +47,7 @@ public static class DefaultHtmlTemplate
         </section>
 
         <!-- Analisi AI -->
-        <section class=""ai-insights"">
+        <section class=""section ai-insights"">
             <h2 class=""section-title"">Analisi Intelligente del Veicolo</h2>
             <div class=""insights-content"">
                 {{insights}}
@@ -56,7 +56,7 @@ public static class DefaultHtmlTemplate
 
         <!-- Statistiche dettagliate (condizionali) -->
         {{#if showDetailedStats}}
-        <section class=""detailed-stats"">
+        <section class=""section detailed-stats"">
             <h2 class=""section-title"">Statistiche Dettagliate</h2>
             <div class=""stats-content"">
                 {{detailedStats}}
@@ -66,7 +66,7 @@ public static class DefaultHtmlTemplate
 
         <!-- Dati grezzi (condizionali) -->
         {{#if showRawData}}
-        <section class=""raw-data"">
+        <section class=""section raw-data"">
             <h2 class=""section-title"">Riepilogo Dati Tecnici</h2>
             <div class=""raw-data-content"">
                 {{rawDataSummary}}
@@ -75,7 +75,7 @@ public static class DefaultHtmlTemplate
         {{/if}}
 
         <!-- Footer -->
-        <footer class=""report-footer"">
+        <footer class=""report-footer footer"">
             <div class=""footer-content"">
                 <p>Report generato da PolarDrive v{{reportVersion}} - {{generatedAt}}</p>
                 <p class=""company-info"">DataPolar SRLS - Startup Innovativa</p>
