@@ -94,10 +94,7 @@ export default function AdminPdfReports({
     );
   }, [currentPage]);
 
-  const handleDownload = async (
-    report: PdfReport,
-    forceRegenerate: boolean = false
-  ) => {
+  const handleDownload = async (report: PdfReport) => {
     setDownloadingId(report.id);
 
     try {
@@ -105,11 +102,10 @@ export default function AdminPdfReports({
         "AdminPdfReports",
         "INFO",
         "Download started",
-        `ReportId: ${report.id}, Type: ${report.reportType}, HasPDF: ${report.hasPdfFile}, Force: ${forceRegenerate}`
+        `ReportId: ${report.id}, Type: ${report.reportType}, HasPDF: ${report.hasPdfFile}`
       );
 
-      const regenerateParam = forceRegenerate ? "?regenerate=true" : "";
-      const downloadUrl = `${API_BASE_URL}/api/pdfreports/${report.id}/download${regenerateParam}`;
+      const downloadUrl = `${API_BASE_URL}/api/pdfreports/${report.id}/download`;
 
       const response = await fetch(downloadUrl, {
         method: "GET",
@@ -148,7 +144,7 @@ export default function AdminPdfReports({
         }`
       );
 
-      if (isHtml && !forceRegenerate) {
+      if (isHtml) {
         alert(t("admin.vehicleReports.pdfNotAvailable"));
       }
     } catch (error) {
@@ -367,7 +363,7 @@ export default function AdminPdfReports({
                       reportType ? `(${reportType})` : ""
                     }`}
                     disabled={!isDownloadable || downloadingId === report.id}
-                    onClick={() => handleDownload(report, false)}
+                    onClick={() => handleDownload(report)}
                   >
                     {downloadingId === report.id ? (
                       <AdminLoader inline />

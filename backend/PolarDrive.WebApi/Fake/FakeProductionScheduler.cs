@@ -184,7 +184,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     /// <summary>
     /// Genera report con controlli di sicurezza
     /// </summary>
-    private async Task GenerateReportForVehicle(PolarDriveDbContext db, int vehicleId, DateTime now)
+    public async Task GenerateReportForVehicle(PolarDriveDbContext db, int vehicleId, DateTime now)
     {
         var vehicle = await db.ClientVehicles
             .Include(v => v.ClientCompany)
@@ -255,7 +255,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     /// <summary>
     /// Generazione HTML e PDF separata con gestione errori
     /// </summary>
-    private async Task GenerateHtmlAndPdfFiles(PolarDriveDbContext db, Data.Entities.PdfReport report,
+    public async Task GenerateHtmlAndPdfFiles(PolarDriveDbContext db, Data.Entities.PdfReport report,
         string insights, ReportPeriodInfo reportPeriod, Data.Entities.ClientVehicle vehicle, DateTime now)
     {
         // Genera HTML con insights
@@ -383,7 +383,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     /// <summary>
     /// Usa ReportPeriodInfo condivisa dal namespace Production
     /// </summary>
-    private async Task<ReportPeriodInfo> DetermineReportPeriod(PolarDriveDbContext db, int vehicleId)
+    public async Task<ReportPeriodInfo> DetermineReportPeriod(PolarDriveDbContext db, int vehicleId)
     {
         var firstRecord = await db.VehiclesData
             .Where(vd => vd.VehicleId == vehicleId)
@@ -487,7 +487,7 @@ public class FakeProductionScheduler(IServiceProvider serviceProvider, ILogger<F
     /// <summary>
     /// Verifica se servizi di generazione file sono disponibili
     /// </summary>
-    private async Task<bool> CheckFileGenerationServices()
+    public async Task<bool> CheckFileGenerationServices()
     {
         try
         {
