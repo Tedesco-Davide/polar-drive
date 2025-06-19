@@ -344,7 +344,6 @@ export default function AdminPdfReports({
 
             const dataCount = report.dataRecordsCount;
             const isDownloadable = report.hasPdfFile || report.hasHtmlFile;
-            const reportType = report.reportType;
             const fileSize = report.hasPdfFile
               ? report.pdfFileSize
               : report.htmlFileSize;
@@ -359,9 +358,7 @@ export default function AdminPdfReports({
                   {/* Download Button */}
                   <button
                     className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600"
-                    title={`${t("admin.vehicleReports.downloadSinglePdf")} ${
-                      reportType ? `(${reportType})` : ""
-                    }`}
+                    title={t("admin.vehicleReports.downloadSinglePdf")}
                     disabled={!isDownloadable || downloadingId === report.id}
                     onClick={() => handleDownload(report)}
                   >
