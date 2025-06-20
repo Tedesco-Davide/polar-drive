@@ -168,17 +168,6 @@ public class TeslaFakeApiController : ControllerBase
 
             switch (request.Action.ToLower())
             {
-                case "reset_retries":
-                    if (_env.IsDevelopment() && _fakeScheduler != null)
-                    {
-                        _fakeScheduler.ResetRetryCounters();
-                        return Ok(new { success = true, message = "Fake scheduler retry counters reset" });
-                    }
-                    else
-                    {
-                        return BadRequest("Scheduler not available");
-                    }
-
                 case "force_report":
                     if (!int.TryParse(request.VehicleId, out var vehicleId))
                     {

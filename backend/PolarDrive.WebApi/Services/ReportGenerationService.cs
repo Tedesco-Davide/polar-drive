@@ -150,8 +150,8 @@ namespace PolarDrive.WebApi.Services
 
             // 1) Carica il report e il veicolo associato
             var report = await db.PdfReports
-                                 .Include(r => r.ClientVehicle)
-                                 .ThenInclude(v => v.ClientCompany)
+                                 .Include(r => r.ClientVehicle!)
+                                 .ThenInclude(v => v!.ClientCompany)
                                  .FirstOrDefaultAsync(r => r.Id == reportId)
                          ?? throw new InvalidOperationException($"Report {reportId} non trovato");
 
@@ -159,7 +159,7 @@ namespace PolarDrive.WebApi.Services
 
             // 2) Ricalcola gli insights (stessa logica di GenerateReportForVehicle)
             var aiGen = new PolarAiReportGenerator(db);
-            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id);
+            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle!.Id);
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"Nessun insight per {vehicle.Vin}");
 
