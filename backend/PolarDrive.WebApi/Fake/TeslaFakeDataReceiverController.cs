@@ -5,7 +5,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Production;
 
-namespace PolarDrive.WebApi.Fake;
+namespace PolarDrive.WebApi.Scheduler;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -540,7 +540,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
             var vehicleDataService = _serviceProvider.GetService<VehicleDataService>();
 
             // Check FakeProductionScheduler
-            var fakeScheduler = _serviceProvider.GetService<Fake.FakeProductionScheduler>();
+            var fakeScheduler = _serviceProvider.GetService<Scheduler.PolarDriveScheduler>();
 
             // Check AI service
             var aiAvailable = false;

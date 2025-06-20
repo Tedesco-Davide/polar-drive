@@ -2,11 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
-using PolarDrive.WebApi.Fake;
+using PolarDrive.WebApi.Scheduler;
 using PolarDrive.WebApi.Production;
 using PolarDrive.WebApi.PolarAiReports;
 
-namespace PolarDrive.WebApi.Fake;
+namespace PolarDrive.WebApi.Scheduler;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -15,8 +15,7 @@ public class TeslaFakeApiController : ControllerBase
     private readonly PolarDriveDbContext _db;
     private readonly PolarDriveLogger _logger;
     private readonly IWebHostEnvironment _env;
-    private readonly FakeProductionScheduler? _fakeScheduler;
-    private readonly ProductionScheduler? _productionScheduler;
+    private readonly PolarDriveScheduler? _fakeScheduler;
 
     public TeslaFakeApiController(PolarDriveDbContext db, IWebHostEnvironment env, IServiceProvider serviceProvider)
     {
@@ -27,8 +26,7 @@ public class TeslaFakeApiController : ControllerBase
         // ✅ NUOVO: Ottieni riferimenti agli scheduler per controllo manuale
         try
         {
-            _fakeScheduler = serviceProvider.GetService<FakeProductionScheduler>();
-            _productionScheduler = serviceProvider.GetService<ProductionScheduler>();
+            _fakeScheduler = serviceProvider.GetService<PolarDriveScheduler>();
         }
         catch
         {
@@ -176,11 +174,6 @@ public class TeslaFakeApiController : ControllerBase
                         _fakeScheduler.ResetRetryCounters();
                         return Ok(new { success = true, message = "Fake scheduler retry counters reset" });
                     }
-                    else if (!_env.IsDevelopment() && _productionScheduler != null)
-                    {
-                        _productionScheduler.ResetRetryCounters();
-                        return Ok(new { success = true, message = "Production scheduler retry counters reset" });
-                    }
                     else
                     {
                         return BadRequest("Scheduler not available");
@@ -198,10 +191,6 @@ public class TeslaFakeApiController : ControllerBase
                         // Non ha ForceReportAsync, usiamo il metodo diretto
                         await GenerateReportForVehicle(vehicleId, "Forced via API");
                         result = true;
-                    }
-                    else if (!_env.IsDevelopment() && _productionScheduler != null)
-                    {
-                        result = await _productionScheduler.ForceReportAsync(vehicleId, "Forced via API");
                     }
                     else
                     {
@@ -354,7 +343,7 @@ public class TeslaFakeApiController : ControllerBase
             {
                 aiSystemAvailable = await CheckAiSystemAvailability(),
                 pdfGenerationAvailable = CheckPdfGenerationAvailability(),
-                schedulerAvailable = _env.IsDevelopment() ? _fakeScheduler != null : _productionScheduler != null
+                schedulerAvailable = _env.IsDevelopment()
             }
         });
     }
@@ -424,7 +413,7 @@ public class TeslaFakeApiController : ControllerBase
 
             // Genera insights
             var aiGenerator = new PolarAiReportGenerator(_db);
-            var insights = await aiGenerator.GenerateInsightsAsync(vehicleId);
+            var insights = await aiGenerator.GeneratePolarAiInsightsAsync(vehicleId);
 
             if (string.IsNullOrWhiteSpace(insights))
             {

@@ -1,0 +1,39 @@
+namespace PolarDrive.WebApi.Scheduler;
+
+public enum ScheduleType
+{
+    Development,
+    Daily,
+    Weekly,
+    Monthly,
+    Retry
+}
+
+public class SchedulerResults
+{
+    public int SuccessCount { get; set; }
+    public int ErrorCount { get; set; }
+    public int TotalProcessed => SuccessCount + ErrorCount;
+}
+
+public class RetryResults
+{
+    public int ProcessedCount { get; set; }
+    public int SuccessCount { get; set; }
+    public int ErrorCount { get; set; }
+}
+
+public class ReportInfo
+{
+    public string AnalysisType { get; set; } = "";
+    public int DefaultDataHours { get; set; }
+}
+
+public class ReportPeriodInfo
+{
+    public DateTime Start { get; set; }
+    public DateTime End { get; set; }
+    public int DataHours { get; set; }
+    public string AnalysisLevel { get; set; } = "";
+    public double MonitoringDays { get; set; }
+}

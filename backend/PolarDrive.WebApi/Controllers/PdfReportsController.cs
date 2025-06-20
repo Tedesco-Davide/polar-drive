@@ -3,7 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
-using PolarDrive.WebApi.Fake;
+using PolarDrive.WebApi.Scheduler;
+using PolarDrive.WebApi.Services;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -20,16 +21,19 @@ public class PdfReportsController : ControllerBase
     private readonly PolarDriveLogger _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly IWebHostEnvironment _env;
+    private readonly IReportGenerationService _reportSchedulerService;
 
     public PdfReportsController(
         PolarDriveDbContext context,
         IServiceProvider serviceProvider,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        IReportGenerationService reportSchedulerService)
     {
         db = context;
         _logger = new PolarDriveLogger(db);
         _serviceProvider = serviceProvider;
         _env = env;
+        _reportSchedulerService = reportSchedulerService;
     }
 
     [HttpGet]
@@ -247,10 +251,7 @@ public class PdfReportsController : ControllerBase
                 return NotFound();
             }
 
-            var schedulerLogger = _serviceProvider.GetRequiredService<ILogger<FakeProductionScheduler>>();
-            var scheduler = new FakeProductionScheduler(_serviceProvider, schedulerLogger, _env);
             var vehicleId = report.ClientVehicleId;
-            var now = DateTime.UtcNow;
             var vehicle = await db.ClientVehicles
                 .Include(v => v.ClientCompany)
                 .FirstOrDefaultAsync(v => v.Id == vehicleId);
@@ -261,26 +262,24 @@ public class PdfReportsController : ControllerBase
                 return BadRequest(new { success = false, message = "SERVER ERROR → INTERNAL ERROR: Vehicle not found" });
             }
 
-            await scheduler.GenerateReportForVehicle(db, vehicleId, now);
+            // Usa il metodo pubblico ForceGenerateReport che è più appropriato per generazioni manuali
+            await _reportSchedulerService.ForceRegenerateFilesAsync(report.Id);
 
-            var updatedReport = await db.PdfReports
-                .FirstOrDefaultAsync(r => r.Id == report.Id);
-
-            if (updatedReport == null)
-            {
-                await _logger.Warning("PdfReportsController.RegenerateReport", "Report not found after regeneration.", $"ReportId: {report.Id}");
-                return BadRequest(new { success = false, message = "SERVER ERROR → INTERNAL ERROR: Report not found after regeneration" });
-            }
-
-            updatedReport.RegenerationCount++;
-            updatedReport.Notes = $"Ultima rigenerazione: {now:yyyy-MM-dd HH:mm} - numero rigenerazione #{updatedReport.RegenerationCount}";
+            // Aggiorna il conteggio di rigenerazione
+            report.RegenerationCount++;
+            report.Notes = $"Ultima rigenerazione: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount}";
 
             await db.SaveChangesAsync();
 
             await _logger.Info("PdfReportsController.RegenerateReport", "Report regenerated successfully.",
-                $"ReportId: {updatedReport.Id}, RegenerationCount: {updatedReport.RegenerationCount}");
+                $"ReportId: {report.Id}, RegenerationCount: {report.RegenerationCount}");
 
-            return Ok(new { success = true, message = "Report regenerated successfully" });
+            return Ok(new
+            {
+                success = true,
+                message = "Report regenerated successfully",
+                regenerationCount = report.RegenerationCount
+            });
         }
         catch (Exception ex)
         {
@@ -291,7 +290,8 @@ public class PdfReportsController : ControllerBase
 
     private string GetReportFilePath(Data.Entities.PdfReport report, string extension)
     {
-        var storageDir = Path.Combine("storage", "reports",
+        var folder = extension == "html" && _env.IsDevelopment() ? "dev-reports" : "reports";
+        var storageDir = Path.Combine("storage", folder,
             report.ReportPeriodStart.Year.ToString(),
             report.ReportPeriodStart.Month.ToString("D2"));
         var storageFileName = $"PolarDrive_Report_{report.Id}.{extension}";
@@ -301,13 +301,13 @@ public class PdfReportsController : ControllerBase
         {
             _logger.Debug("PdfReportsController.GetReportFilePath", "File found at standard path.",
                 $"ReportId: {report.Id}, Path: {storagePath}");
-            return storagePath;
         }
         else
         {
             _logger.Error("PdfReportsController.GetReportFilePath", "File not found at standard path.",
                 $"ReportId: {report.Id}, Path: {storagePath}");
-            return storagePath;
         }
+
+        return storagePath;
     }
 }

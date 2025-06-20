@@ -2,7 +2,8 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 using PolarDrive.Data.DbContexts;
-using PolarDrive.WebApi.Fake;
+using PolarDrive.WebApi.Scheduler;
+using PolarDrive.WebApi.Services;
 using PolarDrive.WebApi.Production;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +13,7 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
-    }); ;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -50,17 +51,11 @@ builder.Services.AddScoped<TeslaApiService>();
 builder.Services.AddScoped<VehicleApiServiceRegistry>();
 builder.Services.AddScoped<VehicleDataService>();
 
-// 🆕 SCHEDULERS: Uno per produzione, uno per development
-if (builder.Environment.IsDevelopment())
-{
-    // Development: Usa FakeProductionScheduler (report ogni 5 minuti)
-    builder.Services.AddHostedService<FakeProductionScheduler>();
-}
-else
-{
-    // Production: Usa ProductionScheduler normale (report mensili)
-    builder.Services.AddHostedService<ProductionScheduler>();
-}
+// ✅ SERVIZIO PER GENERAZIONE REPORT MANUALE
+builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
+
+// 🆕 SCHEDULER: Registra PolarDriveScheduler (lo scheduler unificato)
+builder.Services.AddHostedService<PolarDriveScheduler>();
 
 var app = builder.Build();
 
@@ -85,8 +80,7 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        var schedulerType = app.Environment.IsDevelopment() ? "FakeProductionScheduler (5min reports)" : "ProductionScheduler (monthly reports)";
-        await logger.Info("Program.Main", $"PolarDrive Web API is starting with {schedulerType}...", $"DB Path: {dbPath}");
+        await logger.Info("Program.Main", $"PolarDrive Web API is starting...", $"DB Path: {dbPath}");
 
         // ✅ LOG INFO SUI SERVIZI REGISTRATI
         var vehicleDataService = scope.ServiceProvider.GetRequiredService<VehicleDataService>();
@@ -98,22 +92,44 @@ using (var scope = app.Services.CreateScope())
             await logger.Info("Program.Main", $"  - {brand}: {count} active vehicles");
         }
 
-        // 🎯 DEVELOPMENT INFO
+        // 🎯 INFO BASATA SULL'AMBIENTE
         if (app.Environment.IsDevelopment())
         {
             Console.WriteLine();
             Console.WriteLine("=== 🚀 DEVELOPMENT MODE ===");
-            Console.WriteLine("📊 FakeProductionScheduler: Reports every 5 minutes");
-            Console.WriteLine("🔧 Mock API Endpoints available:");
-            Console.WriteLine("   - GET  /api/TeslaFakeApi/DataStatus");
-            Console.WriteLine("   - POST /api/TeslaFakeApi/GenerateQuickReport");
-            Console.WriteLine("   - GET  /api/TeslaFakeApi/ReportStatus");
-            Console.WriteLine("   - GET  /api/TeslaFakeApi/DownloadReport/{id}");
+            Console.WriteLine("📊 PolarDriveScheduler Configuration:");
+            Console.WriteLine("   - Automatic reports every 5 minutes");
+            Console.WriteLine("   - Retry attempts every 1 minute");
+            Console.WriteLine("   - Max 5 retries per vehicle");
             Console.WriteLine();
-            Console.WriteLine("⏰ Test sequence:");
-            Console.WriteLine("   1. Wait ~7 minutes for first automatic report");
-            Console.WriteLine("   2. Or call POST /api/TeslaFakeApi/GenerateQuickReport manually");
-            Console.WriteLine("   3. Check GET /api/TeslaFakeApi/ReportStatus for results");
+            Console.WriteLine("🔧 API Endpoints available:");
+            Console.WriteLine("   - GET  /api/PdfReports - List all reports");
+            Console.WriteLine("   - GET  /api/PdfReports/{id}/download - Download report");
+            Console.WriteLine("   - POST /api/PdfReports/{id}/regenerate - Regenerate report manually");
+            Console.WriteLine("   - PATCH /api/PdfReports/{id}/notes - Update notes");
+            Console.WriteLine();
+            Console.WriteLine("📝 Report levels based on monitoring time:");
+            Console.WriteLine("   - < 5 min: Valutazione Iniziale");
+            Console.WriteLine("   - < 15 min: Analisi Rapida");
+            Console.WriteLine("   - < 30 min: Pattern Recognition");
+            Console.WriteLine("   - < 60 min: Behavioral Analysis");
+            Console.WriteLine("   - > 60 min: Deep Dive Analysis");
+            Console.WriteLine("===============================");
+        }
+        else
+        {
+            Console.WriteLine();
+            Console.WriteLine("=== 🏭 PRODUCTION MODE ===");
+            Console.WriteLine("📊 PolarDriveScheduler Configuration:");
+            Console.WriteLine("   - Daily reports at 00:00 UTC");
+            Console.WriteLine("   - Weekly reports on Monday at 03:00 UTC");
+            Console.WriteLine("   - Monthly reports on 1st at 05:00 UTC");
+            Console.WriteLine("   - Retry checks every hour");
+            Console.WriteLine("   - Max 5 retries with 5-hour delays");
+            Console.WriteLine();
+            Console.WriteLine("🔧 API Endpoints:");
+            Console.WriteLine("   - POST /api/PdfReports/{id}/regenerate available");
+            Console.WriteLine("     (uses IReportGenerationService)");
             Console.WriteLine("===============================");
         }
     }
