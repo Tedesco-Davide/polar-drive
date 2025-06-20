@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
-using PolarDrive.WebApi.Scheduler;
 using PolarDrive.WebApi.Services;
+using static PolarDrive.WebApi.Interfaces.CommonInterfaces;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -12,11 +12,6 @@ namespace PolarDrive.WebApi.Controllers;
 [Route("api/[controller]")]
 public class PdfReportsController : ControllerBase
 {
-    private const int DAILY_HOURS_THRESHOLD = 24;
-    private const int WEEKLY_HOURS_THRESHOLD = 168;
-    private const int MONTHLY_HOURS_THRESHOLD = 720;
-    private const int MIN_RECORDS_FOR_GENERATION = 5;
-
     private readonly PolarDriveDbContext db;
     private readonly PolarDriveLogger _logger;
     private readonly IServiceProvider _serviceProvider;

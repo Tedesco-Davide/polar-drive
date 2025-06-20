@@ -3,6 +3,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Scheduler;
+using static PolarDrive.WebApi.Interfaces.CommonInterfaces;
 
 namespace PolarDrive.WebApi.Services
 {
@@ -21,12 +22,6 @@ namespace PolarDrive.WebApi.Services
         private readonly Dictionary<int, DateTime> _lastReportAttempts = new();
         private readonly Dictionary<int, int> _retryCount = new();
 
-        private const int MAX_RETRIES = 5;
-        private const int PROD_RETRY_HOURS = 5;
-        private const int DEV_RETRY_MINUTES = 1;
-        private const int DEV_INTERVAL_MINUTES = 5;
-        private const int VEHICLE_DELAY_MINUTES = 2;
-
         public ReportGenerationService(IServiceProvider serviceProvider,
                                       ILogger<ReportGenerationService> logger,
                                       IWebHostEnvironment env)
@@ -36,7 +31,9 @@ namespace PolarDrive.WebApi.Services
             _env = env;
         }
 
-        public async Task<SchedulerResults> ProcessScheduledReportsAsync(ScheduleType scheduleType, CancellationToken stoppingToken = default)
+        public async Task<SchedulerResults> ProcessScheduledReportsAsync(
+            ScheduleType scheduleType,
+            CancellationToken stoppingToken = default)
         {
             var results = new SchedulerResults();
             var now = DateTime.UtcNow;
@@ -70,8 +67,33 @@ namespace PolarDrive.WebApi.Services
 
                 try
                 {
-                    var info = GetReportInfo(scheduleType, now);
+                    // 1) Prendo la fine dell'ultimo report (se esiste)
+                    var lastReportEnd = await db.PdfReports
+                        .Where(r => r.ClientVehicleId == v.Id)
+                        .OrderByDescending(r => r.ReportPeriodEnd)
+                        .Select(r => (DateTime?)r.ReportPeriodEnd)
+                        .FirstOrDefaultAsync(stoppingToken);
+
+                    // 2) Scelgo quante ore guardare indietro in base al tipo di scheduler
+                    int thresholdHours = scheduleType switch
+                    {
+                        ScheduleType.Development => DAILY_HOURS_THRESHOLD,
+                        ScheduleType.Daily => DAILY_HOURS_THRESHOLD,
+                        ScheduleType.Weekly => WEEKLY_HOURS_THRESHOLD,
+                        ScheduleType.Monthly => MONTHLY_HOURS_THRESHOLD,
+                        _ => DAILY_HOURS_THRESHOLD
+                    };
+
+                    // 3) Calcolo start/end
+                    var start = lastReportEnd ?? now.AddHours(-thresholdHours);
+                    var end = lastReportEnd != null
+                                ? lastReportEnd.Value.AddHours(thresholdHours)
+                                : now;
+
+                    // 4) Infine genero con questi parametri
+                    var info = new ReportInfo(start, end);
                     await GenerateReportForVehicle(db, v.Id, info);
+
                     results.SuccessCount++;
                     _lastReportAttempts[v.Id] = now;
                     _retryCount[v.Id] = 0;

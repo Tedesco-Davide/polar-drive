@@ -5,10 +5,19 @@ using PolarDrive.Data.DbContexts;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
-public class PolarAiReportGenerator(PolarDriveDbContext dbContext)
+public class PolarAiReportGenerator
 {
-    private readonly HttpClient _httpClient = new();
-    private readonly PolarDriveLogger _logger = new(dbContext);
+    private readonly PolarDriveDbContext _dbContext;
+    private readonly HttpClient _httpClient;
+    private readonly PolarDriveLogger _logger;
+    public PolarAiReportGenerator(PolarDriveDbContext dbContext)
+    {
+        _logger = new PolarDriveLogger(dbContext);
+        _httpClient = new HttpClient
+        {
+            Timeout = Timeout.InfiniteTimeSpan
+        };
+    }
 
     public async Task<string> GenerateSummaryFromRawJson(List<string> rawJsonList)
     {
@@ -77,15 +86,12 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
                 {
                     temperature = 0.3,
                     top_p = 0.9,
-                    max_tokens = 4000
+                    max_new_tokens = 4000
                 }
             };
 
             var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-            // ✅ TIMEOUT AUMENTATO PER MISTRAL: 3 MINUTI
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(3));
-            var response = await _httpClient.PostAsync("http://localhost:11434/api/generate", content, cts.Token);
+            var response = await _httpClient.PostAsync("http://localhost:11434/api/generate", content);
 
             if (response.IsSuccessStatusCode)
             {
@@ -560,7 +566,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
     {
         try
         {
-            return await dbContext.VehiclesData
+            return await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId)
                 .OrderBy(vd => vd.Timestamp)
                 .Select(vd => vd.Timestamp)
@@ -587,7 +593,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
                 $"Recupero dati storici: {hours}h",
                 $"Da: {startTime:yyyy-MM-dd HH:mm}");
 
-            var data = await dbContext.VehiclesData
+            var data = await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
                 .OrderBy(vd => vd.Timestamp)
                 .Select(vd => vd.RawJson)
@@ -708,22 +714,19 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         {
             var requestBody = new
             {
-                model = "mistral",
+                model = "mistral-7b-instruct-v0.3",
                 prompt = prompt,
                 stream = false,
                 options = new
                 {
-                    temperature = 0.4, // Più creativo per analisi progressive
+                    temperature = 0.4,
                     top_p = 0.9,
-                    max_tokens = 6000  // Più token per analisi dettagliate
+                    max_new_tokens = 6000
                 }
             };
 
             var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-            // ✅ TIMEOUT ESTESO per analisi progressive: 10 minuti
-            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(10));
-            var response = await _httpClient.PostAsync("http://localhost:11434/api/generate", content, cts.Token);
+            var response = await _httpClient.PostAsync("http://localhost:11434/api/generate", content);
 
             if (response.IsSuccessStatusCode)
             {

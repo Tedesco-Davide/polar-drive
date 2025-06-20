@@ -25,8 +25,16 @@ public class RetryResults
 
 public class ReportInfo
 {
+    public DateTime ReportPeriodStart { get; set; }
+    public DateTime ReportPeriodEnd { get; set; }
     public string AnalysisType { get; set; } = "";
     public int DefaultDataHours { get; set; }
+    public ReportInfo() { }
+    public ReportInfo(DateTime reportPeriodStart, DateTime reportPeriodEnd)
+    {
+        ReportPeriodStart = reportPeriodStart;
+        ReportPeriodEnd = reportPeriodEnd;
+    }
 }
 
 public class ReportPeriodInfo

@@ -1,26 +1,16 @@
 using PolarDrive.WebApi.Services;
+using static PolarDrive.WebApi.Interfaces.CommonInterfaces;
 
 namespace PolarDrive.WebApi.Scheduler
 {
-    public class PolarDriveScheduler : BackgroundService
+    public class PolarDriveScheduler(
+        ILogger<PolarDriveScheduler> logger,
+        IWebHostEnvironment env,
+        IServiceProvider provider) : BackgroundService
     {
-        private readonly ILogger<PolarDriveScheduler> _logger;
-        private readonly IWebHostEnvironment _env;
-        private readonly IReportGenerationService _schedulerService;
-
-        // Config
-        private const int DEV_INITIAL_DELAY_MINUTES = 1;
-        private const int DEV_REPEAT_DELAY_MINUTES = 1;
-
-        public PolarDriveScheduler(
-            ILogger<PolarDriveScheduler> logger,
-            IWebHostEnvironment env,
-            IReportGenerationService schedulerService)
-        {
-            _logger = logger;
-            _env = env;
-            _schedulerService = schedulerService;
-        }
+        private readonly ILogger<PolarDriveScheduler> _logger = logger;
+        private readonly IWebHostEnvironment _env = env;
+        private readonly IServiceProvider _provider = provider;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -28,7 +18,6 @@ namespace PolarDrive.WebApi.Scheduler
 
             if (_env.IsDevelopment())
             {
-                // Initial delay to gather data
                 await Task.Delay(TimeSpan.FromMinutes(DEV_INITIAL_DELAY_MINUTES), stoppingToken);
                 await RunDevelopmentLoop(stoppingToken);
             }
@@ -46,10 +35,14 @@ namespace PolarDrive.WebApi.Scheduler
             {
                 try
                 {
-                    var results = await _schedulerService.ProcessScheduledReportsAsync(ScheduleType.Development, stoppingToken);
+                    // Creo uno scope per risolvere IReportGenerationService
+                    using var scope = _provider.CreateScope();
+                    var schedulerService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
+
+                    var results = await schedulerService.ProcessScheduledReportsAsync(ScheduleType.Development, stoppingToken);
                     LogResults("DEV", results);
 
-                    var retryResults = await _schedulerService.ProcessRetriesAsync(stoppingToken);
+                    var retryResults = await schedulerService.ProcessRetriesAsync(stoppingToken);
                     if (retryResults.ProcessedCount > 0)
                     {
                         LogRetryResults(retryResults);
@@ -71,7 +64,10 @@ namespace PolarDrive.WebApi.Scheduler
             var dailyTask = ScheduleRecurring(
                 async () =>
                 {
-                    var results = await _schedulerService.ProcessScheduledReportsAsync(ScheduleType.Daily, stoppingToken);
+                    using var scope = _provider.CreateScope();
+                    var schedulerService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
+
+                    var results = await schedulerService.ProcessScheduledReportsAsync(ScheduleType.Daily, stoppingToken);
                     LogResults("DAILY", results);
                 },
                 TimeSpan.Zero,
@@ -81,7 +77,10 @@ namespace PolarDrive.WebApi.Scheduler
             var weeklyTask = ScheduleRecurring(
                 async () =>
                 {
-                    var results = await _schedulerService.ProcessScheduledReportsAsync(ScheduleType.Weekly, stoppingToken);
+                    using var scope = _provider.CreateScope();
+                    var schedulerService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
+
+                    var results = await schedulerService.ProcessScheduledReportsAsync(ScheduleType.Weekly, stoppingToken);
                     LogResults("WEEKLY", results);
                 },
                 GetInitialDelayFor(DayOfWeek.Monday, new TimeSpan(3, 0, 0)),
@@ -91,17 +90,23 @@ namespace PolarDrive.WebApi.Scheduler
             var monthlyTask = ScheduleRecurring(
                 async () =>
                 {
-                    var results = await _schedulerService.ProcessScheduledReportsAsync(ScheduleType.Monthly, stoppingToken);
+                    using var scope = _provider.CreateScope();
+                    var schedulerService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
+
+                    var results = await schedulerService.ProcessScheduledReportsAsync(ScheduleType.Monthly, stoppingToken);
                     LogResults("MONTHLY", results);
                 },
                 GetInitialDelayForFirstOfMonth(new TimeSpan(5, 0, 0)),
-                TimeSpan.FromDays(30), // approx monthly
+                TimeSpan.FromDays(30),
                 stoppingToken);
 
             var retryTask = ScheduleRecurring(
                 async () =>
                 {
-                    var retryResults = await _schedulerService.ProcessRetriesAsync(stoppingToken);
+                    using var scope = _provider.CreateScope();
+                    var schedulerService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
+
+                    var retryResults = await schedulerService.ProcessRetriesAsync(stoppingToken);
                     if (retryResults.ProcessedCount > 0)
                     {
                         LogRetryResults(retryResults);

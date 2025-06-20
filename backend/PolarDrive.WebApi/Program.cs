@@ -54,7 +54,7 @@ builder.Services.AddScoped<VehicleDataService>();
 // ✅ SERVIZIO PER GENERAZIONE REPORT MANUALE
 builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
-// 🆕 SCHEDULER: Registra PolarDriveScheduler (lo scheduler unificato)
+// ✅ SCHEDULER: Registra PolarDriveScheduler
 builder.Services.AddHostedService<PolarDriveScheduler>();
 
 var app = builder.Build();
