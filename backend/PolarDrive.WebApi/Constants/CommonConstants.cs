@@ -1,7 +1,7 @@
 
-namespace PolarDrive.WebApi.Interfaces
+namespace PolarDrive.WebApi.Constants
 {
-    public static class CommonInterfaces
+    public static class CommonConstants
     {
         public const int DAILY_HOURS_THRESHOLD = 24;
         public const int WEEKLY_HOURS_THRESHOLD = 168;

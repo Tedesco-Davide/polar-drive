@@ -148,7 +148,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
                     }
                 };
 
-                await _logger.Info(source, "Avvio conversione Puppeteer portabile",
+                await _logger.Info(source, "Avvio conversione Puppeteer",
                     $"Attempt: {attempt}, WorkingDir: {projectDirectory}, Script: {scriptPath}");
 
                 process.Start();
@@ -517,40 +517,4 @@ try {{
 
         return await ConvertHtmlToPdfAsync(htmlContent, tempReport, options);
     }
-}
-
-/// <summary>
-/// Opzioni per la conversione PDF
-/// </summary>
-public class PdfConversionOptions
-{
-    public string PageFormat { get; set; } = "A4";
-    public bool PrintBackground { get; set; } = true;
-    public string MarginTop { get; set; } = "1cm";
-    public string MarginRight { get; set; } = "1cm";
-    public string MarginBottom { get; set; } = "1cm";
-    public string MarginLeft { get; set; } = "1cm";
-    public bool DisplayHeaderFooter { get; set; } = true;
-    public string HeaderTemplate { get; set; } = @"
-        <div style='font-size: 10px; width: 100%; text-align: center; color: #666;'>
-            <span>PolarDrive Report</span>
-        </div>";
-    public string FooterTemplate { get; set; } = @"
-        <div style='font-size: 10px; width: 100%; text-align: center; color: #666;'>
-            <span>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span></span>
-        </div>";
-}
-
-// CLASSE PER RISULTATI DIAGNOSTICA
-public class PdfDiagnosticResult
-{
-    public bool IsAvailable { get; set; }
-    public string? ErrorMessage { get; set; }
-    public string? NodeJsPath { get; set; }
-    public string? NpxPath { get; set; }
-    public bool NodeJsExists { get; set; }
-    public bool NpxExists { get; set; }
-    public string? NodeVersion { get; set; }
-    public string? PuppeteerTestOutput { get; set; }
-    public string? PuppeteerTestError { get; set; }
 }

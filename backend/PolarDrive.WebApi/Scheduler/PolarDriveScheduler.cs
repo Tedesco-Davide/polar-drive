@@ -1,5 +1,5 @@
 using PolarDrive.WebApi.Services;
-using static PolarDrive.WebApi.Interfaces.CommonInterfaces;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Scheduler
 {

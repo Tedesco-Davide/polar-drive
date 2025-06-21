@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.WebApi.Services;
-using static PolarDrive.WebApi.Interfaces.CommonInterfaces;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -120,16 +120,16 @@ public class PdfReportsController : ControllerBase
     private static string DetermineReportType(Data.Entities.PdfReport report, int dataCount)
     {
         if (dataCount == 0)
-            return "admin.vehicleReports.reporttypenodata";
+            return "No_Data";
 
         var duration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
 
         return duration switch
         {
-            >= MONTHLY_HOURS_THRESHOLD => "admin.vehicleReports.reporttypemonthly",
-            >= WEEKLY_HOURS_THRESHOLD => "admin.vehicleReports.reporttypeweekly",
-            >= DAILY_HOURS_THRESHOLD => "admin.vehicleReports.reporttypedaily",
-            _ => "admin.vehicleReports.reporttypedailypartial"
+            >= MONTHLY_HOURS_THRESHOLD => "Mensile",
+            >= WEEKLY_HOURS_THRESHOLD => "Settimanale",
+            >= DAILY_HOURS_THRESHOLD => "Giornaliero",
+            _ => "Giornaliero_Parizale"
         };
     }
 

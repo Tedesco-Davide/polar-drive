@@ -3,7 +3,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Scheduler;
-using static PolarDrive.WebApi.Interfaces.CommonInterfaces;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Services
 {

@@ -12,216 +12,14 @@ public class PolarAiReportGenerator
     private readonly PolarDriveLogger _logger;
     public PolarAiReportGenerator(PolarDriveDbContext dbContext)
     {
-        _logger = new PolarDriveLogger(dbContext);
+        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+
+        _logger = new PolarDriveLogger(_dbContext);
+
         _httpClient = new HttpClient
         {
             Timeout = Timeout.InfiniteTimeSpan
         };
-    }
-
-    public async Task<string> GenerateSummaryFromRawJson(List<string> rawJsonList)
-    {
-        await _logger.Info("PolarAiReportGenerator.GenerateSummaryFromRawJson",
-            "Avvio generazione report con PolarAi", $"Dati in input: {rawJsonList.Count} record JSON");
-
-        // Usa RawDataPreparser universale (gestisce sia dati reali che mock)
-        var parsedPrompt = RawDataPreparser.GenerateInsightPrompt(rawJsonList);
-        var dataStats = GenerateDataStatistics(rawJsonList);
-
-        // Prima prova con Mistral locale, poi fallback
-        var aiResponse = await TryGenerateWithMistral(parsedPrompt, dataStats);
-
-        if (string.IsNullOrWhiteSpace(aiResponse))
-        {
-            await _logger.Warning("PolarAiReportGenerator",
-                "Mistral non disponibile, uso generatore locale");
-            aiResponse = GenerateLocalReport(parsedPrompt, dataStats, rawJsonList);
-        }
-
-        return aiResponse;
-    }
-
-    private async Task<string?> TryGenerateWithMistral(string parsedPrompt, string dataStats)
-    {
-        try
-        {
-            var prompt = $@"
-Agisci come un consulente esperto in mobilità elettrica e analisi dati Tesla. 
-Analizza questi dati operativi di un veicolo Tesla e produci un report professionale.
-
-CONTESTO DATI:
-{dataStats}
-
-DATI DETTAGLIATI:
-{parsedPrompt}
-
-STRUTTURA RICHIESTA DEL REPORT:
-1. EXECUTIVE SUMMARY (3-4 righe)
-2. ANALISI UTILIZZO VEICOLO
-- Pattern di utilizzo e stato generale
-- Efficienza energetica 
-- Utilizzo funzionalità (clima, sicurezza, ecc.)
-3. STATO BATTERIA E RICARICA
-- Livelli di carica nel periodo
-- Efficienza del sistema
-4. CLIMATIZZAZIONE E COMFORT
-- Utilizzo sistemi clima
-- Temperature e consumi correlati
-5. SICUREZZA E MANUTENZIONE
-- Stato pneumatici e sistemi sicurezza
-- Indicatori manutenzione
-6. RACCOMANDAZIONI
-- Ottimizzazioni operative
-- Suggerimenti per efficienza
-- Azioni consigliate
-
-Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove possibile.";
-
-            var requestBody = new
-            {
-                model = "mistral",
-                prompt = prompt,
-                stream = false,
-                options = new
-                {
-                    temperature = 0.3,
-                    top_p = 0.9,
-                    max_new_tokens = 4000
-                }
-            };
-
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("http://localhost:11434/api/generate", content);
-
-            if (response.IsSuccessStatusCode)
-            {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var parsed = JsonDocument.Parse(jsonResponse);
-                return parsed.RootElement.GetProperty("response").GetString();
-            }
-        }
-        catch (Exception ex)
-        {
-            await _logger.Debug("PolarAiReportGenerator",
-                "Mistral non raggiungibile", ex.Message);
-        }
-
-        return null;
-    }
-
-    private string GenerateLocalReport(string parsedPrompt, string dataStats, List<string> rawJsonList)
-    {
-        var sb = new StringBuilder();
-
-        // Analizza i dati per creare un report intelligente
-        var analysis = AnalyzeRawData(rawJsonList);
-
-        sb.AppendLine("# REPORT ANALITICO VEICOLO TESLA");
-        sb.AppendLine();
-
-        // Executive Summary
-        sb.AppendLine("## EXECUTIVE SUMMARY");
-        sb.AppendLine($"Analisi di {rawJsonList.Count} campioni di dati raccolti nel periodo di monitoraggio. ");
-        sb.AppendLine($"Il veicolo mostra {GetUsagePattern(analysis)} con livelli di efficienza {GetEfficiencyLevel(analysis)}. ");
-        sb.AppendLine($"Stato generale del sistema: {GetOverallStatus(analysis)}.");
-        sb.AppendLine();
-
-        // Analisi Utilizzo Veicolo
-        sb.AppendLine("## ANALISI UTILIZZO VEICOLO");
-        sb.AppendLine();
-        sb.AppendLine("### Pattern di utilizzo e stato generale");
-
-        if (analysis.HasVehicleData)
-        {
-            sb.AppendLine($"- **Sicurezza**: Veicolo {(analysis.AvgLocked ? "mantenuto bloccato" : "spesso sbloccato")} durante il periodo");
-            sb.AppendLine($"- **Modalità Sentry**: {(analysis.AvgSentryMode ? "Attiva" : "Disattiva")} nella maggior parte del tempo");
-            sb.AppendLine($"- **Chilometraggio medio**: {analysis.AvgOdometer:F1} km");
-        }
-
-        sb.AppendLine();
-        sb.AppendLine("### Efficienza energetica");
-
-        if (analysis.HasChargeData)
-        {
-            sb.AppendLine($"- **Livello batteria medio**: {analysis.AvgBatteryLevel:F1}%");
-            sb.AppendLine($"- **Autonomia media**: {analysis.AvgRange:F1} km");
-            sb.AppendLine($"- **Utilizzo vs capacità**: {GetBatteryUsagePattern(analysis)}");
-        }
-
-        sb.AppendLine();
-
-        // Stato Batteria e Ricarica
-        sb.AppendLine("## STATO BATTERIA E RICARICA");
-        sb.AppendLine();
-
-        if (analysis.HasChargeData)
-        {
-            sb.AppendLine($"**Livello batteria**: Variazione da {analysis.MinBatteryLevel}% a {analysis.MaxBatteryLevel}%");
-            sb.AppendLine($"**Autonomia**: Range da {analysis.MinRange:F1} km a {analysis.MaxRange:F1} km");
-            sb.AppendLine($"**Limite ricarica**: Impostato mediamente al {analysis.AvgChargeLimit:F1}%");
-            sb.AppendLine();
-            sb.AppendLine("**Valutazione**: " + GetBatteryHealthAssessment(analysis));
-        }
-        else
-        {
-            sb.AppendLine("Dati di ricarica non disponibili nel periodo analizzato.");
-        }
-
-        sb.AppendLine();
-
-        // Climatizzazione
-        sb.AppendLine("## CLIMATIZZAZIONE E COMFORT");
-        sb.AppendLine();
-
-        if (analysis.HasClimateData)
-        {
-            sb.AppendLine($"**Temperature rilevate**:");
-            sb.AppendLine($"- Interna: da {analysis.MinInsideTemp:F1}°C a {analysis.MaxInsideTemp:F1}°C (media: {analysis.AvgInsideTemp:F1}°C)");
-            sb.AppendLine($"- Esterna: da {analysis.MinOutsideTemp:F1}°C a {analysis.MaxOutsideTemp:F1}°C (media: {analysis.AvgOutsideTemp:F1}°C)");
-            sb.AppendLine();
-            sb.AppendLine($"**Utilizzo climatizzazione**: {(analysis.AvgClimateOn ? "Frequente" : "Limitato")}");
-            sb.AppendLine($"**Impostazioni medie**: Guidatore {analysis.AvgDriverTemp:F1}°C, Passeggero {analysis.AvgPassengerTemp:F1}°C");
-        }
-        else
-        {
-            sb.AppendLine("Dati climatizzazione non disponibili nel periodo analizzato.");
-        }
-
-        sb.AppendLine();
-
-        // Sicurezza e Manutenzione
-        sb.AppendLine("## SICUREZZA E MANUTENZIONE");
-        sb.AppendLine();
-
-        if (analysis.HasTpmsData)
-        {
-            sb.AppendLine("**Pressioni pneumatici** (medie):");
-            sb.AppendLine($"- Anteriore SX: {analysis.AvgTpmsFL:F1} bar");
-            sb.AppendLine($"- Anteriore DX: {analysis.AvgTpmsFR:F1} bar");
-            sb.AppendLine($"- Posteriore SX: {analysis.AvgTpmsRL:F1} bar");
-            sb.AppendLine($"- Posteriore DX: {analysis.AvgTpmsRR:F1} bar");
-            sb.AppendLine();
-            sb.AppendLine("**Stato pneumatici**: " + GetTireStatus(analysis));
-        }
-
-        sb.AppendLine();
-
-        // Raccomandazioni
-        sb.AppendLine("## RACCOMANDAZIONI");
-        sb.AppendLine();
-
-        var recommendations = GenerateRecommendations(analysis);
-        foreach (var rec in recommendations)
-        {
-            sb.AppendLine($"- **{rec.Category}**: {rec.Text}");
-        }
-
-        sb.AppendLine();
-        sb.AppendLine("---");
-        sb.AppendLine($"*Report generato il {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC*");
-        sb.AppendLine($"*Basato su {rawJsonList.Count} campioni di dati*");
-
-        return sb.ToString();
     }
 
     private VehicleDataAnalysis AnalyzeRawData(List<string> rawJsonList)
@@ -364,76 +162,6 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
         analysis.TotalSamples++;
     }
 
-    private string GetUsagePattern(VehicleDataAnalysis analysis)
-    {
-        if (!analysis.HasVehicleData) return "utilizzo normale";
-
-        var securityUsage = analysis.AvgSentryMode ? "alta attenzione alla sicurezza" : "utilizzo standard";
-        return securityUsage;
-    }
-
-    private string GetEfficiencyLevel(VehicleDataAnalysis analysis)
-    {
-        if (!analysis.HasChargeData) return "normali";
-
-        return analysis.AvgBatteryLevel switch
-        {
-            >= 80 => "ottimali",
-            >= 60 => "buoni",
-            >= 40 => "accettabili",
-            _ => "da migliorare"
-        };
-    }
-
-    private string GetOverallStatus(VehicleDataAnalysis analysis)
-    {
-        var issues = 0;
-
-        if (analysis.HasChargeData && analysis.AvgBatteryLevel < 30) issues++;
-        if (analysis.HasTpmsData && (analysis.AvgTpmsFL < 2.0m || analysis.AvgTpmsFL > 3.0m)) issues++;
-
-        return issues switch
-        {
-            0 => "Ottimo",
-            1 => "Buono con attenzioni minori",
-            _ => "Richiede attenzione"
-        };
-    }
-
-    private string GetBatteryUsagePattern(VehicleDataAnalysis analysis)
-    {
-        var range = analysis.MaxBatteryLevel - analysis.MinBatteryLevel;
-        return range switch
-        {
-            <= 10 => "Utilizzo limitato, veicolo principalmente fermo",
-            <= 30 => "Utilizzo moderato con ricariche regolari",
-            <= 50 => "Utilizzo intensivo con buona gestione",
-            _ => "Utilizzo molto intensivo"
-        };
-    }
-
-    private string GetBatteryHealthAssessment(VehicleDataAnalysis analysis)
-    {
-        if (analysis.AvgBatteryLevel >= 70 && analysis.AvgRange >= 300)
-            return "Batteria in ottimo stato con autonomia eccellente.";
-        if (analysis.AvgBatteryLevel >= 50 && analysis.AvgRange >= 200)
-            return "Batteria in buono stato con autonomia adeguata.";
-        return "Batteria richiede attenzione, considerare ottimizzazioni di ricarica.";
-    }
-
-    private string GetTireStatus(VehicleDataAnalysis analysis)
-    {
-        var pressures = new[] { analysis.AvgTpmsFL, analysis.AvgTpmsFR, analysis.AvgTpmsRL, analysis.AvgTpmsRR };
-        var inRange = pressures.Count(p => p >= 2.0m && p <= 3.0m);
-
-        return inRange switch
-        {
-            4 => "Tutte le pressioni sono nel range ottimale.",
-            >= 2 => "La maggior parte delle pressioni è corretta, verificare quelle fuori range.",
-            _ => "Attenzione: diverse pressioni fuori dal range consigliato."
-        };
-    }
-
     private List<(string Category, string Text)> GenerateRecommendations(VehicleDataAnalysis analysis)
     {
         var recommendations = new List<(string, string)>();
@@ -469,63 +197,121 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
             }
         }
 
+        if (analysis.HasClimateData)
+        {
+            if (analysis.AvgPassengerTemp > analysis.AvgDriverTemp + 3)
+                recommendations.Add(("Comfort Passeggeri", "Bilanciare meglio la distribuzione dell’aria condizionata per uniformare la temperatura tra conducente e passeggeri"));
+        }
+
+        if (analysis.HasClimateData)
+        {
+            if (analysis.AvgClimateOn)
+                recommendations.Add(("Efficienza Energetica", "Disattivare la climatizzazione durante soste brevi per preservare la carica della batteria"));
+            else
+                recommendations.Add(("Comfort", "Utilizzare il precondizionamento da remoto nei giorni molto caldi o freddi per garantire un abitacolo confortevole fin dal primo istante"));
+        }
+
+        if (analysis.HasClimateData)
+        {
+            if (analysis.AvgOutsideTemp < 0)
+                recommendations.Add(("Preparazione Invernale", "Attivare il preriscaldamento quando la temperatura esterna è sotto lo zero per migliorare comfort e sicurezza"));
+            else if (analysis.AvgOutsideTemp > 30)
+                recommendations.Add(("Preparazione Estiva", "Attivare il pre-raffreddamento nelle giornate molto calde per un ingresso sempre confortevole"));
+        }
+
+        if (analysis.OdometerCount > 0)
+        {
+            if (analysis.AvgOdometer > 10000)
+                recommendations.Add(("Manutenzione Programmata", "Effettuare un controllo di manutenzione secondo le indicazioni del costruttore a questo chilometraggio"));
+        }
+
+        if (analysis.TotalSamples > 0)
+        {
+            if (!analysis.AvgLocked)
+                recommendations.Add(("Sicurezza", "Verificare le impostazioni di blocco automatico e valutare notifiche in caso di porte lasciate aperte"));
+        }
+
+
         if (analysis.HasVehicleData && !analysis.AvgSentryMode)
         {
             recommendations.Add(("Sicurezza", "Considerare l'attivazione della modalità Sentry per maggiore sicurezza"));
         }
 
-        // Raccomandazione generica
         recommendations.Add(("Monitoraggio", "Continuare il monitoraggio regolare per identificare pattern di utilizzo e ottimizzazioni"));
 
         return recommendations;
     }
 
-    private string GenerateDataStatistics(List<string> rawJsonList)
-    {
-        var stats = new StringBuilder();
-        stats.AppendLine($"• Periodo analizzato: {rawJsonList.Count} campioni di dati");
-        stats.AppendLine($"• Frequenza di campionamento: circa 1 campione al minuto");
-        stats.AppendLine($"• Durata monitoraggio: {rawJsonList.Count} minuti");
-
-        return stats.ToString();
-    }
-
-    /// <summary>
-    /// Genera insights basati sull'età del veicolo nel sistema
-    /// </summary>
     public async Task<string> GeneratePolarAiInsightsAsync(int vehicleId)
     {
-        await _logger.Info("PolarAiReportGenerator.GenerateInsights",
-            "Avvio analisi", $"VehicleId: {vehicleId}");
+        // 0) log di avvio
+        await _logger.Info(
+            "PolarAiReportGenerator.GenerateInsights",
+            "Avvio analisi",
+            $"VehicleId: {vehicleId}");
 
-        // Calcola periodo di monitoraggio
-        var firstRecord = await GetFirstVehicleRecord(vehicleId);
-        if (firstRecord == default)
+        // 0.1) verifico se ho già generato almeno un report per questo veicolo
+        var alreadyGenerated = await _dbContext.PdfReports
+            .AnyAsync(r => r.ClientVehicleId == vehicleId);
+
+        TimeSpan monitoringPeriod;
+        int dataHours;
+        string analysisLevel;
+
+        if (!alreadyGenerated)
         {
-            await _logger.Warning("PolarAiReportGenerator.GenerateInsights",
-                "Nessun dato storico trovato, uso analisi standard");
-            return await GenerateSummaryFromRawJson([]);
+            // **PRIMO PDF**: uso il parziale del giorno corrente
+            var now = DateTime.UtcNow;
+            var startOfDay = now.Date;                     // mezzanotte UTC
+            monitoringPeriod = now - startOfDay;           // es. 16h44
+            dataHours = (int)Math.Ceiling(monitoringPeriod.TotalHours);
+            analysisLevel = "Valutazione Iniziale";
+        }
+        else
+        {
+            // report già esistenti → uso la logica storica
+            var firstRecord = await GetFirstVehicleRecord(vehicleId);
+
+            if (firstRecord == default)
+            {
+                // nessun dato di partenza: fallback 24h
+                await _logger.Warning(
+                    "PolarAiReportGenerator.GenerateInsights",
+                    "Nessun dato storico trovato, uso finestra giornaliera di 24h",
+                    null);
+
+                monitoringPeriod = TimeSpan.FromHours(24);
+                dataHours = 24;
+                analysisLevel = "Valutazione Iniziale";
+            }
+            else
+            {
+                // calcolo periodo e livello in base a firstRecord
+                monitoringPeriod = DateTime.UtcNow - firstRecord;
+                dataHours = DetermineDataWindow(monitoringPeriod);
+                analysisLevel = GetAnalysisLevel(monitoringPeriod);
+            }
         }
 
-        var monitoringPeriod = DateTime.UtcNow - firstRecord;
-        var dataHours = DetermineDataWindow(monitoringPeriod);
-        var analysisLevel = GetAnalysisLevel(monitoringPeriod);
-
-        await _logger.Info("PolarAiReportGenerator.GenerateInsights",
+        // 1) log del tipo di analisi e finestra scelta
+        await _logger.Info(
+            "PolarAiReportGenerator.GenerateInsights",
             $"Analisi {analysisLevel}",
-            $"Periodo: {monitoringPeriod.TotalDays:F1} giorni, Finestra: {dataHours}h");
+            $"Finestra: {dataHours}h (Period: {monitoringPeriod.TotalDays:F1} giorni)");
 
-        // Recupera dati storici
+        // 2) recupero dati
         var historicalData = await GetHistoricalData(vehicleId, dataHours);
 
         if (!historicalData.Any())
         {
-            await _logger.Warning("PolarAiReportGenerator.GenerateInsights",
-                "Nessun dato nel periodo specificato");
+            await _logger.Warning(
+                "PolarAiReportGenerator.GenerateInsights",
+                "Nessun dato nel periodo specificato",
+                null);
             return "Nessun dato disponibile per il periodo analizzato.";
         }
 
-        // Genera analisi
+        // 3) genero e ritorno il report
         return await GenerateSummary(historicalData, monitoringPeriod, analysisLevel, dataHours);
     }
 
@@ -613,7 +399,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
     }
 
     /// <summary>
-    /// Genera summary con prompt ottimizzato per Mistral locale
+    /// Genera summary con prompt ottimizzato per Qwen2.5 locale
     /// </summary>
     private async Task<string> GenerateSummary(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
@@ -624,16 +410,16 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
             $"Generazione analisi {analysisLevel}",
             $"Records: {rawJsonList.Count}, Ore: {dataHours}");
 
-        // ✅ PROMPT ottimizzato per il tuo Mistral locale
+        // ✅ PROMPT ottimizzato per il tuo Qwen2.5 locale
         var prompt = BuildPrompt(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
 
-        // Prima prova con Mistral usando il prompt
-        var aiResponse = await TryGenerateWithMistral(prompt, monitoringPeriod, analysisLevel);
+        // Prima prova con Qwen2.5 usando il prompt
+        var aiResponse = await TryGenerateWithQwen(prompt, analysisLevel);
 
         if (string.IsNullOrWhiteSpace(aiResponse))
         {
             await _logger.Warning("PolarAiReportGenerator.GenerateSummary",
-                "Mistral non disponibile, uso generatore locale");
+                "Qwen2.5 non disponibile, uso generatore locale");
             aiResponse = GenerateLocalReport(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
         }
 
@@ -641,7 +427,7 @@ Usa un tono professionale ma accessibile. Includi sempre cifre specifiche dove p
     }
 
     /// <summary>
-    /// Costruisce il prompt per Mistral
+    /// Costruisce il prompt per Qwen2.5
     /// </summary>
     private string BuildPrompt(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
@@ -706,48 +492,62 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
     }
 
     /// <summary>
-    /// Prova a generare con Mistral usando prompt
+    /// Prova a generare con Qwen2.5 usando prompt (OpenAI‐compatibile /v1/completions)
     /// </summary>
-    private async Task<string?> TryGenerateWithMistral(string prompt, TimeSpan monitoringPeriod, string analysisLevel)
+    private async Task<string?> TryGenerateWithQwen(string prompt, string analysisLevel)
     {
         try
         {
+            // Costruisco il body secondo lo spec OpenAI‐compatibile
             var requestBody = new
             {
-                model = "mistral-7b-instruct-v0.3",
+                model = "qwen2.5",
                 prompt = prompt,
-                stream = false,
-                options = new
-                {
-                    temperature = 0.4,
-                    top_p = 0.9,
-                    max_new_tokens = 6000
-                }
+                temperature = 0.3,
+                top_p = 0.9
             };
 
-            var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-            var response = await _httpClient.PostAsync("http://localhost:11434/api/generate", content);
+            var content = new StringContent(
+                JsonSerializer.Serialize(requestBody),
+                Encoding.UTF8,
+                "application/json"
+            );
 
-            if (response.IsSuccessStatusCode)
+            // Chiamo /v1/completions sulla porta di default di ollama serve
+            var response = await _httpClient.PostAsync(
+                "http://127.0.0.1:11434/api/generate",
+                content
+            );
+
+            // Se non 200, loggo l’errore e ritorno null
+            if (!response.IsSuccessStatusCode)
             {
-                var jsonResponse = await response.Content.ReadAsStringAsync();
-                var parsed = JsonDocument.Parse(jsonResponse);
-                var result = parsed.RootElement.GetProperty("response").GetString();
-
-                await _logger.Info("PolarAiReportGenerator.TryGenerateWithMistral",
-                    $"Mistral {analysisLevel} completata",
-                    $"Risposta: {result?.Length ?? 0} caratteri");
-
-                return result;
+                var err = await response.Content.ReadAsStringAsync();
+                await _logger.Error("PolarAiReportGenerator.TryGenerateWithQwen",
+                    $"Errore {response.StatusCode}", err);
+                return null;
             }
+
+            // Estraggo il testo restituito
+            var jsonResponse = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(jsonResponse);
+            var text = doc.RootElement
+                          .GetProperty("choices")[0]
+                          .GetProperty("text")
+                          .GetString();
+
+            await _logger.Info("PolarAiReportGenerator.TryGenerateWithQwen",
+                $"Qwen2.5 {analysisLevel} completata",
+                $"Risposta: {text?.Length ?? 0} caratteri");
+
+            return text;
         }
         catch (Exception ex)
         {
-            await _logger.Debug("PolarAiReportGenerator.TryGenerateWithMistral",
-                "Mistral non raggiungibile per analisi", ex.Message);
+            await _logger.Debug("PolarAiReportGenerator.TryGenerateWithQwen",
+                "Qwen2.5 non raggiungibile per analisi", ex.Message);
+            return null;
         }
-
-        return null;
     }
 
     /// <summary>
@@ -917,80 +717,5 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         recommendations.AddRange(GenerateRecommendations(analysis));
 
         return recommendations;
-    }
-}
-
-// Classe helper per l'analisi dei dati
-public class VehicleDataAnalysis
-{
-    // Vehicle State
-    public bool HasVehicleData { get; set; }
-    public int TotalLocked { get; set; }
-    public int TotalSentryMode { get; set; }
-    public decimal TotalOdometer { get; set; }
-    public int OdometerCount { get; set; }
-
-    // Charge State
-    public bool HasChargeData { get; set; }
-    public int TotalBatteryLevel { get; set; }
-    public decimal TotalRange { get; set; }
-    public int TotalChargeLimit { get; set; }
-    public int ChargeCount { get; set; }
-    public int MinBatteryLevel { get; set; } = int.MaxValue;
-    public int MaxBatteryLevel { get; set; } = int.MinValue;
-    public decimal MinRange { get; set; } = decimal.MaxValue;
-    public decimal MaxRange { get; set; } = decimal.MinValue;
-
-    // Climate State
-    public bool HasClimateData { get; set; }
-    public decimal TotalInsideTemp { get; set; }
-    public decimal TotalOutsideTemp { get; set; }
-    public int TotalClimateOn { get; set; }
-    public decimal TotalDriverTemp { get; set; }
-    public decimal TotalPassengerTemp { get; set; }
-    public int ClimateCount { get; set; }
-    public decimal MinInsideTemp { get; set; } = decimal.MaxValue;
-    public decimal MaxInsideTemp { get; set; } = decimal.MinValue;
-    public decimal MinOutsideTemp { get; set; } = decimal.MaxValue;
-    public decimal MaxOutsideTemp { get; set; } = decimal.MinValue;
-
-    // TPMS Data
-    public bool HasTpmsData { get; set; }
-    public decimal TotalTpmsFL { get; set; }
-    public decimal TotalTpmsFR { get; set; }
-    public decimal TotalTpmsRL { get; set; }
-    public decimal TotalTpmsRR { get; set; }
-    public int TpmsCount { get; set; }
-
-    public int TotalSamples { get; set; }
-
-    // Proprietà calcolate
-    public bool AvgLocked => TotalSamples > 0 && (double)TotalLocked / TotalSamples > 0.5;
-    public bool AvgSentryMode => TotalSamples > 0 && (double)TotalSentryMode / TotalSamples > 0.5;
-    public bool AvgClimateOn => ClimateCount > 0 && (double)TotalClimateOn / ClimateCount > 0.5;
-    public decimal AvgOdometer => OdometerCount > 0 ? TotalOdometer / OdometerCount : 0;
-    public decimal AvgBatteryLevel => ChargeCount > 0 ? (decimal)TotalBatteryLevel / ChargeCount : 0;
-    public decimal AvgRange => ChargeCount > 0 ? TotalRange / ChargeCount : 0;
-    public decimal AvgChargeLimit => ChargeCount > 0 ? (decimal)TotalChargeLimit / ChargeCount : 0;
-    public decimal AvgInsideTemp => ClimateCount > 0 ? TotalInsideTemp / ClimateCount : 0;
-    public decimal AvgOutsideTemp => ClimateCount > 0 ? TotalOutsideTemp / ClimateCount : 0;
-    public decimal AvgDriverTemp => ClimateCount > 0 ? TotalDriverTemp / ClimateCount : 0;
-    public decimal AvgPassengerTemp => ClimateCount > 0 ? TotalPassengerTemp / ClimateCount : 0;
-    public decimal AvgTpmsFL => TpmsCount > 0 ? TotalTpmsFL / TpmsCount : 0;
-    public decimal AvgTpmsFR => TpmsCount > 0 ? TotalTpmsFR / TpmsCount : 0;
-    public decimal AvgTpmsRL => TpmsCount > 0 ? TotalTpmsRL / TpmsCount : 0;
-    public decimal AvgTpmsRR => TpmsCount > 0 ? TotalTpmsRR / TpmsCount : 0;
-
-    public void FinalizeAverages(int validSamples)
-    {
-        // Reset dei minimi se non ci sono dati validi
-        if (MinBatteryLevel == int.MaxValue) MinBatteryLevel = 0;
-        if (MaxBatteryLevel == int.MinValue) MaxBatteryLevel = 0;
-        if (MinRange == decimal.MaxValue) MinRange = 0;
-        if (MaxRange == decimal.MinValue) MaxRange = 0;
-        if (MinInsideTemp == decimal.MaxValue) MinInsideTemp = 0;
-        if (MaxInsideTemp == decimal.MinValue) MaxInsideTemp = 0;
-        if (MinOutsideTemp == decimal.MaxValue) MinOutsideTemp = 0;
-        if (MaxOutsideTemp == decimal.MinValue) MaxOutsideTemp = 0;
     }
 }

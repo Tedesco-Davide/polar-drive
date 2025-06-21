@@ -36,7 +36,7 @@ _(Tasto destro sulla cartella `backend/PolarDrive.TeslaMockApiService` → Open 
 
 ---
 
-### 🧠 BACKEND MISTRAL PolarAi
+### 🧠 BACKEND QWEN2.5 PolarAi
 
 _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated Terminal)_
 
@@ -47,7 +47,7 @@ _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated
 
 #### 🧪 DEBUG LOCALE (opzionale)
 
-- `ollama run mistral` → Esegue **Mistral** in modalità chat interattiva (terminal-based)
+- `ollama run qwen2.5` → Esegue **Qwen2.5** in modalità chat interattiva (terminal-based)
   > ⚠️ Solo per test manuali: non adatto all'uso via codice .NET.
 
 #### ✅ UTILIZZO CORRETTO IN BACKEND
@@ -64,13 +64,13 @@ _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated
 - Oppure in terminale Powershell integrato su Visual Studio:
 
   ```bash
-  Invoke-RestMethod -Uri http://localhost:11434/api/generate -Method Post -Body '{"model":"mistral","prompt":"Sei attivo?","stream":false}' -ContentType "application/json"
+  Invoke-RestMethod -Uri http://localhost:11434/api/generate -Method Post -Body '{"model":"qwen2.5","prompt":"Sei attivo?","stream":false}' -ContentType "application/json"
   ```
 
 - Oppure via `curl`:
 
   ```bash
-  curl http://localhost:11434/api/generate -d "{\"model\": \"mistral\", \"prompt\": \"Sei attivo?\", \"stream\": false}"
+  curl http://localhost:11434/api/generate -d "{\"model\": \"qwen2.5\", \"prompt\": \"Sei attivo?\", \"stream\": false}"
   ```
 
 - Puoi chiudere Ollama manualmente nel terminale Powershell integrato su Visual Studio:
