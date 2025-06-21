@@ -61,32 +61,6 @@ namespace PolarDrive.WebApi.Scheduler
         {
             _logger.LogInformation("🏭 PRODUCTION Mode: starting scheduled tasks");
 
-            var dailyTask = ScheduleRecurring(
-                async () =>
-                {
-                    using var scope = _provider.CreateScope();
-                    var schedulerService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
-
-                    var results = await schedulerService.ProcessScheduledReportsAsync(ScheduleType.Daily, stoppingToken);
-                    LogResults("DAILY", results);
-                },
-                TimeSpan.Zero,
-                TimeSpan.FromDays(1),
-                stoppingToken);
-
-            var weeklyTask = ScheduleRecurring(
-                async () =>
-                {
-                    using var scope = _provider.CreateScope();
-                    var schedulerService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
-
-                    var results = await schedulerService.ProcessScheduledReportsAsync(ScheduleType.Weekly, stoppingToken);
-                    LogResults("WEEKLY", results);
-                },
-                GetInitialDelayFor(DayOfWeek.Monday, new TimeSpan(3, 0, 0)),
-                TimeSpan.FromDays(7),
-                stoppingToken);
-
             var monthlyTask = ScheduleRecurring(
                 async () =>
                 {
@@ -116,7 +90,7 @@ namespace PolarDrive.WebApi.Scheduler
                 TimeSpan.FromHours(1),
                 stoppingToken);
 
-            await Task.WhenAll(dailyTask, weeklyTask, monthlyTask, retryTask);
+            await Task.WhenAll(monthlyTask, retryTask);
         }
 
         private async Task ScheduleRecurring(Func<Task> action, TimeSpan initialDelay, TimeSpan period, CancellationToken token)

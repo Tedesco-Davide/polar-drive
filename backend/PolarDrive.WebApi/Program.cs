@@ -98,7 +98,7 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine();
             Console.WriteLine("=== 🚀 DEVELOPMENT MODE ===");
             Console.WriteLine("📊 PolarDriveScheduler Configuration:");
-            Console.WriteLine("   - Automatic reports every 5 minutes");
+            Console.WriteLine("   - Automatic reports every 3 minutes");
             Console.WriteLine("   - Retry attempts every 1 minute");
             Console.WriteLine("   - Max 5 retries per vehicle");
             Console.WriteLine();
@@ -121,8 +121,6 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine();
             Console.WriteLine("=== 🏭 PRODUCTION MODE ===");
             Console.WriteLine("📊 PolarDriveScheduler Configuration:");
-            Console.WriteLine("   - Daily reports at 00:00 UTC");
-            Console.WriteLine("   - Weekly reports on Monday at 03:00 UTC");
             Console.WriteLine("   - Monthly reports on 1st at 05:00 UTC");
             Console.WriteLine("   - Retry checks every hour");
             Console.WriteLine("   - Max 5 retries with 5-hour delays");

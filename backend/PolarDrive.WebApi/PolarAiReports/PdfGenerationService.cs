@@ -192,7 +192,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
                 var stdout = await process.StandardOutput.ReadToEndAsync();
                 var stderr = await process.StandardError.ReadToEndAsync();
 
-                await _logger.Debug(source, "Output Puppeteer", $"Stdout: {stdout}");
+                await _logger.Debug(source, "Output Puppeteer", $"Stdout:\n{stdout}");
                 if (!string.IsNullOrEmpty(stderr))
                 {
                     await _logger.Debug(source, "Error Puppeteer", $"Stderr: {stderr}");

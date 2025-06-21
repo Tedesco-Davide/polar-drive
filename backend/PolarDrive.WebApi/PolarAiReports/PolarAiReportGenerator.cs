@@ -18,7 +18,7 @@ public class PolarAiReportGenerator
 
         _httpClient = new HttpClient
         {
-            Timeout = Timeout.InfiniteTimeSpan
+            Timeout = TimeSpan.FromMinutes(10)
         };
     }
 
@@ -262,8 +262,8 @@ public class PolarAiReportGenerator
         {
             // **PRIMO PDF**: uso il parziale del giorno corrente
             var now = DateTime.UtcNow;
-            var startOfDay = now.Date;                     // mezzanotte UTC
-            monitoringPeriod = now - startOfDay;           // es. 16h44
+            var startOfDay = now.Date;
+            monitoringPeriod = now - startOfDay;
             dataHours = (int)Math.Ceiling(monitoringPeriod.TotalHours);
             analysisLevel = "Valutazione Iniziale";
         }
@@ -400,6 +400,8 @@ public class PolarAiReportGenerator
 
     /// <summary>
     /// Genera summary con prompt ottimizzato per Qwen2.5 locale
+    /// </summary>/// <summary>
+    /// Genera summary con prompt ottimizzato per Qwen2.5 locale
     /// </summary>
     private async Task<string> GenerateSummary(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
@@ -413,17 +415,40 @@ public class PolarAiReportGenerator
         // ✅ PROMPT ottimizzato per il tuo Qwen2.5 locale
         var prompt = BuildPrompt(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
 
-        // Prima prova con Qwen2.5 usando il prompt
-        var aiResponse = await TryGenerateWithQwen(prompt, analysisLevel);
+        // ✅ RETRY LOGIC: Prova fino a 3 volte con Qwen2.5
+        const int maxRetries = 3;
+        const int retryDelaySeconds = 30;
 
-        if (string.IsNullOrWhiteSpace(aiResponse))
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            await _logger.Warning("PolarAiReportGenerator.GenerateSummary",
-                "Qwen2.5 non disponibile, uso generatore locale");
-            aiResponse = GenerateLocalReport(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
+            await _logger.Info("PolarAiReportGenerator.GenerateSummary",
+                $"Tentativo {attempt}/{maxRetries} con Qwen2.5",
+                $"Analisi: {analysisLevel}");
+
+            var aiResponse = await TryGenerateWithQwen(prompt, analysisLevel);
+
+            if (!string.IsNullOrWhiteSpace(aiResponse))
+            {
+                await _logger.Info("PolarAiReportGenerator.GenerateSummary",
+                    $"Qwen2.5 completata al tentativo {attempt}",
+                    $"Risposta: {aiResponse.Length} caratteri");
+                return aiResponse;
+            }
+
+            // ✅ Se non è l'ultimo tentativo, aspetta prima di riprovare
+            if (attempt < maxRetries)
+            {
+                await _logger.Warning("PolarAiReportGenerator.GenerateSummary",
+                    $"Tentativo {attempt} fallito, riprovo tra {retryDelaySeconds}s",
+                    null);
+                await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
+            }
         }
 
-        return aiResponse;
+        // ✅ Dopo tutti i tentativi falliti, lancia eccezione
+        var errorMessage = $"Qwen2.5 non disponibile dopo {maxRetries} tentativi per {analysisLevel}";
+        await _logger.Error("PolarAiReportGenerator.GenerateSummary", errorMessage, null);
+        throw new InvalidOperationException(errorMessage);
     }
 
     /// <summary>
@@ -492,7 +517,7 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
     }
 
     /// <summary>
-    /// Prova a generare con Qwen2.5 usando prompt (OpenAI‐compatibile /v1/completions)
+    /// Prova a generare con Qwen2.5 usando prompt
     /// </summary>
     private async Task<string?> TryGenerateWithQwen(string prompt, string analysisLevel)
     {
@@ -513,7 +538,6 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
                 "application/json"
             );
 
-            // Chiamo /v1/completions sulla porta di default di ollama serve
             var response = await _httpClient.PostAsync(
                 "http://127.0.0.1:11434/api/generate",
                 content
@@ -550,58 +574,6 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         }
     }
 
-    /// <summary>
-    /// Fallback locale per analisi 
-    /// </summary>
-    private string GenerateLocalReport(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
-    {
-        var sb = new StringBuilder();
-        var analysis = AnalyzeRawData(rawJsonList);
-
-        sb.AppendLine($"# REPORT TESLA - {analysisLevel.ToUpper()}");
-        sb.AppendLine();
-
-        // Executive Summary
-        sb.AppendLine("## EXECUTIVE SUMMARY");
-        sb.AppendLine($"Analisi avanzata di **{rawJsonList.Count:N0} campioni** raccolti in **{monitoringPeriod.TotalDays:F1} giorni** di monitoraggio continuo. ");
-        sb.AppendLine($"Questo {analysisLevel.ToLower()} rivela pattern comportamentali e insights predittivi impossibili da ottenere con analisi brevi. ");
-        sb.AppendLine($"Il veicolo dimostra {GetUsagePattern(analysis, dataHours)} con evoluzione {GetEfficiencyTrend(analysis, dataHours)}.");
-        sb.AppendLine();
-
-        // Apprendimento
-        sb.AppendLine("## APPRENDIMENTO");
-        sb.AppendLine();
-        sb.AppendLine("### Insights dall'analisi estesa");
-        sb.AppendLine(GetLearningInsights(analysis, monitoringPeriod, dataHours));
-        sb.AppendLine();
-
-        // Resto del report...
-        sb.AppendLine("## ANALISI COMPORTAMENTALE AVANZATA");
-        sb.AppendLine(GetAdvancedBehavioralAnalysis(analysis, dataHours));
-        sb.AppendLine();
-
-        sb.AppendLine("## INSIGHTS PREDITTIVI");
-        sb.AppendLine(GetPredictiveInsights(analysis, monitoringPeriod));
-        sb.AppendLine();
-
-        sb.AppendLine("## RACCOMANDAZIONI STRATEGICHE");
-        var recommendations = GenerateRecommendations(analysis, monitoringPeriod, dataHours);
-        foreach (var rec in recommendations)
-        {
-            sb.AppendLine($"- **{rec.Category}**: {rec.Text}");
-        }
-
-        sb.AppendLine();
-        sb.AppendLine("---");
-        sb.AppendLine($"*{analysisLevel} generata il {DateTime.UtcNow:yyyy-MM-dd HH:mm} UTC*");
-        sb.AppendLine($"*Basata su {rawJsonList.Count:N0} campioni in {monitoringPeriod.TotalDays:F1} giorni di monitoraggio*");
-        sb.AppendLine($"*Livello PolarAi: Progressivo con {dataHours}h di contesto storico*");
-
-        return sb.ToString();
-    }
-
-    // ✅ METODI HELPER per analisi
-
     private string GetAnalysisType(int dataHours)
     {
         return dataHours switch
@@ -637,85 +609,5 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         sb.AppendLine($"• Densità dati: {rawJsonList.Count / Math.Max(dataHours, 1):F1} campioni/ora");
         sb.AppendLine($"• Copertura: {(dataHours / (monitoringPeriod.TotalHours > 0 ? monitoringPeriod.TotalHours : 1)) * 100:F1}% del periodo totale");
         return sb.ToString();
-    }
-
-    private string GetUsagePattern(VehicleDataAnalysis analysis, int dataHours)
-    {
-        return dataHours switch
-        {
-            <= 168 => "pattern comportamentali iniziali stabiliti",
-            <= 720 => "comportamenti consolidati e trend identificati",
-            <= 2160 => "modello comportamentale maturo con prevedibilità elevata",
-            _ => "profilo comportamentale completo con capacità predittive avanzate"
-        };
-    }
-
-    private string GetEfficiencyTrend(VehicleDataAnalysis analysis, int dataHours)
-    {
-        return analysis.AvgBatteryLevel switch
-        {
-            >= 75 => "ottimizzata e in continuo miglioramento",
-            >= 50 => "stabile con potenziale di ottimizzazione",
-            _ => "in fase di ottimizzazione con margini di miglioramento significativi"
-        };
-    }
-
-    private string GetLearningInsights(VehicleDataAnalysis analysis, TimeSpan monitoringPeriod, int dataHours)
-    {
-        return $@"Il monitoraggio esteso di {monitoringPeriod.TotalDays:F1} giorni ha permesso di identificare:
-
-- **Pattern comportamentali evoluti**: L'analisi di {dataHours} ore di dati rivela cicli di utilizzo sofisticati
-- **Correlazioni stagionali**: Temperature e utilizzo climatizzazione mostrano adattamenti intelligenti
-- **Efficienza progressiva**: Il veicolo/utente ha sviluppato strategie di ottimizzazione energetica
-- **Predittibilità elevata**: I pattern consolidati permettono previsioni affidabili";
-    }
-
-    private string GetAdvancedBehavioralAnalysis(VehicleDataAnalysis analysis, int dataHours)
-    {
-        return $@"L'analisi comportamentale avanzata su {dataHours} ore rivela:
-
-**Evoluzione utilizzo**: Pattern di guida e sosta sempre più ottimizzati
-**Gestione energetica**: Strategie di ricarica adattate alle necessità reali  
-**Comfort intelligente**: Uso climatizzazione basato su apprendimento delle preferenze
-**Sicurezza proattiva**: Modalità di protezione calibrate sull'ambiente d'uso";
-    }
-
-    private string GetPredictiveInsights(VehicleDataAnalysis analysis, TimeSpan monitoringPeriod)
-    {
-        return $@"Basandosi su {monitoringPeriod.TotalDays:F1} giorni di dati storici:
-
-**Previsioni energetiche**: Autonomia media stimata {analysis.AvgRange:F0} km con trend stabile
-**Manutenzione predittiva**: Pressioni pneumatici stabili, prossimo controllo consigliato tra 30 giorni
-**Ottimizzazioni comportamentali**: Identificate 3 finestre temporali per ricariche più efficienti
-**Efficienza futura**: Margine di miglioramento del 15% con adeguamenti comportamentali";
-    }
-
-    private List<(string Category, string Text)> GenerateRecommendations(VehicleDataAnalysis analysis, TimeSpan monitoringPeriod, int dataHours)
-    {
-        var recommendations = new List<(string, string)>();
-
-        // Raccomandazioni basate sul livello di dati
-        if (dataHours >= 720) // Almeno un mese
-        {
-            recommendations.Add(("Strategia Energetica",
-                $"Basandosi su {monitoringPeriod.TotalDays:F0} giorni di dati: ottimizzare ricariche nelle fasce 22:00-06:00 per efficienza massima"));
-        }
-
-        if (dataHours >= 2160) // Almeno 3 mesi
-        {
-            recommendations.Add(("Manutenzione Predittiva",
-                "L'analisi trimestrale suggerisce controllo pneumatici ogni 45 giorni per mantenere efficienza ottimale"));
-        }
-
-        if (dataHours >= 8760) // Almeno un anno
-        {
-            recommendations.Add(("Ottimizzazione Annuale",
-                "Il profilo comportamentale annuale permette pianificazione strategica: considerare upgrade software per ulteriori ottimizzazioni"));
-        }
-
-        // Aggiungi raccomandazioni standard
-        recommendations.AddRange(GenerateRecommendations(analysis));
-
-        return recommendations;
     }
 }

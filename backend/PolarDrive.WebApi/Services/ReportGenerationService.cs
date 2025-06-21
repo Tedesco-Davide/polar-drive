@@ -14,22 +14,15 @@ namespace PolarDrive.WebApi.Services
         Task ForceRegenerateFilesAsync(int reportId);
     }
 
-    public class ReportGenerationService : IReportGenerationService
+    public class ReportGenerationService(IServiceProvider serviceProvider,
+                                  ILogger<ReportGenerationService> logger,
+                                  IWebHostEnvironment env) : IReportGenerationService
     {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly ILogger<ReportGenerationService> _logger;
-        private readonly IWebHostEnvironment _env;
+        private readonly IServiceProvider _serviceProvider = serviceProvider;
+        private readonly ILogger<ReportGenerationService> _logger = logger;
+        private readonly IWebHostEnvironment _env = env;
         private readonly Dictionary<int, DateTime> _lastReportAttempts = new();
         private readonly Dictionary<int, int> _retryCount = new();
-
-        public ReportGenerationService(IServiceProvider serviceProvider,
-                                      ILogger<ReportGenerationService> logger,
-                                      IWebHostEnvironment env)
-        {
-            _serviceProvider = serviceProvider;
-            _logger = logger;
-            _env = env;
-        }
 
         public async Task<SchedulerResults> ProcessScheduledReportsAsync(
             ScheduleType scheduleType,
@@ -86,9 +79,9 @@ namespace PolarDrive.WebApi.Services
 
                     // 3) Calcolo start/end
                     var start = lastReportEnd ?? now.AddHours(-thresholdHours);
-                    var end = lastReportEnd != null
-                                ? lastReportEnd.Value.AddHours(thresholdHours)
-                                : now;
+                    var end = now;
+
+                    _logger.LogInformation("🔍 DEBUG: Vehicle {VIN} - Start: {Start}, End: {End}, Now: {Now}", v.Vin, start, end, now);
 
                     // 4) Infine genero con questi parametri
                     var info = new ReportInfo(start, end);
