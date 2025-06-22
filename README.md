@@ -36,7 +36,7 @@ _(Tasto destro sulla cartella `backend/PolarDrive.TeslaMockApiService` → Open 
 
 ---
 
-### 🧠 BACKEND QWEN2.5 PolarAi
+### 🧠 BACKEND PolarAi
 
 _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated Terminal)_
 
@@ -45,12 +45,7 @@ _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated
 - `ollama --version` → Mostra la versione del runtime **Ollama**
   > Ollama è il **motore AI locale**: scarica, avvia e gestisce modelli LLM direttamente sul tuo PC.
 
-#### 🧪 DEBUG LOCALE (opzionale)
-
-- `ollama run qwen2.5` → Esegue **Qwen2.5** in modalità chat interattiva (terminal-based)
-  > ⚠️ Solo per test manuali: non adatto all'uso via codice .NET.
-
-#### ✅ UTILIZZO CORRETTO IN BACKEND
+#### 🧪 UTILIZZO CORRETTO IN BACKEND
 
 - `ollama serve` → Avvia **Ollama in modalità server REST**
   > Espone l'endpoint `http://localhost:11434/api/generate` per richieste AI programmatiche.  
@@ -60,21 +55,3 @@ _(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated
 
 - Apri il browser e visita:  
   `http://localhost:11434`
-
-- Oppure in terminale Powershell integrato su Visual Studio:
-
-  ```bash
-  Invoke-RestMethod -Uri http://localhost:11434/api/generate -Method Post -Body '{"model":"qwen2.5","prompt":"Sei attivo?","stream":false}' -ContentType "application/json"
-  ```
-
-- Oppure via `curl`:
-
-  ```bash
-  curl http://localhost:11434/api/generate -d "{\"model\": \"qwen2.5\", \"prompt\": \"Sei attivo?\", \"stream\": false}"
-  ```
-
-- Puoi chiudere Ollama manualmente nel terminale Powershell integrato su Visual Studio:
-
-  ```bash
-  Stop-Process -Name ollama -Force
-  ```

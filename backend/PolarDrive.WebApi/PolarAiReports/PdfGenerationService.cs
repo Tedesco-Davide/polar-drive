@@ -81,12 +81,13 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     /// </summary>
     private string GetOutputPdfPath(PdfReport report)
     {
+        var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+
         var outputDir = Path.Combine("storage", "reports",
-            report.ReportPeriodStart.Year.ToString(),
-            report.ReportPeriodStart.Month.ToString("D2"));
+            generationDate.Year.ToString(),
+            generationDate.Month.ToString("D2"));
 
         Directory.CreateDirectory(outputDir);
-
         return Path.Combine(outputDir, $"PolarDrive_Report_{report.Id}.pdf");
     }
 
@@ -192,7 +193,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
                 var stdout = await process.StandardOutput.ReadToEndAsync();
                 var stderr = await process.StandardError.ReadToEndAsync();
 
-                await _logger.Debug(source, "Output Puppeteer", $"Stdout:\n{stdout}");
+                await _logger.Debug(source, "Output Puppeteer", $"Stdout:\n\n{stdout}");
                 if (!string.IsNullOrEmpty(stderr))
                 {
                     await _logger.Debug(source, "Error Puppeteer", $"Stderr: {stderr}");

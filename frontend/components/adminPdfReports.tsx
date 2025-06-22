@@ -433,10 +433,11 @@ export default function AdminPdfReports({
 
                 {/* Vehicle */}
                 <td className="p-4">
-                  {report.vehicleVin} - {report.vehicleModel}
-                  {report.monitoringDurationHours > 0 && (
+                  {report.monitoringDurationHours >= 0 && (
                     <div className="text-xs text-gray-400 mt-1">
-                      {Math.round(report.monitoringDurationHours)}h{" "}
+                      {report.monitoringDurationHours < 1
+                        ? "< 1h"
+                        : `${Math.round(report.monitoringDurationHours)}h`}{" "}
                       {t("admin.vehicleReports.monitored")}
                     </div>
                   )}

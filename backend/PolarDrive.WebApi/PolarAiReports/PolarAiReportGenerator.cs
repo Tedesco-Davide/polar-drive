@@ -18,7 +18,7 @@ public class PolarAiReportGenerator
 
         _httpClient = new HttpClient
         {
-            Timeout = TimeSpan.FromMinutes(10)
+            Timeout = Timeout.InfiniteTimeSpan
         };
     }
 
@@ -162,86 +162,6 @@ public class PolarAiReportGenerator
         analysis.TotalSamples++;
     }
 
-    private List<(string Category, string Text)> GenerateRecommendations(VehicleDataAnalysis analysis)
-    {
-        var recommendations = new List<(string, string)>();
-
-        if (analysis.HasChargeData)
-        {
-            if (analysis.AvgBatteryLevel < 40)
-            {
-                recommendations.Add(("Efficienza Energetica", "Considerare ricariche più frequenti per mantenere la batteria sopra il 40%"));
-            }
-
-            if (analysis.AvgChargeLimit < 80)
-            {
-                recommendations.Add(("Ricarica", "Valutare l'aumento del limite di ricarica all'80% per uso quotidiano"));
-            }
-        }
-
-        if (analysis.HasClimateData)
-        {
-            var tempDiff = Math.Abs(analysis.AvgInsideTemp - analysis.AvgDriverTemp);
-            if (tempDiff > 5)
-            {
-                recommendations.Add(("Comfort", "Ottimizzare le impostazioni climatizzazione per ridurre i consumi"));
-            }
-        }
-
-        if (analysis.HasTpmsData)
-        {
-            var pressures = new[] { analysis.AvgTpmsFL, analysis.AvgTpmsFR, analysis.AvgTpmsRL, analysis.AvgTpmsRR };
-            if (pressures.Any(p => p < 2.0m || p > 3.0m))
-            {
-                recommendations.Add(("Manutenzione", "Verificare e regolare le pressioni dei pneumatici secondo le specifiche del costruttore"));
-            }
-        }
-
-        if (analysis.HasClimateData)
-        {
-            if (analysis.AvgPassengerTemp > analysis.AvgDriverTemp + 3)
-                recommendations.Add(("Comfort Passeggeri", "Bilanciare meglio la distribuzione dell’aria condizionata per uniformare la temperatura tra conducente e passeggeri"));
-        }
-
-        if (analysis.HasClimateData)
-        {
-            if (analysis.AvgClimateOn)
-                recommendations.Add(("Efficienza Energetica", "Disattivare la climatizzazione durante soste brevi per preservare la carica della batteria"));
-            else
-                recommendations.Add(("Comfort", "Utilizzare il precondizionamento da remoto nei giorni molto caldi o freddi per garantire un abitacolo confortevole fin dal primo istante"));
-        }
-
-        if (analysis.HasClimateData)
-        {
-            if (analysis.AvgOutsideTemp < 0)
-                recommendations.Add(("Preparazione Invernale", "Attivare il preriscaldamento quando la temperatura esterna è sotto lo zero per migliorare comfort e sicurezza"));
-            else if (analysis.AvgOutsideTemp > 30)
-                recommendations.Add(("Preparazione Estiva", "Attivare il pre-raffreddamento nelle giornate molto calde per un ingresso sempre confortevole"));
-        }
-
-        if (analysis.OdometerCount > 0)
-        {
-            if (analysis.AvgOdometer > 10000)
-                recommendations.Add(("Manutenzione Programmata", "Effettuare un controllo di manutenzione secondo le indicazioni del costruttore a questo chilometraggio"));
-        }
-
-        if (analysis.TotalSamples > 0)
-        {
-            if (!analysis.AvgLocked)
-                recommendations.Add(("Sicurezza", "Verificare le impostazioni di blocco automatico e valutare notifiche in caso di porte lasciate aperte"));
-        }
-
-
-        if (analysis.HasVehicleData && !analysis.AvgSentryMode)
-        {
-            recommendations.Add(("Sicurezza", "Considerare l'attivazione della modalità Sentry per maggiore sicurezza"));
-        }
-
-        recommendations.Add(("Monitoraggio", "Continuare il monitoraggio regolare per identificare pattern di utilizzo e ottimizzazioni"));
-
-        return recommendations;
-    }
-
     public async Task<string> GeneratePolarAiInsightsAsync(int vehicleId)
     {
         // 0) log di avvio
@@ -250,7 +170,7 @@ public class PolarAiReportGenerator
             "Avvio analisi",
             $"VehicleId: {vehicleId}");
 
-        // 0.1) verifico se ho già generato almeno un report per questo veicolo
+        // Verifica se ho già generato almeno un report per questo veicolo
         var alreadyGenerated = await _dbContext.PdfReports
             .AnyAsync(r => r.ClientVehicleId == vehicleId);
 
@@ -260,35 +180,40 @@ public class PolarAiReportGenerator
 
         if (!alreadyGenerated)
         {
-            // **PRIMO PDF**: uso il parziale del giorno corrente
-            var now = DateTime.UtcNow;
-            var startOfDay = now.Date;
-            monitoringPeriod = now - startOfDay;
-            dataHours = (int)Math.Ceiling(monitoringPeriod.TotalHours);
+            // PRIMO PDF: uso il parziale del giorno corrente
+            monitoringPeriod = TimeSpan.FromHours(24);
+            dataHours = 24;
             analysisLevel = "Valutazione Iniziale";
         }
         else
         {
-            // report già esistenti → uso la logica storica
+            // Report successivi: usa la logica progressiva CORRETTA
             var firstRecord = await GetFirstVehicleRecord(vehicleId);
 
             if (firstRecord == default)
             {
-                // nessun dato di partenza: fallback 24h
-                await _logger.Warning(
-                    "PolarAiReportGenerator.GenerateInsights",
-                    "Nessun dato storico trovato, uso finestra giornaliera di 24h",
-                    null);
-
                 monitoringPeriod = TimeSpan.FromHours(24);
                 dataHours = 24;
                 analysisLevel = "Valutazione Iniziale";
             }
             else
             {
-                // calcolo periodo e livello in base a firstRecord
                 monitoringPeriod = DateTime.UtcNow - firstRecord;
-                dataHours = DetermineDataWindow(monitoringPeriod);
+
+                // Conta quanti report esistono già per decidere la finestra
+                var reportCount = await _dbContext.PdfReports
+                    .CountAsync(r => r.ClientVehicleId == vehicleId);
+
+                // Se è il primo report usa sempre 24h
+                if (reportCount == 0)
+                {
+                    dataHours = 24;
+                }
+                else
+                {
+                    dataHours = DetermineDataWindow(monitoringPeriod);
+                }
+
                 analysisLevel = GetAnalysisLevel(monitoringPeriod);
             }
         }
@@ -302,7 +227,7 @@ public class PolarAiReportGenerator
         // 2) recupero dati
         var historicalData = await GetHistoricalData(vehicleId, dataHours);
 
-        if (!historicalData.Any())
+        if (historicalData.Count == 0)
         {
             await _logger.Warning(
                 "PolarAiReportGenerator.GenerateInsights",
@@ -398,11 +323,6 @@ public class PolarAiReportGenerator
         }
     }
 
-    /// <summary>
-    /// Genera summary con prompt ottimizzato per Qwen2.5 locale
-    /// </summary>/// <summary>
-    /// Genera summary con prompt ottimizzato per Qwen2.5 locale
-    /// </summary>
     private async Task<string> GenerateSummary(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
         if (!rawJsonList.Any())
@@ -412,25 +332,24 @@ public class PolarAiReportGenerator
             $"Generazione analisi {analysisLevel}",
             $"Records: {rawJsonList.Count}, Ore: {dataHours}");
 
-        // ✅ PROMPT ottimizzato per il tuo Qwen2.5 locale
+        // ✅ PROMPT ottimizzato per Polar Ai
         var prompt = BuildPrompt(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
-
-        // ✅ RETRY LOGIC: Prova fino a 3 volte con Qwen2.5
         const int maxRetries = 3;
         const int retryDelaySeconds = 30;
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             await _logger.Info("PolarAiReportGenerator.GenerateSummary",
-                $"Tentativo {attempt}/{maxRetries} con Qwen2.5",
+                $"Tentativo {attempt}/{maxRetries} con Polar Ai",
                 $"Analisi: {analysisLevel}");
 
-            var aiResponse = await TryGenerateWithQwen(prompt, analysisLevel);
+            //var aiResponse = await TryGenerateWithPolarAi(prompt, analysisLevel);
+            var aiResponse = "TEST_POLAR_AI_NO_ELAB";
 
             if (!string.IsNullOrWhiteSpace(aiResponse))
             {
                 await _logger.Info("PolarAiReportGenerator.GenerateSummary",
-                    $"Qwen2.5 completata al tentativo {attempt}",
+                    $"Polar Ai completata al tentativo {attempt}",
                     $"Risposta: {aiResponse.Length} caratteri");
                 return aiResponse;
             }
@@ -446,13 +365,13 @@ public class PolarAiReportGenerator
         }
 
         // ✅ Dopo tutti i tentativi falliti, lancia eccezione
-        var errorMessage = $"Qwen2.5 non disponibile dopo {maxRetries} tentativi per {analysisLevel}";
+        var errorMessage = $"Polar Ai non disponibile dopo {maxRetries} tentativi per {analysisLevel}";
         await _logger.Error("PolarAiReportGenerator.GenerateSummary", errorMessage, null);
         throw new InvalidOperationException(errorMessage);
     }
 
     /// <summary>
-    /// Costruisce il prompt per Qwen2.5
+    /// Costruisce il prompt per Polar Ai
     /// </summary>
     private string BuildPrompt(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
@@ -517,19 +436,19 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
     }
 
     /// <summary>
-    /// Prova a generare con Qwen2.5 usando prompt
+    /// Prova a generare con Polar Ai usando prompt
     /// </summary>
-    private async Task<string?> TryGenerateWithQwen(string prompt, string analysisLevel)
+    private async Task<string?> TryGenerateWithPolarAi(string prompt, string analysisLevel)
     {
         try
         {
-            // Costruisco il body secondo lo spec OpenAI‐compatibile
             var requestBody = new
             {
-                model = "qwen2.5",
+                model = "deepseek-llm:7b-chat",
                 prompt = prompt,
                 temperature = 0.3,
-                top_p = 0.9
+                top_p = 0.9,
+                stream = false
             };
 
             var content = new StringContent(
@@ -543,33 +462,32 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
                 content
             );
 
-            // Se non 200, loggo l’errore e ritorno null
             if (!response.IsSuccessStatusCode)
             {
                 var err = await response.Content.ReadAsStringAsync();
-                await _logger.Error("PolarAiReportGenerator.TryGenerateWithQwen",
+                await _logger.Error("PolarAiReportGenerator.TryGenerateWithPolarAi",
                     $"Errore {response.StatusCode}", err);
                 return null;
             }
 
-            // Estraggo il testo restituito
             var jsonResponse = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(jsonResponse);
+
+            // ✅ CORRETTO - Ollama usa "response", non "choices"
             var text = doc.RootElement
-                          .GetProperty("choices")[0]
-                          .GetProperty("text")
+                          .GetProperty("response")
                           .GetString();
 
-            await _logger.Info("PolarAiReportGenerator.TryGenerateWithQwen",
-                $"Qwen2.5 {analysisLevel} completata",
+            await _logger.Info("PolarAiReportGenerator.TryGenerateWithPolarAi",
+                $"Polar Ai {analysisLevel} completata",
                 $"Risposta: {text?.Length ?? 0} caratteri");
 
             return text;
         }
         catch (Exception ex)
         {
-            await _logger.Debug("PolarAiReportGenerator.TryGenerateWithQwen",
-                "Qwen2.5 non raggiungibile per analisi", ex.Message);
+            await _logger.Debug("PolarAiReportGenerator.TryGenerateWithPolarAi",
+                "Polar Ai non raggiungibile per analisi", ex.Message);
             return null;
         }
     }

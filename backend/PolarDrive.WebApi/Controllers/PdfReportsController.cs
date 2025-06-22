@@ -91,7 +91,7 @@ public class PdfReportsController : ControllerBase
             DataRecordsCount = dataCount,
             PdfFileSize = fileInfo.PdfSize,
             HtmlFileSize = fileInfo.HtmlSize,
-            MonitoringDurationHours = Math.Floor(monitoringDuration),
+            MonitoringDurationHours = Math.Max(0, Math.Floor(monitoringDuration)),
             IsRegenerated = report.RegenerationCount > 0,
             RegenerationCount = report.RegenerationCount,
             LastRegenerated = report.GeneratedAt?.ToString("o"),
@@ -286,9 +286,12 @@ public class PdfReportsController : ControllerBase
     private string GetReportFilePath(Data.Entities.PdfReport report, string extension)
     {
         var folder = extension == "html" && _env.IsDevelopment() ? "dev-reports" : "reports";
+        var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+
         var storageDir = Path.Combine("storage", folder,
-            report.ReportPeriodStart.Year.ToString(),
-            report.ReportPeriodStart.Month.ToString("D2"));
+            generationDate.Year.ToString(),
+            generationDate.Month.ToString("D2"));
+
         var storageFileName = $"PolarDrive_Report_{report.Id}.{extension}";
         var storagePath = Path.Combine(storageDir, storageFileName);
 

@@ -21,8 +21,8 @@ namespace PolarDrive.WebApi.Services
         private readonly IServiceProvider _serviceProvider = serviceProvider;
         private readonly ILogger<ReportGenerationService> _logger = logger;
         private readonly IWebHostEnvironment _env = env;
-        private readonly Dictionary<int, DateTime> _lastReportAttempts = new();
-        private readonly Dictionary<int, int> _retryCount = new();
+        private readonly Dictionary<int, DateTime> _lastReportAttempts = [];
+        private readonly Dictionary<int, int> _retryCount = [];
 
         public async Task<SchedulerResults> ProcessScheduledReportsAsync(
             ScheduleType scheduleType,
@@ -84,8 +84,8 @@ namespace PolarDrive.WebApi.Services
                     _logger.LogInformation("🔍 DEBUG: Vehicle {VIN} - Start: {Start}, End: {End}, Now: {Now}", v.Vin, start, end, now);
 
                     // 4) Infine genero con questi parametri
-                    var info = new ReportInfo(start, end);
-                    await GenerateReportForVehicle(db, v.Id, info);
+                    var info = GetReportInfo(scheduleType, now);
+                    await GenerateReportForVehicle(db, v.Id, info, start, end);
 
                     results.SuccessCount++;
                     _lastReportAttempts[v.Id] = now;
@@ -135,8 +135,19 @@ namespace PolarDrive.WebApi.Services
                     if (veh == null) continue;
 
                     _logger.LogInformation("🔄 Retry {Count}/{Max} for {VIN}", _retryCount[id], MAX_RETRIES, veh.Vin);
+
+                    var lastReportEnd = await db.PdfReports
+                        .Where(r => r.ClientVehicleId == id)
+                        .OrderByDescending(r => r.ReportPeriodEnd)
+                        .Select(r => (DateTime?)r.ReportPeriodEnd)
+                        .FirstOrDefaultAsync(stoppingToken);
+
+                    // Per i retry usa sempre 24h
+                    var start = lastReportEnd ?? now.AddHours(-24);
+                    var end = now;
+
                     var info = GetReportInfo(ScheduleType.Retry, now);
-                    await GenerateReportForVehicle(db, id, info);
+                    await GenerateReportForVehicle(db, id, info, start, end);
 
                     results.SuccessCount++;
                     _retryCount[id] = 0;
@@ -244,87 +255,7 @@ namespace PolarDrive.WebApi.Services
             };
         }
 
-        private async Task<ReportPeriodInfo> CalculateReportPeriod(PolarDriveDbContext db, int vehicleId, ReportInfo info)
-        {
-            var first = await db.VehiclesData
-                .Where(d => d.VehicleId == vehicleId)
-                .OrderBy(d => d.Timestamp)
-                .Select(d => d.Timestamp)
-                .FirstOrDefaultAsync();
-
-            var now = DateTime.UtcNow;
-            var days = (now - first).TotalDays;
-
-            return _env.IsDevelopment()
-                ? CalculateDevReportPeriod(now, days)
-                : CalculateProductionReportPeriod(info.AnalysisType, now, days);
-        }
-
-        private ReportPeriodInfo CalculateDevReportPeriod(DateTime now, double days)
-        {
-            var mins = days * 24 * 60;
-            var (hrs, lvl) = mins switch
-            {
-                < 5 => (1, "Valutazione Iniziale"),
-                < 15 => (6, "Analisi Rapida"),
-                < 30 => (24, "Pattern Recognition"),
-                < 60 => (168, "Behavioral Analysis"),
-                _ => (720, "Deep Dive Analysis")
-            };
-
-            return new ReportPeriodInfo
-            {
-                Start = now.AddHours(-hrs),
-                End = now,
-                DataHours = hrs,
-                AnalysisLevel = $"{lvl} ({days:F1}d monitoring)",
-                MonitoringDays = days
-            };
-        }
-
-        private ReportPeriodInfo CalculateProductionReportPeriod(string type, DateTime now, double days)
-        {
-            DateTime start;
-            DateTime end;
-            int hrs;
-
-            switch (type)
-            {
-                case "Analisi Giornaliera":
-                    start = now.AddDays(-1).Date;
-                    end = now.Date.AddSeconds(-1);
-                    hrs = 24;
-                    break;
-                case "Analisi Settimanale":
-                    var monday = now.AddDays(-7 - (int)now.DayOfWeek + 1).Date;
-                    start = monday;
-                    end = monday.AddDays(6).AddSeconds(-1);
-                    hrs = 168;
-                    break;
-                case "Analisi Mensile":
-                    var firstOfMonth = new DateTime(now.Year, now.Month, 1).AddMonths(-1);
-                    start = firstOfMonth;
-                    end = new DateTime(now.Year, now.Month, 1).AddSeconds(-1);
-                    hrs = 720;
-                    break;
-                default:
-                    start = now.AddHours(-24);
-                    end = now;
-                    hrs = 24;
-                    break;
-            }
-
-            return new ReportPeriodInfo
-            {
-                Start = start,
-                End = end,
-                DataHours = hrs,
-                AnalysisLevel = $"{type} ({days:F1}d totali)",
-                MonitoringDays = days
-            };
-        }
-
-        private async Task GenerateReportForVehicle(PolarDriveDbContext db, int vehicleId, ReportInfo info)
+        private async Task GenerateReportForVehicle(PolarDriveDbContext db, int vehicleId, ReportInfo info, DateTime start, DateTime end)
         {
             var vehicle = await db.ClientVehicles
                                   .Include(v => v.ClientCompany)
@@ -334,9 +265,29 @@ namespace PolarDrive.WebApi.Services
             if (!vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag)
                 _logger.LogWarning("⏳ Grace Period for {VIN}", vehicle.Vin);
 
-            var period = await CalculateReportPeriod(db, vehicleId, info);
-            _logger.LogInformation("🧠 Generating {Level} for {VIN} | {Start:yyyy-MM-dd} to {End:yyyy-MM-dd}",
-                                   period.AnalysisLevel, vehicle.Vin, period.Start, period.End);
+            var reportCount = await db.PdfReports.CountAsync(r => r.ClientVehicleId == vehicleId);
+
+            // Per il primo report, usa la data di attivazione
+            if (reportCount == 0 && vehicle.FirstActivationAt.HasValue)
+            {
+                start = vehicle.FirstActivationAt.Value;  // ✅ Dall'attivazione!
+                end = DateTime.UtcNow;
+
+                _logger.LogInformation("🔧 First report from activation: {ActivationDate} to {Now}",
+                                       start, end);
+            }
+
+            var period = new ReportPeriodInfo
+            {
+                Start = start,
+                End = end,
+                DataHours = (int)(end - start).TotalHours,
+                AnalysisLevel = reportCount == 0 ? "Valutazione Iniziale" : info.AnalysisType,
+                MonitoringDays = (end - start).TotalDays
+            };
+
+            _logger.LogInformation("🧠 Generating {Level} for {VIN} | {Start:yyyy-MM-dd HH:mm} to {End:yyyy-MM-dd HH:mm} | Report #{Count}",
+                                   period.AnalysisLevel, vehicle.Vin, period.Start, period.End, reportCount + 1);
 
             var aiGen = new PolarAiReportGenerator(db);
             var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
@@ -350,14 +301,15 @@ namespace PolarDrive.WebApi.Services
                 ReportPeriodStart = period.Start,
                 ReportPeriodEnd = period.End,
                 GeneratedAt = DateTime.UtcNow,
-                Notes = $"[{period.AnalysisLevel}] DataHours: {period.DataHours}, Monitoring: {period.MonitoringDays:F1}"
+                Notes = $"[{period.AnalysisLevel}] DataHours: {period.DataHours}, Monitoring: {period.MonitoringDays:F1}d"
             };
 
             db.PdfReports.Add(report);
             await db.SaveChangesAsync();
 
             await GenerateReportFiles(db, report, insights, period, vehicle);
-            _logger.LogInformation("✅ Report {Id} generated for {VIN}", report.Id, vehicle.Vin);
+            _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type}",
+                                   report.Id, vehicle.Vin, period.DataHours, period.AnalysisLevel);
         }
 
         private async Task GenerateReportFiles(PolarDriveDbContext db,
@@ -402,11 +354,14 @@ namespace PolarDrive.WebApi.Services
             await SaveFile(pdfPath, pdfBytes);
         }
 
-        private string GetFilePath(PdfReport report, string ext, string folder)
+        private static string GetFilePath(PdfReport report, string ext, string folder)
         {
+            // ✅ USA LA DATA DI GENERAZIONE, NON IL PERIODO DEI DATI
+            var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+
             return Path.Combine("storage", folder,
-                report.ReportPeriodStart.Year.ToString(),
-                report.ReportPeriodStart.Month.ToString("D2"),
+                generationDate.Year.ToString(),
+                generationDate.Month.ToString("D2"),
                 $"PolarDrive_Report_{report.Id}.{ext}");
         }
 
