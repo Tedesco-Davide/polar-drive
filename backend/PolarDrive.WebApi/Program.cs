@@ -5,6 +5,8 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.WebApi.Scheduler;
 using PolarDrive.WebApi.Services;
 using PolarDrive.WebApi.Production;
+using Hangfire;
+using Hangfire.MemoryStorage;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -45,6 +47,14 @@ builder.Services.AddDbContext<PolarDriveDbContext>(options =>
     options.UseSqlite($"Data Source={dbPath}")
 );
 
+// Hangfire
+var connectionString = $"Data Source={dbPath}";
+builder.Services.AddHangfire(config => config.UseMemoryStorage());
+builder.Services.AddHangfireServer(options => new BackgroundJobServerOptions
+{
+    WorkerCount = 1
+});
+
 // ✅ SERVIZI MULTI-BRAND
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<TeslaApiService>();
@@ -64,6 +74,7 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseHangfireDashboard("/hangfire");
 }
 
 // Apply middlewares

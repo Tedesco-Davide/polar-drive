@@ -3,7 +3,7 @@ import { PdfReport } from "@/types/reportInterfaces";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { NotebookPen, FileBadge, RefreshCw } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
@@ -23,10 +23,15 @@ export default function AdminPdfReports({
   refreshPdfReports?: () => Promise<PdfReport[] | void>;
 }) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
+  const refreshRef = useRef(refreshPdfReports);
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<number | null>(null);
+
+  useEffect(() => {
+    refreshRef.current = refreshPdfReports;
+  }, [refreshPdfReports]);
 
   useEffect(() => {
     setLocalReports(reports);
@@ -37,6 +42,20 @@ export default function AdminPdfReports({
       `Loaded ${reports.length} reports`
     );
   }, [reports]);
+
+  useEffect(() => {
+    const processingReports = localReports.filter(
+      (r) => getReportStatus(r).text === "PROCESSING"
+    );
+
+    if (processingReports.length > 0 && refreshRef.current) {
+      const interval = setInterval(() => {
+        refreshRef.current?.();
+      }, 10000);
+
+      return () => clearInterval(interval);
+    }
+  }, [localReports]);
 
   const { query, setQuery, filteredData } = useSearchFilter<PdfReport>(
     localReports,
@@ -62,6 +81,10 @@ export default function AdminPdfReports({
         return "bg-blue-100 text-blue-700 border-blue-500";
       case "WAITING-RECORDS":
         return "bg-orange-100 text-orange-700 border-orange-500";
+      case "PROCESSING":
+        return "bg-blue-100 text-blue-700 border-blue-500";
+      case "ERROR":
+        return "bg-red-100 text-red-700 border-red-500";
       default:
         return "bg-gray-100 text-polarNight border-gray-400";
     }
@@ -189,8 +212,8 @@ export default function AdminPdfReports({
       if (result.success) {
         alert(t("admin.vehicleReports.regenerateReportSuccess"));
 
-        if (refreshPdfReports) {
-          await refreshPdfReports();
+        if (refreshRef.current) {
+          await refreshRef.current();
         }
 
         logFrontendEvent(
@@ -255,8 +278,8 @@ export default function AdminPdfReports({
         `ReportId: ${updated.id}`
       );
 
-      if (refreshPdfReports) {
-        setTimeout(() => refreshPdfReports(), 200);
+      if (refreshRef.current) {
+        setTimeout(() => refreshRef.current?.(), 200);
       }
     } catch (err) {
       const details = err instanceof Error ? err.message : String(err);
@@ -308,11 +331,11 @@ export default function AdminPdfReports({
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">
-              {refreshPdfReports && (
+              {refreshRef.current && (
                 <button
                   onClick={async () => {
                     try {
-                      await refreshPdfReports();
+                      await refreshRef.current?.();
                       alert(t("admin.vehicleReports.tableRefreshSuccess"));
                     } catch {
                       alert(t("admin.vehicleReports.tableRefreshFail"));
@@ -357,9 +380,17 @@ export default function AdminPdfReports({
                 <td className="p-4 space-x-2">
                   {/* Download Button */}
                   <button
-                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600"
-                    title={t("admin.vehicleReports.downloadSinglePdf")}
-                    disabled={!isDownloadable || downloadingId === report.id}
+                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400"
+                    title={
+                      status.text === "PROCESSING"
+                        ? t("admin.vehicleReports.downloadDisabledProcessing")
+                        : t("admin.vehicleReports.downloadSinglePdf")
+                    }
+                    disabled={
+                      !isDownloadable ||
+                      downloadingId === report.id ||
+                      status.text === "PROCESSING"
+                    }
                     onClick={() => handleDownload(report)}
                   >
                     {downloadingId === report.id ? (
@@ -371,9 +402,16 @@ export default function AdminPdfReports({
 
                   {/* Regenerate Button */}
                   <button
-                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600"
-                    title={t("admin.vehicleReports.forceRegenerate")}
-                    disabled={regeneratingId === report.id}
+                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400"
+                    title={
+                      status.text === "PROCESSING"
+                        ? t("admin.vehicleReports.regenerateDisabledProcessing")
+                        : t("admin.vehicleReports.forceRegenerate")
+                    }
+                    disabled={
+                      regeneratingId === report.id ||
+                      status.text === "PROCESSING"
+                    }
                     onClick={() => {
                       const message = t(
                         "admin.vehicleReports.regenerateConfirmAction"

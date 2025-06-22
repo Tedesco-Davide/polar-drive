@@ -18,6 +18,10 @@ public class PdfReport
 
     public int RegenerationCount { get; set; } = 0;
 
+    public string Status { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     public ClientCompany? ClientCompany { get; set; }
 
     public ClientVehicle? ClientVehicle { get; set; }

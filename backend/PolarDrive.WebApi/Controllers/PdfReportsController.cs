@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
@@ -96,7 +97,7 @@ public class PdfReportsController : ControllerBase
             RegenerationCount = report.RegenerationCount,
             LastRegenerated = report.GeneratedAt?.ToString("o"),
             ReportType = DetermineReportType(report, dataCount),
-            Status = DetermineReportStatus(fileInfo.PdfExists, fileInfo.HtmlExists, dataCount),
+            Status = DetermineReportStatus(fileInfo.PdfExists, fileInfo.HtmlExists, dataCount, report.Status),
         };
     }
 
@@ -133,7 +134,21 @@ public class PdfReportsController : ControllerBase
         };
     }
 
-    private static string DetermineReportStatus(bool pdfExists, bool htmlExists, int dataCount)
+    private static string DetermineReportStatus(bool pdfExists, bool htmlExists, int dataCount, string? dbStatus = null)
+    {
+        if (!string.IsNullOrEmpty(dbStatus))
+        {
+            return dbStatus switch
+            {
+                "PROCESSING" => "PROCESSING",
+                "ERROR" => "ERROR",
+                _ => DetermineFileBasedStatus(pdfExists, htmlExists, dataCount)
+            };
+        }
+        return DetermineFileBasedStatus(pdfExists, htmlExists, dataCount);
+    }
+
+    private static string DetermineFileBasedStatus(bool pdfExists, bool htmlExists, int dataCount)
     {
         return (pdfExists, htmlExists, dataCount) switch
         {
@@ -257,12 +272,12 @@ public class PdfReportsController : ControllerBase
                 return BadRequest(new { success = false, message = "SERVER ERROR → INTERNAL ERROR: Vehicle not found" });
             }
 
-            // Usa il metodo pubblico ForceGenerateReport che è più appropriato per generazioni manuali
-            await _reportSchedulerService.ForceRegenerateFilesAsync(report.Id);
-
-            // Aggiorna il conteggio di rigenerazione
             report.RegenerationCount++;
+            report.Status = "PROCESSING";
             report.Notes = $"Ultima rigenerazione: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount}";
+            await db.SaveChangesAsync();
+
+            BackgroundJob.Enqueue(() => ProcessReportRegenerationAsync(report.Id));
 
             await db.SaveChangesAsync();
 
@@ -280,6 +295,40 @@ public class PdfReportsController : ControllerBase
         {
             await _logger.Error("PdfReportsController.RegenerateReport", "Regeneration error occurred.", $"ReportId: {id}, Error: {ex}");
             return StatusCode(500, new { success = false, message = "SERVER ERROR → INTERNAL ERROR: Regeneration failed!" });
+        }
+    }
+
+    public async Task ProcessReportRegenerationAsync(int reportId)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
+        var reportService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
+
+        try
+        {
+            var report = await db.PdfReports
+                .Include(r => r.ClientVehicle)
+                .FirstOrDefaultAsync(r => r.Id == reportId);
+
+            if (report != null)
+            {
+                // Usa il servizio esistente per rigenerare
+                await reportService.ForceRegenerateFilesAsync(reportId);
+
+                report.Status = "COMPLETED";
+                report.GeneratedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            var report = await db.PdfReports.FindAsync(reportId);
+            if (report != null)
+            {
+                report.Status = "ERROR";
+                report.Notes = $"Regeneration error: {ex.Message}";
+                await db.SaveChangesAsync();
+            }
         }
     }
 

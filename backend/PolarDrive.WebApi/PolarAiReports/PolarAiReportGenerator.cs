@@ -1,7 +1,9 @@
 using System.Text;
 using System.Text.Json;
+using Hangfire;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.Entities;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -20,49 +22,6 @@ public class PolarAiReportGenerator
         {
             Timeout = Timeout.InfiniteTimeSpan
         };
-    }
-
-    private VehicleDataAnalysis AnalyzeRawData(List<string> rawJsonList)
-    {
-        var analysis = new VehicleDataAnalysis();
-        var validSamples = 0;
-
-        foreach (var rawJson in rawJsonList)
-        {
-            try
-            {
-                using var doc = JsonDocument.Parse(rawJson);
-                var root = doc.RootElement;
-
-                // Prova diverse strutture
-                JsonElement dataToAnalyze = root;
-
-                if (root.TryGetProperty("response", out var response) &&
-                    response.TryGetProperty("data", out var dataArray) &&
-                    dataArray.ValueKind == JsonValueKind.Array)
-                {
-                    // Processa array di dati
-                    foreach (var item in dataArray.EnumerateArray())
-                    {
-                        if (item.TryGetProperty("content", out var content))
-                        {
-                            dataToAnalyze = content;
-                            break;
-                        }
-                    }
-                }
-
-                ProcessSample(analysis, dataToAnalyze);
-                validSamples++;
-            }
-            catch
-            {
-                // Ignora campioni non validi
-            }
-        }
-
-        analysis.FinalizeAverages(validSamples);
-        return analysis;
     }
 
     private void ProcessSample(VehicleDataAnalysis analysis, JsonElement data)
@@ -160,6 +119,69 @@ public class PolarAiReportGenerator
         }
 
         analysis.TotalSamples++;
+    }
+
+    public async Task<string> QueueReportGenerationAsync(int vehicleId)
+    {
+        // Prima recupera il veicolo per ottenere il ClientCompanyId
+        var vehicle = await _dbContext.ClientVehicles
+            .FirstOrDefaultAsync(v => v.Id == vehicleId);
+
+        if (vehicle == null)
+        {
+            throw new ArgumentException($"Vehicle with ID {vehicleId} not found");
+        }
+
+        // Salva lo stato "in elaborazione"
+        var newReport = new PdfReport
+        {
+            ClientVehicleId = vehicleId,
+            ClientCompanyId = vehicle.ClientCompanyId,
+            Status = "PROCESSING",
+            CreatedAt = DateTime.UtcNow,
+            ReportPeriodStart = DateTime.UtcNow.AddDays(-1),
+            ReportPeriodEnd = DateTime.UtcNow
+        };
+
+        await _dbContext.PdfReports.AddAsync(newReport);
+        await _dbContext.SaveChangesAsync();
+
+        // Usa l'Id generato dal database
+        var jobId = newReport.Id.ToString();
+
+        // Accoda per elaborazione asincrona
+        BackgroundJob.Enqueue(() => ProcessReportAsync(vehicleId, newReport.Id));
+
+        return jobId;
+    }
+
+    public async Task ProcessReportAsync(int vehicleId, int reportId)
+    {
+        try
+        {
+            // Chiama il metodo rinominato che contiene la logica esistente
+            var result = await GeneratePolarAiInsightsAsync(vehicleId);
+
+            // Aggiorna stato a completato
+            var report = await _dbContext.PdfReports.FindAsync(reportId);
+            if (report != null)
+            {
+                report.Status = "COMPLETED";
+                report.GeneratedAt = DateTime.UtcNow;
+                await _dbContext.SaveChangesAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Aggiorna stato a errore
+            var report = await _dbContext.PdfReports.FindAsync(reportId);
+            if (report != null)
+            {
+                report.Status = "ERROR";
+                report.Notes = $"Error: {ex.Message}";
+                await _dbContext.SaveChangesAsync();
+            }
+        }
     }
 
     public async Task<string> GeneratePolarAiInsightsAsync(int vehicleId)
@@ -343,8 +365,8 @@ public class PolarAiReportGenerator
                 $"Tentativo {attempt}/{maxRetries} con Polar Ai",
                 $"Analisi: {analysisLevel}");
 
-            //var aiResponse = await TryGenerateWithPolarAi(prompt, analysisLevel);
-            var aiResponse = "TEST_POLAR_AI_NO_ELAB";
+            var aiResponse = await TryGenerateWithPolarAi(prompt, analysisLevel);
+            //var aiResponse = "TEST_POLAR_AI_NO_ELAB";
 
             if (!string.IsNullOrWhiteSpace(aiResponse))
             {
@@ -444,11 +466,16 @@ Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dim
         {
             var requestBody = new
             {
-                model = "deepseek-llm:7b-chat",
+                model = "deepseek-r1:8b",
                 prompt = prompt,
                 temperature = 0.3,
                 top_p = 0.9,
-                stream = false
+                stream = false,
+                options = new
+                {
+                    num_ctx = 20000,
+                    num_predict = 2048
+                }
             };
 
             var content = new StringContent(

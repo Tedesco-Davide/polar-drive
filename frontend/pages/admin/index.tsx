@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { GetStaticProps } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTheme } from "next-themes";
@@ -142,12 +142,15 @@ export default function AdminDashboard() {
         `Current count: ${currentCount}`
       );
 
-      const res = await fetch(`${API_BASE_URL}/api/pdfreports`, {
-        headers: {
-          "Cache-Control": "no-cache",
-          Pragma: "no-cache",
-        },
-      });
+      const res = await fetch(
+        `${API_BASE_URL}/api/pdfreports?t=${Date.now()}`,
+        {
+          headers: {
+            "Cache-Control": "no-cache",
+            Pragma: "no-cache",
+          },
+        }
+      );
 
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: ${res.statusText}`);
@@ -186,9 +189,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const refreshPdfReports = async (): Promise<void> => {
+  const refreshPdfReports = useCallback(async (): Promise<void> => {
     await refreshPdfReportsInternal();
-  };
+  }, []);
 
   useEffect(() => {
     refreshWorkflowData();

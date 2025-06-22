@@ -236,6 +236,8 @@
   "admin.vehicleReports.monitored": "monitored",
   "admin.vehicleReports.pdfNotAvailable": "PDF not available, downloaded HTML instead. Try regenerating to obtain the PDF",
   "admin.vehicleReports.regenerateConfirmAction": "WARNING! By regenerating the report, the period data will remain identical, but the report will be regenerated with the most advanced PolarAi analysis available. Press OK to confirm",
+  "admin.vehicleReports.downloadDisabledProcessing": "Elaborating report...",
+  "admin.vehicleReports.regenerateDisabledProcessing": "Elaborating report...",
 
   "admin.scheduler.tableHeader": "PDF Manager",
   "admin.scheduler.requestedAt": "Requested At",
