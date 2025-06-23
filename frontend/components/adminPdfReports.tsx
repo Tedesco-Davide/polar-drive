@@ -48,13 +48,21 @@ export default function AdminPdfReports({
       (r) => getReportStatus(r).text === "PROCESSING"
     );
 
-    if (processingReports.length > 0 && refreshRef.current) {
-      const interval = setInterval(() => {
+    let interval: NodeJS.Timeout;
+
+    if (processingReports.length > 0) {
+      // Se ci sono report in processing, refresh ogni 10 secondi
+      interval = setInterval(() => {
         refreshRef.current?.();
       }, 10000);
-
-      return () => clearInterval(interval);
+    } else {
+      // Se non ci sono report in processing, refresh ogni 60 secondi per nuovi report
+      interval = setInterval(() => {
+        refreshRef.current?.();
+      }, 60000);
     }
+
+    return () => clearInterval(interval);
   }, [localReports]);
 
   const { query, setQuery, filteredData } = useSearchFilter<PdfReport>(
@@ -212,16 +220,18 @@ export default function AdminPdfReports({
       if (result.success) {
         alert(t("admin.vehicleReports.regenerateReportSuccess"));
 
-        if (refreshRef.current) {
-          await refreshRef.current();
-        }
+        setTimeout(async () => {
+          if (refreshRef.current) {
+            await refreshRef.current();
+          }
 
-        logFrontendEvent(
-          "AdminPdfReports",
-          "INFO",
-          "Regeneration completed with full refresh",
-          `ReportId: ${report.id}`
-        );
+          logFrontendEvent(
+            "AdminPdfReports",
+            "INFO",
+            "Regeneration completed with delayed refresh",
+            `ReportId: ${report.id}`
+          );
+        }, 3000);
       } else {
         throw new Error(
           result.message || t("admin.vehicleReports.regenerateReportFail")

@@ -393,7 +393,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// Costruisce il prompt per Polar Ai
+    /// Costruisce il prompt ottimizzato per Polar Ai
     /// </summary>
     private string BuildPrompt(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
     {
@@ -401,60 +401,90 @@ public class PolarAiReportGenerator
         var stats = GenerateDataStatistics(rawJsonList, monitoringPeriod, dataHours);
 
         return $@"
-Agisci come un consulente esperto in mobilità elettrica e analisi dati Tesla con capacità di APPRENDIMENTO PROGRESSIVO.
+                    # POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
 
-CONTESTO ANALISI PROGRESSIVA:
-- Livello Analisi: {analysisLevel}
-- Periodo Monitoraggio: {monitoringPeriod.TotalDays:F1} giorni
-- Finestra Dati: {dataHours} ore ({rawJsonList.Count:N0} record)
-- Tipo: {GetAnalysisType(dataHours)}
+                    **RUOLO**: Senior Data Analyst specializzato in veicoli Tesla con sistema di apprendimento progressivo avanzato.
 
-{stats}
+                    ## PARAMETRI ANALISI CORRENTE
+                    **Livello**: {analysisLevel}  
+                    **Periodo Totale**: {monitoringPeriod.TotalDays:F1} giorni  
+                    **Finestra Analizzata**: {dataHours} ore  
+                    **Dataset**: {rawJsonList.Count:N0} record telemetrici  
+                    **Tipologia**: {GetAnalysisType(dataHours)}
 
-FOCUS PROGRESSIVO:
-{GetFocus(analysisLevel, dataHours)}
+                    {stats}
 
-DATI DETTAGLIATI:
-{parsedPrompt}
+                    ## OBIETTIVI PROGRESSIVI SPECIFICI
+                    {GetFocus(analysisLevel, dataHours)}
 
-STRUTTURA RICHIESTA DEL REPORT PROGRESSIVO:
-1. **EXECUTIVE SUMMARY PROGRESSIVO** 
-   - Sintesi che evidenzia l'evoluzione rispetto ai periodi precedenti
-   - Insights che emergono solo dall'analisi estesa
+                    ## DATASET TELEMETRICO
+                    ```json
+                    {parsedPrompt}
+                    ```
 
-2. **APPRENDIMENTO PROGRESSIVO**
-   - Cosa abbiamo imparato con questo periodo di monitoraggio esteso
-   - Pattern che emergono solo con dati a lungo termine
-   - Evoluzione comportamentale del veicolo/utente
+                    ## FORMATO OUTPUT RICHIESTO
 
-3. **ANALISI COMPORTAMENTALE AVANZATA**
-   - Pattern di utilizzo a lungo termine
-   - Correlazioni stagionali/temporali  
-   - Efficienza energetica nel tempo
+                    ### 1. 🎯 EXECUTIVE SUMMARY
+                    - **Stato attuale**: Valutazione sintetica delle performance
+                    - **Evoluzione**: Cambiamenti significativi rispetto ai baseline precedenti
+                    - **KPI principali**: Batteria, efficienza, utilizzo (con percentuali precise)
+                    - **Alert**: Eventuali anomalie o trend preoccupanti
 
-4. **INSIGHTS PREDITTIVI**
-   - Tendenze future basate sui dati storici
-   - Previsioni di manutenzione/usura
-   - Ottimizzazioni comportamentali
+                    ### 2. 📈 APPRENDIMENTO PROGRESSIVO
+                    - **Nuovi pattern identificati**: Cosa emerge SOLO con questo livello di dati
+                    - **Correlazioni inedite**: Relazioni scoperte nell'analisi estesa
+                    - **Comportamento evolutivo**: Come cambia l'utilizzo nel tempo
+                    - **Baseline aggiornati**: Nuovi parametri di riferimento stabiliti
 
-5. **STATO BATTERIA E RICARICA EVOLUTIVO**
-   - Analisi degrado/miglioramento nel tempo
-   - Pattern di ricarica evoluti
-   - Efficienza comparativa
+                    ### 3. 🔍 ANALISI COMPORTAMENTALE AVANZATA
+                    - **Cicli temporali**: Pattern giornalieri/settimanali/mensili
+                    - **Efficienza energetica**: Trend di consumo e ottimizzazioni
+                    - **Modalità di guida**: Stili di utilizzo e loro impatti
+                    - **Ricarica intelligente**: Strategie adottate e risultati
 
-6. **RACCOMANDAZIONI AVANZATE**
-   - Suggerimenti basati sull'apprendimento progressivo
-   - Ottimizzazioni a lungo termine
-   - Strategie predittive
+                    ### 4. 🔮 INSIGHTS PREDITTIVI
+                    - **Previsioni a breve termine** (1-4 settimane)
+                    - **Trend di degrado batteria** (con modelli matematici)
+                    - **Manutenzione predittiva** (componenti e tempistiche)
+                    - **Ottimizzazioni comportamentali** (ROI stimato)
 
-ISTRUZIONI SPECIFICHE:
-- Dimostra la crescente sofisticazione dell'analisi rispetto ai report precedenti
-- Evidenzia insights possibili SOLO con questo livello di dati storici
-- Usa un tono che mostra l'evoluzione della comprensione del veicolo
-- Includi sempre cifre specifiche e trend temporali
-- Evidenzia il valore del monitoraggio esteso
+                    ### 5. 🔋 ANALISI BATTERIA & RICARICA EVOLUTIVA
+                    - **Salute batteria**: Trend di capacità e degrado
+                    - **Efficienza ricarica**: Velocità, costi, pattern temporali
+                    - **Cicli di vita**: Analisi deep/shallow cycles
+                    - **Confronto benchmarks**: Performance vs standard di settore
 
-Ricorda: questo è un report {analysisLevel.ToLower()}, non un'analisi base. Dimostra la superiorità dell'AI progressiva!";
+                    ### 6. 💡 RACCOMANDAZIONI STRATEGICHE
+                    - **Immediate** (implementabili subito)
+                    - **A medio termine** (1-3 mesi) 
+                    - **Strategiche** (3+ mesi)
+                    - **ROI stimato** per ogni raccomandazione
+
+                    ## VINCOLI DI QUALITÀ
+
+                    **PRECISIONE NUMERICA**: Tutti i valori devono essere specifici e verificabili
+                    **CONSISTENZA**: Mantenere coerenza con analisi precedenti dello stesso veicolo
+                    **PROFESSIONALITÀ**: Linguaggio tecnico ma accessibile, evitare speculazioni
+                    **ACTIONABILITY**: Ogni insight deve tradursi in azioni concrete
+                    **COMPARABILITÀ**: Fornire sempre benchmark e confronti temporali
+
+                    ## ELEMENTI OBBLIGATORI
+
+                    ✅ **Metriche quantitative** in ogni sezione  
+                    ✅ **Trend temporali** con direzione e velocità  
+                    ✅ **Confidence level** per le previsioni  
+                    ✅ **Impatto economico** stimato  
+                    ✅ **Timeline** per implementazione raccomandazioni  
+
+                    ## STILE OUTPUT
+
+                    - **Formato**: Markdown professionale con emoji per sezioni
+                    - **Lunghezza**: Proporzioanle al livello di analisi ({analysisLevel})
+                    - **Tone**: Consultoriale esperto, fiducioso ma non presuntuoso
+                    - **Focus**: Valore business e ottimizzazione pratica
+
+                    ---
+                    **GENERA REPORT {analysisLevel.ToUpper()} SECONDO QUESTE SPECIFICHE**";
     }
 
     /// <summary>

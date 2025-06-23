@@ -50,7 +50,14 @@ public class PdfReportsController : ControllerBase
                 result.Add(dto);
             }
 
-            await _logger.Info(source, "Mapping DTO completato", $"Processed: {result.Count} reports");
+            // ✅ Log aggregato invece di singoli dettagli
+            var pdfCount = result.Count(r => r.HasPdfFile);
+            var htmlCount = result.Count(r => r.HasHtmlFile);
+            var processingCount = result.Count(r => r.Status == "PROCESSING");
+
+            await _logger.Info(source, "Mapping DTO completato",
+                $"Total: {result.Count}, PDF: {pdfCount}, HTML: {htmlCount}, Processing: {processingCount}");
+
             return Ok(result);
         }
         catch (Exception ex)
@@ -163,7 +170,9 @@ public class PdfReportsController : ControllerBase
     private async Task<int> CountDataRecordsForReport(Data.Entities.PdfReport report)
     {
         return await db.VehiclesData
-            .Where(vd => vd.VehicleId == report.ClientVehicleId)
+            .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                         vd.Timestamp >= report.ReportPeriodStart &&
+                         vd.Timestamp <= report.ReportPeriodEnd)
             .CountAsync();
     }
 
@@ -302,26 +311,41 @@ public class PdfReportsController : ControllerBase
     {
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
-        var reportService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
+        var logger = new PolarDriveLogger(db);
 
         try
         {
+            await logger.Info("ProcessReportRegenerationAsync", "Starting regeneration", $"ReportId: {reportId}");
+
             var report = await db.PdfReports
                 .Include(r => r.ClientVehicle)
                 .FirstOrDefaultAsync(r => r.Id == reportId);
 
             if (report != null)
             {
-                // Usa il servizio esistente per rigenerare
+                // Aggiorna status prima della rigenerazione
+                report.Status = "PROCESSING";
+                await db.SaveChangesAsync();
+
+                var reportService = scope.ServiceProvider.GetRequiredService<IReportGenerationService>();
                 await reportService.ForceRegenerateFilesAsync(reportId);
 
-                report.Status = "COMPLETED";
-                report.GeneratedAt = DateTime.UtcNow;
-                await db.SaveChangesAsync();
+                // ✅ Aggiorna status e timestamp DOPO la rigenerazione
+                var updatedReport = await db.PdfReports.FindAsync(reportId);
+                if (updatedReport != null)
+                {
+                    updatedReport.Status = "COMPLETED";
+                    updatedReport.GeneratedAt = DateTime.UtcNow;
+                    await db.SaveChangesAsync();
+                }
+
+                await logger.Info("ProcessReportRegenerationAsync", "Regeneration completed", $"ReportId: {reportId}");
             }
         }
         catch (Exception ex)
         {
+            await logger.Error("ProcessReportRegenerationAsync", "Regeneration failed", $"ReportId: {reportId}, Error: {ex}");
+
             var report = await db.PdfReports.FindAsync(reportId);
             if (report != null)
             {
@@ -343,17 +367,6 @@ public class PdfReportsController : ControllerBase
 
         var storageFileName = $"PolarDrive_Report_{report.Id}.{extension}";
         var storagePath = Path.Combine(storageDir, storageFileName);
-
-        if (System.IO.File.Exists(storagePath))
-        {
-            _logger.Debug("PdfReportsController.GetReportFilePath", "File found at standard path.",
-                $"ReportId: {report.Id}, Path: {storagePath}");
-        }
-        else
-        {
-            _logger.Error("PdfReportsController.GetReportFilePath", "File not found at standard path.",
-                $"ReportId: {report.Id}, Path: {storagePath}");
-        }
 
         return storagePath;
     }

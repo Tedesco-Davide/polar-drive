@@ -145,7 +145,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
                         RedirectStandardError = true,
                         UseShellExecute = false,
                         CreateNoWindow = true,
-                        WorkingDirectory = projectDirectory  // ✅ WORKING DIRECTORY CORRETTO
+                        WorkingDirectory = projectDirectory
                     }
                 };
 
