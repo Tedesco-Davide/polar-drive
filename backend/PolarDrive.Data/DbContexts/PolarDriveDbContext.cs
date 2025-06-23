@@ -17,8 +17,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
-
-    // Aggiornato da ScheduledFileJobs a AdminFileManagers per coerenza
     public DbSet<AdminFileManager> AdminFileManagers => Set<AdminFileManager>();
 
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();

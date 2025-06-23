@@ -188,6 +188,39 @@ export default function AdminDashboard() {
     }
   }, [pdfReports.length]);
 
+  const refreshFileManagerJobs = async (): Promise<FileManager[]> => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/filemanager`);
+
+      if (!res.ok) {
+        throw new Error(
+          `FileManager API error: ${res.status} ${res.statusText}`
+        );
+      }
+
+      const contentType = res.headers.get("content-type");
+      if (!contentType?.includes("application/json")) {
+        throw new Error(
+          `FileManager API returned non-JSON content: ${contentType}`
+        );
+      }
+
+      const updatedJobs = await res.json();
+      setFileManagerJobs(updatedJobs);
+      return updatedJobs;
+    } catch (error) {
+      console.warn("Failed to refresh FileManager jobs:", error);
+      logFrontendEvent(
+        "AdminDashboard",
+        "WARNING",
+        "Failed to refresh FileManager jobs",
+        error instanceof Error ? error.message : String(error)
+      );
+      // ✅ Restituisci array vuoto invece di lanciare errore
+      return [];
+    }
+  };
+
   useEffect(() => {
     refreshWorkflowData();
   }, []);
@@ -210,21 +243,15 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [
-          clientsRes,
-          vehiclesRes,
-          consentsRes,
-          outagesRes,
-          reportsRes,
-          schedulerRes,
-        ] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/clientcompanies`),
-          fetch(`${API_BASE_URL}/api/clientvehicles`),
-          fetch(`${API_BASE_URL}/api/clientconsents`),
-          fetch(`${API_BASE_URL}/api/outageperiods`),
-          fetch(`${API_BASE_URL}/api/pdfreports`),
-          fetch(`${API_BASE_URL}/api/filemanager`),
-        ]);
+        // ✅ Fetch delle API principali (che funzionano)
+        const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
+          await Promise.all([
+            fetch(`${API_BASE_URL}/api/clientcompanies`),
+            fetch(`${API_BASE_URL}/api/clientvehicles`),
+            fetch(`${API_BASE_URL}/api/clientconsents`),
+            fetch(`${API_BASE_URL}/api/outageperiods`),
+            fetch(`${API_BASE_URL}/api/pdfreports`),
+          ]);
 
         const clientsData: ClientCompany[] = await clientsRes.json();
         const vehiclesData: ClientVehicleWithCompany[] =
@@ -232,8 +259,48 @@ export default function AdminDashboard() {
         const consentsData: ClientConsent[] = await consentsRes.json();
         const outagesData: OutagePeriod[] = await outagesRes.json();
         const reportsData: PdfReport[] = await reportsRes.json();
-        const schedulerData: FileManager[] = await schedulerRes.json();
 
+        // ✅ Fetch separata per FileManager con gestione errori
+        let schedulerData: FileManager[] = [];
+        try {
+          const schedulerRes = await fetch(`${API_BASE_URL}/api/filemanager`);
+
+          if (!schedulerRes.ok) {
+            throw new Error(
+              `FileManager API error: ${schedulerRes.status} ${schedulerRes.statusText}`
+            );
+          }
+
+          const contentType = schedulerRes.headers.get("content-type");
+          if (!contentType?.includes("application/json")) {
+            throw new Error(
+              `FileManager API returned non-JSON content: ${contentType}`
+            );
+          }
+
+          schedulerData = await schedulerRes.json();
+
+          logFrontendEvent(
+            "AdminDashboard",
+            "INFO",
+            "FileManager data loaded successfully",
+            `Jobs: ${schedulerData.length}`
+          );
+        } catch (fileManagerError) {
+          console.warn("FileManager API not available:", fileManagerError);
+          logFrontendEvent(
+            "AdminDashboard",
+            "WARNING",
+            "FileManager API not available",
+            fileManagerError instanceof Error
+              ? fileManagerError.message
+              : String(fileManagerError)
+          );
+          // ✅ Continua senza FileManager data
+          schedulerData = [];
+        }
+
+        // ✅ Aggiorna tutti gli stati
         setClients(clientsData);
         setVehicles(
           vehiclesData.map((entry) => ({
@@ -256,7 +323,7 @@ export default function AdminDashboard() {
         setClientConsents(consentsData);
         setOutagePeriods(outagesData);
         setPdfReports(reportsData);
-        setFileManagerJobs(schedulerData);
+        setFileManagerJobs(schedulerData); // ✅ Potrebbe essere array vuoto se API non disponibile
 
         logFrontendEvent(
           "AdminDashboard",
@@ -403,14 +470,7 @@ export default function AdminDashboard() {
                       <AdminFileManagerTable
                         jobs={fileManagerJobs}
                         t={t}
-                        refreshJobs={async () => {
-                          const res = await fetch(
-                            `${API_BASE_URL}/api/filemanager`
-                          );
-                          const updatedScheduledJobs = await res.json();
-                          setFileManagerJobs(updatedScheduledJobs);
-                          return updatedScheduledJobs;
-                        }}
+                        refreshJobs={refreshFileManagerJobs}
                       />
                     </div>
                   </div>

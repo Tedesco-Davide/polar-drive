@@ -19,6 +19,7 @@ import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import Chip from "@/components/chip";
 import NotesModal from "./notesModal";
+import AdminFileManagerModal from "./adminFileManagerModal"; // ✅ IMPORTA IL MODAL
 
 // Status options per i job PDF
 const PDF_JOB_STATUS = {
@@ -75,18 +76,13 @@ type Props = {
   t: TFunction;
   jobs: FileManager[];
   refreshJobs?: () => Promise<FileManager[]>;
-  onCreateDownload?: () => void;
 };
 
-export default function AdminFileManagerTable({
-  t,
-  jobs,
-  refreshJobs,
-  onCreateDownload,
-}: Props) {
+export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
   const [localJobs, setLocalJobs] = useState<FileManager[]>([]);
   const [selectedJobForNotes, setSelectedJobForNotes] =
     useState<FileManager | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const handleRefreshJobs = async () => {
     if (refreshJobs) {
@@ -219,47 +215,99 @@ export default function AdminFileManagerTable({
     }
   };
 
+  // ✅ FUNZIONE PER GESTIRE IL SUCCESSO DELLA CREAZIONE
+  const handleCreateSuccess = async () => {
+    try {
+      if (refreshJobs) {
+        const updatedJobs = await refreshJobs();
+        setLocalJobs(updatedJobs);
+      }
+      setShowCreateModal(false);
+
+      logFrontendEvent(
+        "AdminFileManagerTable",
+        "INFO",
+        "PDF download request created and jobs refreshed",
+        ""
+      );
+    } catch (error) {
+      console.warn("Failed to refresh jobs after creation:", error);
+      setShowCreateModal(false);
+    }
+  };
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      {/* ✅ HEADER CON BOTTONE COME NEL PATTERN OUTAGES */}
+      <div className="flex items-center mb-6 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
           📁 {t("admin.filemanager.title", "Gestione Download PDF")}
         </h1>
 
-        {onCreateDownload && (
+        <button
+          className={`${
+            showCreateModal
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-green-500 hover:bg-green-600"
+          } text-white px-6 py-2 rounded flex items-center gap-2`}
+          onClick={() => {
+            setShowCreateModal(!showCreateModal);
+            logFrontendEvent(
+              "AdminFileManagerTable",
+              "INFO",
+              "Create modal visibility toggled",
+              `Now showing modal: ${!showCreateModal}`
+            );
+          }}
+        >
+          <FileArchive size={16} />
+          {showCreateModal
+            ? t("common.cancel", "Annulla")
+            : t("admin.filemanager.createDownload", "Crea Nuovo Download")}
+        </button>
+
+        {refreshJobs && (
           <button
-            onClick={onCreateDownload}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center gap-2"
+            onClick={async () => {
+              try {
+                await handleRefreshJobs();
+                alert("✅ Refresh completato");
+              } catch {
+                alert("❌ Errore durante il refresh");
+              }
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2"
+            title="Aggiorna lista"
           >
-            <FileArchive size={16} />
-            {t("admin.filemanager.createDownload", "Crea Nuovo Download")}
+            🔄 Refresh
           </button>
         )}
       </div>
 
+      {/* ✅ MODAL DI CREAZIONE (come nel pattern outages) */}
+      {showCreateModal && (
+        <AdminFileManagerModal
+          isOpen={showCreateModal}
+          onClose={() => {
+            setShowCreateModal(false);
+            logFrontendEvent(
+              "AdminFileManagerTable",
+              "INFO",
+              "Create modal closed",
+              ""
+            );
+          }}
+          onSuccess={handleCreateSuccess}
+          t={t}
+        />
+      )}
+
+      {/* TABELLA */}
       <div className="bg-softWhite dark:bg-polarNight rounded-lg overflow-hidden shadow-lg">
         <table className="w-full text-sm">
           <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
             <tr>
-              <th className="p-4">
-                {refreshJobs && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        await handleRefreshJobs();
-                        alert("✅ Refresh completato");
-                      } catch {
-                        alert("❌ Errore durante il refresh");
-                      }
-                    }}
-                    className="px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
-                    title="Aggiorna lista"
-                  >
-                    🔄
-                  </button>
-                )}{" "}
-                {t("admin.actions", "Azioni")}
-              </th>
+              <th className="p-4">{t("admin.actions", "Azioni")}</th>
               <th className="p-4">
                 <Calendar size={16} className="inline mr-1" />
                 {t("admin.filemanager.requestedAt", "Richiesto")}
@@ -443,6 +491,7 @@ export default function AdminFileManagerTable({
         />
       </div>
 
+      {/* MODAL PER LE NOTE */}
       {selectedJobForNotes && (
         <NotesModal
           entity={selectedJobForNotes}
