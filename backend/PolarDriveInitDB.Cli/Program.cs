@@ -3,36 +3,54 @@
 Console.WriteLine("🚀 Starting PolarDrive DB initialization...");
 
 using var db = new PolarDriveDbContextFactory().CreateDbContext(args);
-var logger = new PolarDriveLogger(db);
 
 try
 {
-    await logger.Info("PolarDriveInitDB.Cli", "Starting DB initialization process");
-
-    // 1. Apply all migrations (PRODUCTION ONLY)
-    // await db.Database.MigrateAsync(); // Uncomment when switching to production
-    // await logger.Info("PolarDriveInitDB.Cli", "Migrations applied successfully");
+    Console.WriteLine("📋 Step 1: Deleting existing database...");
 
     // 1. Delete / Create DB (DEV only)
     await db.Database.EnsureDeletedAsync();
-    await logger.Info("PolarDriveInitDB.Cli", "Database deleted successfully");
+    Console.WriteLine("✅ Database deleted successfully");
 
+    Console.WriteLine("📋 Step 2: Creating new database...");
     await db.Database.EnsureCreatedAsync();
-    await logger.Info("PolarDriveInitDB.Cli", "Database created successfully");
+    Console.WriteLine("✅ Database created successfully");
+
+    // ✅ ORA possiamo inizializzare il logger DOPO che il DB è stato creato
+    var logger = new PolarDriveLogger(db);
+    await logger.Info("PolarDriveInitDB.Cli", "Database initialization completed - Logger now active");
+
+    Console.WriteLine("📋 Step 3: Running initialization scripts...");
 
     // 2. Execute extra SQL scripts
     await DbInitHelper.RunDbInitScriptsAsync(db);
     await logger.Info("PolarDriveInitDB.Cli", "DB initialization scripts executed successfully");
 
     Console.WriteLine("🏁 Final Initialization Done.");
+    await logger.Info("PolarDriveInitDB.Cli", "Complete initialization process finished successfully");
 }
 catch (Exception ex)
 {
-    await logger.Error(
-        "PolarDriveInitDB.Cli",
-        "An error occurred during the database initialization process",
-        $"Exception: {ex}"
-    );
-
     Console.WriteLine($"❌ FATAL ERROR during initialization: {ex.Message}");
+    Console.WriteLine($"Details: {ex}");
+
+    // ✅ Solo prova a loggare se il database esiste
+    try
+    {
+        if (await db.Database.CanConnectAsync())
+        {
+            var logger = new PolarDriveLogger(db);
+            await logger.Error(
+                "PolarDriveInitDB.Cli",
+                "An error occurred during the database initialization process",
+                $"Exception: {ex}"
+            );
+        }
+    }
+    catch
+    {
+        Console.WriteLine("⚠️ Could not log error to database");
+    }
+
+    throw; // Re-throw per far fallire il processo
 }

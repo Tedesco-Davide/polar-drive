@@ -19,9 +19,8 @@ import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 import Chip from "@/components/chip";
 import NotesModal from "./notesModal";
-import AdminFileManagerModal from "./adminFileManagerModal"; // ✅ IMPORTA IL MODAL
+import AdminFileManagerModal from "./adminFileManagerModal";
 
-// Status options per i job PDF
 const PDF_JOB_STATUS = {
   PENDING: "PENDING",
   PROCESSING: "PROCESSING",
@@ -241,7 +240,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
       {/* ✅ HEADER CON BOTTONE COME NEL PATTERN OUTAGES */}
       <div className="flex items-center mb-6 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          📁 {t("admin.filemanager.title", "Gestione Download PDF")}
+          {t("admin.filemanager.title", "File Manager")}
         </h1>
 
         <button
@@ -260,28 +259,10 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
             );
           }}
         >
-          <FileArchive size={16} />
           {showCreateModal
-            ? t("common.cancel", "Annulla")
-            : t("admin.filemanager.createDownload", "Crea Nuovo Download")}
+            ? t("common.cancel", "Annulla nuova Ricerca")
+            : t("admin.filemanager.createDownload", "Aggiungi nuova Ricerca")}
         </button>
-
-        {refreshJobs && (
-          <button
-            onClick={async () => {
-              try {
-                await handleRefreshJobs();
-                alert("✅ Refresh completato");
-              } catch {
-                alert("❌ Errore durante il refresh");
-              }
-            }}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center gap-2"
-            title="Aggiorna lista"
-          >
-            🔄 Refresh
-          </button>
-        )}
       </div>
 
       {/* ✅ MODAL DI CREAZIONE (come nel pattern outages) */}
@@ -307,7 +288,27 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
         <table className="w-full text-sm">
           <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
             <tr>
-              <th className="p-4">{t("admin.actions", "Azioni")}</th>
+              <th className="p-4">
+                {refreshJobs && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await handleRefreshJobs();
+                        alert(t("admin.filemanager.title", "TODO"));
+                      } catch {
+                        alert(t("admin.filemanager.title", "TODO"));
+                      }
+                    }}
+                    className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                    title="Aggiorna lista"
+                  >
+                    <span className="uppercase text-xs tracking-widest">
+                      {t("admin.vehicleReports.tableRefreshButton")}
+                    </span>
+                  </button>
+                )}{" "}
+                {t("admin.actions", "Azioni")}
+              </th>
               <th className="p-4">
                 <Calendar size={16} className="inline mr-1" />
                 {t("admin.filemanager.requestedAt", "Richiesto")}

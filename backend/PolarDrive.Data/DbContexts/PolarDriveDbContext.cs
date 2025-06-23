@@ -18,15 +18,11 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManagers => Set<AdminFileManager>();
-
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        var logger = new PolarDriveLogger(this);
-
-        logger.Info("PolarDriveDbContext.OnModelCreating", "Started model building").Wait();
-
+        // ✅ RIMUOVI il logger da OnModelCreating per evitare problemi circolari
         try
         {
             base.OnModelCreating(modelBuilder);
@@ -157,15 +153,16 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
             modelBuilder.Entity<PolarDriveLog>(entity =>
             {
+                // ✅ SQLite usa DATETIME('now') invece di CURRENT_TIMESTAMP
                 entity.Property(e => e.Timestamp)
-                    .HasDefaultValueSql("CURRENT_TIMESTAMP");
+                    .HasDefaultValueSql("DATETIME('now')");
 
                 entity.Property(e => e.Level)
                     .HasConversion<string>()
                     .HasDefaultValue(PolarDriveLogLevel.INFO);
             });
 
-            // Configurazione aggiornata per AdminFileManager (PDF Download Manager)
+            // ✅ Configurazione CORRETTA per AdminFileManager con SQLite
             modelBuilder.Entity<AdminFileManager>(entity =>
             {
                 entity.ToTable("AdminFileManagers");
@@ -173,7 +170,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 // Configurazione proprietà base
                 entity.Property(e => e.RequestedAt)
                     .IsRequired()
-                    .HasDefaultValueSql("GETUTCDATE()");
+                    .HasDefaultValueSql("DATETIME('now')"); // ✅ SQLite syntax
 
                 entity.Property(e => e.Status)
                     .IsRequired()
@@ -190,26 +187,26 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasMaxLength(100);
 
                 entity.Property(e => e.ZipFileSizeMB)
-                    .HasPrecision(10, 2);
+                    .HasColumnType("REAL"); // ✅ SQLite non supporta DECIMAL con precisione
 
-                // Configurazione per le liste JSON - AGGIORNATE
+                // ✅ Configurazione per le liste JSON - CORRETTA per SQLite
                 entity.Property(e => e.CompanyList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("nvarchar(max)");
+                    .HasColumnType("TEXT"); // ✅ SQLite usa TEXT invece di nvarchar(max)
 
                 entity.Property(e => e.VinList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("nvarchar(max)");
+                    .HasColumnType("TEXT"); // ✅ SQLite usa TEXT
 
                 entity.Property(e => e.BrandList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("nvarchar(max)");
+                    .HasColumnType("TEXT"); // ✅ SQLite usa TEXT
 
                 // Indici per performance
                 entity.HasIndex(e => e.Status);
@@ -219,12 +216,11 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => new { e.PeriodStart, e.PeriodEnd });
                 entity.HasIndex(e => e.RequestedBy);
             });
-
-            logger.Info("PolarDriveDbContext.OnModelCreating", "Model building completed successfully").Wait();
         }
         catch (Exception ex)
         {
-            logger.Error("PolarDriveDbContext.OnModelCreating", "Error during model creation", ex.ToString()).Wait();
+            // ✅ Logging semplice senza dipendenze circolari
+            Console.WriteLine($"❌ Error during OnModelCreating: {ex.Message}");
             throw;
         }
     }

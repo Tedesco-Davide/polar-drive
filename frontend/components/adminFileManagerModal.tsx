@@ -1,16 +1,10 @@
 import { useState, useEffect } from "react";
 import { TFunction } from "i18next";
-import {
-  X,
-  Calendar,
-  Building,
-  Car,
-  FileArchive,
-  Plus,
-  Minus,
-} from "lucide-react";
+import { Plus, Minus } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 interface AdminFileManagerModalProps {
   isOpen: boolean;
@@ -54,16 +48,6 @@ export default function AdminFileManagerModal({
   useEffect(() => {
     if (isOpen) {
       loadAvailableFilters();
-      // Imposta date predefinite (ultimo mese)
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setMonth(startDate.getMonth() - 1);
-
-      setFormData((prev) => ({
-        ...prev,
-        periodStart: startDate.toISOString().split("T")[0],
-        periodEnd: endDate.toISOString().split("T")[0],
-      }));
     }
   }, [isOpen]);
 
@@ -222,78 +206,87 @@ export default function AdminFileManagerModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <FileArchive className="text-blue-500" />
-            {t("admin.filemanager.createDownload", "Crea Nuovo Download PDF")}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-          >
-            <X size={24} />
-          </button>
+    <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Grid principale per i campi del form */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Periodo Start */}
+          <label className="flex flex-col">
+            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+              {t("admin.filemanager.periodStart", "Data Inizio")} *
+            </span>
+            <DatePicker
+              className="input appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
+              selected={
+                formData.periodStart ? new Date(formData.periodStart) : null
+              }
+              onChange={(date: Date | null) => {
+                if (!date) return;
+                setFormData((prev) => ({
+                  ...prev,
+                  periodStart: date.toISOString().split("T")[0],
+                }));
+              }}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="dd/MM/yyyy"
+              required
+            />
+          </label>
+          {/* Periodo End */}
+          <label className="flex flex-col">
+            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+              {t("admin.filemanager.periodEnd", "Data Fine")} *
+            </span>
+            <DatePicker
+              className="input appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
+              selected={
+                formData.periodEnd ? new Date(formData.periodEnd) : null
+              }
+              onChange={(date: Date | null) => {
+                if (!date) return;
+                setFormData((prev) => ({
+                  ...prev,
+                  periodEnd: date.toISOString().split("T")[0],
+                }));
+              }}
+              dateFormat="dd/MM/yyyy"
+              placeholderText="dd/MM/yyyy"
+              required
+            />
+          </label>
+          {/* Richiesto da */}
+          <label className="flex flex-col">
+            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+              {t("admin.filemanager.requestedBy", "Richiesto da")}
+            </span>
+            <input
+              type="text"
+              value={formData.requestedBy}
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  requestedBy: e.target.value,
+                }))
+              }
+              className="input"
+            />
+          </label>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Periodo */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Calendar size={16} className="inline mr-1" />
-                {t("admin.filemanager.periodStart", "Data Inizio")} *
-              </label>
-              <input
-                type="date"
-                value={formData.periodStart}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    periodStart: e.target.value,
-                  }))
-                }
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                <Calendar size={16} className="inline mr-1" />
-                {t("admin.filemanager.periodEnd", "Data Fine")} *
-              </label>
-              <input
-                type="date"
-                value={formData.periodEnd}
-                onChange={(e) =>
-                  setFormData((prev) => ({
-                    ...prev,
-                    periodEnd: e.target.value,
-                  }))
-                }
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Filtro Aziende */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Building size={16} className="inline mr-1" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          {/* Filtro Aziende - Select */}
+          <label className="flex flex-col">
+            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
               {t("admin.filemanager.companies", "Aziende")}
-              <span className="text-gray-500 text-xs ml-1">
-                (opzionale - se vuoto, include tutte)
-              </span>
-            </label>
-            <div className="flex gap-2 mb-2">
+            </span>
+            <div className="flex gap-2">
               <select
                 value={currentCompany}
                 onChange={(e) => setCurrentCompany(e.target.value)}
-                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="input cursor-pointer w-full"
               >
-                <option value="">Seleziona un azienda...</option>
+                <option value="">
+                  {t("admin.basicPlaceholder", "Seleziona...")}
+                </option>
                 {availableCompanies.map((company) => (
                   <option key={company} value={company}>
                     {company}
@@ -301,86 +294,52 @@ export default function AdminFileManagerModal({
                 ))}
               </select>
               <button
-                type="button"
                 onClick={addCompany}
                 disabled={!currentCompany}
-                className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400"
+                className="text-softWhite hover:bg-green-600 bg-green-700 disabled:bg-gray-400 flex items-center justify-center p-2 rounded"
               >
-                <Plus size={16} />
+                <Plus size={18} />
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.companies.map((company) => (
-                <span
-                  key={company}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-sm"
-                >
-                  {company}
-                  <button type="button" onClick={() => removeCompany(company)}>
-                    <Minus size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
+          </label>
 
-          {/* Filtro VIN */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              <Car size={16} className="inline mr-1" />
+          {/* VIN Input */}
+          <label className="flex flex-col">
+            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
               {t("admin.filemanager.vins", "VIN")}
-              <span className="text-gray-500 text-xs ml-1">
-                (opzionale - se vuoto, include tutti)
-              </span>
-            </label>
-            <div className="flex gap-2 mb-2">
+            </span>
+            <div className="flex gap-2">
               <input
                 type="text"
                 value={currentVin}
                 onChange={(e) => setCurrentVin(e.target.value)}
-                placeholder="Inserisci VIN..."
-                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="input w-full"
                 maxLength={17}
               />
               <button
                 type="button"
                 onClick={addVin}
                 disabled={!currentVin}
-                className="px-3 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:bg-gray-400"
+                className="text-softWhite hover:bg-green-600 bg-green-700 disabled:bg-gray-400 flex items-center justify-center p-2 rounded"
               >
-                <Plus size={16} />
+                <Plus size={18} />
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.vins.map((vin) => (
-                <span
-                  key={vin}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded text-sm font-mono"
-                >
-                  {vin}
-                  <button type="button" onClick={() => removeVin(vin)}>
-                    <Minus size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
+          </label>
 
-          {/* Filtro Brand */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              🏷️ {t("admin.filemanager.brands", "Brand")}
-              <span className="text-gray-500 text-xs ml-1">
-                (opzionale - se vuoto, include tutti)
-              </span>
-            </label>
-            <div className="flex gap-2 mb-2">
+          <label className="flex flex-col">
+            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+              {t("admin.filemanager.brands", "Brand")}
+            </span>
+            <div className="flex gap-2">
               <select
                 value={currentBrand}
                 onChange={(e) => setCurrentBrand(e.target.value)}
-                className="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="input cursor-pointer w-full"
               >
-                <option value="">Seleziona un brand...</option>
+                <option value="">
+                  {t("admin.basicPlaceholder", "Seleziona...")}
+                </option>
                 {availableBrands.map((brand) => (
                   <option key={brand} value={brand}>
                     {brand}
@@ -391,47 +350,17 @@ export default function AdminFileManagerModal({
                 type="button"
                 onClick={addBrand}
                 disabled={!currentBrand}
-                className="px-3 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 disabled:bg-gray-400"
+                className="text-softWhite hover:bg-green-600 bg-green-700 disabled:bg-gray-400 flex items-center justify-center p-2 rounded"
               >
-                <Plus size={16} />
+                <Plus size={18} />
               </button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {formData.brands.map((brand) => (
-                <span
-                  key={brand}
-                  className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 rounded text-sm"
-                >
-                  {brand}
-                  <button type="button" onClick={() => removeBrand(brand)}>
-                    <Minus size={14} />
-                  </button>
-                </span>
-              ))}
-            </div>
-          </div>
+          </label>
+        </div>
 
-          {/* Richiesto da */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              👤 {t("admin.filemanager.requestedBy", "Richiesto da")}
-            </label>
-            <input
-              type="text"
-              value={formData.requestedBy}
-              onChange={(e) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  requestedBy: e.target.value,
-                }))
-              }
-              placeholder="Es. Mario Rossi, Supporto Clienti..."
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            />
-          </div>
-
+        <div className="flex items-center items-stretch">
           {/* Riepilogo */}
-          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+          <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-300 dark:border-gray-600 flex flex-col justify-around items-stretch mr-4">
             <h3 className="font-medium text-gray-900 dark:text-white mb-2">
               📋 Riepilogo Richiesta:
             </h3>
@@ -457,33 +386,94 @@ export default function AdminFileManagerModal({
               </li>
             </ul>
           </div>
+          {/* Sezione Tags selezionate */}
+          <div className="space-y-4">
+            {/* Companies Tags */}
+            {formData.companies.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Aziende Selezionate:
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {formData.companies.map((company) => (
+                    <span
+                      key={company}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full text-sm"
+                    >
+                      {company}
+                      <button
+                        type="button"
+                        onClick={() => removeCompany(company)}
+                      >
+                        <Minus size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-          {/* Bottoni */}
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
-            >
-              {t("common.cancel", "Annulla")}
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-400 flex items-center gap-2"
-            >
-              {isLoading ? (
-                <>🔄 {t("common.processing", "Elaborazione...")}</>
-              ) : (
-                <>
-                  <FileArchive size={16} />
-                  {t("admin.filemanager.createRequest", "Crea Richiesta")}
-                </>
-              )}
-            </button>
+            {/* VINs Tags */}
+            {formData.vins.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  VIN Selezionati:
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {formData.vins.map((vin) => (
+                    <span
+                      key={vin}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded-full text-sm font-mono"
+                    >
+                      {vin}
+                      <button type="button" onClick={() => removeVin(vin)}>
+                        <Minus size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Brands Tags */}
+            {formData.brands.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Brand Selezionati:
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {formData.brands.map((brand) => (
+                    <span
+                      key={brand}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded-full text-sm"
+                    >
+                      {brand}
+                      <button type="button" onClick={() => removeBrand(brand)}>
+                        <Minus size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </form>
-      </div>
+        </div>
+
+        {/* Bottoni */}
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400 flex items-center gap-2"
+          >
+            {isLoading ? (
+              <>🔄 {t("common.processing", "Elaborazione...")}</>
+            ) : (
+              <>{t("admin.filemanager.createRequest", "Crea Richiesta")}</>
+            )}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }
