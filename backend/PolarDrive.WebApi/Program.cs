@@ -64,10 +64,25 @@ builder.Services.AddScoped<VehicleDataService>();
 // ✅ SERVIZIO PER GENERAZIONE REPORT MANUALE
 builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
-// ✅ SCHEDULER: Registra PolarDriveScheduler
+// ✅ SCHEDULER: Registra
 builder.Services.AddHostedService<PolarDriveScheduler>();
+builder.Services.AddHostedService<FileCleanupService>();
 
 var app = builder.Build();
+
+// ✅ CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER
+var storageBasePath = "storage";
+var reportsPath = Path.Combine(storageBasePath, "reports");
+var fileManagerZipsPath = Path.Combine(storageBasePath, "filemanager-zips");
+
+// Crea le directory se non esistono
+Directory.CreateDirectory(storageBasePath);
+Directory.CreateDirectory(reportsPath);
+Directory.CreateDirectory(fileManagerZipsPath);
+
+Console.WriteLine($"📁 Storage directories created:");
+Console.WriteLine($"   - Reports: {Path.GetFullPath(reportsPath)}");
+Console.WriteLine($"   - FileManager ZIPs: {Path.GetFullPath(fileManagerZipsPath)}");
 
 // Use Swagger only in development
 if (app.Environment.IsDevelopment())
@@ -119,6 +134,19 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("   - POST /api/PdfReports/{id}/regenerate - Regenerate report manually");
             Console.WriteLine("   - PATCH /api/PdfReports/{id}/notes - Update notes");
             Console.WriteLine();
+            Console.WriteLine("📦 File Manager Configuration:");
+            Console.WriteLine("   - ZIP files stored in: storage/filemanager-zips/");
+            Console.WriteLine("   - Cleanup service runs every 24 hours");
+            Console.WriteLine("   - Files older than 30 days are automatically removed");
+            Console.WriteLine();
+            Console.WriteLine("🔧 File Manager API Endpoints:");
+            Console.WriteLine("   - GET  /api/FileManager - List download jobs");
+            Console.WriteLine("   - POST /api/FileManager/filemanager-download - Create download request");
+            Console.WriteLine("   - GET  /api/FileManager/{id}/download - Download ZIP");
+            Console.WriteLine("   - GET  /api/FileManager/available-companies - Get available companies");
+            Console.WriteLine("   - GET  /api/FileManager/available-brands - Get available brands");
+            Console.WriteLine("   - GET  /api/FileManager/available-vins - Get available VINs");
+            Console.WriteLine();
             Console.WriteLine("📝 Report levels based on monitoring time:");
             Console.WriteLine("   - < 5 min: Valutazione Iniziale");
             Console.WriteLine("   - < 15 min: Analisi Rapida");
@@ -139,6 +167,10 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("🔧 API Endpoints:");
             Console.WriteLine("   - POST /api/PdfReports/{id}/regenerate available");
             Console.WriteLine("     (uses IReportGenerationService)");
+            Console.WriteLine();
+            Console.WriteLine("📦 File Manager:");
+            Console.WriteLine("   - PDF ZIP downloads available via /api/FileManager");
+            Console.WriteLine("   - Automatic cleanup enabled");
             Console.WriteLine("===============================");
         }
     }

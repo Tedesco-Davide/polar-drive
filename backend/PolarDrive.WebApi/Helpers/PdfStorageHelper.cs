@@ -11,11 +11,4 @@ public static class PdfStorageHelper
             report.ReportPeriodStart.Month.ToString("D2"),
             $"PolarDrive_Report_{report.Id}.pdf");
     }
-
-    public static void EnsurePdfDirectoryExists(PdfReport report)
-    {
-        var dir = Path.GetDirectoryName(GetReportPdfPath(report));
-        if (dir != null && !Directory.Exists(dir))
-            Directory.CreateDirectory(dir);
-    }
 }

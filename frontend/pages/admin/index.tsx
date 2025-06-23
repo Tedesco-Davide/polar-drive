@@ -7,7 +7,7 @@ import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
-import { ScheduledFileJob } from "@/types/adminSchedulerTypes";
+import { FileManager } from "@/types/adminFileManagerTypes";
 import { API_BASE_URL } from "@/utils/api";
 import { WorkflowRow } from "@/types/adminWorkflowTypes";
 import { PdfReport } from "@/types/reportInterfaces";
@@ -19,7 +19,7 @@ import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
 import AdminMainWorkflow from "@/components/adminMainWorkflow";
 import AdminClientConsents from "@/components/adminClientConsentsTable";
 import AdminOutagePeriodsTable from "@/components/adminOutagePeriodsTable";
-import AdminSchedulerTable from "@/components/adminSchedulerTable";
+import AdminFileManagerTable from "@/components/adminFileManager";
 import AdminPdfReports from "@/components/adminPdfReports";
 import Head from "next/head";
 import Header from "@/components/header";
@@ -35,7 +35,7 @@ export default function AdminDashboard() {
   const [vehicles, setVehicles] = useState<ClientVehicle[]>([]);
   const [clientConsents, setClientConsents] = useState<ClientConsent[]>([]);
   const [outagePeriods, setOutagePeriods] = useState<OutagePeriod[]>([]);
-  const [scheduledJobs, setScheduledJobs] = useState<ScheduledFileJob[]>([]);
+  const [fileManagerJobs, setFileManagerJobs] = useState<FileManager[]>([]);
   const [pdfReports, setPdfReports] = useState<PdfReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -131,9 +131,9 @@ export default function AdminDashboard() {
     }
   };
 
-  const refreshPdfReportsInternal = async (): Promise<PdfReport[]> => {
+  const refreshPdfReports = useCallback(async (): Promise<PdfReport[]> => {
     try {
-      const currentCount = pdfReports.length; // ✅ Salva count prima della fetch
+      const currentCount = pdfReports.length;
 
       logFrontendEvent(
         "AdminDashboard",
@@ -158,7 +158,6 @@ export default function AdminDashboard() {
 
       const updatedPdfReports: PdfReport[] = await res.json();
 
-      // ✅ Debug più dettagliato
       console.log("🔄 PDF Reports refresh details:", {
         before: currentCount,
         after: updatedPdfReports.length,
@@ -187,11 +186,7 @@ export default function AdminDashboard() {
       );
       throw err;
     }
-  };
-
-  const refreshPdfReports = useCallback(async (): Promise<void> => {
-    await refreshPdfReportsInternal();
-  }, []);
+  }, [pdfReports.length]);
 
   useEffect(() => {
     refreshWorkflowData();
@@ -228,7 +223,7 @@ export default function AdminDashboard() {
           fetch(`${API_BASE_URL}/api/clientconsents`),
           fetch(`${API_BASE_URL}/api/outageperiods`),
           fetch(`${API_BASE_URL}/api/pdfreports`),
-          fetch(`${API_BASE_URL}/api/adminscheduler`),
+          fetch(`${API_BASE_URL}/api/filemanager`),
         ]);
 
         const clientsData: ClientCompany[] = await clientsRes.json();
@@ -237,7 +232,7 @@ export default function AdminDashboard() {
         const consentsData: ClientConsent[] = await consentsRes.json();
         const outagesData: OutagePeriod[] = await outagesRes.json();
         const reportsData: PdfReport[] = await reportsRes.json();
-        const schedulerData: ScheduledFileJob[] = await schedulerRes.json();
+        const schedulerData: FileManager[] = await schedulerRes.json();
 
         setClients(clientsData);
         setVehicles(
@@ -261,7 +256,7 @@ export default function AdminDashboard() {
         setClientConsents(consentsData);
         setOutagePeriods(outagesData);
         setPdfReports(reportsData);
-        setScheduledJobs(schedulerData);
+        setFileManagerJobs(schedulerData);
 
         logFrontendEvent(
           "AdminDashboard",
@@ -405,15 +400,15 @@ export default function AdminDashboard() {
                         reports={pdfReports}
                         refreshPdfReports={refreshPdfReports}
                       />
-                      <AdminSchedulerTable
-                        jobs={scheduledJobs}
+                      <AdminFileManagerTable
+                        jobs={fileManagerJobs}
                         t={t}
                         refreshJobs={async () => {
                           const res = await fetch(
-                            `${API_BASE_URL}/api/adminscheduler`
+                            `${API_BASE_URL}/api/filemanager`
                           );
                           const updatedScheduledJobs = await res.json();
-                          setScheduledJobs(updatedScheduledJobs);
+                          setFileManagerJobs(updatedScheduledJobs);
                           return updatedScheduledJobs;
                         }}
                       />

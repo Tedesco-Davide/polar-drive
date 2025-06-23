@@ -17,7 +17,10 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
-    public DbSet<AdminScheduler> ScheduledFileJobs => Set<AdminScheduler>();
+
+    // Aggiornato da ScheduledFileJobs a AdminFileManagers per coerenza
+    public DbSet<AdminFileManager> AdminFileManagers => Set<AdminFileManager>();
+
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -164,37 +167,59 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasDefaultValue(PolarDriveLogLevel.INFO);
             });
 
-            modelBuilder.Entity<AdminScheduler>(entity =>
+            // Configurazione aggiornata per AdminFileManager (PDF Download Manager)
+            modelBuilder.Entity<AdminFileManager>(entity =>
             {
-                entity.Property(e => e.FileTypeList)
-                    .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                entity.ToTable("AdminFileManagers");
 
+                // Configurazione proprietà base
+                entity.Property(e => e.RequestedAt)
+                    .IsRequired()
+                    .HasDefaultValueSql("GETUTCDATE()");
+
+                entity.Property(e => e.Status)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasDefaultValue("PENDING");
+
+                entity.Property(e => e.InfoMessage)
+                    .HasMaxLength(2000);
+
+                entity.Property(e => e.ResultZipPath)
+                    .HasMaxLength(500);
+
+                entity.Property(e => e.RequestedBy)
+                    .HasMaxLength(100);
+
+                entity.Property(e => e.ZipFileSizeMB)
+                    .HasPrecision(10, 2);
+
+                // Configurazione per le liste JSON - AGGIORNATE
                 entity.Property(e => e.CompanyList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                    .HasColumnType("nvarchar(max)");
+
+                entity.Property(e => e.VinList)
+                    .HasConversion(
+                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                    .HasColumnType("nvarchar(max)");
 
                 entity.Property(e => e.BrandList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
+                    .HasColumnType("nvarchar(max)");
 
-                entity.Property(e => e.ConsentTypeList)
-                    .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
-
-                entity.Property(e => e.OutageTypeList)
-                    .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
-
-                entity.Property(e => e.OutageAutoDetectedOptionList)
-                    .HasConversion(
-                        v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
-                        v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>());
+                // Indici per performance
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.RequestedAt);
+                entity.HasIndex(e => e.PeriodStart);
+                entity.HasIndex(e => e.PeriodEnd);
+                entity.HasIndex(e => new { e.PeriodStart, e.PeriodEnd });
+                entity.HasIndex(e => e.RequestedBy);
             });
 
             logger.Info("PolarDriveDbContext.OnModelCreating", "Model building completed successfully").Wait();
