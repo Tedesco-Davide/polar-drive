@@ -157,12 +157,14 @@ public class PdfReportsController : ControllerBase
 
     private static string DetermineFileBasedStatus(bool pdfExists, bool htmlExists, int dataCount)
     {
-        return (pdfExists, htmlExists, dataCount) switch
+        if (dataCount == 0)
+            return "NO-DATA";
+
+        return (pdfExists, htmlExists) switch
         {
-            (true, _, _) => "PDF-READY",
-            (false, true, _) => "HTML-ONLY",
-            (false, false, 0) => "NO-DATA",
-            (false, false, < MIN_RECORDS_FOR_GENERATION) => "WAITING-RECORDS",
+            (true, _) => "PDF-READY",
+            (false, true) => "HTML-ONLY",
+            (false, false) when dataCount < MIN_RECORDS_FOR_GENERATION => "WAITING-RECORDS",
             _ => "GENERATE-READY"
         };
     }

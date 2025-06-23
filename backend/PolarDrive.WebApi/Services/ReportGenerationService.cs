@@ -183,11 +183,41 @@ namespace PolarDrive.WebApi.Services
 
             var vehicle = report.ClientVehicle;
 
-            // 2) Ricalcola gli insights (stessa logica di GenerateReportForVehicle)
+            // ✅ NUOVO: Controlla se ci sono dati nel periodo del report
+            var dataCount = await db.VehiclesData
+                .Where(vd => vd.VehicleId == vehicle!.Id &&
+                             vd.Timestamp >= report.ReportPeriodStart &&
+                             vd.Timestamp <= report.ReportPeriodEnd)
+                .CountAsync();
+
+            _logger.LogInformation("🔍 Report {ReportId} regeneration check: VIN={VIN}, Period={Start} to {End}, DataCount={DataCount}",
+                                  reportId, vehicle!.Vin, report.ReportPeriodStart, report.ReportPeriodEnd, dataCount);
+
+            // ✅ Se non ci sono dati, aggiorna status e NON rigenerare file
+            if (dataCount == 0)
+            {
+                report.Status = "NO-DATA";
+                report.Notes = $"Ultima rigenerazione: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount} - Nessun dato disponibile per il periodo";
+
+                // Elimina eventuali file esistenti (cleanup)
+                await DeleteExistingFiles(report);
+
+                await db.SaveChangesAsync();
+
+                _logger.LogWarning("⚠️ Report {ReportId} rigenerazione saltata per {VIN} - Nessun dato disponibile nel periodo specificato",
+                                  reportId, vehicle.Vin);
+                return; // ← ESCI SENZA CREARE NUOVI FILE
+            }
+
+            // ✅ Se ci sono dati, procedi con la rigenerazione normale
+            _logger.LogInformation("✅ Report {ReportId} ha {DataCount} record di dati - Procedendo con rigenerazione file",
+                                  reportId, dataCount);
+
+            // 2) Ricalcola gli insights
             var aiGen = new PolarAiReportGenerator(db);
-            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle!.Id);
+            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id);
             if (string.IsNullOrWhiteSpace(insights))
-                throw new InvalidOperationException($"Nessun insight per {vehicle.Vin}");
+                throw new InvalidOperationException($"Nessun insight generato per {vehicle.Vin}");
 
             // 3) Crea un ReportPeriodInfo a partire dal report esistente
             var period = new ReportPeriodInfo
@@ -195,14 +225,48 @@ namespace PolarDrive.WebApi.Services
                 Start = report.ReportPeriodStart,
                 End = report.ReportPeriodEnd,
                 DataHours = (int)(report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours,
-                AnalysisLevel = report.Notes,
+                AnalysisLevel = $"Rigenerazione #{report.RegenerationCount}",
                 MonitoringDays = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalDays
             };
 
-            // 4) Rigenera soltanto i file
+            // 4) Elimina i vecchi file prima di rigenerare
+            await DeleteExistingFiles(report);
+
+            // 5) Rigenera i file
             await GenerateReportFiles(db, report, insights, period, vehicle);
 
-            _logger.LogInformation("✅ File rigenerati per report {ReportId}", reportId);
+            // 6) Aggiorna lo status del report
+            report.Status = "COMPLETED"; // o null per far usare la logica file-based
+            await db.SaveChangesAsync();
+
+            _logger.LogInformation("✅ File rigenerati con successo per report {ReportId} - VIN: {VIN}, DataRecords: {DataCount}",
+                                  reportId, vehicle.Vin, dataCount);
+        }
+
+        private async Task DeleteExistingFiles(PdfReport report)
+        {
+            try
+            {
+                var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
+                var pdfPath = GetFilePath(report, "pdf", "reports");
+
+                if (File.Exists(htmlPath))
+                {
+                    File.Delete(htmlPath);
+                    _logger.LogDebug("🗑️ Eliminato file HTML esistente: {Path}", htmlPath);
+                }
+
+                if (File.Exists(pdfPath))
+                {
+                    File.Delete(pdfPath);
+                    _logger.LogDebug("🗑️ Eliminato file PDF esistente: {Path}", pdfPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ Errore durante eliminazione file esistenti per report {ReportId}", report.Id);
+                // Non bloccare il processo per errori di eliminazione file
+            }
         }
 
         private bool ShouldGenerateReports(ScheduleType scheduleType, DateTime now)
@@ -286,14 +350,17 @@ namespace PolarDrive.WebApi.Services
                 MonitoringDays = (end - start).TotalDays
             };
 
-            _logger.LogInformation("🧠 Generating {Level} for {VIN} | {Start:yyyy-MM-dd HH:mm} to {End:yyyy-MM-dd HH:mm} | Report #{Count}",
-                                   period.AnalysisLevel, vehicle.Vin, period.Start, period.End, reportCount + 1);
+            // ✅ NUOVO: Controlla se ci sono dati prima di creare il report
+            var dataCount = await db.VehiclesData
+                .Where(vd => vd.VehicleId == vehicleId &&
+                             vd.Timestamp >= period.Start &&
+                             vd.Timestamp <= period.End)
+                .CountAsync();
 
-            var aiGen = new PolarAiReportGenerator(db);
-            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
-            if (string.IsNullOrWhiteSpace(insights))
-                throw new InvalidOperationException($"No insights for {vehicle.Vin}");
+            _logger.LogInformation("🧠 Generating {Level} for {VIN} | {Start:yyyy-MM-dd HH:mm} to {End:yyyy-MM-dd HH:mm} | Report #{Count} | DataRecords: {DataCount}",
+                                   period.AnalysisLevel, vehicle.Vin, period.Start, period.End, reportCount + 1, dataCount);
 
+            // Crea sempre il record del report per tracking
             var report = new PdfReport
             {
                 ClientVehicleId = vehicleId,
@@ -304,11 +371,32 @@ namespace PolarDrive.WebApi.Services
                 Notes = $"[{period.AnalysisLevel}] DataHours: {period.DataHours}, Monitoring: {period.MonitoringDays:F1}d"
             };
 
+            // ✅ NUOVO: Se non ci sono dati, imposta status e NON generare file
+            if (dataCount == 0)
+            {
+                report.Status = "NO-DATA";
+                report.Notes += " - Nessun dato disponibile per il periodo";
+
+                db.PdfReports.Add(report);
+                await db.SaveChangesAsync();
+
+                _logger.LogWarning("⚠️ Report {Id} created but NO FILES generated for {VIN} - No data available for period",
+                                   report.Id, vehicle.Vin);
+                return; // ← ESCI SENZA CREARE FILE
+            }
+
+            // ✅ Se ci sono dati, procedi con la generazione normale
             db.PdfReports.Add(report);
             await db.SaveChangesAsync();
 
+            var aiGen = new PolarAiReportGenerator(db);
+            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
+            if (string.IsNullOrWhiteSpace(insights))
+                throw new InvalidOperationException($"No insights for {vehicle.Vin}");
+
             await GenerateReportFiles(db, report, insights, period, vehicle);
-            _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type}",
+
+            _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type} | Files: HTML+PDF",
                                    report.Id, vehicle.Vin, period.DataHours, period.AnalysisLevel);
         }
 
