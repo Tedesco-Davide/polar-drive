@@ -47,7 +47,7 @@ public class FileCleanupService : BackgroundService
         // Rimuovi job più vecchi di 30 giorni
         var cutoffDate = DateTime.UtcNow.AddDays(-30);
 
-        var oldJobs = await db.AdminFileManagers
+        var oldJobs = await db.AdminFileManager
             .Where(j => j.RequestedAt < cutoffDate && j.Status == "COMPLETED")
             .ToListAsync();
 
@@ -68,7 +68,7 @@ public class FileCleanupService : BackgroundService
             }
 
             // Rimuovi il record dal database
-            db.AdminFileManagers.Remove(job);
+            db.AdminFileManager.Remove(job);
         }
 
         if (oldJobs.Any())
@@ -86,7 +86,7 @@ public class FileCleanupService : BackgroundService
         if (!Directory.Exists(_zipStoragePath)) return;
 
         var zipFiles = Directory.GetFiles(_zipStoragePath, "*.zip");
-        var dbZipPaths = await db.AdminFileManagers
+        var dbZipPaths = await db.AdminFileManager
             .Where(j => !string.IsNullOrEmpty(j.ResultZipPath))
             .Select(j => j.ResultZipPath)
             .ToListAsync();

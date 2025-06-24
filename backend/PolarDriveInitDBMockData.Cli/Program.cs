@@ -35,7 +35,7 @@ try
         // ✅ Verifica quali tabelle esistono prima di fare cleanup
         var tableNames = new[]
         {
-            "AdminFileManagers",
+            "AdminFileManager",
             "OutagePeriods",
             "PdfReports",
             "ClientConsents",
@@ -64,7 +64,7 @@ try
         // Reset delle sequenze SQLite per le tabelle principali
         try
         {
-            await db.Database.ExecuteSqlRawAsync("DELETE FROM sqlite_sequence WHERE name IN ('ClientCompanies', 'ClientVehicles', 'ClientConsents', 'OutagePeriods', 'PdfReports', 'AdminFileManagers')");
+            await db.Database.ExecuteSqlRawAsync("DELETE FROM sqlite_sequence WHERE name IN ('ClientCompanies', 'ClientVehicles', 'ClientConsents', 'OutagePeriods', 'PdfReports', 'AdminFileManager')");
             Console.WriteLine("✅ Reset sequence counters");
         }
         catch (Exception seqEx)
@@ -144,7 +144,7 @@ try
     if (existingVehicle != null)
     {
         Console.WriteLine("✅ Using existing vehicle");
-        vehicles = new[] { existingVehicle };
+        vehicles = [existingVehicle];
     }
     else
     {
@@ -248,7 +248,7 @@ try
             new()
             {
                 VehicleId = vehicles[0].Id,
-                ClientCompanyId = vehicles[0].ClientCompanyId,
+                ClientCompanyId = vehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
                 AutoDetected = true,
                 OutageType = "Outage Vehicle",
                 OutageBrand = "Tesla",
@@ -261,7 +261,7 @@ try
             new()
             {
                 VehicleId = vehicles[0].Id,
-                ClientCompanyId = vehicles[0].ClientCompanyId,
+                ClientCompanyId = vehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
                 AutoDetected = false,
                 OutageType = "Outage Vehicle",
                 OutageBrand = "Tesla",
@@ -269,7 +269,44 @@ try
                 OutageStart = DateTime.Parse("2025-04-15T00:00:00Z").AddSeconds(offset),
                 OutageEnd = DateTime.Parse("2025-04-20T23:50:00Z").AddSeconds(offset),
                 Notes = "Outage manuale: veicolo in assistenza per aggiornamento batteria."
-            }
+            },
+            new()
+            {
+                VehicleId = vehicles[0].Id,
+                ClientCompanyId = vehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
+                AutoDetected = true,
+                OutageType = "Outage Vehicle",
+                OutageBrand = "Tesla",
+                CreatedAt = DateTime.Parse("2025-04-24T07:10:00Z").AddSeconds(offset),
+                OutageStart = DateTime.Parse("2025-04-23T22:00:00Z").AddSeconds(offset),
+                OutageEnd = null,
+                Notes = "Inattività in corso: nessun dato da oltre 8 ore."
+            },
+            new()
+            {
+                VehicleId = null,
+                ClientCompanyId = null,
+                AutoDetected = true,
+                OutageType = "Outage Fleet Api",
+                OutageBrand = "Tesla",
+                CreatedAt = DateTime.Parse("2025-04-22T12:00:00Z").AddSeconds(offset),
+                OutageStart = DateTime.Parse("2025-04-22T08:00:00Z").AddSeconds(offset),
+                OutageEnd = DateTime.Parse("2025-04-22T11:30:00Z").AddSeconds(offset),
+                Notes = "API ufficiale non rispondeva: HTTP 503 da tutte le richieste."
+            },
+            new()
+            {
+                VehicleId = null,
+                ClientCompanyId = null,
+                AutoDetected = false,
+                OutageType = "Outage Fleet Api",
+                OutageBrand = "Polestar",
+                CreatedAt = DateTime.Parse("2025-04-25T09:00:00Z").AddSeconds(offset),
+                OutageStart = DateTime.Parse("2025-04-25T07:00:00Z").AddSeconds(offset),
+                OutageEnd = null,
+                ZipFilePath = "zips-outages/20250425-manual-fleetapi.zip",
+                Notes = "Inserito manualmente: timeout frequenti da client."
+            },
         };
 
         db.OutagePeriods.AddRange(outages);

@@ -200,7 +200,7 @@ namespace PolarDrive.WebApi.Services
                 report.Notes = $"Ultima rigenerazione: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount} - Nessun dato disponibile per il periodo";
 
                 // Elimina eventuali file esistenti (cleanup)
-                await DeleteExistingFiles(report);
+                DeleteExistingFiles(report);
 
                 await db.SaveChangesAsync();
 
@@ -230,7 +230,7 @@ namespace PolarDrive.WebApi.Services
             };
 
             // 4) Elimina i vecchi file prima di rigenerare
-            await DeleteExistingFiles(report);
+            DeleteExistingFiles(report);
 
             // 5) Rigenera i file
             await GenerateReportFiles(db, report, insights, period, vehicle);
@@ -243,7 +243,7 @@ namespace PolarDrive.WebApi.Services
                                   reportId, vehicle.Vin, dataCount);
         }
 
-        private async Task DeleteExistingFiles(PdfReport report)
+        private void DeleteExistingFiles(PdfReport report)
         {
             try
             {
@@ -265,7 +265,6 @@ namespace PolarDrive.WebApi.Services
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, "⚠️ Errore durante eliminazione file esistenti per report {ReportId}", report.Id);
-                // Non bloccare il processo per errori di eliminazione file
             }
         }
 

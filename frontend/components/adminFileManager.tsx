@@ -4,15 +4,7 @@ import { formatDateToDisplay } from "@/utils/date";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useEffect, useState } from "react";
-import {
-  FileArchive,
-  NotebookPen,
-  Download,
-  Trash2,
-  Calendar,
-  Building,
-  Car,
-} from "lucide-react";
+import { FileArchive, NotebookPen, Download, Trash2 } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
 import PaginationControls from "@/components/paginationControls";
@@ -48,19 +40,53 @@ const getStatusColor = (status: string) => {
 
 const formatJobDuration = (
   startedAt: string | null,
-  completedAt: string | null
+  completedAt: string | null,
+  status?: string
 ): string => {
+  // Se il job non è ancora iniziato (PENDING), mostra "-"
+  if (status === "PENDING") return "-";
+
+  // Se non c'è startedAt ma il job è in PROCESSING, mostra durata da ora
   if (!startedAt) return "-";
 
   const start = new Date(startedAt);
+
+  // Verifica se la data di inizio è valida
+  if (isNaN(start.getTime())) {
+    console.error("Invalid startedAt date:", startedAt);
+    return "Invalid date";
+  }
+
+  // ✅ FIX: Usa UTC per entrambe le date
   const end = completedAt ? new Date(completedAt) : new Date();
-  const diffMs = end.getTime() - start.getTime();
+
+  // Se il job è ancora in corso, usa l'orario UTC corrente
+  const endTimeUTC = completedAt ? end : new Date(Date.now());
+
+  // Calcola la differenza
+  const diffMs = endTimeUTC.getTime() - start.getTime();
+
+  // Se la differenza è negativa o troppo piccola (meno di 1 secondo),
+  // probabilmente il job è appena iniziato
+  if (diffMs < 1000) {
+    return "0s";
+  }
+
+  // Calcola minuti e secondi
   const diffMins = Math.floor(diffMs / 60000);
   const diffSecs = Math.floor((diffMs % 60000) / 1000);
+
+  // Se sono più di 60 minuti, mostra anche le ore
+  if (diffMins >= 60) {
+    const hours = Math.floor(diffMins / 60);
+    const remainingMins = diffMins % 60;
+    return `${hours}h ${remainingMins}m ${diffSecs}s`;
+  }
 
   if (diffMins > 0) {
     return `${diffMins}m ${diffSecs}s`;
   }
+
   return `${diffSecs}s`;
 };
 
@@ -117,14 +143,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
 
   const { query, setQuery, filteredData } = useSearchFilter<FileManager>(
     localJobs,
-    [
-      "status",
-      "infoMessage",
-      "companyList",
-      "vinList",
-      "brandList",
-      "requestedBy",
-    ]
+    ["status", "companyList", "vinList", "brandList", "requestedBy"]
   );
 
   const {
@@ -310,44 +329,34 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                 {t("admin.actions", "Azioni")}
               </th>
               <th className="p-4">
-                <Calendar size={16} className="inline mr-1" />
                 {t("admin.filemanager.requestedAt", "Richiesto")}
               </th>
               <th className="p-4">{t("admin.filemanager.status", "Stato")}</th>
               <th className="p-4">
-                <Calendar size={16} className="inline mr-1" />
                 {t("admin.filemanager.period", "Periodo PDF")}
               </th>
               <th className="p-4">
                 {t("admin.filemanager.duration", "Durata")}
               </th>
               <th className="p-4">
-                📊 {t("admin.filemanager.pdfStats", "Statistiche PDF")}
+                {t("admin.filemanager.pdfStats", "Statistiche PDF")}
               </th>
               <th className="p-4">
-                <Building size={16} className="inline mr-1" />
                 {t("admin.filemanager.companies", "Aziende")}
               </th>
-              <th className="p-4">
-                <Car size={16} className="inline mr-1" />
-                {t("admin.filemanager.vins", "VIN")}
-              </th>
-              <th className="p-4">📝 {t("admin.filemanager.info", "Info")}</th>
-              <th className="p-4">
-                👤 {t("admin.filemanager.requestedBy", "Richiesto da")}
-              </th>
+              <th className="p-4">{t("admin.filemanager.vins", "VIN")}</th>
             </tr>
           </thead>
           <tbody>
             {currentPageData.map((job) => (
               <tr
                 key={job.id}
-                className="border-b border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                className="border-b border-gray-300 dark:border-gray-600"
               >
-                <td className="p-4 space-x-2 flex items-center">
+                <td className="p-4 space-x-2">
                   {job.status === "COMPLETED" && job.resultZipPath ? (
                     <button
-                      className="p-2 bg-green-500 text-softWhite rounded hover:bg-green-600"
+                      className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
                       title={t("admin.filemanager.downloadZip", "Scarica ZIP")}
                       onClick={() => handleDownloadZip(job)}
                     >
@@ -383,8 +392,11 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                   </button>
                 </td>
 
-                <td className="p-4 text-xs">
+                <td className="p-4">
                   {formatDateToDisplay(job.requestedAt)}
+                  <div className="text-gray-500">
+                    da {job.requestedBy || "-"}
+                  </div>
                 </td>
 
                 <td className="p-4">
@@ -401,8 +413,12 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                   </div>
                 </td>
 
-                <td className="p-4 text-xs">
-                  {formatJobDuration(job.startedAt, job.completedAt)}
+                <td className="p-4">
+                  {formatJobDuration(
+                    job.startedAt,
+                    job.completedAt,
+                    job.status
+                  )}{" "}
                 </td>
 
                 <td className="p-4">
@@ -461,17 +477,6 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                     )}
                   </div>
                 </td>
-
-                <td className="p-4 max-w-48">
-                  <div
-                    className="truncate text-xs"
-                    title={job.infoMessage || "-"}
-                  >
-                    {job.infoMessage || "-"}
-                  </div>
-                </td>
-
-                <td className="p-4 text-xs">{job.requestedBy || "-"}</td>
               </tr>
             ))}
           </tbody>

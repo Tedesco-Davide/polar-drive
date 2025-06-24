@@ -17,7 +17,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
-    public DbSet<AdminFileManager> AdminFileManagers => Set<AdminFileManager>();
+    public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -165,7 +165,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
             // ✅ Configurazione CORRETTA per AdminFileManager con SQLite
             modelBuilder.Entity<AdminFileManager>(entity =>
             {
-                entity.ToTable("AdminFileManagers");
+                entity.ToTable("AdminFileManager");
 
                 // Configurazione proprietà base
                 entity.Property(e => e.RequestedAt)
