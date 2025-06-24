@@ -470,31 +470,6 @@ export default function AdminFileManagerModal({
             </div>
           </label>
 
-          {/* VIN Input */}
-          <label className="flex flex-col">
-            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {t("admin.filemanager.vins", "VIN")}
-            </span>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={currentVin}
-                onChange={(e) => setCurrentVin(e.target.value.toUpperCase())}
-                className="input w-full font-mono"
-                maxLength={17}
-                pattern="[A-HJ-NPR-Z0-9]*"
-              />
-              <button
-                type="button"
-                onClick={addVin}
-                disabled={!currentVin || currentVin.length !== 17}
-                className="text-softWhite hover:bg-green-600 bg-green-700 disabled:bg-gray-400 flex items-center justify-center p-2 rounded"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-          </label>
-
           {/* Brand Select */}
           <label className="flex flex-col">
             <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
@@ -519,6 +494,31 @@ export default function AdminFileManagerModal({
                 type="button"
                 onClick={addBrand}
                 disabled={!currentBrand}
+                className="text-softWhite hover:bg-green-600 bg-green-700 disabled:bg-gray-400 flex items-center justify-center p-2 rounded"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+          </label>
+
+          {/* VIN Input */}
+          <label className="flex flex-col">
+            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+              {t("admin.filemanager.vins", "VIN")}
+            </span>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={currentVin}
+                onChange={(e) => setCurrentVin(e.target.value.toUpperCase())}
+                className="input w-full font-mono"
+                maxLength={17}
+                pattern="[A-HJ-NPR-Z0-9]*"
+              />
+              <button
+                type="button"
+                onClick={addVin}
+                disabled={!currentVin || currentVin.length !== 17}
                 className="text-softWhite hover:bg-green-600 bg-green-700 disabled:bg-gray-400 flex items-center justify-center p-2 rounded"
               >
                 <Plus size={18} />

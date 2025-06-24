@@ -3,7 +3,7 @@ import { TFunction } from "i18next";
 import { formatDateToDisplay } from "@/utils/date";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { FileArchive, NotebookPen, Download, Trash2 } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
@@ -105,6 +105,7 @@ type Props = {
 
 export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
   const [localJobs, setLocalJobs] = useState<FileManager[]>([]);
+  const refreshRef = useRef(refreshJobs);
   const [selectedJobForNotes, setSelectedJobForNotes] =
     useState<FileManager | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -140,6 +141,10 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
       `Loaded ${jobs.length} PDF download job records`
     );
   }, [jobs]);
+
+  useEffect(() => {
+    refreshRef.current = refreshJobs;
+  }, [refreshJobs]);
 
   const { query, setQuery, filteredData } = useSearchFilter<FileManager>(
     localJobs,
@@ -308,18 +313,17 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
           <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
             <tr>
               <th className="p-4">
-                {refreshJobs && (
+                {refreshRef.current && (
                   <button
                     onClick={async () => {
                       try {
                         await handleRefreshJobs();
-                        alert(t("admin.filemanager.title", "TODO"));
+                        alert(t("admin.filemanager.refreshSuccess"));
                       } catch {
-                        alert(t("admin.filemanager.title", "TODO"));
+                        alert(t("admin.filemanager.refreshFail"));
                       }
                     }}
                     className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-                    title="Aggiorna lista"
                   >
                     <span className="uppercase text-xs tracking-widest">
                       {t("admin.vehicleReports.tableRefreshButton")}
@@ -341,10 +345,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
               <th className="p-4">
                 {t("admin.filemanager.pdfStats", "Statistiche PDF")}
               </th>
-              <th className="p-4">
-                {t("admin.filemanager.companies", "Aziende")}
-              </th>
-              <th className="p-4">{t("admin.filemanager.vins", "VIN")}</th>
+              <th className="p-4">{t("admin.filemanager.criteria")}</th>
             </tr>
           </thead>
           <tbody>
@@ -394,9 +395,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
 
                 <td className="p-4">
                   {formatDateToDisplay(job.requestedAt)}
-                  <div className="text-gray-500">
-                    da {job.requestedBy || "-"}
-                  </div>
+                  <div>da {job.requestedBy || "-"}</div>
                 </td>
 
                 <td className="p-4">
@@ -427,47 +426,41 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                       📄PDF tot {job.includedPdfCount || 0} /{" "}
                       {job.totalPdfCount || 0}{" "}
                     </div>
-                    {job.zipFileSizeMB && (
-                      <div>📦 {formatFileSize(job.zipFileSizeMB)}</div>
-                    )}
+                    <div className="flex">
+                      📦
+                      {job.zipFileSizeMB && (
+                        <div>{formatFileSize(job.zipFileSizeMB)}</div>
+                      )}
+                    </div>
                   </div>
                 </td>
 
                 <td className="p-4">
-                  <div className="flex flex-wrap gap-1 max-w-32">
+                  <div className="flex flex-wrap gap-2">
                     {job.companyList?.slice(0, 2).map((company, idx) => (
                       <Chip
                         key={idx}
                         className="bg-blue-100 text-blue-700 border-blue-300 text-xs"
                       >
-                        {company.length > 8
-                          ? company.substring(0, 8) + "..."
-                          : company}
+                        {company}
                       </Chip>
                     ))}
-                    {job.companyList?.length > 2 && (
-                      <Chip className="bg-gray-100 text-gray-600 border-gray-300 text-xs">
-                        +{job.companyList.length - 2}
+                    {job.brandList?.slice(0, 2).map((brand, idx) => (
+                      <Chip
+                        key={idx}
+                        className="bg-purple-100 text-purple-700 border-purple-300 text-xs"
+                      >
+                        {brand}
                       </Chip>
-                    )}
-                  </div>
-                </td>
-
-                <td className="p-4">
-                  <div className="flex flex-wrap gap-1 max-w-32">
-                    {job.vinList?.slice(0, 2).map((vin, idx) => (
+                    ))}
+                    {job.vinList?.map((vin, idx) => (
                       <Chip
                         key={idx}
                         className="bg-orange-100 text-orange-700 border-orange-300 text-xs"
                       >
-                        {vin.length > 8 ? vin.substring(0, 8) + "..." : vin}
+                        {vin}
                       </Chip>
                     ))}
-                    {job.vinList?.length > 2 && (
-                      <Chip className="bg-gray-100 text-gray-600 border-gray-300 text-xs">
-                        +{job.vinList.length - 2}
-                      </Chip>
-                    )}
                   </div>
                 </td>
               </tr>

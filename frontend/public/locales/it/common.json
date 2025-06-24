@@ -247,6 +247,7 @@
   "admin.filemanager.generatedCount": "Numero files generati",
   "admin.filemanager.fileTypes": "Tipologia files",
   "admin.filemanager.companies": "Cliente",
+  "admin.filemanager.criteria": "Criteri",
   "admin.filemanager.brand": "Brand",
   "admin.filemanager.message": "Messaggio",
   "admin.filemanager.startedAtcompletedAt": "Inizio / Fine",
