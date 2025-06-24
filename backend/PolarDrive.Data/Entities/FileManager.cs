@@ -29,7 +29,7 @@ public class AdminFileManager
     // Percorso del file ZIP risultante
     public string? ResultZipPath { get; set; }
 
-    // Informazioni aggiuntive e debug
+    // Informazioni aggiuntive
     public string? InfoMessage { get; set; }
 
     // Metadati della richiesta

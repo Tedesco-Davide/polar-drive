@@ -158,14 +158,6 @@ export default function AdminDashboard() {
 
       const updatedPdfReports: PdfReport[] = await res.json();
 
-      console.log("🔄 PDF Reports refresh details:", {
-        before: currentCount,
-        after: updatedPdfReports.length,
-        changed: currentCount !== updatedPdfReports.length,
-        timestamp: new Date().toISOString(),
-        firstReport: updatedPdfReports[0] || null,
-      });
-
       setPdfReports([...updatedPdfReports]);
 
       logFrontendEvent(

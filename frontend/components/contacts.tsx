@@ -45,9 +45,6 @@ export default function Contacts() {
         }
       );
 
-      const result = await response.json();
-      console.log("FORM SUBMISSION RESULT:", result);
-
       if (response.ok) {
         logFrontendEvent(
           "ContactsForm",

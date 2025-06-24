@@ -172,7 +172,6 @@ export default function AdminClientCompaniesTable({
             client={selectedClient}
             onClose={() => setShowEditModal(false)}
             onSave={(updatedClient: ClientCompany) => {
-              console.log("Updated client:", updatedClient);
               setClientData((prev) =>
                 prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
               );

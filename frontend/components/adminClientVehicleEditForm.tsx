@@ -84,7 +84,6 @@ export default function AdminClientVehicleEditForm({
   };
 
   const handleSubmit = async () => {
-    console.log("formData.id:", formData.id);
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
 
     if (
