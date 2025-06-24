@@ -437,30 +437,48 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
 
                 <td className="p-4">
                   <div className="flex flex-wrap gap-2">
-                    {job.companyList?.slice(0, 2).map((company, idx) => (
-                      <Chip
-                        key={idx}
-                        className="bg-blue-100 text-blue-700 border-blue-300 text-xs"
-                      >
-                        {company}
+                    {job.companyList && job.companyList.length > 0 ? (
+                      job.companyList.slice(0, 2).map((company, idx) => (
+                        <Chip
+                          key={idx}
+                          className="bg-blue-100 text-blue-700 border-blue-300"
+                        >
+                          {company}
+                        </Chip>
+                      ))
+                    ) : (
+                      <Chip className="bg-blue-100 text-blue-700 border-blue-300">
+                        ALL-COMPANIES
                       </Chip>
-                    ))}
-                    {job.brandList?.slice(0, 2).map((brand, idx) => (
-                      <Chip
-                        key={idx}
-                        className="bg-purple-100 text-purple-700 border-purple-300 text-xs"
-                      >
-                        {brand}
+                    )}
+                    {job.brandList && job.brandList.length > 0 ? (
+                      job.brandList.slice(0, 2).map((brand, idx) => (
+                        <Chip
+                          key={idx}
+                          className="bg-purple-100 text-purple-700 border-purple-300"
+                        >
+                          {brand}
+                        </Chip>
+                      ))
+                    ) : (
+                      <Chip className="bg-purple-100 text-purple-700 border-purple-300">
+                        ALL-BRAND
                       </Chip>
-                    ))}
-                    {job.vinList?.map((vin, idx) => (
-                      <Chip
-                        key={idx}
-                        className="bg-orange-100 text-orange-700 border-orange-300 text-xs"
-                      >
-                        {vin}
+                    )}
+                    {job.vinList && job.vinList.length > 0 ? (
+                      job.vinList.map((vin, idx) => (
+                        <Chip
+                          key={idx}
+                          className="bg-orange-100 text-orange-700 border-orange-300"
+                        >
+                          {vin}
+                        </Chip>
+                      ))
+                    ) : (
+                      <Chip className="bg-orange-100 text-orange-700 border-orange-300">
+                        ALL-VIN
                       </Chip>
-                    ))}
+                    )}
                   </div>
                 </td>
               </tr>

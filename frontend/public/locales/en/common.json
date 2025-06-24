@@ -233,7 +233,7 @@
   "admin.vehicleReports.forceRegenerate": "Regenerate",
   "admin.vehicleReports.regenerated": "Regenerated",
   "admin.vehicleReports.totalRecords": "total records to date",
-  "admin.vehicleReports.monitored": "monitored",
+  "admin.vehicleReports.monitored": "tot monitored",
   "admin.vehicleReports.pdfNotAvailable": "PDF not available, downloaded HTML instead. Try regenerating to obtain the PDF",
   "admin.vehicleReports.regenerateConfirmAction": "WARNING! By regenerating the report, the period data will remain identical, but the report will be regenerated with the most advanced PolarAi analysis available. Press OK to confirm",
   "admin.vehicleReports.downloadDisabledProcessing": "Elaborating report...",

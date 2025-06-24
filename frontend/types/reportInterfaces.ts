@@ -7,6 +7,7 @@ export interface PdfReport {
   generatedAt: string | null;
   companyVatNumber: string;
   companyName: string;
+  vehicleBrand: string;
   vehicleVin: string;
   vehicleModel: string;
   notes?: string;

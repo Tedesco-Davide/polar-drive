@@ -10,6 +10,7 @@ public class PdfReportDTO
     public string CompanyName { get; set; } = string.Empty;
     public string VehicleVin { get; set; } = string.Empty;
     public string VehicleModel { get; set; } = string.Empty;
+    public string VehicleBrand { get; set; } = string.Empty;
     public string? Notes { get; set; }
     public bool HasHtmlFile { get; set; }
     public bool HasPdfFile { get; set; }

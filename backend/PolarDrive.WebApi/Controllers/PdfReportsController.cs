@@ -17,19 +17,16 @@ public class PdfReportsController : ControllerBase
     private readonly PolarDriveLogger _logger;
     private readonly IServiceProvider _serviceProvider;
     private readonly IWebHostEnvironment _env;
-    private readonly IReportGenerationService _reportSchedulerService;
 
     public PdfReportsController(
         PolarDriveDbContext context,
         IServiceProvider serviceProvider,
-        IWebHostEnvironment env,
-        IReportGenerationService reportSchedulerService)
+        IWebHostEnvironment env)
     {
         db = context;
         _logger = new PolarDriveLogger(db);
         _serviceProvider = serviceProvider;
         _env = env;
-        _reportSchedulerService = reportSchedulerService;
     }
 
     [HttpGet]
@@ -93,6 +90,7 @@ public class PdfReportsController : ControllerBase
             CompanyName = report.ClientCompany?.Name ?? "",
             VehicleVin = report.ClientVehicle?.Vin ?? "",
             VehicleModel = report.ClientVehicle?.Model ?? "",
+            VehicleBrand = report.ClientVehicle?.Brand ?? "",
             Notes = report.Notes,
             HasPdfFile = fileInfo.PdfExists,
             HasHtmlFile = fileInfo.HtmlExists,

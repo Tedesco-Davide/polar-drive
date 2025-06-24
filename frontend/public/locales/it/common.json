@@ -233,7 +233,7 @@
   "admin.vehicleReports.forceRegenerate": "Rigenera",
   "admin.vehicleReports.regenerated": "Rigenerato",
   "admin.vehicleReports.totalRecords": "record totali ad oggi",
-  "admin.vehicleReports.monitored": "monitorate",
+  "admin.vehicleReports.monitored": "tot monitorate",
   "admin.vehicleReports.pdfNotAvailable": "PDF non disponibile, scaricato HTML. Prova la rigenerazione per ottenere il PDF",
   "admin.vehicleReports.regenerateConfirmAction": "ATTENZIONE! Rigenerando il report, i dati del periodo rimarranno identici, ma il report sarà rigenerato con l'analisi PolarAi più avanzata disponibile. Premi OK per confermare",
   "admin.vehicleReports.downloadDisabledProcessing": "Report in elaborazione...",

@@ -72,6 +72,7 @@ export default function AdminPdfReports({
       "companyName",
       "vehicleVin",
       "vehicleModel",
+      "vehicleBrand",
       "reportPeriodStart",
       "reportPeriodEnd",
     ]
@@ -218,20 +219,30 @@ export default function AdminPdfReports({
       const result = await response.json();
 
       if (result.success) {
+        setLocalReports((prev) =>
+          prev.map((r) =>
+            r.id === report.id
+              ? {
+                  ...r,
+                  status: "PROCESSING",
+                  regenerationCount: r.regenerationCount + 1,
+                }
+              : r
+          )
+        );
+
         alert(t("admin.vehicleReports.regenerateReportSuccess"));
 
-        setTimeout(async () => {
-          if (refreshRef.current) {
-            await refreshRef.current();
-          }
+        if (refreshRef.current) {
+          await refreshRef.current();
+        }
 
-          logFrontendEvent(
-            "AdminPdfReports",
-            "INFO",
-            "Regeneration completed with delayed refresh",
-            `ReportId: ${report.id}`
-          );
-        }, 3000);
+        logFrontendEvent(
+          "AdminPdfReports",
+          "INFO",
+          "Regeneration completed with immediate refresh",
+          `ReportId: ${report.id}`
+        );
       } else {
         throw new Error(
           result.message || t("admin.vehicleReports.regenerateReportFail")
@@ -360,6 +371,8 @@ export default function AdminPdfReports({
               )}{" "}
               {t("admin.actions")}
             </th>
+            <th className="p-4">{t("admin.vehicleReports.generatedAt")}</th>
+            <th className="p-4">{t("admin.vehicleReports.fileInfo")}</th>
             <th className="p-4">{t("admin.vehicleReports.reportPeriod")}</th>
             <th className="p-4">
               {t("admin.vehicleReports.clientCompanyVATName")}
@@ -367,8 +380,6 @@ export default function AdminPdfReports({
             <th className="p-4">
               {t("admin.vehicleReports.vehicleVinDisplay")}
             </th>
-            <th className="p-4">{t("admin.vehicleReports.fileInfo")}</th>
-            <th className="p-4">{t("admin.vehicleReports.generatedAt")}</th>
           </tr>
         </thead>
         <tbody>
@@ -448,6 +459,35 @@ export default function AdminPdfReports({
                   </button>
                 </td>
 
+                {/* Generated At */}
+                <td className="p-4">
+                  {report.generatedAt
+                    ? formatDateToDisplay(report.generatedAt)
+                    : "-"}
+                  {report.monitoringDurationHours >= 0 && (
+                    <div className="text-xs text-gray-400 mt-1">
+                      {report.monitoringDurationHours < 1
+                        ? "< 1h"
+                        : `${Math.round(report.monitoringDurationHours)}h`}{" "}
+                      {t("admin.vehicleReports.monitored")}
+                    </div>
+                  )}
+                </td>
+
+                {/* File Info */}
+                <td className="p-4">
+                  <div className="space-y-1">
+                    <Chip className={getStatusColor(status.text)}>
+                      {status.text}
+                    </Chip>
+                    {fileSize > 0 && (
+                      <div className="text-xs text-gray-400">
+                        {(fileSize / (1024 * 1024)).toFixed(2)} MB
+                      </div>
+                    )}
+                  </div>
+                </td>
+
                 {/* Period */}
                 <td className="p-4">
                   <div>
@@ -481,35 +521,12 @@ export default function AdminPdfReports({
 
                 {/* Vehicle */}
                 <td className="p-4">
-                  {report.monitoringDurationHours >= 0 && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      {report.monitoringDurationHours < 1
-                        ? "< 1h"
-                        : `${Math.round(report.monitoringDurationHours)}h`}{" "}
-                      {t("admin.vehicleReports.monitored")}
+                  <div>
+                    {report.vehicleBrand && <span>{report.vehicleBrand}</span>}
+                    <div className="text-xs text-gray-400">
+                      {report.vehicleVin && <span>{report.vehicleVin}</span>}
                     </div>
-                  )}
-                </td>
-
-                {/* File Info */}
-                <td className="p-4">
-                  <div className="space-y-1">
-                    <Chip className={getStatusColor(status.text)}>
-                      {status.text}
-                    </Chip>
-                    {fileSize > 0 && (
-                      <div className="text-xs text-gray-400">
-                        {(fileSize / (1024 * 1024)).toFixed(2)} MB
-                      </div>
-                    )}
                   </div>
-                </td>
-
-                {/* Generated At */}
-                <td className="p-4">
-                  {report.generatedAt
-                    ? formatDateToDisplay(report.generatedAt)
-                    : "-"}
                 </td>
               </tr>
             );
