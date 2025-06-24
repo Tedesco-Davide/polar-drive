@@ -25,9 +25,8 @@ export interface FileManager {
   resultZipPath?: string;
 
   // Informazioni aggiuntive
-  infoMessage?: string;
+  notes?: string;
 
   // Metadati della richiesta
   requestedBy?: string; // Chi ha fatto la richiesta
-  downloadCount: number; // Quante volte è stato scaricato lo ZIP
 }

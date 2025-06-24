@@ -24,10 +24,17 @@ export default function NotesModal<T>({
 }: Props<T>) {
   const [notes, setNotes] = useState<string[]>(() => {
     const raw = entity[notesField] as unknown as string;
+
+    // ✅ SOLUZIONE: Gestisci correttamente null, undefined e stringa vuota
+    if (raw === null || raw === undefined || raw === "") {
+      return [];
+    }
+
     try {
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [raw];
     } catch {
+      // Se JSON.parse fallisce, tratta come stringa singola
       return typeof raw === "string" && raw.trim() !== "" ? [raw] : [];
     }
   });
@@ -64,6 +71,7 @@ export default function NotesModal<T>({
     logFrontendEvent("NotesModal", "INFO", "Note deleted", `Index: ${index}`);
   };
 
+  // ✅ Modifica anche handleSave per gestire array vuoto
   const handleSave = () => {
     logFrontendEvent(
       "NotesModal",
@@ -71,9 +79,13 @@ export default function NotesModal<T>({
       "Notes saved",
       `Total notes: ${notes.length}`
     );
+
+    // ✅ Se non ci sono note, salva null invece di array vuoto serializzato
+    const notesToSave = notes.length > 0 ? JSON.stringify(notes) : null;
+
     onSave({
       ...entity,
-      [notesField]: JSON.stringify(notes),
+      [notesField]: notesToSave,
     });
     onClose();
   };

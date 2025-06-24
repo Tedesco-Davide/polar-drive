@@ -177,8 +177,10 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasMaxLength(50)
                     .HasDefaultValue("PENDING");
 
-                entity.Property(e => e.InfoMessage)
-                    .HasMaxLength(2000);
+                entity.Property(e => e.Notes)
+                    .HasMaxLength(2000)
+                    .IsRequired(false)
+                    .HasDefaultValue(null);
 
                 entity.Property(e => e.ResultZipPath)
                     .HasMaxLength(500);

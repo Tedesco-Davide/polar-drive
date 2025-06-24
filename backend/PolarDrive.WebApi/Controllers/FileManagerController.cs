@@ -42,7 +42,8 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
             VinList = request.Vins ?? [],
             BrandList = request.Brands ?? [],
             Status = "PENDING",
-            RequestedBy = request.RequestedBy
+            RequestedBy = request.RequestedBy,
+            Notes = null
         };
 
         db.AdminFileManager.Add(job);
@@ -68,7 +69,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                     {
                         failedJob.Status = "FAILED";
                         failedJob.CompletedAt = DateTime.Now;
-                        failedJob.InfoMessage = $"Errore critico: {ex.Message}";
+                        failedJob.Notes = $"Errore critico: {ex.Message}";
                         await scopedDb.SaveChangesAsync();
                     }
                 }
@@ -95,8 +96,6 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
         if (!System.IO.File.Exists(job.ResultZipPath))
             return NotFound("Il file ZIP non è più disponibile");
 
-        // Incrementa il contatore di download
-        job.DownloadCount++;
         await db.SaveChangesAsync();
 
         var zipBytes = await System.IO.File.ReadAllBytesAsync(job.ResultZipPath);
@@ -112,7 +111,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
         if (job == null)
             return NotFound();
 
-        job.InfoMessage = request.InfoMessage;
+        job.Notes = request.Notes;
         await db.SaveChangesAsync();
 
         return NoContent();
@@ -265,7 +264,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
             {
                 job.Status = "COMPLETED";
                 job.CompletedAt = DateTime.Now;
-                job.InfoMessage = "Nessun PDF trovato per i criteri specificati";
+                job.Notes = "Nessun PDF trovato per i criteri specificati";
                 await scopedDb.SaveChangesAsync();
                 return;
             }
@@ -318,7 +317,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
 
             job.Status = "FAILED";
             job.CompletedAt = DateTime.Now;
-            job.InfoMessage = $"Errore: {ex.Message}";
+            job.Notes = $"Errore: {ex.Message}";
             await scopedDb.SaveChangesAsync();
         }
     }
@@ -356,4 +355,4 @@ public record AdminFileManagerRequest(
     string? RequestedBy = null
 );
 
-public record UpdateNotesRequest(string InfoMessage);
+public record UpdateNotesRequest(string Notes);

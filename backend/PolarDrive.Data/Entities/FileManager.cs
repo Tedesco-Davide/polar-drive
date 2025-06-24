@@ -30,11 +30,10 @@ public class AdminFileManager
     public string? ResultZipPath { get; set; }
 
     // Informazioni aggiuntive
-    public string? InfoMessage { get; set; }
+    public string? Notes { get; set; }
 
     // Metadati della richiesta
     public string? RequestedBy { get; set; }
-    public int DownloadCount { get; set; } = 0;
 
     // Metodi helper
     public bool IsCompleted => Status == "COMPLETED";

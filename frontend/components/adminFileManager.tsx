@@ -423,19 +423,12 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
 
                 <td className="p-4">
                   <div className="space-y-1">
-                    <div className="text-xs">
-                      📄 {job.includedPdfCount || 0} / {job.totalPdfCount || 0}{" "}
-                      PDF
+                    <div>
+                      📄PDF tot {job.includedPdfCount || 0} /{" "}
+                      {job.totalPdfCount || 0}{" "}
                     </div>
                     {job.zipFileSizeMB && (
-                      <div className="text-xs text-gray-600">
-                        📦 {formatFileSize(job.zipFileSizeMB)}
-                      </div>
-                    )}
-                    {job.downloadCount > 0 && (
-                      <div className="text-xs text-blue-600">
-                        ⬇️ {job.downloadCount}x
-                      </div>
+                      <div>📦 {formatFileSize(job.zipFileSizeMB)}</div>
                     )}
                   </div>
                 </td>
@@ -503,7 +496,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
           entity={selectedJobForNotes}
           isOpen={!!selectedJobForNotes}
           title={t("admin.filemanager.notes.modalTitle", "Note Download PDF")}
-          notesField="infoMessage"
+          notesField="notes"
           onSave={async (updated) => {
             try {
               await fetch(
@@ -511,15 +504,13 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                 {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ infoMessage: updated.infoMessage }),
+                  body: JSON.stringify({ notes: updated.notes }),
                 }
               );
 
               setLocalJobs((prev) =>
                 prev.map((j) =>
-                  j.id === updated.id
-                    ? { ...j, infoMessage: updated.infoMessage }
-                    : j
+                  j.id === updated.id ? { ...j, notes: updated.notes } : j
                 )
               );
 

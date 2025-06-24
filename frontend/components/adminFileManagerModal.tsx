@@ -210,6 +210,7 @@ export default function AdminFileManagerModal({
             vins: formData.vins.length > 0 ? formData.vins : null,
             brands: formData.brands.length > 0 ? formData.brands : null,
             requestedBy: formData.requestedBy.trim(),
+            note: null,
           }),
         }
       );
