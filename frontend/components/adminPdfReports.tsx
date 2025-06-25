@@ -333,7 +333,7 @@ export default function AdminPdfReports({
                   className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
                 >
                   <span className="uppercase text-xs tracking-widest">
-                    {t("admin.vehicleReports.tableRefreshButton")}
+                    {t("admin.tableRefreshButton")}
                   </span>
                 </button>
               )}{" "}
@@ -491,9 +491,11 @@ export default function AdminPdfReports({
                 {/* Vehicle */}
                 <td className="p-4">
                   <div>
-                    {report.vehicleBrand && <span>{report.vehicleBrand}</span>}
+                    {report.vehicleVin && <span>{report.vehicleVin}</span>}
                     <div className="text-xs text-gray-400">
-                      {report.vehicleVin && <span>{report.vehicleVin}</span>}
+                      {report.vehicleBrand && (
+                        <span>{report.vehicleBrand}</span>
+                      )}
                     </div>
                   </div>
                 </td>

@@ -264,7 +264,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
       {/* ✅ HEADER CON BOTTONE COME NEL PATTERN OUTAGES */}
       <div className="flex items-center mb-6 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.filemanager.title", "File Manager")}
+          {t("admin.filemanager.tableHeader")}
         </h1>
 
         <button
@@ -284,8 +284,8 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
           }}
         >
           {showCreateModal
-            ? t("common.cancel", "Annulla nuova Ricerca")
-            : t("admin.filemanager.createDownload", "Aggiungi nuova Ricerca")}
+            ? t("admin.filemanager.modal.undoDownloadModal", "")
+            : t("admin.filemanager.modal.createDownloadModal", "")}
         </button>
       </div>
 
@@ -318,33 +318,25 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                     onClick={async () => {
                       try {
                         await handleRefreshJobs();
-                        alert(t("admin.filemanager.refreshSuccess"));
+                        alert(t("admin.filemanager.tableRefreshSuccess"));
                       } catch {
-                        alert(t("admin.filemanager.refreshFail"));
+                        alert(t("admin.filemanager.tableRefreshFail"));
                       }
                     }}
                     className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
                   >
                     <span className="uppercase text-xs tracking-widest">
-                      {t("admin.vehicleReports.tableRefreshButton")}
+                      {t("admin.tableRefreshButton")}
                     </span>
                   </button>
                 )}{" "}
-                {t("admin.actions", "Azioni")}
+                {t("admin.actions")}
               </th>
-              <th className="p-4">
-                {t("admin.filemanager.requestedAt", "Richiesto")}
-              </th>
-              <th className="p-4">{t("admin.filemanager.status", "Stato")}</th>
-              <th className="p-4">
-                {t("admin.filemanager.period", "Periodo PDF")}
-              </th>
-              <th className="p-4">
-                {t("admin.filemanager.duration", "Durata")}
-              </th>
-              <th className="p-4">
-                {t("admin.filemanager.pdfStats", "Statistiche PDF")}
-              </th>
+              <th className="p-4">{t("admin.filemanager.requestedAt")}</th>
+              <th className="p-4">{t("admin.filemanager.status")}</th>
+              <th className="p-4">{t("admin.filemanager.period")}</th>
+              <th className="p-4">{t("admin.filemanager.duration")}</th>
+              <th className="p-4">{t("admin.filemanager.pdfStats")}</th>
               <th className="p-4">{t("admin.filemanager.criteria")}</th>
             </tr>
           </thead>
@@ -358,7 +350,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                   {job.status === "COMPLETED" && job.resultZipPath ? (
                     <button
                       className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
-                      title={t("admin.filemanager.downloadZip", "Scarica ZIP")}
+                      title={t("admin.filemanager.downloadZip")}
                       onClick={() => handleDownloadZip(job)}
                     >
                       <FileArchive size={16} />
@@ -366,10 +358,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                   ) : (
                     <button
                       className="p-2 bg-gray-400 text-softWhite rounded cursor-not-allowed"
-                      title={t(
-                        "admin.filemanager.downloadNotReady",
-                        "Download non disponibile"
-                      )}
+                      title={t("admin.filemanager.downloadZipNotReady")}
                       disabled
                     >
                       <Download size={16} />
@@ -378,7 +367,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
 
                   <button
                     className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
-                    title={t("admin.openNotesModal", "Apri note")}
+                    title={t("admin.openNotesModal")}
                     onClick={() => setSelectedJobForNotes(job)}
                   >
                     <NotebookPen size={16} />
@@ -386,7 +375,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
 
                   <button
                     className="p-2 bg-red-500 text-softWhite rounded hover:bg-red-600"
-                    title={t("admin.filemanager.deleteJob", "Elimina job")}
+                    title={t("admin.filemanager.deleteJob")}
                     onClick={() => handleDeleteJob(job)}
                   >
                     <Trash2 size={16} />
@@ -395,7 +384,9 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
 
                 <td className="p-4">
                   {formatDateToDisplay(job.requestedAt)}
-                  <div>da {job.requestedBy || "-"}</div>
+                  <div>
+                    {t("admin.from")} {job.requestedBy || "-"}
+                  </div>
                 </td>
 
                 <td className="p-4">
@@ -506,7 +497,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
         <NotesModal
           entity={selectedJobForNotes}
           isOpen={!!selectedJobForNotes}
-          title={t("admin.filemanager.notes.modalTitle", "Note Download PDF")}
+          title={t("admin.filemanager.notes.modalTitle")}
           notesField="notes"
           onSave={async (updated) => {
             try {
@@ -541,17 +532,11 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                 "Failed to update notes for PDF download job",
                 details
               );
-              console.error(
-                t("admin.filemanager.notes.genericError", "Errore generico"),
-                err
-              );
+              console.error(t("admin.filemanager.notes.modalError"), err);
               alert(
                 err instanceof Error
                   ? err.message
-                  : t(
-                      "admin.filemanager.notes.genericError",
-                      "Errore durante l'aggiornamento delle note"
-                    )
+                  : t("admin.filemanager.notes.modalErrorUpdate")
               );
             }
           }}
