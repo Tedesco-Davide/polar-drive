@@ -47,13 +47,13 @@ public class PdfReportsController : ControllerBase
                 result.Add(dto);
             }
 
-            // ✅ Log aggregato invece di singoli dettagli
             var pdfCount = result.Count(r => r.HasPdfFile);
             var htmlCount = result.Count(r => r.HasHtmlFile);
             var processingCount = result.Count(r => r.Status == "PROCESSING");
+            var filesMissingCount = result.Count(r => r.Status == "FILE-MISSING");
 
             await _logger.Info(source, "Mapping DTO completato",
-                $"Total: {result.Count}, PDF: {pdfCount}, HTML: {htmlCount}, Processing: {processingCount}");
+                $"Total: {result.Count}, PDF: {pdfCount}, HTML: {htmlCount}, Processing: {processingCount}, FilesMissing: {filesMissingCount}");
 
             return Ok(result);
         }
@@ -62,6 +62,58 @@ public class PdfReportsController : ControllerBase
             await _logger.Error(source, "Errore recupero lista report", ex.ToString());
             return StatusCode(500, "Errore interno server");
         }
+    }
+
+    private async Task<string> DetermineReportStatusAsync(Data.Entities.PdfReport report, bool pdfExists, bool htmlExists, int dataCount)
+    {
+        // 1. Status operativi
+        if (!string.IsNullOrEmpty(report.Status))
+        {
+            if (report.Status == "PROCESSING") return "PROCESSING";
+            if (report.Status == "ERROR") return "ERROR";
+        }
+
+        // 2. File esistenti
+        if (pdfExists) return "PDF-READY";
+        if (htmlExists) return "HTML-ONLY";
+
+        // 3. Nessun dato
+        if (dataCount == 0) return "NO-DATA";
+
+        // 4. Controlla se dovrebbe avere file
+        var shouldHaveFiles = await ShouldReportHaveFiles(report);
+
+        if (shouldHaveFiles)
+        {
+            return "FILE-MISSING";
+        }
+
+        // 5. Valuta in base ai dati disponibili
+        if (dataCount < MIN_RECORDS_FOR_GENERATION)
+        {
+            return "WAITING-RECORDS";
+        }
+
+        return "GENERATE-READY";
+    }
+
+    private async Task<bool> ShouldReportHaveFiles(Data.Entities.PdfReport report)
+    {
+        // Se il report è stato generato, dovrebbe avere file
+        if (report.GeneratedAt.HasValue && report.GeneratedAt < DateTime.UtcNow.AddMinutes(-5))
+        {
+            return true;
+        }
+
+        // Se il report è vecchio ma non ha GeneratedAt, controlla i dati
+        var reportAge = DateTime.UtcNow - report.CreatedAt;
+        if (reportAge.TotalMinutes > 30)
+        {
+            var dataCount = await CountDataRecordsForReport(report);
+            return dataCount >= MIN_RECORDS_FOR_GENERATION;
+        }
+
+        return false;
     }
 
     private async Task<List<Data.Entities.PdfReport>> GetReportsWithIncludes()
@@ -102,7 +154,7 @@ public class PdfReportsController : ControllerBase
             RegenerationCount = report.RegenerationCount,
             LastRegenerated = report.GeneratedAt?.ToString("o"),
             ReportType = DetermineReportType(report, dataCount),
-            Status = DetermineReportStatus(fileInfo.PdfExists, fileInfo.HtmlExists, dataCount, report.Status),
+            Status = await DetermineReportStatusAsync(report, fileInfo.PdfExists, fileInfo.HtmlExists, dataCount),
         };
     }
 
@@ -136,25 +188,6 @@ public class PdfReportsController : ControllerBase
             >= WEEKLY_HOURS_THRESHOLD => "Settimanale",
             >= DAILY_HOURS_THRESHOLD => "Giornaliero",
             _ => "Giornaliero_Parizale"
-        };
-    }
-
-    private static string DetermineReportStatus(bool pdfExists, bool htmlExists, int dataCount, string? dbStatus = null)
-    {
-        // Status operativi hanno priorità assoluta
-        if (dbStatus == "PROCESSING") return "PROCESSING";
-        if (dbStatus == "ERROR") return "ERROR";
-
-        // ✅ PRIORITÀ AI FILE ESISTENTI (indipendentemente dal dbStatus)
-        if (pdfExists) return "PDF-READY";
-        if (htmlExists) return "HTML-ONLY";
-
-        // Nessun file presente - valuta in base ai dati disponibili
-        return dataCount switch
-        {
-            0 => "NO-DATA",
-            < MIN_RECORDS_FOR_GENERATION => "WAITING-RECORDS",
-            _ => "FILES-MISSING" // ← NUOVO STATUS: dati sufficienti ma file mancanti
         };
     }
 

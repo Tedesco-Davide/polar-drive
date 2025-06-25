@@ -94,21 +94,16 @@ export default function AdminPdfReports({
         return "bg-blue-100 text-blue-700 border-blue-500";
       case "ERROR":
         return "bg-red-100 text-red-700 border-red-500";
-      case "FILES-MISSING":
+      case "FILE-MISSING":
         return "bg-purple-100 text-purple-700 border-purple-500";
       default:
         return "bg-gray-100 text-polarNight border-gray-400";
     }
   };
 
-  useEffect(() => {
-    logFrontendEvent(
-      "AdminPdfReports",
-      "DEBUG",
-      "Search query updated",
-      `Query: ${query}`
-    );
-  }, [query]);
+  const hasIssues = (report: PdfReport) => {
+    return ["FILE-MISSING", "ERROR", "NO-DATA"].includes(report.status);
+  };
 
   const {
     currentPage,
@@ -118,15 +113,6 @@ export default function AdminPdfReports({
     prevPage,
     setCurrentPage,
   } = usePagination<PdfReport>(filteredData, 5);
-
-  useEffect(() => {
-    logFrontendEvent(
-      "AdminPdfReports",
-      "DEBUG",
-      "Pagination interaction",
-      `Current page: ${currentPage}`
-    );
-  }, [currentPage]);
 
   const handleDownload = async (report: PdfReport) => {
     setDownloadingId(report.id);
@@ -317,27 +303,7 @@ export default function AdminPdfReports({
   };
 
   const getReportStatus = (report: PdfReport) => {
-    if (report.status && report.status !== "") {
-      return { text: report.status };
-    }
-
-    if (report.hasPdfFile) {
-      return { text: "PDF-READY" };
-    }
-
-    if (report.hasHtmlFile) {
-      return { text: "HTML-ONLY" };
-    }
-
-    if (report.dataRecordsCount >= 5) {
-      return { text: "GENERATE-READY" };
-    }
-
-    if (report.dataRecordsCount < 5 && report.dataRecordsCount > 0) {
-      return { text: "WAITING-RECORDS" };
-    }
-
-    return { text: "NO-DATA" };
+    return { text: report.status || "UNKNOWN" };
   };
 
   return (
@@ -387,7 +353,7 @@ export default function AdminPdfReports({
         <tbody>
           {currentPageData.map((report) => {
             const status = getReportStatus(report);
-
+            const needsAttention = hasIssues(report);
             const dataCount = report.dataRecordsCount;
             const isDownloadable = report.hasPdfFile || report.hasHtmlFile;
             const fileSize = report.hasPdfFile
@@ -481,6 +447,7 @@ export default function AdminPdfReports({
                   <div className="space-y-1">
                     <Chip className={getStatusColor(status.text)}>
                       {status.text}
+                      {needsAttention}
                     </Chip>
                     {fileSize > 0 && (
                       <div className="text-xs text-gray-400">
