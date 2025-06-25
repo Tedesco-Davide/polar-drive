@@ -141,29 +141,20 @@ public class PdfReportsController : ControllerBase
 
     private static string DetermineReportStatus(bool pdfExists, bool htmlExists, int dataCount, string? dbStatus = null)
     {
-        if (!string.IsNullOrEmpty(dbStatus))
-        {
-            return dbStatus switch
-            {
-                "PROCESSING" => "PROCESSING",
-                "ERROR" => "ERROR",
-                _ => DetermineFileBasedStatus(pdfExists, htmlExists, dataCount)
-            };
-        }
-        return DetermineFileBasedStatus(pdfExists, htmlExists, dataCount);
-    }
+        // Status operativi hanno priorità assoluta
+        if (dbStatus == "PROCESSING") return "PROCESSING";
+        if (dbStatus == "ERROR") return "ERROR";
 
-    private static string DetermineFileBasedStatus(bool pdfExists, bool htmlExists, int dataCount)
-    {
-        if (dataCount == 0)
-            return "NO-DATA";
+        // ✅ PRIORITÀ AI FILE ESISTENTI (indipendentemente dal dbStatus)
+        if (pdfExists) return "PDF-READY";
+        if (htmlExists) return "HTML-ONLY";
 
-        return (pdfExists, htmlExists) switch
+        // Nessun file presente - valuta in base ai dati disponibili
+        return dataCount switch
         {
-            (true, _) => "PDF-READY",
-            (false, true) => "HTML-ONLY",
-            (false, false) when dataCount < MIN_RECORDS_FOR_GENERATION => "WAITING-RECORDS",
-            _ => "GENERATE-READY"
+            0 => "NO-DATA",
+            < MIN_RECORDS_FOR_GENERATION => "WAITING-RECORDS",
+            _ => "FILES-MISSING" // ← NUOVO STATUS: dati sufficienti ma file mancanti
         };
     }
 

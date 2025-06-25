@@ -94,6 +94,8 @@ export default function AdminPdfReports({
         return "bg-blue-100 text-blue-700 border-blue-500";
       case "ERROR":
         return "bg-red-100 text-red-700 border-red-500";
+      case "FILES-MISSING":
+        return "bg-purple-100 text-purple-700 border-purple-500";
       default:
         return "bg-gray-100 text-polarNight border-gray-400";
     }
