@@ -85,32 +85,17 @@ export default function AdminFileManagerModal({
 
     // ✅ VALIDAZIONI OBBLIGATORIE
     if (!formData.periodStart) {
-      alert(
-        t(
-          "admin.filemanager.validation.startDateRequired",
-          "Data inizio è obbligatoria"
-        )
-      );
+      alert(t("admin.filemanager.modal.startDateRequired"));
       return;
     }
 
     if (!formData.periodEnd) {
-      alert(
-        t(
-          "admin.filemanager.validation.endDateRequired",
-          "Data fine è obbligatoria"
-        )
-      );
+      alert(t("admin.filemanager.modal.endDateRequired"));
       return;
     }
 
     if (!formData.requestedBy || formData.requestedBy.trim() === "") {
-      alert(
-        t(
-          "admin.filemanager.validation.requestedByRequired",
-          "Campo 'Richiesto da' è obbligatorio"
-        )
-      );
+      alert(t("admin.filemanager.modal.requestedByRequired"));
       return;
     }
 
@@ -121,67 +106,37 @@ export default function AdminFileManagerModal({
 
     // Controllo validità date
     if (!isValid(parsedStart)) {
-      alert(
-        t(
-          "admin.filemanager.validation.invalidStartDate",
-          "Data di inizio non valida"
-        )
-      );
+      alert(t("admin.filemanager.modal.invalidStartDate"));
       return;
     }
 
     if (!isValid(parsedEnd)) {
-      alert(
-        t(
-          "admin.filemanager.validation.invalidEndDate",
-          "Data di fine non valida"
-        )
-      );
+      alert(t("admin.filemanager.modal.invalidEndDate"));
       return;
     }
 
     // ✅ Data inizio non può essere nel futuro
     if (isAfter(parsedStart, now)) {
-      alert(
-        t(
-          "admin.filemanager.validation.startDateInFuture",
-          "La data di inizio non può essere nel futuro"
-        )
-      );
+      alert(t("admin.filemanager.modal.startDateInFuture"));
       return;
     }
 
     // ✅ Data fine non può essere nel futuro
     if (isAfter(parsedEnd, now)) {
-      alert(
-        t(
-          "admin.filemanager.validation.endDateInFuture",
-          "La data di fine non può essere nel futuro"
-        )
-      );
+      alert(t("admin.filemanager.modal.endDateInFuture"));
       return;
     }
 
     // ✅ Data fine deve essere successiva alla data inizio
     if (parsedEnd < parsedStart) {
-      alert(
-        t(
-          "admin.filemanager.validation.endBeforeStart",
-          "La data di fine deve essere successiva alla data di inizio"
-        )
-      );
+      alert(t("admin.filemanager.modal.endBeforeStart"));
       return;
     }
 
     // ✅ Controllo periodo massimo (es. 1 anno per evitare ZIP troppo grandi)
     const oneYearInMs = 365 * 24 * 60 * 60 * 1000;
     if (parsedEnd.getTime() - parsedStart.getTime() > oneYearInMs) {
-      alert(
-        t(
-          "admin.filemanager.validation.periodTooLong",
-          "Il periodo selezionato non può superare 1 anno"
-        )
-      );
+      alert(t("admin.filemanager.modal.periodTooLong"));
       return;
     }
 
@@ -227,12 +182,7 @@ export default function AdminFileManagerModal({
         `Period: ${formData.periodStart} to ${formData.periodEnd}`
       );
 
-      alert(
-        t(
-          "admin.filemanager.success.requestCreated",
-          "✅ Richiesta di download PDF creata con successo! Il file ZIP sarà generato in background."
-        )
-      );
+      alert(t("admin.filemanager.modal.requestCreated"));
 
       onSuccess();
       resetForm();
@@ -247,12 +197,7 @@ export default function AdminFileManagerModal({
         errorMessage
       );
 
-      alert(
-        t(
-          "admin.filemanager.error.requestFailed",
-          `❌ Errore durante la creazione della richiesta: ${errorMessage}`
-        )
-      );
+      alert(`${t("admin.filemanager.error.requestFailed ")} ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -294,22 +239,12 @@ export default function AdminFileManagerModal({
 
     // ✅ Validazione VIN (17 caratteri alfanumerici)
     if (vinToAdd.length !== 17) {
-      alert(
-        t(
-          "admin.filemanager.validation.vinLength",
-          "Il VIN deve essere di esattamente 17 caratteri"
-        )
-      );
+      alert(t("admin.filemanager.modal.invalidVehicleVIN"));
       return;
     }
 
     if (!/^[A-HJ-NPR-Z0-9]{17}$/i.test(vinToAdd)) {
-      alert(
-        t(
-          "admin.filemanager.validation.vinFormat",
-          "Il VIN contiene caratteri non validi"
-        )
-      );
+      alert(t("admin.filemanager.modal.invalidVehicleVINchar"));
       return;
     }
 
@@ -356,8 +291,7 @@ export default function AdminFileManagerModal({
           {/* Periodo Start - OBBLIGATORIO */}
           <label className="flex flex-col">
             <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {t("admin.filemanager.periodStart", "Data Inizio")}{" "}
-              <span className="text-red-500">*</span>
+              {t("admin.filemanager.modal.periodStart")}
             </span>
             <DatePicker
               className="input appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
@@ -383,8 +317,7 @@ export default function AdminFileManagerModal({
           {/* Periodo End - OBBLIGATORIO */}
           <label className="flex flex-col">
             <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {t("admin.filemanager.periodEnd", "Data Fine")}{" "}
-              <span className="text-red-500">*</span>
+              {t("admin.filemanager.modal.periodEnd")}
             </span>
             <DatePicker
               className="input appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
@@ -415,8 +348,7 @@ export default function AdminFileManagerModal({
           {/* Richiesto da - OBBLIGATORIO */}
           <label className="flex flex-col">
             <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {t("admin.filemanager.requestedBy", "Richiesto da")}{" "}
-              <span className="text-red-500">*</span>
+              {t("admin.filemanager.modal.requestedBy")}
             </span>
             <input
               type="text"
@@ -428,10 +360,6 @@ export default function AdminFileManagerModal({
                 }))
               }
               className="input"
-              placeholder={t(
-                "admin.filemanager.requestedByPlaceholder",
-                "Inserisci nome utente"
-              )}
               maxLength={100}
               required
             />
@@ -442,7 +370,7 @@ export default function AdminFileManagerModal({
           {/* Filtro Aziende - Select */}
           <label className="flex flex-col">
             <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {t("admin.filemanager.companies", "Aziende")}
+              {t("admin.filemanager.modal.companies")}
             </span>
             <div className="flex gap-2">
               <select
@@ -450,9 +378,7 @@ export default function AdminFileManagerModal({
                 onChange={(e) => setCurrentCompany(e.target.value)}
                 className="input cursor-pointer w-full"
               >
-                <option value="">
-                  {t("admin.basicPlaceholder", "Seleziona...")}
-                </option>
+                <option value="">{t("admin.basicPlaceholder")}</option>
                 {availableCompanies.map((company) => (
                   <option key={company} value={company}>
                     {company}
@@ -473,7 +399,7 @@ export default function AdminFileManagerModal({
           {/* Brand Select */}
           <label className="flex flex-col">
             <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {t("admin.filemanager.brands", "Brand")}
+              {t("admin.filemanager.modal.brand")}
             </span>
             <div className="flex gap-2">
               <select
@@ -481,9 +407,7 @@ export default function AdminFileManagerModal({
                 onChange={(e) => setCurrentBrand(e.target.value)}
                 className="input cursor-pointer w-full"
               >
-                <option value="">
-                  {t("admin.basicPlaceholder", "Seleziona...")}
-                </option>
+                <option value="">{t("admin.basicPlaceholder")}</option>
                 {availableBrands.map((brand) => (
                   <option key={brand} value={brand}>
                     {brand}
@@ -504,14 +428,14 @@ export default function AdminFileManagerModal({
           {/* VIN Input */}
           <label className="flex flex-col">
             <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {t("admin.filemanager.vins", "VIN")}
+              {t("admin.filemanager.modal.vin")}
             </span>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={currentVin}
                 onChange={(e) => setCurrentVin(e.target.value.toUpperCase())}
-                className="input w-full font-mono"
+                className="input w-full"
                 maxLength={17}
                 pattern="[A-HJ-NPR-Z0-9]*"
               />
@@ -531,29 +455,34 @@ export default function AdminFileManagerModal({
           {/* Riepilogo */}
           <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-300 dark:border-gray-600 flex flex-col justify-around items-stretch mr-4">
             <h3 className="font-medium text-gray-900 dark:text-white mb-2">
-              📋 Riepilogo Richiesta
+              📋 {t("admin.filemanager.modal.recap.title")}
             </h3>
             <ul className="text-sm text-gray-700 dark:text-gray-300 space-y-1">
               <li>
-                📅 Periodo: {formData.periodStart || "---"} →{" "}
-                {formData.periodEnd || "---"}
+                📅 {t("admin.filemanager.modal.recap.period")}:{" "}
+                {formData.periodStart || "---"} → {formData.periodEnd || "---"}
               </li>
-              <li>👤 Richiesto da: {formData.requestedBy || "---"}</li>
               <li>
-                🏢 Aziende:{" "}
+                👤 {t("admin.filemanager.modal.recap.requestedBy")}:{" "}
+                {formData.requestedBy || "---"}
+              </li>
+              <li>
+                🏢 {t("admin.filemanager.modal.recap.companies")}:{" "}
                 {formData.companies.length > 0
                   ? formData.companies.join(", ")
-                  : "Tutte"}
+                  : t("admin.filemanager.modal.recap.allCompanies")}
               </li>
               <li>
-                🚗 VIN:{" "}
-                {formData.vins.length > 0 ? formData.vins.join(", ") : "Tutti"}
+                🚗 {t("admin.filemanager.modal.recap.vin")}:{" "}
+                {formData.vins.length > 0
+                  ? formData.vins.join(", ")
+                  : t("admin.filemanager.modal.recap.allVin")}
               </li>
               <li>
-                🏷️ Brand:{" "}
+                🏷️ {t("admin.filemanager.modal.recap.brand")}:{" "}
                 {formData.brands.length > 0
                   ? formData.brands.join(", ")
-                  : "Tutti"}
+                  : t("admin.filemanager.modal.recap.allBrand")}
               </li>
             </ul>
           </div>
@@ -564,7 +493,7 @@ export default function AdminFileManagerModal({
             {formData.companies.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Aziende Selezionate:
+                  {t("admin.filemanager.modal.recap.selectedCompanies")}{" "}
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {formData.companies.map((company) => (
@@ -585,33 +514,11 @@ export default function AdminFileManagerModal({
               </div>
             )}
 
-            {/* VINs Tags */}
-            {formData.vins.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  VIN Selezionati:
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {formData.vins.map((vin) => (
-                    <span
-                      key={vin}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded-full text-sm font-mono"
-                    >
-                      {vin}
-                      <button type="button" onClick={() => removeVin(vin)}>
-                        <Minus size={14} />
-                      </button>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Brands Tags */}
             {formData.brands.length > 0 && (
               <div>
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Brand Selezionati:
+                  {t("admin.filemanager.modal.recap.selectedBrand")}{" "}
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {formData.brands.map((brand) => (
@@ -621,6 +528,28 @@ export default function AdminFileManagerModal({
                     >
                       {brand}
                       <button type="button" onClick={() => removeBrand(brand)}>
+                        <Minus size={14} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* VINs Tags */}
+            {formData.vins.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t("admin.filemanager.modal.recap.selectedVin")}{" "}
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {formData.vins.map((vin) => (
+                    <span
+                      key={vin}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 rounded-full text-sm"
+                    >
+                      {vin}
+                      <button type="button" onClick={() => removeVin(vin)}>
                         <Minus size={14} />
                       </button>
                     </span>
@@ -644,9 +573,9 @@ export default function AdminFileManagerModal({
             className="bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600 disabled:bg-gray-400 flex items-center gap-2"
           >
             {isLoading ? (
-              <>🔄 {t("common.processing", "Elaborazione...")}</>
+              <>{t("admin.filemanager.modal.recap.elaborating")}</>
             ) : (
-              <>{t("admin.filemanager.createRequest", "Crea Richiesta")}</>
+              <>{t("admin.filemanager.modal.recap.createRequest")}</>
             )}
           </button>
         </div>
