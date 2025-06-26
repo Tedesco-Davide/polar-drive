@@ -301,7 +301,7 @@ export default function AdminClientConsentAddForm({
 
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.uploadZipOutageSignedGeneric")}
+            {t("admin.uploadZipSignedConsentGeneric")}
           </span>
           <input
             type="file"

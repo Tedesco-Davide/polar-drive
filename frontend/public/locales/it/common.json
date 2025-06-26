@@ -81,7 +81,7 @@
   "admin.errorEditRow": "ERRORE: Si è verificato un errore al salvataggio delle modifiche",
   "admin.genericApiError": "ERRORE: Si è verificato un errore errore generico durante la chiamata API: ",
   "admin.uploadZipOutageSignedActivation": "Carica consensi firmati per l'Attivazione del Veicolo (.zip)",
-  "admin.uploadZipOutageSignedGeneric": "Carica consensi firmati per il Veicolo (.zip)",
+  "admin.uploadZipSignedConsentGeneric": "Carica consensi firmati per il Veicolo (.zip)",
   "admin.openNotesModal": "Apri gestione note",
   "admin.vehicleAlreadyAssociatedToSameCompany": "Questo veicolo è già associato a questa azienda",
   "admin.vehicleAlreadyAssociatedToAnotherCompany": "Questo veicolo è già associato ad un'altra azienda",
