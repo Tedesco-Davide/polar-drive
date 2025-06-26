@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
-using System.IO.Compression;
 
 var basePath = AppContext.BaseDirectory;
 var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));
@@ -39,9 +38,9 @@ try
             "OutagePeriods",
             "PdfReports",
             "ClientConsents",
-            "VehicleData",           // Potrebbe non esistere
-            "AnonymizedVehiclesData", // Potrebbe non esistere
-            "DemoSmsEvents",         // Potrebbe non esistere
+            "VehicleData",
+            "AnonymizedVehiclesData",
+            "DemoSmsEvents",
             "ClientVehicles",
             "ClientCompanies"
         };
@@ -94,7 +93,7 @@ try
     if (existingCompany != null)
     {
         Console.WriteLine("✅ Using existing company");
-        companies = new[] { existingCompany };
+        companies = [existingCompany];
         await logger.Info("PolarDriveInitDBMockData.Cli", "Using existing company instead of creating duplicate");
     }
     else
@@ -200,123 +199,6 @@ try
     else
     {
         Console.WriteLine("✅ Using existing consent");
-    }
-
-    // ───────────────────────────────
-    // 7. Create mock ZIPs used in outages
-    // ───────────────────────────────
-    Console.WriteLine("📦 Creating mock outage ZIPs...");
-
-    var zipsDir = Path.Combine(wwwRoot, "zips-outages");
-    Directory.CreateDirectory(zipsDir);
-
-    var zip1Path = Path.Combine(zipsDir, "20250418-rossi-vehicle01.zip");
-    if (!File.Exists(zip1Path))
-    {
-        using var zip = ZipFile.Open(zip1Path, ZipArchiveMode.Create);
-        var entry = zip.CreateEntry("mock_outage_rossi.pdf");
-        using var stream = entry.Open();
-        using var writer = new StreamWriter(stream);
-        await writer.WriteAsync("%PDF-1.4\n%OUTAGE ZIP Rossi\n%%EOF");
-        Console.WriteLine($"✅ Created outage ZIP: {zip1Path}");
-    }
-
-    var zip2Path = Path.Combine(zipsDir, "20250425-manual-fleetapi.zip");
-    if (!File.Exists(zip2Path))
-    {
-        using var zip = ZipFile.Open(zip2Path, ZipArchiveMode.Create);
-        var entry = zip.CreateEntry("manual_fleetapi.pdf");
-        using var stream = entry.Open();
-        using var writer = new StreamWriter(stream);
-        await writer.WriteAsync("%PDF-1.4\n%OUTAGE ZIP FleetApi\n%%EOF");
-        Console.WriteLine($"✅ Created outage ZIP: {zip2Path}");
-    }
-
-    // ───────────────────────────────
-    // 8. Insert mock outage records (solo se non esistono)
-    // ───────────────────────────────
-    Console.WriteLine("🚨 Creating mock outages...");
-
-    var existingOutagesCount = await db.OutagePeriods.CountAsync();
-
-    if (existingOutagesCount == 0)
-    {
-        var rand = new Random();
-        int offset = rand.Next(1, 10000);
-        var outages = new List<OutagePeriod>
-        {
-            new()
-            {
-                VehicleId = vehicles[0].Id,
-                ClientCompanyId = vehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
-                AutoDetected = true,
-                OutageType = "Outage Vehicle",
-                OutageBrand = "Tesla",
-                CreatedAt = DateTime.Parse("2025-04-20T10:30:00Z").AddSeconds(offset),
-                OutageStart = DateTime.Parse("2025-04-18T04:00:00Z").AddSeconds(offset),
-                OutageEnd = DateTime.Parse("2025-04-19T18:00:00Z").AddSeconds(offset),
-                ZipFilePath = "zips-outages/20250418-rossi-vehicle01.zip",
-                Notes = "Rilevato automaticamente, comunicazione PEC non ricevuta."
-            },
-            new()
-            {
-                VehicleId = vehicles[0].Id,
-                ClientCompanyId = vehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
-                AutoDetected = false,
-                OutageType = "Outage Vehicle",
-                OutageBrand = "Tesla",
-                CreatedAt = DateTime.Parse("2025-04-21T09:45:00Z").AddSeconds(offset),
-                OutageStart = DateTime.Parse("2025-04-15T00:00:00Z").AddSeconds(offset),
-                OutageEnd = DateTime.Parse("2025-04-20T23:50:00Z").AddSeconds(offset),
-                Notes = "Outage manuale: veicolo in assistenza per aggiornamento batteria."
-            },
-            new()
-            {
-                VehicleId = vehicles[0].Id,
-                ClientCompanyId = vehicles[0].ClientCompanyId, // ✅ CORREZIONE: Usa sempre [0]
-                AutoDetected = true,
-                OutageType = "Outage Vehicle",
-                OutageBrand = "Tesla",
-                CreatedAt = DateTime.Parse("2025-04-24T07:10:00Z").AddSeconds(offset),
-                OutageStart = DateTime.Parse("2025-04-23T22:00:00Z").AddSeconds(offset),
-                OutageEnd = null,
-                Notes = "Inattività in corso: nessun dato da oltre 8 ore."
-            },
-            new()
-            {
-                VehicleId = null,
-                ClientCompanyId = null,
-                AutoDetected = true,
-                OutageType = "Outage Fleet Api",
-                OutageBrand = "Tesla",
-                CreatedAt = DateTime.Parse("2025-04-22T12:00:00Z").AddSeconds(offset),
-                OutageStart = DateTime.Parse("2025-04-22T08:00:00Z").AddSeconds(offset),
-                OutageEnd = DateTime.Parse("2025-04-22T11:30:00Z").AddSeconds(offset),
-                Notes = "API ufficiale non rispondeva: HTTP 503 da tutte le richieste."
-            },
-            new()
-            {
-                VehicleId = null,
-                ClientCompanyId = null,
-                AutoDetected = false,
-                OutageType = "Outage Fleet Api",
-                OutageBrand = "Polestar",
-                CreatedAt = DateTime.Parse("2025-04-25T09:00:00Z").AddSeconds(offset),
-                OutageStart = DateTime.Parse("2025-04-25T07:00:00Z").AddSeconds(offset),
-                OutageEnd = null,
-                ZipFilePath = "zips-outages/20250425-manual-fleetapi.zip",
-                Notes = "Inserito manualmente: timeout frequenti da client."
-            },
-        };
-
-        db.OutagePeriods.AddRange(outages);
-        await db.SaveChangesAsync();
-        Console.WriteLine($"✅ Created {outages.Count} mock outages");
-        await logger.Info("PolarDriveInitDBMockData.Cli", $"Inserted {outages.Count} mock outage records.");
-    }
-    else
-    {
-        Console.WriteLine($"✅ Found {existingOutagesCount} existing outages");
     }
 }
 catch (Exception ex)

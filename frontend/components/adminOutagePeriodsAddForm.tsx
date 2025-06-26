@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TFunction } from "i18next";
-import { format, parseISO, isValid, isAfter } from "date-fns";
+import { parseISO, isValid, isAfter } from "date-fns";
 import DatePicker from "react-datepicker";
 import JSZip from "jszip";
 import { API_BASE_URL } from "@/utils/api";
@@ -9,29 +9,15 @@ import { formatOutageDateTimeToSave } from "@/utils/date";
 import "react-datepicker/dist/react-datepicker.css";
 import { OutageFormData } from "@/types/outagePeriodTypes";
 
-interface Company {
-  id: number;
-  name: string;
-  vatNumber: string;
-}
-
-interface Vehicle {
-  id: number;
-  vin: string;
-  brand: string;
-  model: string;
-  clientCompanyId: number;
-}
-
 interface Props {
   t: TFunction;
   onSubmitSuccess: () => void;
-  refreshOutagePeriods: () => Promise<any>;
+  refreshOutagePeriods: () => Promise<void>;
 }
 
 // ✅ Costanti (dovrebbero corrispondere al backend)
 const OUTAGE_TYPES = ["Outage Vehicle", "Outage Fleet Api"];
-const VALID_BRANDS = ["Tesla", "Polestar"]; // Da VehicleConstants.ValidBrands
+const VALID_BRANDS = ["Tesla"];
 
 export default function AdminOutagePeriodsAddForm({
   t,
@@ -49,34 +35,15 @@ export default function AdminOutagePeriodsAddForm({
     zipFile: null,
   });
 
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [filteredVehicles, setFilteredVehicles] = useState<Vehicle[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resolvedIds, setResolvedIds] = useState<{
     clientCompanyId: number | null;
     vehicleId: number | null;
   }>({ clientCompanyId: null, vehicleId: null });
 
-  // ✅ Carica companies e vehicles all'avvio
-  useEffect(() => {
-    loadCompaniesAndVehicles();
-  }, []);
-
   // ✅ Filtra veicoli quando cambia company o brand
   useEffect(() => {
-    if (formData.outageType === "Outage Vehicle") {
-      let filtered = vehicles;
-
-      if (formData.outageBrand) {
-        filtered = filtered.filter(
-          (v) => v.brand.toLowerCase() === formData.outageBrand.toLowerCase()
-        );
-      }
-
-      setFilteredVehicles(filtered);
-    } else {
-      setFilteredVehicles([]);
+    if (formData.outageType === "Outage Fleet Api") {
       // Reset campi veicolo per Outage Fleet Api
       setFormData((prev) => ({
         ...prev,
@@ -85,7 +52,8 @@ export default function AdminOutagePeriodsAddForm({
       }));
       setResolvedIds({ clientCompanyId: null, vehicleId: null });
     }
-  }, [formData.outageType, formData.outageBrand, vehicles]);
+    // Per "Outage Vehicle" non facciamo nulla, i campi rimangono editabili
+  }, [formData.outageType]);
 
   // ✅ Risolvi IDs quando cambiano VAT e VIN
   useEffect(() => {
@@ -99,30 +67,6 @@ export default function AdminOutagePeriodsAddForm({
       setResolvedIds({ clientCompanyId: null, vehicleId: null });
     }
   }, [formData.companyVatNumber, formData.vin, formData.outageType]);
-
-  const loadCompaniesAndVehicles = async () => {
-    try {
-      const [companiesRes, vehiclesRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/clientcompanies`),
-        fetch(`${API_BASE_URL}/api/clientvehicles`),
-      ]);
-
-      if (companiesRes.ok && vehiclesRes.ok) {
-        const companiesData = await companiesRes.json();
-        const vehiclesData = await vehiclesRes.json();
-
-        setCompanies(companiesData);
-        setVehicles(vehiclesData);
-      }
-    } catch (error) {
-      logFrontendEvent(
-        "AdminOutagePeriodsAddForm",
-        "ERROR",
-        "Failed to load companies and vehicles",
-        error instanceof Error ? error.message : "Unknown error"
-      );
-    }
-  };
 
   const resolveCompanyAndVehicleIds = async () => {
     try {
@@ -151,6 +95,7 @@ export default function AdminOutagePeriodsAddForm({
         setResolvedIds({ clientCompanyId: null, vehicleId: null });
       }
     } catch (error) {
+      console.error("Error resolveCompanyAndVehicleIds", error);
       setResolvedIds({ clientCompanyId: null, vehicleId: null });
     }
   };
@@ -269,6 +214,7 @@ export default function AdminOutagePeriodsAddForm({
 
       return true;
     } catch (error) {
+      console.error("Errore validation .zip file", error);
       alert(t("admin.validation.invalidZipFile"));
       return false;
     }
@@ -395,7 +341,7 @@ export default function AdminOutagePeriodsAddForm({
         {/* Outage Type */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.outagePeriods.outageType")} *
+            {t("admin.outagePeriods.outageType")}
           </span>
           <select
             name="outageType"
@@ -416,7 +362,7 @@ export default function AdminOutagePeriodsAddForm({
         {/* Outage Brand */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.outagePeriods.outageBrand")} *
+            {t("admin.outagePeriods.outageBrand")}
           </span>
           <select
             name="outageBrand"
@@ -437,7 +383,7 @@ export default function AdminOutagePeriodsAddForm({
         {/* Outage Start */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.outagePeriods.outageStart")} *
+            {t("admin.outagePeriods.outageStart")}
           </span>
           <DatePicker
             showTimeSelect
@@ -497,7 +443,7 @@ export default function AdminOutagePeriodsAddForm({
         >
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.outagePeriods.companyVatNumber")}
-            {formData.outageType === "Outage Vehicle" && " *"}
+            {formData.outageType === "Outage Vehicle"}
           </span>
           <input
             name="companyVatNumber"
@@ -522,7 +468,7 @@ export default function AdminOutagePeriodsAddForm({
         >
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.outagePeriods.vehicleVIN")}
-            {formData.outageType === "Outage Vehicle" && " *"}
+            {formData.outageType === "Outage Vehicle"}
           </span>
           <input
             name="vin"
@@ -558,21 +504,19 @@ export default function AdminOutagePeriodsAddForm({
           )}
         </label>
 
-        {/* Notes - Occupa tutta la larghezza */}
-        <div className="md:col-span-3">
-          <label className="flex flex-col">
-            <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-              {t("admin.outagePeriods.notes")}
-            </span>
-            <textarea
-              name="notes"
-              value={formData.notes}
-              onChange={handleChange}
-              className="input min-h-[80px] resize-none"
-              placeholder="Note aggiuntive sull'outage..."
-            />
-          </label>
-        </div>
+        {/* Notes */}
+        <label className="flex flex-col">
+          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+            {t("admin.outagePeriods.notes")}
+          </span>
+          <textarea
+            name="notes"
+            value={formData.notes}
+            onChange={handleChange}
+            className="input h-[42px] resize-none"
+            placeholder="Note aggiuntive sull'outage..."
+          />
+        </label>
       </div>
 
       {/* Informazioni di stato */}
