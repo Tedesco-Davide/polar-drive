@@ -3,15 +3,14 @@ export type OutageStatus = "" | "OUTAGE-ONGOING" | "OUTAGE-RESOLVED";
 export type OutageType = "" | "Outage Vehicle" | "Outage Fleet Api";
 
 export interface OutageFormData {
-  autoDetected: boolean;
-  status: OutageStatus;
-  outageType: OutageType;
+  outageType: "Outage Vehicle" | "Outage Fleet Api" | "";
   outageBrand: string;
   outageStart: string;
-  outageEnd?: string;
-  companyVatNumber?: string;
-  vin?: string;
-  zipFilePath?: File | null;
+  outageEnd: string | undefined;
+  companyVatNumber: string;
+  vin: string;
+  notes: string;
+  zipFile: File | null;
 }
 
 export type UploadOutageResult = {

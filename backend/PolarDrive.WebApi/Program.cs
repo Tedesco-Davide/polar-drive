@@ -7,6 +7,7 @@ using PolarDrive.WebApi.Services;
 using PolarDrive.WebApi.Production;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using PolarDrive.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -68,6 +69,16 @@ builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 builder.Services.AddHostedService<PolarDriveScheduler>();
 builder.Services.AddHostedService<FileCleanupService>();
 
+// SERVIZI OUTAGES
+// Registrazione del servizio di rilevamento outages
+builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
+
+// Registrazione del servizio background
+builder.Services.AddHostedService<OutageBackgroundService>();
+
+// Registrazione HttpClientFactory per le chiamate alle API esterne
+builder.Services.AddHttpClient();
+
 var app = builder.Build();
 
 // ✅ CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER
@@ -79,7 +90,6 @@ var fileManagerZipsPath = Path.Combine(storageBasePath, "filemanager-zips");
 Directory.CreateDirectory(storageBasePath);
 Directory.CreateDirectory(reportsPath);
 Directory.CreateDirectory(fileManagerZipsPath);
-
 Console.WriteLine($"📁 Storage directories created:");
 Console.WriteLine($"   - Reports: {Path.GetFullPath(reportsPath)}");
 Console.WriteLine($"   - FileManager ZIPs: {Path.GetFullPath(fileManagerZipsPath)}");

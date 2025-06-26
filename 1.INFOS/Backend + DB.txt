@@ -295,5 +295,3 @@ se deve fare logout completo o rigenerazione manuale
 #################################################################################################################################################################
 
 GPT DICE DI VALUTARE SCRIPT SCRAPING NEL CASO TESLA CAMBI GLI ENDPOINT IN FUTURO
-
-QUANDO SI ARRIVA ALLA GESTIONE OUTAGE, CONSENTIRE IL BRAND GENERICO PER OUTAGES BRAND.
