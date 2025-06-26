@@ -200,12 +200,13 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
         var job = await scopedDb.AdminFileManager.FindAsync(jobId);
         if (job == null)
         {
-            logger.LogError($"Job {jobId} non trovato nel database");
+            logger.LogError("Job {JobId} not found in database", jobId);
             return;
         }
 
         try
         {
+            // Imposta job come in processamento
             job.Status = "PROCESSING";
             job.StartedAt = DateTime.Now;
             await scopedDb.SaveChangesAsync();
@@ -234,6 +235,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
 
             // Query per i PDF nel periodo specificato
             var pdfQuery = scopedDb.PdfReports
+                .AsNoTracking()
                 .Include(p => p.ClientCompany)
                 .Include(p => p.ClientVehicle)
                 .Where(p =>
@@ -260,12 +262,17 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
             var pdfReports = await pdfQuery.ToListAsync();
             job.TotalPdfCount = pdfReports.Count;
 
+            // Se non ci sono PDF, completa il job senza creare ZIP
             if (pdfReports.Count == 0)
             {
                 job.Status = "COMPLETED";
                 job.CompletedAt = DateTime.Now;
                 job.Notes = "Nessun PDF trovato per i criteri specificati";
+                job.IncludedPdfCount = 0;
+                job.ZipFileSizeMB = 0;
                 await scopedDb.SaveChangesAsync();
+
+                logger.LogInformation("Job {JobId} completed with no PDFs found for specified criteria", jobId);
                 return;
             }
 
@@ -294,8 +301,12 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                         }
                         catch (Exception ex)
                         {
-                            logger.LogWarning($"Errore aggiunta PDF {pdf.Id} al ZIP: {ex.Message}");
+                            logger.LogWarning(ex, "Failed to add PDF {PdfId} to ZIP archive", pdf.Id);
                         }
+                    }
+                    else
+                    {
+                        logger.LogWarning("PDF file not found: {PdfFilePath} for PDF {PdfId}", pdfFilePath, pdf.Id);
                     }
                 }
 
@@ -310,15 +321,25 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
             job.CompletedAt = DateTime.Now;
 
             await scopedDb.SaveChangesAsync();
+
+            logger.LogInformation("Job {JobId} completed successfully. Included {IncludedCount}/{TotalCount} PDFs, ZIP size: {ZipSizeMB}MB",
+                jobId, job.IncludedPdfCount, job.TotalPdfCount, job.ZipFileSizeMB);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, $"Errore nel processamento del job {jobId}");
+            logger.LogError(ex, "Critical error processing job {JobId}", jobId);
 
-            job.Status = "FAILED";
-            job.CompletedAt = DateTime.Now;
-            job.Notes = $"Errore: {ex.Message}";
-            await scopedDb.SaveChangesAsync();
+            try
+            {
+                job.Status = "FAILED";
+                job.CompletedAt = DateTime.Now;
+                job.Notes = $"Errore: {ex.Message}";
+                await scopedDb.SaveChangesAsync();
+            }
+            catch (Exception saveEx)
+            {
+                logger.LogError(saveEx, "Failed to save FAILED status for job {JobId}", jobId);
+            }
         }
     }
 
