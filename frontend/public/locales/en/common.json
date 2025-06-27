@@ -90,6 +90,8 @@
   "admin.notesGenericError": "WARNING! an unhandled error occurred while managing the Notes: ",
   "admin.resolveVATandVIN": "WARNING! please carefully select the Company (VAT Number) and the relevant Vehicle (Vehicle VIN), ensuring that they match and are correctly linked to each other",
   "admin.brandMismatch": "WARNING! The selected brand does not match the vehicle's actual brand",
+  "admin.notes.addNote": "Add note",
+  "admin.notes.deleteNote": "Delete note",
   "admin.tableRefreshButton": "🔄REFRESH",
 
   "No_Data": "No Data",
@@ -184,8 +186,6 @@
   "admin.clientConsents.successAddNewConsent": "Consent addedd successfully!",
   "admin.clientConsents.notes.modalTitle": "Managing note for: row in Company Consents Table",
   "admin.clientConsents.notes.modalPlaceholder": "Remember to click the + icon on the left to add the note. Type something...",
-  "admin.clientConsents.notes.addNote": "Add note",
-  "admin.clientConsents.notes.deleteNote": "Delete note",
 
   "admin.outagePeriods.tableHeader": "Outages",
   "admin.outagePeriods.autoDetected": "Auto detected?",
@@ -209,6 +209,10 @@
   "admin.outagePeriods.successUploadZip": ".zip file successfully added to the related Outage!",
   "admin.outagePeriods.invalidZipTypeRequiredOutages": "You must upload a .zip file that contains at least one Outage generic document in .pdf format",
   "admin.outagePeriods.fleetApiMustNotHaveVinOrVat": "You cannot specify a VIN or VAT number for a Fleet API Outage",
+  "admin.outagePeriods.resolveManually": "",
+  "admin.outagePeriods.confirmResolve": "",
+  "admin.outagePeriods.downloadZip": "",
+  "admin.outagePeriods.uploadZip": "",
 
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totals",

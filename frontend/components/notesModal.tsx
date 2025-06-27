@@ -102,7 +102,7 @@ export default function NotesModal<T>({
             <button
               className="p-2 bg-dataRed text-white rounded hover:bg-red-600"
               onClick={() => handleDeleteNote(index)}
-              title={t("admin.clientConsents.notes.deleteNote")}
+              title={t("admin.notes.deleteNote")}
             >
               <Trash2 size={16} />
             </button>
@@ -118,7 +118,7 @@ export default function NotesModal<T>({
           <button
             className="p-2 bg-blue-600 text-softWhite rounded hover:bg-blue-700"
             onClick={handleAddNote}
-            title={t("admin.clientConsents.notes.addNote")}
+            title={t("admin.notes.addNote")}
           >
             <PlusIcon size={16} />
           </button>

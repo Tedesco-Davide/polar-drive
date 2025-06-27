@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { TFunction } from "i18next";
 import { parseISO, isValid, isAfter } from "date-fns";
-import DatePicker from "react-datepicker";
-import JSZip from "jszip";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
 import { formatOutageDateTimeToSave } from "@/utils/date";
-import "react-datepicker/dist/react-datepicker.css";
 import { OutageFormData } from "@/types/outagePeriodTypes";
+import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
+import JSZip from "jszip";
 
 interface Props {
   t: TFunction;
@@ -507,14 +507,13 @@ export default function AdminOutagePeriodsAddForm({
         {/* Notes */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.outagePeriods.notes")}
+            {t("admin.notes.addNote")}
           </span>
           <textarea
             name="notes"
             value={formData.notes}
             onChange={handleChange}
             className="input h-[42px] resize-none"
-            placeholder="Note aggiuntive sull'outage..."
           />
         </label>
       </div>

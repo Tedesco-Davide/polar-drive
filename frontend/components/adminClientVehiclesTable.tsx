@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react";
+import { CircleCheck, CircleX, Pencil } from "lucide-react";
 import { TFunction } from "i18next";
 import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { usePagination } from "@/utils/usePagination";
@@ -130,9 +130,27 @@ export default function AdminClientVehiclesTable({
               <td className="p-4">{vehicle.model}</td>
               <td className="p-4">{vehicle.trim}</td>
               <td className="p-4">{vehicle.color}</td>
-              <td className="p-4 text-2xl">{vehicle.isActive ? "✅" : "🛑"}</td>
-              <td className="p-4 text-2xl">
-                {vehicle.isFetching ? "✅" : "🛑"}
+              <td className="p-4">
+                {vehicle.isActive ? (
+                  <div className="flex items-center text-green-600">
+                    <CircleCheck size={30} />
+                  </div>
+                ) : (
+                  <div className="flex items-center text-red-600">
+                    <CircleX size={30} />
+                  </div>
+                )}
+              </td>{" "}
+              <td className="p-4">
+                {vehicle.isFetching ? (
+                  <div className="flex items-center text-green-600">
+                    <CircleCheck size={30} />
+                  </div>
+                ) : (
+                  <div className="flex items-center text-red-600">
+                    <CircleX size={30} />
+                  </div>
+                )}
               </td>
               <td className="p-4">
                 {vehicle.firstActivationAt

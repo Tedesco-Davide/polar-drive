@@ -1,7 +1,8 @@
 import { API_BASE_URL } from "@/utils/api";
 import { useTranslation } from "next-i18next";
-import axios from "axios";
 import { logFrontendEvent } from "@/utils/logger";
+import { CircleCheck, CircleX } from "lucide-react";
+import axios from "axios";
 
 type Props = {
   id: number;
@@ -112,13 +113,33 @@ export default function VehicleStatusToggle({
   };
 
   const label =
-    field === "IsActive"
-      ? isActive
-        ? "✅ Active"
-        : "🛑 NotActive"
-      : isFetching
-      ? "📡 Fetching"
-      : "⛔ NotFetching";
+    field === "IsActive" ? (
+      isActive ? (
+        <div className="flex justify-center text-green-600 gap-1">
+          <CircleCheck size={20} />
+          <span className="text-polarNight dark:text-articWhite">Active</span>
+        </div>
+      ) : (
+        <div className="flex justify-center text-red-600 gap-1">
+          <CircleX size={20} />
+          <span className="text-polarNight dark:text-articWhite">
+            NotActive
+          </span>
+        </div>
+      )
+    ) : isFetching ? (
+      <div className="flex justify-center text-green-600 gap-1">
+        <CircleCheck size={20} />
+        <span className="text-polarNight dark:text-articWhite">Fetching</span>
+      </div>
+    ) : (
+      <div className="flex justify-center text-red-600 gap-1">
+        <CircleX size={20} />
+        <span className="text-polarNight dark:text-articWhite">
+          NotFetching
+        </span>
+      </div>
+    );
 
   return (
     <button

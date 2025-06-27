@@ -8,6 +8,7 @@ import { vehicleOptions } from "@/types/vehicleOptions";
 import { fuelTypeOptions } from "@/types/fuelTypes";
 import { logFrontendEvent } from "@/utils/logger";
 import axios from "axios";
+import { CircleCheck, CircleX } from "lucide-react";
 
 type Props = {
   vehicle: ClientVehicle;
@@ -293,22 +294,34 @@ export default function AdminClientVehicleEditForm({
             <span className="text-xl text-gray-600 dark:text-gray-300">
               {t("admin.clientVehicle.isActive")}
             </span>
-            <span className="text-xl">
-              {formData.isActive
-                ? `✅ ${t("admin.yes")}`
-                : `🛑 ${t("admin.no")}`}
-            </span>
+            {formData.isActive ? (
+              <div className="flex items-center text-green-600 gap-1">
+                <CircleCheck size={30} />
+                <span className="text-xl">{t("admin.yes")}</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-red-600 gap-1">
+                <CircleX size={30} />
+                <span className="text-xl">{t("admin.no")}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <span className="text-xl text-gray-600 dark:text-gray-300">
               {t("admin.clientVehicle.isFetching")}
             </span>
-            <span className="text-xl">
-              {formData.isFetching
-                ? `✅ ${t("admin.yes")}`
-                : `🛑 ${t("admin.no")}`}
-            </span>
+            {formData.isFetching ? (
+              <div className="flex items-center text-green-600 gap-1">
+                <CircleCheck size={30} />
+                <span className="text-xl">{t("admin.yes")}</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-red-600 gap-1">
+                <CircleX size={30} />
+                <span className="text-xl">{t("admin.no")}</span>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">

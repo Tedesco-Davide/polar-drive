@@ -90,6 +90,8 @@
   "admin.notesGenericError": "ATTENZIONE! errore generico non gestito per le Note: ",
   "admin.resolveVATandVIN": "ATTENZIONE! seleziona attentamente l'Azienda (Partita IVA) e la Veicolo di interesse (Veicolo VIN) assicurandoti che combacino e siano effettivamente collegate tra di loro",
   "admin.brandMismatch": "ATTENZIONE! Il brand selezionato non corrisponde a quello effettivo del veicolo associato",
+  "admin.notes.addNote": "Aggiungi nota",
+  "admin.notes.deleteNote": "Cancella nota",
   "admin.tableRefreshButton": "🔄REFRESH",
 
   "No_Data": "Nessun Dato",
@@ -184,8 +186,6 @@
   "admin.clientConsents.successAddNewConsent": "Consenso aggiunto con successo!",
   "admin.clientConsents.notes.modalTitle": "Gestione nota per: riga in Tabella Consensi Azienda",
   "admin.clientConsents.notes.modalPlaceholder": "Ricordati di cliccare sull icona + a sinistra per aggiungere la nota. Scrivi qualcosa...",
-  "admin.clientConsents.notes.addNote": "Aggiungi nota",
-  "admin.clientConsents.notes.deleteNote": "Cancella nota",
 
   "admin.outagePeriods.tableHeader": "Outages",
   "admin.outagePeriods.autoDetected": "Auto rilevato?",
@@ -209,6 +209,10 @@
   "admin.outagePeriods.successUploadZip": "File .zip aggiunto con successo all'Outage di riferimento!",
   "admin.outagePeriods.invalidZipTypeRequiredOutages": "Carica obbligatoriamente un file .zip che contenga almeno un documento generico Outage in formato .pdf",
   "admin.outagePeriods.fleetApiMustNotHaveVinOrVat": "Non è possibile selezionare VIN o Partita IVA per Outage Fleet API",
+  "admin.outagePeriods.resolveManually": "",
+  "admin.outagePeriods.confirmResolve": "",
+  "admin.outagePeriods.downloadZip": "",
+  "admin.outagePeriods.uploadZip": "",
 
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totali",

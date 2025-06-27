@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { TFunction } from "i18next";
 import {
   NotebookPen,
-  CheckCircle,
-  XCircle,
   Clock,
   Upload,
   Download,
+  ShieldCheck,
+  CircleX,
+  CircleCheck,
 } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
@@ -277,7 +278,10 @@ export default function AdminOutagePeriodsTable({
                         <Download size={16} />
                       </button>
                     ) : (
-                      <label className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer">
+                      <label
+                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer"
+                        title={t("admin.outagePeriods.uploadZip")}
+                      >
                         <input
                           type="file"
                           accept=".zip"
@@ -286,7 +290,7 @@ export default function AdminOutagePeriodsTable({
                             const file = e.target.files?.[0];
                             if (file) {
                               handleZipUpload(outage.id, file);
-                              e.target.value = ""; // Reset input
+                              e.target.value = "";
                             }
                           }}
                           disabled={uploadingZip.has(outage.id)}
@@ -306,7 +310,7 @@ export default function AdminOutagePeriodsTable({
                         className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
                         title={t("admin.outagePeriods.resolveManually")}
                       >
-                        <CheckCircle size={16} />
+                        <ShieldCheck size={16} />
                       </button>
                     )}
 
@@ -326,11 +330,11 @@ export default function AdminOutagePeriodsTable({
                   <div className="flex">
                     {outage.autoDetected ? (
                       <div className="flex items-center text-green-600">
-                        <CheckCircle size={20} />
+                        <CircleCheck size={30} />
                       </div>
                     ) : (
                       <div className="flex items-center text-red-600">
-                        <XCircle size={20} />
+                        <CircleX size={30} />
                       </div>
                     )}
                   </div>
