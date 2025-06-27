@@ -81,18 +81,21 @@ builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// ✅ CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER
+// ✅ CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER E GLI OUTAGES
 var storageBasePath = "storage";
 var reportsPath = Path.Combine(storageBasePath, "reports");
 var fileManagerZipsPath = Path.Combine(storageBasePath, "filemanager-zips");
+var outageZipsPath = Path.Combine(storageBasePath, "outages-zips");
 
 // Crea le directory se non esistono
 Directory.CreateDirectory(storageBasePath);
 Directory.CreateDirectory(reportsPath);
 Directory.CreateDirectory(fileManagerZipsPath);
+Directory.CreateDirectory(outageZipsPath);
 Console.WriteLine($"📁 Storage directories created:");
 Console.WriteLine($"   - Reports: {Path.GetFullPath(reportsPath)}");
 Console.WriteLine($"   - FileManager ZIPs: {Path.GetFullPath(fileManagerZipsPath)}");
+Console.WriteLine($"   - Outage ZIPs: {Path.GetFullPath(outageZipsPath)}");
 
 // Use Swagger only in development
 if (app.Environment.IsDevelopment())

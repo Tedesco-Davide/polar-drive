@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   CircleX,
   CircleCheck,
+  Trash2,
 } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
@@ -195,6 +196,46 @@ export default function AdminOutagePeriodsTable({
     }
   };
 
+  const handleZipDelete = async (outageId: number) => {
+    if (!confirm(t("admin.outagePeriods.confirmDeleteZip"))) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/outageperiods/${outageId}/delete-zip`,
+        { method: "DELETE" }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete ZIP file");
+      }
+
+      // Refresh dei dati
+      const updatedOutages = await refreshOutagePeriods();
+      setLocalOutages(updatedOutages);
+
+      logFrontendEvent(
+        "AdminOutagePeriodsTable",
+        "INFO",
+        "ZIP file deleted successfully",
+        `Outage ID: ${outageId}`
+      );
+
+      alert(t("admin.outagePeriods.successDeleteZip"));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Delete failed";
+      logFrontendEvent(
+        "AdminOutagePeriodsTable",
+        "ERROR",
+        "Failed to delete ZIP",
+        errorMessage
+      );
+      alert(`${t("admin.outagePeriods.errorDeletingZip")}: ${errorMessage}`);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -268,39 +309,63 @@ export default function AdminOutagePeriodsTable({
                 {/* Azioni */}
                 <td className="px-4 py-3">
                   <div className="flex items-center space-x-2">
-                    {/* Upload/Download ZIP */}
-                    {outage.hasZipFile ? (
-                      <button
-                        onClick={() => handleZipDownload(outage.id)}
-                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                        title={t("admin.outagePeriods.downloadZip")}
-                      >
-                        <Download size={16} />
-                      </button>
-                    ) : (
-                      <label
-                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer"
-                        title={t("admin.outagePeriods.uploadZip")}
-                      >
-                        <input
-                          type="file"
-                          accept=".zip"
-                          className="hidden"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                              handleZipUpload(outage.id, file);
-                              e.target.value = "";
+                    {/* Upload ZIP - sempre disponibile */}
+                    <label
+                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer"
+                      title={
+                        outage.hasZipFile
+                          ? t("admin.outagePeriods.replaceZip")
+                          : t("admin.outagePeriods.uploadZip")
+                      }
+                    >
+                      <input
+                        type="file"
+                        accept=".zip"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            // Aggiungi conferma se sta sostituendo un file esistente
+                            if (outage.hasZipFile) {
+                              const confirmReplace = confirm(
+                                t("admin.outagePeriods.confirmReplaceZip")
+                              );
+                              if (!confirmReplace) {
+                                e.target.value = "";
+                                return;
+                              }
                             }
-                          }}
-                          disabled={uploadingZip.has(outage.id)}
-                        />
-                        {uploadingZip.has(outage.id) ? (
-                          <Clock size={16} className="animate-spin" />
-                        ) : (
-                          <Upload size={16} />
-                        )}
-                      </label>
+                            handleZipUpload(outage.id, file);
+                            e.target.value = "";
+                          }
+                        }}
+                        disabled={uploadingZip.has(outage.id)}
+                      />
+                      {uploadingZip.has(outage.id) ? (
+                        <Clock size={16} className="animate-spin" />
+                      ) : (
+                        <Upload size={16} />
+                      )}
+                    </label>
+
+                    {/* Download ZIP - solo se presente */}
+                    {outage.hasZipFile && (
+                      <>
+                        <button
+                          onClick={() => handleZipDownload(outage.id)}
+                          className="p-2 bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
+                          title={t("admin.outagePeriods.downloadZip")}
+                        >
+                          <Download size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleZipDelete(outage.id)}
+                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
+                          title={t("admin.outagePeriods.deleteZip")}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </>
                     )}
 
                     {/* Risolvi manualmente (solo per ongoing) */}

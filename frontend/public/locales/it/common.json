@@ -213,6 +213,12 @@
   "admin.outagePeriods.confirmResolve": "",
   "admin.outagePeriods.downloadZip": "",
   "admin.outagePeriods.uploadZip": "",
+  "admin.outagePeriods.replaceZip": "Sostituisci ZIP",
+  "admin.outagePeriods.confirmReplaceZip": "Sei sicuro di voler sostituire il file ZIP esistente?",
+  "admin.outagePeriods.deleteZip": "Elimina ZIP",
+  "admin.outagePeriods.confirmDeleteZip": "Sei sicuro di voler eliminare il file ZIP?",
+  "admin.outagePeriods.successDeleteZip": "File ZIP eliminato con successo",
+  "admin.outagePeriods.errorDeletingZip": "Errore durante l'eliminazione del ZIP",
 
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totali",

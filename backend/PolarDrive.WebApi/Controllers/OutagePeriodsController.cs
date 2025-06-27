@@ -16,11 +16,17 @@ public class OutagePeriodsController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly PolarDriveLogger _logger;
 
+    // ✅ AGGIORNATO: usa la stessa struttura degli altri controller
+    private readonly string _outageZipStoragePath;
+
     public OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment env)
     {
         _db = db;
         _env = env;
         _logger = new PolarDriveLogger(db);
+
+        // ✅ AGGIORNATO: usa storage/outages-zips invece di wwwroot/zips-outages
+        _outageZipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "outages-zips");
     }
 
     /// <summary>
@@ -234,65 +240,36 @@ public class OutagePeriodsController : ControllerBase
                 return BadRequest("No file provided");
             }
 
-            if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+            // ✅ Usa il metodo helper per processare il file ZIP
+            var zipFilePath = await ProcessZipFileAsync(zipFile, $"outage_{id}_");
+            if (zipFilePath == null)
             {
-                return BadRequest("File must be a .zip file");
+                return BadRequest("Invalid ZIP file");
             }
-
-            // Validazione contenuto ZIP
-            using var zipStream = new MemoryStream();
-            await zipFile.CopyToAsync(zipStream);
-            zipStream.Position = 0;
-
-            try
-            {
-                using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
-                bool hasPdf = archive.Entries.Any(e =>
-                    Path.GetExtension(e.FullName).Equals(".pdf", StringComparison.OrdinalIgnoreCase) &&
-                    !e.FullName.EndsWith("/"));
-
-                if (!hasPdf)
-                {
-                    return BadRequest("ZIP file must contain at least one PDF file");
-                }
-            }
-            catch (InvalidDataException)
-            {
-                return BadRequest("Invalid or corrupted ZIP file");
-            }
-
-            // Salvataggio file
-            zipStream.Position = 0;
-            var zipsDir = Path.Combine(_env.WebRootPath ?? "wwwroot", "zips-outages");
-            Directory.CreateDirectory(zipsDir);
 
             // Elimina il file precedente se esiste
-            if (!string.IsNullOrWhiteSpace(outage.ZipFilePath))
+            if (!string.IsNullOrWhiteSpace(outage.ZipFilePath) && System.IO.File.Exists(outage.ZipFilePath))
             {
-                var oldFilePath = Path.Combine(_env.WebRootPath ?? "wwwroot",
-                    outage.ZipFilePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
-                if (System.IO.File.Exists(oldFilePath))
+                try
                 {
-                    System.IO.File.Delete(oldFilePath);
+                    System.IO.File.Delete(outage.ZipFilePath);
+                    await _logger.Info("OutagePeriodsController.UploadZip", "Old ZIP file deleted.", outage.ZipFilePath);
+                }
+                catch (Exception ex)
+                {
+                    await _logger.Warning("OutagePeriodsController.UploadZip", "Failed to delete old ZIP file.",
+                        $"Path: {outage.ZipFilePath}, Error: {ex.Message}");
                 }
             }
 
-            // usa DateTime.Now per il nome del file
-            var zipFileName = $"outage_{id}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
-            var finalPath = Path.Combine(zipsDir, zipFileName);
-
-            await using var fileStream = new FileStream(finalPath, FileMode.Create);
-            await zipStream.CopyToAsync(fileStream);
-
-            // Aggiorna il database
-            var relativeZipPath = Path.Combine("zips-outages", zipFileName).Replace("\\", "/");
-            outage.ZipFilePath = relativeZipPath;
+            // Aggiorna il database con il path completo
+            outage.ZipFilePath = zipFilePath;
             await _db.SaveChangesAsync();
 
             await _logger.Info("OutagePeriodsController.UploadZip",
-                $"Uploaded ZIP file for outage {id}: {zipFileName}");
+                $"Uploaded ZIP file for outage {id}: {Path.GetFileName(zipFilePath)}");
 
-            return Ok(new { zipFilePath = relativeZipPath });
+            return Ok(new { zipFilePath = zipFilePath });
         }
         catch (Exception ex)
         {
@@ -321,16 +298,14 @@ public class OutagePeriodsController : ControllerBase
                 return NotFound("No ZIP file associated with this outage");
             }
 
-            var fullPath = Path.Combine(_env.WebRootPath ?? "wwwroot",
-                outage.ZipFilePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
-
-            if (!System.IO.File.Exists(fullPath))
+            // ✅ AGGIORNATO: usa il path completo direttamente
+            if (!System.IO.File.Exists(outage.ZipFilePath))
             {
                 return NotFound("ZIP file not found on server");
             }
 
-            var fileName = Path.GetFileName(fullPath);
-            var fileBytes = await System.IO.File.ReadAllBytesAsync(fullPath);
+            var fileName = Path.GetFileName(outage.ZipFilePath);
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(outage.ZipFilePath);
 
             await _logger.Info("OutagePeriodsController.DownloadZip",
                 $"Downloaded ZIP file for outage {id}: {fileName}");
@@ -341,6 +316,57 @@ public class OutagePeriodsController : ControllerBase
         {
             await _logger.Error("OutagePeriodsController.DownloadZip",
                 $"Error downloading ZIP for outage {id}", ex.ToString());
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    /// <summary>
+    /// Elimina il file ZIP di un outage
+    /// </summary>
+    [HttpDelete("{id}/delete-zip")]
+    public async Task<IActionResult> DeleteZip(int id)
+    {
+        try
+        {
+            var outage = await _db.OutagePeriods.FindAsync(id);
+            if (outage == null)
+            {
+                return NotFound("Outage not found");
+            }
+
+            if (string.IsNullOrWhiteSpace(outage.ZipFilePath))
+            {
+                return BadRequest("No ZIP file associated with this outage");
+            }
+
+            // ✅ AGGIORNATO: usa il path completo direttamente
+            if (System.IO.File.Exists(outage.ZipFilePath))
+            {
+                try
+                {
+                    System.IO.File.Delete(outage.ZipFilePath);
+                    await _logger.Info("OutagePeriodsController.DeleteZip", "ZIP file deleted from filesystem.", outage.ZipFilePath);
+                }
+                catch (Exception ex)
+                {
+                    await _logger.Warning("OutagePeriodsController.DeleteZip", "Failed to delete ZIP file from filesystem.",
+                        $"Path: {outage.ZipFilePath}, Error: {ex.Message}");
+                }
+            }
+
+            // Rimuovi il riferimento dal database
+            outage.ZipFilePath = null;
+            await _db.SaveChangesAsync();
+
+            await _logger.Info("OutagePeriodsController.DeleteZip", "ZIP file reference removed from database.",
+                $"OutageId: {id}");
+
+            return Ok(new { message = "ZIP file deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("OutagePeriodsController.DeleteZip",
+                $"Error deleting ZIP for outage {id}", ex.ToString());
             return StatusCode(500, "Internal server error");
         }
     }
@@ -382,6 +408,66 @@ public class OutagePeriodsController : ControllerBase
     }
 
     #region Private Methods
+
+    /// <summary>
+    /// ✅ NUOVO METODO HELPER per processare i file ZIP (coerente con UploadOutageZipController)
+    /// </summary>
+    private async Task<string?> ProcessZipFileAsync(IFormFile zipFile, string? filePrefix = null)
+    {
+        if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+        {
+            await _logger.Warning("ProcessZipFileAsync", "Uploaded file is not a .zip.", zipFile.FileName);
+            return null;
+        }
+
+        using var zipStream = new MemoryStream();
+        await zipFile.CopyToAsync(zipStream);
+        zipStream.Position = 0;
+
+        try
+        {
+            using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
+            bool hasPdf = archive.Entries.Any(e =>
+                Path.GetExtension(e.FullName).Equals(".pdf", StringComparison.OrdinalIgnoreCase) &&
+                !e.FullName.EndsWith("/")
+            );
+
+            if (!hasPdf)
+            {
+                await _logger.Warning("ProcessZipFileAsync", "ZIP file does not contain a PDF.", zipFile.FileName);
+                return null;
+            }
+        }
+        catch (InvalidDataException)
+        {
+            await _logger.Error("ProcessZipFileAsync", "ZIP file corrupted or invalid.");
+            return null;
+        }
+
+        zipStream.Position = 0;
+
+        // ✅ Crea la directory se non esiste
+        if (!Directory.Exists(_outageZipStoragePath))
+        {
+            Directory.CreateDirectory(_outageZipStoragePath);
+        }
+
+        // ✅ Genera il nome del file
+        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var fileName = string.IsNullOrWhiteSpace(filePrefix)
+            ? $"outage_{timestamp}.zip"
+            : $"{filePrefix}{timestamp}.zip";
+
+        var finalPath = Path.Combine(_outageZipStoragePath, fileName);
+
+        // ✅ Salva il file
+        await using var fileStream = new FileStream(finalPath, FileMode.Create);
+        await zipStream.CopyToAsync(fileStream);
+
+        await _logger.Info("ProcessZipFileAsync", "ZIP file saved successfully.", finalPath);
+
+        return finalPath;
+    }
 
     private async Task<bool> CheckOutageOverlapAsync(
         string outageType,

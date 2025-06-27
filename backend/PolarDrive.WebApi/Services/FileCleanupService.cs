@@ -1,24 +1,14 @@
-// Nel tuo FileCleanupService.cs, aggiorna il costruttore:
-
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 
 namespace PolarDrive.WebApi.Services;
 
-public class FileCleanupService : BackgroundService
+public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCleanupService> logger) : BackgroundService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<FileCleanupService> _logger;
-    private readonly string _zipStoragePath;
-
-    public FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCleanupService> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-
-        // ✅ AGGIORNATO: usa la directory corretta
-        _zipStoragePath = Path.Combine("storage", "filemanager-zips");
-    }
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly ILogger<FileCleanupService> _logger = logger;
+    private readonly string _fileManagerZipStoragePath = Path.Combine("storage", "filemanager-zips");
+    private readonly string _outageZipStoragePath = Path.Combine("storage", "outages-zips");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -26,20 +16,24 @@ public class FileCleanupService : BackgroundService
         {
             try
             {
-                await CleanupOldFiles();
+                await CleanupOldFileManagerFiles();
+                await CleanupOldOutageFiles();
 
                 // Esegui ogni 24 ore
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Errore durante il cleanup dei file ZIP del File Manager");
+                _logger.LogError(ex, "Errore durante il cleanup dei file ZIP");
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
             }
         }
     }
 
-    private async Task CleanupOldFiles()
+    /// <summary>
+    /// Cleanup dei file del File Manager (logica esistente)
+    /// </summary>
+    private async Task CleanupOldFileManagerFiles()
     {
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
@@ -77,15 +71,63 @@ public class FileCleanupService : BackgroundService
             _logger.LogInformation($"File Manager cleanup completato: {oldJobs.Count} job vecchi rimossi");
         }
 
-        // Rimuovi file ZIP orfani (senza record nel database)
-        await CleanupOrphanedFiles(db);
+        // Rimuovi file ZIP orfani del File Manager
+        await CleanupOrphanedFileManagerFiles(db);
     }
 
-    private async Task CleanupOrphanedFiles(PolarDriveDbContext db)
+    /// <summary>
+    /// Cleanup degli outage ZIP files
+    /// </summary>
+    private async Task CleanupOldOutageFiles()
     {
-        if (!Directory.Exists(_zipStoragePath)) return;
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-        var zipFiles = Directory.GetFiles(_zipStoragePath, "*.zip");
+        // ✅ Rimuovi outage più vecchi di 60 giorni (retention più lunga per gli outages)
+        var outagesCutoffDate = DateTime.UtcNow.AddDays(-60);
+
+        var oldOutages = await db.OutagePeriods
+            .Where(o => o.CreatedAt < outagesCutoffDate && !string.IsNullOrEmpty(o.ZipFilePath))
+            .ToListAsync();
+
+        foreach (var outage in oldOutages)
+        {
+            // Rimuovi il file ZIP se esiste
+            if (!string.IsNullOrEmpty(outage.ZipFilePath) && File.Exists(outage.ZipFilePath))
+            {
+                try
+                {
+                    File.Delete(outage.ZipFilePath);
+                    _logger.LogInformation($"Outage ZIP eliminato: {outage.ZipFilePath}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"Impossibile eliminare il file ZIP dell'outage: {outage.ZipFilePath}");
+                }
+            }
+
+            // ✅ Rimuovi solo il riferimento al file ZIP, non l'outage stesso
+            outage.ZipFilePath = null;
+        }
+
+        if (oldOutages.Any())
+        {
+            await db.SaveChangesAsync();
+            _logger.LogInformation($"Outage ZIP cleanup completato: {oldOutages.Count} file ZIP rimossi");
+        }
+
+        // Rimuovi file ZIP orfani degli outages
+        await CleanupOrphanedOutageFiles(db);
+    }
+
+    /// <summary>
+    /// Cleanup dei file ZIP orfani del File Manager
+    /// </summary>
+    private async Task CleanupOrphanedFileManagerFiles(PolarDriveDbContext db)
+    {
+        if (!Directory.Exists(_fileManagerZipStoragePath)) return;
+
+        var zipFiles = Directory.GetFiles(_fileManagerZipStoragePath, "*.zip");
         var dbZipPaths = await db.AdminFileManager
             .Where(j => !string.IsNullOrEmpty(j.ResultZipPath))
             .Select(j => j.ResultZipPath)
@@ -108,6 +150,40 @@ public class FileCleanupService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogWarning(ex, $"Impossibile eliminare il file ZIP orfano del File Manager: {orphanedFile}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Cleanup dei file ZIP orfani degli outages
+    /// </summary>
+    private async Task CleanupOrphanedOutageFiles(PolarDriveDbContext db)
+    {
+        if (!Directory.Exists(_outageZipStoragePath)) return;
+
+        var zipFiles = Directory.GetFiles(_outageZipStoragePath, "*.zip");
+        var dbZipPaths = await db.OutagePeriods
+            .Where(o => !string.IsNullOrEmpty(o.ZipFilePath))
+            .Select(o => o.ZipFilePath!)
+            .ToListAsync();
+
+        var orphanedFiles = zipFiles.Where(file => !dbZipPaths.Contains(file)).ToList();
+
+        foreach (var orphanedFile in orphanedFiles)
+        {
+            try
+            {
+                // Elimina solo se più vecchio di 7 giorni
+                var fileInfo = new FileInfo(orphanedFile);
+                if (fileInfo.CreationTime < DateTime.Now.AddDays(-7))
+                {
+                    File.Delete(orphanedFile);
+                    _logger.LogInformation($"Outage ZIP orfano eliminato: {orphanedFile}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, $"Impossibile eliminare il file ZIP orfano dell'outage: {orphanedFile}");
             }
         }
     }

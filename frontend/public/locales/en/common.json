@@ -213,6 +213,12 @@
   "admin.outagePeriods.confirmResolve": "",
   "admin.outagePeriods.downloadZip": "",
   "admin.outagePeriods.uploadZip": "",
+  "admin.outagePeriods.replaceZip": "",
+  "admin.outagePeriods.confirmReplaceZip": "",
+  "admin.outagePeriods.deleteZip": "",
+  "admin.outagePeriods.confirmDeleteZip": "",
+  "admin.outagePeriods.successDeleteZip": "",
+  "admin.outagePeriods.errorDeletingZip": "",
 
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totals",

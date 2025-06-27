@@ -140,7 +140,7 @@ export default function AdminClientVehiclesTable({
                     <CircleX size={30} />
                   </div>
                 )}
-              </td>{" "}
+              </td>
               <td className="p-4">
                 {vehicle.isFetching ? (
                   <div className="flex items-center text-green-600">

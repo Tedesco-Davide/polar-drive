@@ -116,22 +116,6 @@ try
     }
 
     // ───────────────────────────────
-    // 3. Setup directories
-    // ───────────────────────────────
-    foreach (var company in companies)
-    {
-        var companyDir = Path.Combine(wwwRoot, $"company-{company.Id}");
-        var consentsDir = Path.Combine(companyDir, "consents-zip");
-        var historyDir = Path.Combine(companyDir, "history-pdf");
-        var reportsDir = Path.Combine(companyDir, "reports-pdf");
-
-        Directory.CreateDirectory(consentsDir);
-        Directory.CreateDirectory(historyDir);
-        Directory.CreateDirectory(reportsDir);
-        Console.WriteLine($"✅ Created directories for company {company.Id}");
-    }
-
-    // ───────────────────────────────
     // 4. 🚘 Mock Vehicles
     // ───────────────────────────────
     Console.WriteLine("🚗 Creating mock vehicles...");
