@@ -77,7 +77,7 @@ public class OutageSystemController : ControllerBase
                 .OrderByDescending(x => x.Count)
                 .ToList();
 
-            // Outages recenti (ultimi 10)
+            // Outages recenti (ultimi 10) - FIX UTC per DurationMinutes
             var recentOutages = outages
                 .OrderByDescending(o => o.CreatedAt)
                 .Take(10)
@@ -91,7 +91,7 @@ public class OutageSystemController : ControllerBase
                     CreatedAt = o.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                     DurationMinutes = o.OutageEnd != null
                         ? (int)(o.OutageEnd.Value - o.OutageStart).TotalMinutes
-                        : (int)(DateTime.UtcNow - o.OutageStart).TotalMinutes
+                        : (int)(DateTime.Now - o.OutageStart).TotalMinutes // usa DateTime.Now
                 })
                 .ToList();
 
@@ -130,9 +130,9 @@ public class OutageSystemController : ControllerBase
     {
         try
         {
-            // Default: ultimi 30 giorni
-            var startDate = from ?? DateTime.UtcNow.AddDays(-30);
-            var endDate = to ?? DateTime.UtcNow;
+            // Default ultimi 30 giorni usando DateTime.Now
+            var startDate = from ?? DateTime.Now.AddDays(-30);
+            var endDate = to ?? DateTime.Now;
 
             await _logger.Debug("OutageSystemController",
                 $"Fetching period stats from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
@@ -226,7 +226,8 @@ public class OutageSystemController : ControllerBase
                     o.OutageType,
                     o.OutageBrand,
                     o.OutageStart,
-                    DurationMinutes = (int)(DateTime.UtcNow - o.OutageStart).TotalMinutes,
+                    // usa DateTime.Now per calcolare la durata
+                    DurationMinutes = (int)(DateTime.Now - o.OutageStart).TotalMinutes,
                     VehicleVin = o.ClientVehicle != null ? o.ClientVehicle.Vin : null
                 })
                 .ToListAsync();
@@ -258,7 +259,8 @@ public class OutageSystemController : ControllerBase
             var health = new
             {
                 SystemStatus = systemStatus,
-                Timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC"),
+                // usa DateTime.Now per il timestamp
+                Timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 OngoingOutagesCount = ongoingOutages.Count,
                 OngoingOutages = ongoingOutages,
                 CriticalIssues = criticalIssues,
@@ -318,7 +320,8 @@ public class OutageSystemController : ControllerBase
             return Ok(new
             {
                 message = "Outage check completed successfully",
-                timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss UTC")
+                // usa DateTime.Now per il timestamp
+                timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             });
         }
         catch (Exception ex)

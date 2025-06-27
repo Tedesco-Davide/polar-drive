@@ -15,7 +15,7 @@ public class VehicleWorkflowEvent
 
     public bool NewValue { get; set; }
 
-    public DateTime EventTimestamp { get; set; } = DateTime.UtcNow;
-    
+    public DateTime EventTimestamp { get; set; } = DateTime.Now;
+
     public ClientVehicle? ClientVehicle { get; set; }
 }

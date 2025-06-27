@@ -13,7 +13,7 @@ public class OutagePeriod
 
     public string OutageBrand { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     public DateTime OutageStart { get; set; }
 

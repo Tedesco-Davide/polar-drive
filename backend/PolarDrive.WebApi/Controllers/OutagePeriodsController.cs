@@ -5,7 +5,6 @@ using PolarDrive.Data.Entities;
 using PolarDrive.Data.Constants;
 using System.Text.Json;
 using System.IO.Compression;
-using System.Globalization;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -53,10 +52,10 @@ public class OutagePeriodsController : ControllerBase
                 Status = o.OutageEnd.HasValue ? "OUTAGE-RESOLVED" : "OUTAGE-ONGOING",
                 Vin = o.ClientVehicle != null ? o.ClientVehicle.Vin : null,
                 CompanyVatNumber = o.ClientCompany != null ? o.ClientCompany.VatNumber : null,
-                // Durata calcolata
+                // Durata calcolata - usa DateTime.Now per coerenza
                 DurationMinutes = o.OutageEnd.HasValue
                     ? (int)(o.OutageEnd.Value - o.OutageStart).TotalMinutes
-                    : (int)(DateTime.UtcNow - o.OutageStart).TotalMinutes,
+                    : (int)(DateTime.Now - o.OutageStart).TotalMinutes,
                 // Informazioni di display
                 HasZipFile = !string.IsNullOrWhiteSpace(o.ZipFilePath)
             })
@@ -86,6 +85,19 @@ public class OutagePeriodsController : ControllerBase
             if (!VehicleConstants.ValidBrands.Contains(request.OutageBrand))
             {
                 return BadRequest($"Invalid brand. Valid brands: {string.Join(", ", VehicleConstants.ValidBrands)}");
+            }
+
+            // Converti le date in UTC se necessario (solo per confronti DB)
+            var outageStartUtc = request.OutageStart.Kind == DateTimeKind.Utc
+                ? request.OutageStart
+                : request.OutageStart.ToUniversalTime();
+
+            DateTime? outageEndUtc = null;
+            if (request.OutageEnd.HasValue)
+            {
+                outageEndUtc = request.OutageEnd.Value.Kind == DateTimeKind.Utc
+                    ? request.OutageEnd.Value
+                    : request.OutageEnd.Value.ToUniversalTime();
             }
 
             // Validazioni specifiche per Outage Vehicle
@@ -124,12 +136,12 @@ public class OutagePeriodsController : ControllerBase
                 }
             }
 
-            // Controlla sovrapposizioni
+            // Controlla sovrapposizioni - usa le date UTC per confronti DB
             var hasOverlap = await CheckOutageOverlapAsync(
                 request.OutageType,
                 request.OutageBrand,
-                request.OutageStart,
-                request.OutageEnd,
+                outageStartUtc,
+                outageEndUtc,
                 request.VehicleId);
 
             if (hasOverlap)
@@ -137,15 +149,15 @@ public class OutagePeriodsController : ControllerBase
                 return Conflict("An overlapping outage already exists for this period");
             }
 
-            // Crea il nuovo outage
+            // Crea il nuovo outage - usa DateTime.Now
             var outage = new OutagePeriod
             {
                 AutoDetected = false, // Sempre false per inserimenti manuali
                 OutageType = request.OutageType,
                 OutageBrand = request.OutageBrand,
-                CreatedAt = DateTime.UtcNow,
-                OutageStart = request.OutageStart,
-                OutageEnd = request.OutageEnd,
+                CreatedAt = DateTime.Now,
+                OutageStart = request.OutageStart, // Data originale dal frontend
+                OutageEnd = request.OutageEnd, // Data originale dal frontend
                 VehicleId = request.VehicleId,
                 ClientCompanyId = request.ClientCompanyId,
                 Notes = request.Notes ?? "Inserito manualmente"
@@ -265,7 +277,8 @@ public class OutagePeriodsController : ControllerBase
                 }
             }
 
-            var zipFileName = $"outage_{id}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
+            // usa DateTime.Now per il nome del file
+            var zipFileName = $"outage_{id}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
             var finalPath = Path.Combine(zipsDir, zipFileName);
 
             await using var fileStream = new FileStream(finalPath, FileMode.Create);
@@ -351,7 +364,8 @@ public class OutagePeriodsController : ControllerBase
                 return BadRequest("Outage is already resolved");
             }
 
-            outage.OutageEnd = DateTime.UtcNow;
+            // usa DateTime.Now
+            outage.OutageEnd = DateTime.Now;
             await _db.SaveChangesAsync();
 
             await _logger.Info("OutagePeriodsController.ResolveOutage",

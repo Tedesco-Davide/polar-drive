@@ -20,7 +20,7 @@ public class PdfReport
 
     public string Status { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     public ClientCompany? ClientCompany { get; set; }
 

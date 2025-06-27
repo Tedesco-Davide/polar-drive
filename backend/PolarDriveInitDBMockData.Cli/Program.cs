@@ -50,7 +50,7 @@ try
             try
             {
                 Console.WriteLine($"🗑️ Clearing {tableName}...");
-                await db.Database.ExecuteSqlRawAsync($"DELETE FROM {tableName}");
+                await db.Database.ExecuteSqlAsync($"DELETE FROM {tableName}");
                 Console.WriteLine($"✅ Cleared {tableName}");
             }
             catch (Exception tableEx)

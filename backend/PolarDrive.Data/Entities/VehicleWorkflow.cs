@@ -12,7 +12,7 @@ public class VehicleWorkflow
 
     public bool IsFetchingDataFlag { get; set; } = true;
 
-    public DateTime LastStatusChangeAt { get; set; } = DateTime.UtcNow;
-    
+    public DateTime LastStatusChangeAt { get; set; } = DateTime.Now;
+
     public ClientVehicle? ClientVehicle { get; set; }
 }

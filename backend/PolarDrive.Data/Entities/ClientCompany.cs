@@ -24,7 +24,7 @@ public class ClientCompany
 
     public string? ReferentPecAddress { get; set; }
 
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Navigation properties
     public virtual ICollection<ClientVehicle> ClientVehicles { get; set; } = [];

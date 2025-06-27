@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
-import { parseISO, format } from "date-fns";
+import { format } from "date-fns";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
@@ -27,9 +27,10 @@ interface Props {
 }
 
 const formatDateTime = (dateTime: string): string => {
-  return format(parseISO(dateTime), "dd/MM/yyyy HH:mm");
+  // Forza interpretazione come ora locale invece che UTC
+  const date = new Date(dateTime.replace("Z", ""));
+  return format(date, "dd/MM/yyyy HH:mm");
 };
-
 const formatDuration = (minutes: number): string => {
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
@@ -257,140 +258,142 @@ export default function AdminOutagePeriodsTable({
           </tr>
         </thead>
         <tbody>
-          {currentPageData.map((outage) => (
-            <tr
-              key={outage.id}
-              className="border-b border-gray-300 dark:border-gray-600"
-            >
-              {/* Azioni */}
-              <td className="px-4 py-3">
-                <div className="flex items-center space-x-2">
-                  {/* Upload/Download ZIP */}
-                  {outage.hasZipFile ? (
-                    <button
-                      onClick={() => handleZipDownload(outage.id)}
-                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                      title={t("admin.outagePeriods.downloadZip")}
-                    >
-                      <Download size={16} />
-                    </button>
-                  ) : (
-                    <label className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer">
-                      <input
-                        type="file"
-                        accept=".zip"
-                        className="hidden"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            handleZipUpload(outage.id, file);
-                            e.target.value = ""; // Reset input
-                          }
-                        }}
-                        disabled={uploadingZip.has(outage.id)}
-                      />
-                      {uploadingZip.has(outage.id) ? (
-                        <Clock size={16} className="animate-spin" />
-                      ) : (
-                        <Upload size={16} />
-                      )}
-                    </label>
-                  )}
-
-                  {/* Risolvi manualmente (solo per ongoing) */}
-                  {outage.status === "OUTAGE-ONGOING" && (
-                    <button
-                      onClick={() => handleResolveOutage(outage.id)}
-                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                      title={t("admin.outagePeriods.resolveManually")}
-                    >
-                      <CheckCircle size={16} />
-                    </button>
-                  )}
-
-                  {/* Note */}
-                  <button
-                    onClick={() => setSelectedOutageForNotes(outage)}
-                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                    title={t("admin.openNotesModal")}
-                  >
-                    <NotebookPen size={16} />
-                  </button>
-                </div>
-              </td>
-
-              {/* Auto rilevato */}
-              <td className="px-4 py-3">
-                <div className="flex">
-                  {outage.autoDetected ? (
-                    <div className="flex items-center text-green-600">
-                      <CheckCircle size={20} />
-                    </div>
-                  ) : (
-                    <div className="flex items-center text-red-600">
-                      <XCircle size={20} />
-                    </div>
-                  )}
-                </div>
-              </td>
-
-              {/* Status */}
-              <td className="px-4 py-3">
-                <Chip className={getStatusColor(outage.status)}>
-                  {outage.status}
-                </Chip>
-              </td>
-
-              {/* Tipo */}
-              <td className="px-4 py-3">{outage.outageType}</td>
-
-              {/* Brand */}
-              <td className="px-4 py-3">
-                <span>{outage.outageBrand}</span>
-              </td>
-
-              {/* Periodo */}
-              <td className="px-4 py-3">
-                <div className="text-sm">
-                  <div>{formatDateTime(outage.outageStart)}</div>
-                  <div className="text-gray-500">↓</div>
-                  <div>
-                    {outage.outageEnd ? (
-                      formatDateTime(outage.outageEnd)
+          {currentPageData.map((outage) => {
+            return (
+              <tr
+                key={outage.id}
+                className="border-b border-gray-300 dark:border-gray-600"
+              >
+                {/* Azioni */}
+                <td className="px-4 py-3">
+                  <div className="flex items-center space-x-2">
+                    {/* Upload/Download ZIP */}
+                    {outage.hasZipFile ? (
+                      <button
+                        onClick={() => handleZipDownload(outage.id)}
+                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                        title={t("admin.outagePeriods.downloadZip")}
+                      >
+                        <Download size={16} />
+                      </button>
                     ) : (
-                      <Chip className="bg-red-100 text-red-700 border-red-500 text-xs">
-                        OUTAGE-ONGOING
-                      </Chip>
+                      <label className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer">
+                        <input
+                          type="file"
+                          accept=".zip"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleZipUpload(outage.id, file);
+                              e.target.value = ""; // Reset input
+                            }
+                          }}
+                          disabled={uploadingZip.has(outage.id)}
+                        />
+                        {uploadingZip.has(outage.id) ? (
+                          <Clock size={16} className="animate-spin" />
+                        ) : (
+                          <Upload size={16} />
+                        )}
+                      </label>
+                    )}
+
+                    {/* Risolvi manualmente (solo per ongoing) */}
+                    {outage.status === "OUTAGE-ONGOING" && (
+                      <button
+                        onClick={() => handleResolveOutage(outage.id)}
+                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                        title={t("admin.outagePeriods.resolveManually")}
+                      >
+                        <CheckCircle size={16} />
+                      </button>
+                    )}
+
+                    {/* Note */}
+                    <button
+                      onClick={() => setSelectedOutageForNotes(outage)}
+                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                      title={t("admin.openNotesModal")}
+                    >
+                      <NotebookPen size={16} />
+                    </button>
+                  </div>
+                </td>
+
+                {/* Auto rilevato */}
+                <td className="px-4 py-3">
+                  <div className="flex">
+                    {outage.autoDetected ? (
+                      <div className="flex items-center text-green-600">
+                        <CheckCircle size={20} />
+                      </div>
+                    ) : (
+                      <div className="flex items-center text-red-600">
+                        <XCircle size={20} />
+                      </div>
                     )}
                   </div>
-                </div>
-              </td>
+                </td>
 
-              {/* Durata */}
-              <td className="px-4 py-3">
-                {outage.outageEnd ? (
-                  <span>{formatDuration(outage.durationMinutes)}</span>
-                ) : (
-                  <Chip className="bg-red-100 text-red-700 border-red-500">
-                    OUTAGE-ONGOING
+                {/* Status */}
+                <td className="px-4 py-3">
+                  <Chip className={getStatusColor(outage.status)}>
+                    {outage.status}
                   </Chip>
-                )}
-              </td>
+                </td>
 
-              {/* Partita IVA — VIN */}
-              <td className="px-4 py-3">
-                {outage.outageType === "Outage Vehicle" ? (
+                {/* Tipo */}
+                <td className="px-4 py-3">{outage.outageType}</td>
+
+                {/* Brand */}
+                <td className="px-4 py-3">
+                  <span>{outage.outageBrand}</span>
+                </td>
+
+                {/* Periodo */}
+                <td className="px-4 py-3">
                   <div className="text-sm">
-                    <div className="font-mono">{outage.companyVatNumber}</div>
-                    <div className="text-gray-500">—</div>
-                    <div className="font-mono">{outage.vin}</div>
+                    <div>{formatDateTime(outage.outageStart)}</div>
+                    <div className="text-gray-500">↓</div>
+                    <div>
+                      {outage.outageEnd ? (
+                        formatDateTime(outage.outageEnd)
+                      ) : (
+                        <Chip className="bg-red-100 text-red-700 border-red-500 text-xs">
+                          OUTAGE-ONGOING
+                        </Chip>
+                      )}
+                    </div>
                   </div>
-                ) : (
-                  <span className="text-gray-500">—</span>
-                )}
-              </td>
-            </tr>
-          ))}
+                </td>
+
+                {/* Durata */}
+                <td className="px-4 py-3">
+                  {outage.outageEnd ? (
+                    <span>{formatDuration(outage.durationMinutes)}</span>
+                  ) : (
+                    <Chip className="bg-red-100 text-red-700 border-red-500">
+                      OUTAGE-ONGOING
+                    </Chip>
+                  )}
+                </td>
+
+                {/* Partita IVA — VIN */}
+                <td className="px-4 py-3">
+                  {outage.outageType === "Outage Vehicle" ? (
+                    <div className="text-sm">
+                      <div className="font-mono">{outage.companyVatNumber}</div>
+                      <div className="text-gray-500">—</div>
+                      <div className="font-mono">{outage.vin}</div>
+                    </div>
+                  ) : (
+                    <span className="text-gray-500">—</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
 
           {currentPageData.length === 0 && (
             <tr>

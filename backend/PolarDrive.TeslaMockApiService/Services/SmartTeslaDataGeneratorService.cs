@@ -65,7 +65,7 @@ public class VehicleSimulationState
     public int TotalPackEnergy { get; set; } = 39343;
 
     // Timestamps
-    public DateTime LastUpdate { get; set; } = DateTime.UtcNow;
+    public DateTime LastUpdate { get; set; } = DateTime.Now;
 }
 
 public static partial class SmartTeslaDataGeneratorService

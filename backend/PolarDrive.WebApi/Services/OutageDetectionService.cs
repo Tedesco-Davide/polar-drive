@@ -126,7 +126,7 @@ public class OutageDetectionService : IOutageDetectionService
 
                 if (shouldResolve)
                 {
-                    outage.OutageEnd = DateTime.UtcNow;
+                    outage.OutageEnd = DateTime.Now;
                     await _db.SaveChangesAsync();
 
                     await _logger.Info("OutageDetectionService",
@@ -215,8 +215,8 @@ public class OutageDetectionService : IOutageDetectionService
                 AutoDetected = true,
                 OutageType = "Outage Fleet Api",
                 OutageBrand = brand,
-                CreatedAt = DateTime.UtcNow,
-                OutageStart = DateTime.UtcNow,
+                CreatedAt = DateTime.Now,
+                OutageStart = DateTime.Now,
                 OutageEnd = null,
                 VehicleId = null,
                 ClientCompanyId = null,
@@ -241,7 +241,7 @@ public class OutageDetectionService : IOutageDetectionService
 
         if (ongoingOutage != null)
         {
-            ongoingOutage.OutageEnd = DateTime.UtcNow;
+            ongoingOutage.OutageEnd = DateTime.Now;
             await _db.SaveChangesAsync();
 
             await _logger.Info("OutageDetectionService",
@@ -276,7 +276,7 @@ public class OutageDetectionService : IOutageDetectionService
             return true; // Nessun dato mai ricevuto
         }
 
-        var timeSinceLastData = DateTime.UtcNow - lastDataReceived.Timestamp;
+        var timeSinceLastData = DateTime.Now - lastDataReceived.Timestamp;
         if (timeSinceLastData > _vehicleInactivityThreshold)
         {
             return true; // Troppo tempo senza dati
@@ -324,8 +324,8 @@ public class OutageDetectionService : IOutageDetectionService
                 AutoDetected = true,
                 OutageType = "Outage Vehicle",
                 OutageBrand = vehicle.Brand,
-                CreatedAt = DateTime.UtcNow,
-                OutageStart = DateTime.UtcNow,
+                CreatedAt = DateTime.Now,
+                OutageStart = DateTime.Now,
                 OutageEnd = null,
                 VehicleId = vehicle.Id,
                 ClientCompanyId = vehicle.ClientCompanyId,
@@ -350,7 +350,7 @@ public class OutageDetectionService : IOutageDetectionService
 
         if (ongoingOutage != null)
         {
-            ongoingOutage.OutageEnd = DateTime.UtcNow;
+            ongoingOutage.OutageEnd = DateTime.Now;
             await _db.SaveChangesAsync();
 
             await _logger.Info("OutageDetectionService",
