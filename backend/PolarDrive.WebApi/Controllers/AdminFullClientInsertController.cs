@@ -94,12 +94,6 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             memoryStream.Position = 0;
 
             using var zip = new ZipArchive(memoryStream, ZipArchiveMode.Read, leaveOpen: true);
-            var pdfEntry = zip.Entries.FirstOrDefault(e => e.FullName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase));
-            if (pdfEntry == null)
-            {
-                await _logger.Warning("AdminFullClientInsertController.Post", "No PDF file found inside ZIP.");
-                return BadRequest(new { ErrorCodes.MissingPdfInZip });
-            }
 
             var companyBasePath = Path.Combine(_env.WebRootPath, "companies", $"company-{company.Id}");
             Directory.CreateDirectory(companyBasePath);
@@ -120,10 +114,8 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             }
 
             string hash;
-            using (var stream = pdfEntry.Open())
             using (var ms = new MemoryStream())
             {
-                await stream.CopyToAsync(ms);
                 var hashBytes = SHA256.HashData(ms.ToArray());
                 hash = Convert.ToHexStringLower(hashBytes);
             }

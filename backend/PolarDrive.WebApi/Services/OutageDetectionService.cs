@@ -17,6 +17,7 @@ public class OutageDetectionService : IOutageDetectionService
     private readonly PolarDriveDbContext _db;
     private readonly PolarDriveLogger _logger;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IWebHostEnvironment _env;
 
     // Configurazioni per timeout e soglie
     private readonly TimeSpan _vehicleInactivityThreshold = TimeSpan.FromHours(8); // 8 ore senza dati = outage
@@ -25,11 +26,13 @@ public class OutageDetectionService : IOutageDetectionService
 
     public OutageDetectionService(
         PolarDriveDbContext db,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IWebHostEnvironment env)
     {
         _db = db;
         _logger = new PolarDriveLogger(db);
         _httpClientFactory = httpClientFactory;
+        _env = env;
     }
 
     /// <summary>
@@ -189,11 +192,16 @@ public class OutageDetectionService : IOutageDetectionService
 
     private string GetFleetApiEndpoint(string brand)
     {
-        // ✅ MODIFICA QUESTI URL CON I TUOI ENDPOINT REALI
         return brand.ToLower() switch
         {
-            "tesla" => "https://localhost:5001/api/tesla/health",    // 👈 TUO ENDPOINT TESLA
-            "polestar" => "https://localhost:5001/api/polestar/health", // 👈 TUO ENDPOINT POLESTAR
+            "tesla" => _env.IsDevelopment()
+                ? "http://localhost:5071/api/tesla/health"
+                : "https://fleet-api.tesla.com/api/1/health",
+                
+            "polestar" => _env.IsDevelopment()
+                ? "https://localhost:5001/api/polestar/health"
+                : "https://pc-api.polestar.com/eu-north-1/api/v1/health",
+                
             _ => throw new ArgumentException($"Unknown brand: {brand}")
         };
     }
@@ -220,7 +228,7 @@ public class OutageDetectionService : IOutageDetectionService
                 OutageEnd = null,
                 VehicleId = null,
                 ClientCompanyId = null,
-                Notes = "Rilevato automaticamente: Fleet API non risponde"
+                Notes = $"Auto-detected Fleet API outage for {brand}"
             };
 
             _db.OutagePeriods.Add(newOutage);
@@ -329,7 +337,7 @@ public class OutageDetectionService : IOutageDetectionService
                 OutageEnd = null,
                 VehicleId = vehicle.Id,
                 ClientCompanyId = vehicle.ClientCompanyId,
-                Notes = "Rilevato automaticamente: veicolo non risponde da oltre 8 ore"
+                Notes = "Auto-detected: vehicle not responding for over 8 hours"
             };
 
             _db.OutagePeriods.Add(newOutage);

@@ -131,7 +131,6 @@ public class VehicleOAuthController : ControllerBase
             {
                 "tesla" => await TeslaOAuthService.ExchangeCodeForTokens(code, _env),
                 "polestar" => await PolestarOAuthService.ExchangeCodeForTokens(code),
-                "porsche" => await PorscheOAuthService.ExchangeCodeForTokens(code),
                 _ => throw new NotSupportedException($"Brand '{brand}' not supported")
             };
 
@@ -295,17 +294,6 @@ public class VehicleOAuthController : ControllerBase
             return Task.FromResult((
                 AccessToken: "POLESTAR_TOKEN_" + code,
                 RefreshToken: "POLESTAR_REFRESH_" + code
-            ));
-        }
-    }
-
-    public static class PorscheOAuthService
-    {
-        public static Task<(string AccessToken, string RefreshToken)> ExchangeCodeForTokens(string code)
-        {
-            return Task.FromResult((
-                AccessToken: "PORSCHE_TOKEN_" + code,
-                RefreshToken: "PORSCHE_REFRESH_" + code
             ));
         }
     }

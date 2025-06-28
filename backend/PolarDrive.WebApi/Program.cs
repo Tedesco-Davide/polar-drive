@@ -65,12 +65,11 @@ builder.Services.AddScoped<VehicleDataService>();
 // ✅ SERVIZIO PER GENERAZIONE REPORT MANUALE
 builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
-// ✅ SCHEDULER: Registra
+// ✅ SCHEDULER
 builder.Services.AddHostedService<PolarDriveScheduler>();
 builder.Services.AddHostedService<FileCleanupService>();
 
-// SERVIZI OUTAGES
-// Registrazione del servizio di rilevamento outages
+// ✅ SERVIZI OUTAGES
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
 
 // Registrazione del servizio background

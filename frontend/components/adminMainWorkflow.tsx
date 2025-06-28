@@ -266,15 +266,6 @@ export default function AdminMainWorkflow({
             );
             alert(t("admin.validation.invalidZipType"));
             return;
-          case "MISSING_PDF_IN_ZIP":
-            logFrontendEvent(
-              "AdminMainWorkflow",
-              "WARNING",
-              "Form submission failed with known backend error",
-              `ErrorCode: ${errorCode}`
-            );
-            alert(t("admin.validation.invalidZipTypeRequiredConsent"));
-            return;
           default:
             logFrontendEvent(
               "AdminMainWorkflow",

@@ -35,15 +35,6 @@ public static class VehicleConstants
                     Trims = ["Long range Single motor"],
                     Colors = ["Snow"]
                 }
-            },
-            ["Porsche"] = new Dictionary<string, VehicleVariant>
-            {
-                ["718 Cayman"] = new VehicleVariant
-                {
-                    FuelType = FuelType.Combustion,
-                    Trims = ["GT4RS"],
-                    Colors = ["Racing Yellow"]
-                }
             }
         };
 

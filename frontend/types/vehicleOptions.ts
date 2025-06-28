@@ -31,13 +31,4 @@ export const vehicleOptions: VehicleOptionsType = {
       },
     },
   },
-  Porsche: {
-    models: {
-      "718 Cayman": {
-        fuelType: FuelType.Combustion,
-        trims: ["GT4RS"],
-        colors: ["Racing Yellow"],
-      },
-    },
-  },
 };

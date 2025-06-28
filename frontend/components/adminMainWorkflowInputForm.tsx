@@ -4,7 +4,6 @@ import { formatDateToSave } from "@/utils/date";
 import { fuelTypeOptions } from "@/types/fuelTypes";
 import { vehicleOptions } from "@/types/vehicleOptions";
 import { logFrontendEvent } from "@/utils/logger";
-import JSZip from "jszip";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
@@ -55,7 +54,7 @@ export default function AdminMainWorkflowInputForm({
       const file = files[0];
 
       const allowedTypes = ["application/zip", "application/x-zip-compressed"];
-      const maxSize = 20 * 1024 * 1024; // 20MB
+      const maxSize = 50 * 1024 * 1024; // 50MB
 
       if (!allowedTypes.includes(file.type)) {
         alert(t("admin.validation.invalidZipType"));
@@ -64,7 +63,7 @@ export default function AdminMainWorkflowInputForm({
       }
 
       if (file.size > maxSize) {
-        alert(t("admin.mainWorkflow.validation.zipTooLarge"));
+        alert(t("admin.validation.zipTooLarge"));
         e.target.value = "";
         return;
       }
@@ -100,27 +99,6 @@ export default function AdminMainWorkflowInputForm({
     }
 
     try {
-      const zipBuffer = await file.arrayBuffer();
-      const zip = new JSZip();
-      const contents = await zip.loadAsync(zipBuffer);
-
-      const hasPdf = Object.keys(contents.files).some(
-        (filename) =>
-          filename.toLowerCase().endsWith(".pdf") &&
-          !contents.files[filename].dir
-      );
-
-      if (!hasPdf) {
-        alert(t("admin.validation.invalidZipTypeRequiredConsent"));
-        await logFrontendEvent(
-          "AdminMainWorkflowInputForm",
-          "WARNING",
-          "ZIP file rejected: no PDF file found",
-          file.name
-        );
-        return;
-      }
-
       // ✅ All OK
       await logFrontendEvent(
         "AdminMainWorkflowInputForm",

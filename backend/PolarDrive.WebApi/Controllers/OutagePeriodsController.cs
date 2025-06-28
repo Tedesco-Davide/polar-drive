@@ -166,7 +166,7 @@ public class OutagePeriodsController : ControllerBase
                 OutageEnd = request.OutageEnd, // Data originale dal frontend
                 VehicleId = request.VehicleId,
                 ClientCompanyId = request.ClientCompanyId,
-                Notes = request.Notes ?? "Inserito manualmente"
+                Notes = request.Notes ?? "Manually inserted"
             };
 
             _db.OutagePeriods.Add(outage);
@@ -410,10 +410,11 @@ public class OutagePeriodsController : ControllerBase
     #region Private Methods
 
     /// <summary>
-    /// ✅ NUOVO METODO HELPER per processare i file ZIP (coerente con UploadOutageZipController)
+    /// ✅ MODIFICATO: ProcessZipFileAsync ora accetta qualsiasi contenuto
     /// </summary>
     private async Task<string?> ProcessZipFileAsync(IFormFile zipFile, string? filePrefix = null)
     {
+        // ✅ Controlla solo che sia un file .zip
         if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
         {
             await _logger.Warning("ProcessZipFileAsync", "Uploaded file is not a .zip.", zipFile.FileName);
@@ -426,21 +427,22 @@ public class OutagePeriodsController : ControllerBase
 
         try
         {
+            // ✅ Verifica solo che sia un ZIP valido, senza controllare il contenuto
             using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
-            bool hasPdf = archive.Entries.Any(e =>
-                Path.GetExtension(e.FullName).Equals(".pdf", StringComparison.OrdinalIgnoreCase) &&
-                !e.FullName.EndsWith("/")
-            );
-
-            if (!hasPdf)
-            {
-                await _logger.Warning("ProcessZipFileAsync", "ZIP file does not contain a PDF.", zipFile.FileName);
-                return null;
-            }
+            
+            // ✅ Log del contenuto per debug (opzionale)
+            var fileCount = archive.Entries.Count(e => !e.FullName.EndsWith("/"));
+            await _logger.Info("ProcessZipFileAsync", "ZIP file processed successfully.", 
+                $"FileName: {zipFile.FileName}, Files count: {fileCount}");
         }
-        catch (InvalidDataException)
+        catch (InvalidDataException ex)
         {
-            await _logger.Error("ProcessZipFileAsync", "ZIP file corrupted or invalid.");
+            await _logger.Error("ProcessZipFileAsync", "ZIP file corrupted or invalid.", ex.Message);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("ProcessZipFileAsync", "Unexpected error processing ZIP file.", ex.Message);
             return null;
         }
 

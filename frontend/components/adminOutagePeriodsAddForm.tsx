@@ -7,7 +7,6 @@ import { formatOutageDateTimeToSave } from "@/utils/date";
 import { OutageFormData } from "@/types/outagePeriodTypes";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
-import JSZip from "jszip";
 
 interface Props {
   t: TFunction;
@@ -118,14 +117,16 @@ export default function AdminOutagePeriodsAddForm({
     if (name === "zipFile" && files?.[0]) {
       const file = files[0];
 
+      // ✅ Verifica solo che sia un file .zip
       if (!file.name.endsWith(".zip")) {
         alert(t("admin.validation.invalidZipType"));
         return;
       }
 
+      // ✅ Verifica dimensione (manteniamo il limite di sicurezza)
       const maxSize = 50 * 1024 * 1024; // 50MB
       if (file.size > maxSize) {
-        alert(t("admin.outagePeriods.validation.zipTooLarge"));
+        alert(t("admin.validation.zipTooLarge"));
         return;
       }
 
@@ -203,31 +204,6 @@ export default function AdminOutagePeriodsAddForm({
     return true;
   };
 
-  const validateZipFile = async (file: File): Promise<boolean> => {
-    try {
-      const zipBuffer = await file.arrayBuffer();
-      const zip = new JSZip();
-      const contents = await zip.loadAsync(zipBuffer);
-
-      const pdfFound = Object.keys(contents.files).some(
-        (filename) =>
-          filename.toLowerCase().endsWith(".pdf") &&
-          !contents.files[filename].dir
-      );
-
-      if (!pdfFound) {
-        alert(t("admin.outagePeriods.invalidZipTypeRequiredOutages"));
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      console.error("Errore validation .zip file", error);
-      alert(t("admin.validation.invalidZipFile"));
-      return false;
-    }
-  };
-
   const handleSubmit = async () => {
     if (isSubmitting) return;
 
@@ -244,14 +220,6 @@ export default function AdminOutagePeriodsAddForm({
         return;
       }
 
-      // ✅ Validazione ZIP se presente
-      if (formData.zipFile) {
-        const isValidZip = await validateZipFile(formData.zipFile);
-        if (!isValidZip) {
-          return;
-        }
-      }
-
       // ✅ Prepara payload per la nuova API
       const payload = {
         outageType: formData.outageType,
@@ -266,7 +234,8 @@ export default function AdminOutagePeriodsAddForm({
           formData.outageType === "Outage Vehicle"
             ? resolvedIds.clientCompanyId
             : null,
-        notes: formData.notes || "Inserito manualmente",
+        notes:
+          formData.notes || t("admin.outagePeriods.resolveManuallyInserted"),
       };
 
       // ✅ Crea l'outage prima
@@ -337,7 +306,7 @@ export default function AdminOutagePeriodsAddForm({
         errorMessage
       );
 
-      alert(`${t("admin.outagePeriods.genericUploadError")}: ${errorMessage}`);
+      alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -463,7 +432,7 @@ export default function AdminOutagePeriodsAddForm({
           />
           {resolvedIds.clientCompanyId && (
             <span className="text-xs text-green-600 mt-1">
-              ✅ Company trovata (ID: {resolvedIds.clientCompanyId})
+              ✅ ({t("admin.companyFound")}: {resolvedIds.clientCompanyId})
             </span>
           )}
         </label>
@@ -488,7 +457,7 @@ export default function AdminOutagePeriodsAddForm({
           />
           {resolvedIds.vehicleId && (
             <span className="text-xs text-green-600 mt-1">
-              ✅ Veicolo trovato (ID: {resolvedIds.vehicleId})
+              ✅ {t("admin.vehicleFound")} (ID: {resolvedIds.vehicleId})
             </span>
           )}
         </label>
@@ -496,7 +465,7 @@ export default function AdminOutagePeriodsAddForm({
         {/* Upload ZIP */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.outagePeriods.uploadZipOutage")}
+            {t("admin.uploadZip")}
           </span>
           <input
             name="zipFile"
@@ -505,11 +474,6 @@ export default function AdminOutagePeriodsAddForm({
             onChange={handleChange}
             className="input text-[12px]"
           />
-          {formData.zipFile && (
-            <span className="text-xs mt-1 text-green-600">
-              ✅ {formData.zipFile.name}
-            </span>
-          )}
         </label>
 
         {/* Notes */}
@@ -530,8 +494,7 @@ export default function AdminOutagePeriodsAddForm({
       {formData.outageType === "Outage Fleet Api" && (
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-sm text-blue-700 dark:text-blue-300">
-            ℹ️ Per gli outages di tipo Fleet Api non è necessario specificare
-            azienda o veicolo specifico.
+            ℹ️ {t("admin.outagePeriods.outageTypeInfoFleet")}
           </p>
         </div>
       )}
@@ -540,8 +503,7 @@ export default function AdminOutagePeriodsAddForm({
         (!formData.companyVatNumber || !formData.vin) && (
           <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
             <p className="text-sm text-yellow-700 dark:text-yellow-300">
-              ⚠️ Per gli outages di tipo Vehicle è obbligatorio specificare sia
-              Partita IVA che VIN del veicolo.
+              ⚠️ {t("admin.outagePeriods.outageTypeInfoVehicle")}
             </p>
           </div>
         )}
@@ -557,7 +519,7 @@ export default function AdminOutagePeriodsAddForm({
         disabled={isSubmitting}
       >
         {isSubmitting
-          ? t("admin.processing") || "Elaborazione..."
+          ? t("admin.processing")
           : t("admin.outagePeriods.confirmAddNewOutage")}
       </button>
     </div>

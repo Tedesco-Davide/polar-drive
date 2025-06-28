@@ -350,7 +350,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                   {job.status === "COMPLETED" && job.resultZipPath ? (
                     <button
                       className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
-                      title={t("admin.filemanager.downloadZip")}
+                      title={t("admin.downloadZip")}
                       onClick={() => handleDownloadZip(job)}
                     >
                       <FileArchive size={16} />
@@ -358,7 +358,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
                   ) : (
                     <button
                       className="p-2 bg-gray-400 text-softWhite rounded cursor-not-allowed"
-                      title={t("admin.filemanager.downloadZipNotReady")}
+                      title={t("admin.downloadZipNotReady")}
                       disabled
                     >
                       <Download size={16} />

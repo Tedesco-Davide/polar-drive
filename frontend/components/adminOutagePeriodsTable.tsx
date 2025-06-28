@@ -33,6 +33,7 @@ const formatDateTime = (dateTime: string): string => {
   const date = new Date(dateTime.replace("Z", ""));
   return format(date, "dd/MM/yyyy HH:mm");
 };
+
 const formatDuration = (minutes: number): string => {
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
@@ -93,8 +94,16 @@ export default function AdminOutagePeriodsTable({
   } = usePagination<OutagePeriod>(filteredData, 10);
 
   const handleZipUpload = async (outageId: number, file: File) => {
+    // ✅ Verifica solo che sia un file .zip
     if (!file.name.endsWith(".zip")) {
       alert(t("admin.validation.invalidZipType"));
+      return;
+    }
+
+    // ✅ Verifica dimensione (manteniamo il limite di sicurezza)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      alert(t("admin.outagePeriods.validation.zipTooLarge"));
       return;
     }
 
@@ -125,10 +134,10 @@ export default function AdminOutagePeriodsTable({
         "AdminOutagePeriodsTable",
         "INFO",
         "ZIP uploaded successfully",
-        `Outage ID: ${outageId}`
+        `Outage ID: ${outageId}, File: ${file.name}`
       );
 
-      alert(t("admin.outagePeriods.successUploadZip"));
+      alert(t("admin.successUploadZip"));
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Upload failed";
@@ -138,7 +147,7 @@ export default function AdminOutagePeriodsTable({
         "Failed to upload ZIP",
         errorMessage
       );
-      alert(`${t("admin.outagePeriods.genericUploadError")}: ${errorMessage}`);
+      alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
     } finally {
       setUploadingZip((prev) => {
         const newSet = new Set(prev);
@@ -162,7 +171,7 @@ export default function AdminOutagePeriodsTable({
   };
 
   const handleResolveOutage = async (outageId: number) => {
-    if (!confirm(t("admin.outagePeriods.confirmResolve"))) {
+    if (!confirm(t("admin.outagePeriods.confirmResolveManually"))) {
       return;
     }
 
@@ -185,6 +194,7 @@ export default function AdminOutagePeriodsTable({
         "Outage resolved manually",
         `Outage ID: ${outageId}`
       );
+      alert(t("admin.outagePeriods.confirmResolveSuccess"));
     } catch (error) {
       logFrontendEvent(
         "AdminOutagePeriodsTable",
@@ -192,12 +202,12 @@ export default function AdminOutagePeriodsTable({
         "Failed to resolve outage",
         error instanceof Error ? error.message : "Unknown error"
       );
-      alert(t("admin.outagePeriods.errorResolving"));
+      alert(t("admin.outagePeriods.confirmResolveError"));
     }
   };
 
   const handleZipDelete = async (outageId: number) => {
-    if (!confirm(t("admin.outagePeriods.confirmDeleteZip"))) {
+    if (!confirm(t("admin.confirmDeleteZip"))) {
       return;
     }
 
@@ -222,7 +232,7 @@ export default function AdminOutagePeriodsTable({
         `Outage ID: ${outageId}`
       );
 
-      alert(t("admin.outagePeriods.successDeleteZip"));
+      alert(t("admin.successDeleteZip"));
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Delete failed";
@@ -232,7 +242,7 @@ export default function AdminOutagePeriodsTable({
         "Failed to delete ZIP",
         errorMessage
       );
-      alert(`${t("admin.outagePeriods.errorDeletingZip")}: ${errorMessage}`);
+      alert(`${t("admin.errorDeletingZip")}: ${errorMessage}`);
     }
   };
 
@@ -314,8 +324,8 @@ export default function AdminOutagePeriodsTable({
                       className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer"
                       title={
                         outage.hasZipFile
-                          ? t("admin.outagePeriods.replaceZip")
-                          : t("admin.outagePeriods.uploadZip")
+                          ? t("admin.replaceZip")
+                          : t("admin.uploadZip")
                       }
                     >
                       <input
@@ -328,7 +338,7 @@ export default function AdminOutagePeriodsTable({
                             // Aggiungi conferma se sta sostituendo un file esistente
                             if (outage.hasZipFile) {
                               const confirmReplace = confirm(
-                                t("admin.outagePeriods.confirmReplaceZip")
+                                t("admin.confirmReplaceZip")
                               );
                               if (!confirmReplace) {
                                 e.target.value = "";
@@ -354,14 +364,14 @@ export default function AdminOutagePeriodsTable({
                         <button
                           onClick={() => handleZipDownload(outage.id)}
                           className="p-2 bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
-                          title={t("admin.outagePeriods.downloadZip")}
+                          title={t("admin.downloadZip")}
                         >
                           <Download size={16} />
                         </button>
                         <button
                           onClick={() => handleZipDelete(outage.id)}
                           className="p-2 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
-                          title={t("admin.outagePeriods.deleteZip")}
+                          title={t("admin.deleteZip")}
                         >
                           <Trash2 size={16} />
                         </button>
