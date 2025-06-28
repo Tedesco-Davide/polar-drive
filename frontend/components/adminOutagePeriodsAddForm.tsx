@@ -57,6 +57,40 @@ export default function AdminOutagePeriodsAddForm({
 
   // ✅ Risolvi IDs quando cambiano VAT e VIN
   useEffect(() => {
+    const resolveCompanyAndVehicleIds = async () => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${formData.companyVatNumber}&vin=${formData.vin}`
+        );
+
+        if (response.ok) {
+          const resolved = await response.json();
+          setResolvedIds({
+            clientCompanyId: resolved.clientCompanyId,
+            vehicleId: resolved.vehicleId,
+          });
+
+          // ✅ Verifica brand coerente
+          const vehicleBrand = (resolved.vehicleBrand || "").trim();
+          const selectedBrand = formData.outageBrand.trim();
+          if (vehicleBrand && selectedBrand && vehicleBrand !== selectedBrand) {
+            alert(
+              `${t("admin.brandMismatch")}\n\n${t(
+                "admin.expectedResult"
+              )}: ${vehicleBrand}\n${t(
+                "admin.insertedValue"
+              )}: ${selectedBrand}`
+            );
+          }
+        } else {
+          setResolvedIds({ clientCompanyId: null, vehicleId: null });
+        }
+      } catch (error) {
+        console.error("Error resolveCompanyAndVehicleIds", error);
+        setResolvedIds({ clientCompanyId: null, vehicleId: null });
+      }
+    };
+
     if (
       formData.outageType === "Outage Vehicle" &&
       formData.companyVatNumber &&
@@ -66,39 +100,13 @@ export default function AdminOutagePeriodsAddForm({
     } else {
       setResolvedIds({ clientCompanyId: null, vehicleId: null });
     }
-  }, [formData.companyVatNumber, formData.vin, formData.outageType]);
-
-  const resolveCompanyAndVehicleIds = async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${formData.companyVatNumber}&vin=${formData.vin}`
-      );
-
-      if (response.ok) {
-        const resolved = await response.json();
-        setResolvedIds({
-          clientCompanyId: resolved.clientCompanyId,
-          vehicleId: resolved.vehicleId,
-        });
-
-        // ✅ Verifica brand coerente
-        const vehicleBrand = (resolved.vehicleBrand || "").trim();
-        const selectedBrand = formData.outageBrand.trim();
-        if (vehicleBrand && selectedBrand && vehicleBrand !== selectedBrand) {
-          alert(
-            `${t("admin.brandMismatch")}\n\n${t(
-              "admin.expectedResult"
-            )}: ${vehicleBrand}\n${t("admin.insertedValue")}: ${selectedBrand}`
-          );
-        }
-      } else {
-        setResolvedIds({ clientCompanyId: null, vehicleId: null });
-      }
-    } catch (error) {
-      console.error("Error resolveCompanyAndVehicleIds", error);
-      setResolvedIds({ clientCompanyId: null, vehicleId: null });
-    }
-  };
+  }, [
+    formData.companyVatNumber,
+    formData.vin,
+    formData.outageType,
+    formData.outageBrand,
+    t,
+  ]);
 
   const handleChange = (
     e: React.ChangeEvent<

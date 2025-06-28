@@ -10,7 +10,7 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class UploadOutageZipController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
+public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 {
     private readonly PolarDriveLogger _logger = new(db);
 
