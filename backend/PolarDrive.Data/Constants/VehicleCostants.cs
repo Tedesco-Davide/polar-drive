@@ -26,15 +26,6 @@ public static class VehicleConstants
                     Trims = ["Long Range"],
                     Colors = ["Ultra Red"]
                 }
-            },
-            ["Polestar"] = new Dictionary<string, VehicleVariant>
-            {
-                ["Polestar 4"] = new VehicleVariant
-                {
-                    FuelType = FuelType.Electric,
-                    Trims = ["Long range Single motor"],
-                    Colors = ["Snow"]
-                }
             }
         };
 

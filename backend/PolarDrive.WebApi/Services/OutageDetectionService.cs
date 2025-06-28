@@ -5,13 +5,6 @@ using PolarDrive.Data.Constants;
 
 namespace PolarDrive.Services;
 
-public interface IOutageDetectionService
-{
-    Task CheckFleetApiOutagesAsync();
-    Task CheckVehicleOutagesAsync();
-    Task ResolveOutagesAsync();
-}
-
 public class OutageDetectionService : IOutageDetectionService
 {
     private readonly PolarDriveDbContext _db;
@@ -20,8 +13,8 @@ public class OutageDetectionService : IOutageDetectionService
     private readonly IWebHostEnvironment _env;
 
     // Configurazioni per timeout e soglie
-    private readonly TimeSpan _vehicleInactivityThreshold = TimeSpan.FromHours(8); // 8 ore senza dati = outage
-    private readonly TimeSpan _fleetApiTimeout = TimeSpan.FromSeconds(30); // Timeout per chiamate API
+    private readonly TimeSpan _vehicleInactivityThreshold = TimeSpan.FromHours(4);
+    private readonly TimeSpan _fleetApiTimeout = TimeSpan.FromSeconds(15);
     private readonly int _maxRetries = 3;
 
     public OutageDetectionService(
@@ -35,9 +28,6 @@ public class OutageDetectionService : IOutageDetectionService
         _env = env;
     }
 
-    /// <summary>
-    /// Controlla lo stato delle Fleet API per ogni brand e rileva outages
-    /// </summary>
     public async Task CheckFleetApiOutagesAsync()
     {
         await _logger.Info("OutageDetectionService", "Starting Fleet API outage detection");
@@ -65,9 +55,6 @@ public class OutageDetectionService : IOutageDetectionService
         }
     }
 
-    /// <summary>
-    /// Controlla lo stato di ogni veicolo e rileva outages individuali
-    /// </summary>
     public async Task CheckVehicleOutagesAsync()
     {
         await _logger.Info("OutageDetectionService", "Starting vehicle outage detection");
@@ -100,9 +87,6 @@ public class OutageDetectionService : IOutageDetectionService
         }
     }
 
-    /// <summary>
-    /// Risolve automaticamente gli outages che sono tornati online
-    /// </summary>
     public async Task ResolveOutagesAsync()
     {
         await _logger.Info("OutageDetectionService", "Starting automatic outage resolution");
@@ -120,6 +104,7 @@ public class OutageDetectionService : IOutageDetectionService
 
                 if (outage.OutageType == "Outage Fleet Api")
                 {
+                    // ✅ Fix: controlla se l'API è tornata online
                     shouldResolve = !await IsFleetApiDownAsync(outage.OutageBrand);
                 }
                 else if (outage.OutageType == "Outage Vehicle" && outage.ClientVehicle != null)
@@ -148,10 +133,6 @@ public class OutageDetectionService : IOutageDetectionService
 
     private async Task<bool> IsFleetApiDownAsync(string brand)
     {
-        // Simula la chiamata al servizio Fleet API specifico per brand
-        // Nel tuo caso attuale sarà PolarDrive.TeslaMockApiService
-        // In produzione sarà l'API ufficiale Tesla/Polestar/etc.
-
         var httpClient = _httpClientFactory.CreateClient();
         httpClient.Timeout = _fleetApiTimeout;
 
@@ -160,10 +141,13 @@ public class OutageDetectionService : IOutageDetectionService
             try
             {
                 var endpoint = GetFleetApiEndpoint(brand);
+                await _logger.Info("OutageDetectionService", $"Testing endpoint: {endpoint}");
+                
                 var response = await httpClient.GetAsync(endpoint);
 
                 if (response.IsSuccessStatusCode)
                 {
+                    await _logger.Info("OutageDetectionService", $"Fleet API {brand} is UP (status: {response.StatusCode})");
                     return false; // API funziona
                 }
 
@@ -174,6 +158,11 @@ public class OutageDetectionService : IOutageDetectionService
             {
                 await _logger.Warning("OutageDetectionService",
                     $"Fleet API {brand} timeout on attempt {retry + 1}");
+            }
+            catch (HttpRequestException ex)
+            {
+                await _logger.Warning("OutageDetectionService",
+                    $"Fleet API {brand} connection error on attempt {retry + 1}: {ex.Message}");
             }
             catch (Exception ex)
             {
@@ -187,6 +176,7 @@ public class OutageDetectionService : IOutageDetectionService
             }
         }
 
+        await _logger.Error("OutageDetectionService", $"Fleet API {brand} is DOWN after {_maxRetries} attempts");
         return true; // Considerato down dopo tutti i tentativi
     }
 
@@ -195,12 +185,8 @@ public class OutageDetectionService : IOutageDetectionService
         return brand.ToLower() switch
         {
             "tesla" => _env.IsDevelopment()
-                ? "http://localhost:5071/api/tesla/health"
+                ? "http://localhost:5071/api/tesla/health" // ✅ Verifica che questo endpoint esista nel tuo mock
                 : "https://fleet-api.tesla.com/api/1/health",
-                
-            "polestar" => _env.IsDevelopment()
-                ? "https://localhost:5001/api/polestar/health"
-                : "https://pc-api.polestar.com/eu-north-1/api/v1/health",
                 
             _ => throw new ArgumentException($"Unknown brand: {brand}")
         };
@@ -237,6 +223,11 @@ public class OutageDetectionService : IOutageDetectionService
             await _logger.Info("OutageDetectionService",
                 $"Detected new Fleet API outage for {brand}");
         }
+        else
+        {
+            await _logger.Info("OutageDetectionService",
+                $"Fleet API outage for {brand} already exists (ID: {existingOutage.Id})");
+        }
     }
 
     private async Task ResolveFleetApiOutageAsync(string brand)
@@ -253,7 +244,7 @@ public class OutageDetectionService : IOutageDetectionService
             await _db.SaveChangesAsync();
 
             await _logger.Info("OutageDetectionService",
-                $"Resolved Fleet API outage for {brand}");
+                $"Resolved Fleet API outage for {brand} (ID: {ongoingOutage.Id})");
         }
     }
 
@@ -263,11 +254,6 @@ public class OutageDetectionService : IOutageDetectionService
 
     private async Task<bool> IsVehicleDownAsync(ClientVehicle vehicle)
     {
-        // Un veicolo è considerato "down" se:
-        // 1. Non è attivo nel sistema
-        // 2. Non ha inviato dati negli ultimi X ore
-        // 3. L'ultimo tentativo di connessione è fallito
-
         if (!vehicle.IsActiveFlag || !vehicle.IsFetchingDataFlag)
         {
             return true;
@@ -290,34 +276,11 @@ public class OutageDetectionService : IOutageDetectionService
             return true; // Troppo tempo senza dati
         }
 
-        // Prova a fare una chiamata diretta al veicolo (se supportato)
-        var isVehicleResponding = await PingVehicleAsync(vehicle);
-        return !isVehicleResponding;
-    }
-
-    private async Task<bool> PingVehicleAsync(ClientVehicle vehicle)
-    {
-        try
-        {
-            // Simula un ping al veicolo specifico
-            // Questo potrebbe essere una chiamata alla Fleet API per questo VIN specifico
-            var httpClient = _httpClientFactory.CreateClient();
-            httpClient.Timeout = _fleetApiTimeout;
-
-            var endpoint = $"{GetFleetApiEndpoint(vehicle.Brand)}/vehicle/{vehicle.Vin}/ping";
-            var response = await httpClient.GetAsync(endpoint);
-
-            return response.IsSuccessStatusCode;
-        }
-        catch
-        {
-            return false;
-        }
+        return false; // ✅ Semplificato: se ha dati recenti, è considerato UP
     }
 
     private async Task HandleVehicleOutageAsync(ClientVehicle vehicle)
     {
-        // Controlla se esiste già un outage ongoing per questo veicolo
         var existingOutage = await _db.OutagePeriods
             .FirstOrDefaultAsync(o =>
                 o.OutageType == "Outage Vehicle" &&
@@ -326,7 +289,6 @@ public class OutageDetectionService : IOutageDetectionService
 
         if (existingOutage == null)
         {
-            // Crea nuovo outage
             var newOutage = new OutagePeriod
             {
                 AutoDetected = true,

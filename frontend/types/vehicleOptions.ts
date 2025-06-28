@@ -22,13 +22,4 @@ export const vehicleOptions: VehicleOptionsType = {
       },
     },
   },
-  Polestar: {
-    models: {
-      "Polestar 4": {
-        fuelType: FuelType.Electric,
-        trims: ["Long range Single motor"],
-        colors: ["Snow"],
-      },
-    },
-  },
 };

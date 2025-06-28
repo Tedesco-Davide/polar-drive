@@ -57,7 +57,6 @@ builder.Services.AddHangfireServer(options => new BackgroundJobServerOptions
 });
 
 // ✅ SERVIZI MULTI-BRAND
-builder.Services.AddHttpClient();
 builder.Services.AddScoped<TeslaApiService>();
 builder.Services.AddScoped<VehicleApiServiceRegistry>();
 builder.Services.AddScoped<VehicleDataService>();
@@ -71,9 +70,7 @@ builder.Services.AddHostedService<FileCleanupService>();
 
 // ✅ SERVIZI OUTAGES
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
-
-// Registrazione del servizio background
-builder.Services.AddHostedService<OutageBackgroundService>();
+builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 
 // Registrazione HttpClientFactory per le chiamate alle API esterne
 builder.Services.AddHttpClient();

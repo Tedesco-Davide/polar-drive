@@ -79,6 +79,27 @@ export default function AdminOutagePeriodsTable({
     );
   }, [outages]);
 
+  useEffect(() => {
+    // Auto-refresh ogni 60 secondi
+    const interval = setInterval(async () => {
+      try {
+        const updatedOutages = await refreshOutagePeriods();
+        setLocalOutages(updatedOutages);
+
+        logFrontendEvent(
+          "AdminOutagePeriodsTable",
+          "INFO",
+          "Auto-refreshed outage data",
+          `Updated ${updatedOutages.length} outage records`
+        );
+      } catch (error) {
+        console.warn("Auto-refresh failed:", error);
+      }
+    }, 60000); // 60 secondi
+
+    return () => clearInterval(interval);
+  }, [refreshOutagePeriods]);
+
   const { query, setQuery, filteredData } = useSearchFilter<OutagePeriod>(
     localOutages,
     ["outageType", "notes", "companyVatNumber", "vin", "outageBrand"]

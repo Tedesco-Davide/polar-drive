@@ -49,12 +49,7 @@ public class VehicleOAuthController : ControllerBase
                     scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
                     authBaseUrl = _env.IsDevelopment()
                         ? "http://localhost:5071/oauth2/v3/authorize"
-                        : "https://auth.tesla.com/oauth2/v3/authorize"; break;
-
-                case "polestar":
-                    clientId = "<polestar_client_id>";
-                    scopes = "openid vehicles:read";
-                    authBaseUrl = "https://auth.polestar.com/oauth2/authorize";
+                        : "https://auth.tesla.com/oauth2/v3/authorize";
                     break;
 
                 default:
@@ -130,7 +125,6 @@ public class VehicleOAuthController : ControllerBase
             var tokens = brand.ToLowerInvariant() switch
             {
                 "tesla" => await TeslaOAuthService.ExchangeCodeForTokens(code, _env),
-                "polestar" => await PolestarOAuthService.ExchangeCodeForTokens(code),
                 _ => throw new NotSupportedException($"Brand '{brand}' not supported")
             };
 
@@ -286,16 +280,4 @@ public class VehicleOAuthController : ControllerBase
             }
         }
     }
-
-    public static class PolestarOAuthService
-    {
-        public static Task<(string AccessToken, string RefreshToken)> ExchangeCodeForTokens(string code)
-        {
-            return Task.FromResult((
-                AccessToken: "POLESTAR_TOKEN_" + code,
-                RefreshToken: "POLESTAR_REFRESH_" + code
-            ));
-        }
-    }
-
 }

@@ -112,14 +112,6 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
                 _logger.LogWarning("Tesla API service not available in service provider");
             }
 
-            // ✅ FUTURO: Altri servizi quando saranno implementati
-            // var polestarService = _serviceProvider.GetService<PolestarApiService>();
-            // if (polestarService != null) 
-            // {
-            //     services.Add(new PolestarApiServiceAdapter(polestarService));
-            //     _logger.LogDebug("Polestar API service registered successfully");
-            // }
-
             _logger.LogInformation("Vehicle API service registry initialized with {ServiceCount} services", services.Count);
         }
         catch (Exception ex)
