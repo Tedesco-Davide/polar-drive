@@ -588,16 +588,6 @@ export default function AdminMainWorkflow({
                   <UserSearch size={16} />
                 </button>
                 <button
-                  className="p-2 bg-yellow-500 hover:bg-yellow-600 text-softWhite rounded"
-                  title={t("admin.mainWorkflow.button.zipPdfReports")}
-                  onClick={() => {
-                    alert("TODO");
-                    // azione che fa i check interni se non ci sono dati
-                  }}
-                >
-                  <FileArchive size={16} />
-                </button>
-                <button
                   className="p-2 bg-orange-500 hover:bg-orange-600 text-softWhite rounded"
                   title={t("admin.mainWorkflow.button.zipConsents")}
                   onClick={() => {

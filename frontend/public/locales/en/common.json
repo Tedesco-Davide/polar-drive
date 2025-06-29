@@ -137,7 +137,6 @@
   "admin.mainWorkflow.button.generateMonthlyReportsAlert": "This action will generate PDF reports for all active clients for the previous month. The operation may take some time. Are you sure you want to proceed?",
   "admin.mainWorkflow.button.errorGenerateMonthlyReports": "Error during monthly report generation",
   "admin.mainWorkflow.button.successGenerateMonthlyReports": "Monthly report generation completed successfully!",
-  "admin.mainWorkflow.button.zipPdfReports": "Export Vehicle Reports for Company (.zip)",
   "admin.mainWorkflow.button.managePdfReports": "Manage PDF Reports",
   "admin.mainWorkflow.button.zipConsents": "Download all company consents (.zip)",
   "admin.mainWorkflow.button.singleZipConsent": "Consent (.zip)",
