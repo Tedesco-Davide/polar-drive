@@ -200,6 +200,12 @@
   "admin.clientConsents.successAddNewConsent": "Consent addedd successfully!",
   "admin.clientConsents.notes.modalTitle": "Managing note for: row in Company Consents Table",
   "admin.clientConsents.notes.modalPlaceholder": "Remember to click the + icon on the left to add the note. Type something...",
+  "admin.clientConsents.validation.consentTypeRequired": "Consent Type is required",
+  "admin.clientConsents.validation.companyVatNumberRequired": "Company VAT Number is required",
+  "admin.clientConsents.validation.vehicleVINRequired": "Vehicle VIN is required",
+  "admin.clientConsents.validation.uploadDateRequired": "Upload Date is required",
+  "admin.clientConsents.validation.invalidUploadDate": "Invalid or future upload date",
+  "admin.clientConsents.validation.zipFileRequired": "ZIP file is required",
 
   "admin.outagePeriods.tableHeader": "Outages",
   "admin.outagePeriods.autoDetected": "Auto detected?",

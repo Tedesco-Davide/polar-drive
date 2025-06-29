@@ -77,21 +77,24 @@ builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// ✅ CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER E GLI OUTAGES
+// ✅ CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER, OUTAGES E CONSENTS
 var storageBasePath = "storage";
 var reportsPath = Path.Combine(storageBasePath, "reports");
 var fileManagerZipsPath = Path.Combine(storageBasePath, "filemanager-zips");
 var outageZipsPath = Path.Combine(storageBasePath, "outages-zips");
+var consentZipsPath = Path.Combine(storageBasePath, "consents-zips");
 
 // Crea le directory se non esistono
 Directory.CreateDirectory(storageBasePath);
 Directory.CreateDirectory(reportsPath);
 Directory.CreateDirectory(fileManagerZipsPath);
 Directory.CreateDirectory(outageZipsPath);
+Directory.CreateDirectory(consentZipsPath);
 Console.WriteLine($"📁 Storage directories created:");
 Console.WriteLine($"   - Reports: {Path.GetFullPath(reportsPath)}");
 Console.WriteLine($"   - FileManager ZIPs: {Path.GetFullPath(fileManagerZipsPath)}");
 Console.WriteLine($"   - Outage ZIPs: {Path.GetFullPath(outageZipsPath)}");
+Console.WriteLine($"   - Consent ZIPs: {Path.GetFullPath(consentZipsPath)}");
 
 // Use Swagger only in development
 if (app.Environment.IsDevelopment())
@@ -156,12 +159,36 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("   - GET  /api/FileManager/available-brands - Get available brands");
             Console.WriteLine("   - GET  /api/FileManager/available-vins - Get available VINs");
             Console.WriteLine();
+            Console.WriteLine("🔧 Outages API Endpoints:");
+            Console.WriteLine("   - GET  /api/OutagePeriods - List all outages");
+            Console.WriteLine("   - POST /api/OutagePeriods - Create new outage manually");
+            Console.WriteLine("   - POST /api/OutagePeriods/{id}/upload-zip - Upload ZIP to outage");
+            Console.WriteLine("   - GET  /api/OutagePeriods/{id}/download-zip - Download outage ZIP");
+            Console.WriteLine("   - DELETE /api/OutagePeriods/{id}/delete-zip - Delete outage ZIP");
+            Console.WriteLine("   - PATCH /api/OutagePeriods/{id}/resolve - Resolve ongoing outage");
+            Console.WriteLine("   - PATCH /api/OutagePeriods/{id}/notes - Update outage notes");
+            Console.WriteLine();
+            Console.WriteLine("🔧 Client Consents API Endpoints:");
+            Console.WriteLine("   - GET  /api/ClientConsents - List all consents");
+            Console.WriteLine("   - POST /api/ClientConsents - Create new consent manually");
+            Console.WriteLine("   - POST /api/ClientConsents/{id}/upload-zip - Upload ZIP to consent");
+            Console.WriteLine("   - GET  /api/ClientConsents/{id}/download - Download consent ZIP");
+            Console.WriteLine("   - DELETE /api/ClientConsents/{id}/delete-zip - Delete consent ZIP");
+            Console.WriteLine("   - PATCH /api/ClientConsents/{id}/notes - Update consent notes");
+            Console.WriteLine("   - GET  /api/ClientConsents/resolve-ids - Resolve company/vehicle IDs");
+            Console.WriteLine();
             Console.WriteLine("📝 Report levels based on monitoring time:");
             Console.WriteLine("   - < 5 min: Valutazione Iniziale");
             Console.WriteLine("   - < 15 min: Analisi Rapida");
             Console.WriteLine("   - < 30 min: Pattern Recognition");
             Console.WriteLine("   - < 60 min: Behavioral Analysis");
             Console.WriteLine("   - > 60 min: Deep Dive Analysis");
+            Console.WriteLine();
+            Console.WriteLine("📁 Storage Structure:");
+            Console.WriteLine("   - storage/reports/ → PDF reports");
+            Console.WriteLine("   - storage/filemanager-zips/ → File manager downloads");
+            Console.WriteLine("   - storage/outages-zips/ → Outage documentation");
+            Console.WriteLine("   - storage/consents-zips/ → Client consent files");
             Console.WriteLine("===============================");
         }
         else
@@ -180,6 +207,10 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("📦 File Manager:");
             Console.WriteLine("   - PDF ZIP downloads available via /api/FileManager");
             Console.WriteLine("   - Automatic cleanup enabled");
+            Console.WriteLine();
+            Console.WriteLine("📁 Storage Directories:");
+            Console.WriteLine("   - Reports, FileManager, Outages & Consents ZIPs");
+            Console.WriteLine("   - Automatic directory creation on startup");
             Console.WriteLine("===============================");
         }
     }

@@ -12,4 +12,5 @@ public class ClientConsentDTO
     public string ConsentHash { get; set; } = string.Empty;
     public string ConsentType { get; set; } = string.Empty;
     public string? Notes { get; set; }
+    public bool HasZipFile { get; set; }
 }

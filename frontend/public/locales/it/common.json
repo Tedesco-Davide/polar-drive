@@ -200,6 +200,12 @@
   "admin.clientConsents.successAddNewConsent": "Consenso aggiunto con successo!",
   "admin.clientConsents.notes.modalTitle": "Gestione nota per: riga in Tabella Consensi Azienda",
   "admin.clientConsents.notes.modalPlaceholder": "Ricordati di cliccare sull icona + a sinistra per aggiungere la nota. Scrivi qualcosa...",
+  "admin.clientConsents.validation.consentTypeRequired": "Tipologia del Consenso è obbligatoria",
+  "admin.clientConsents.validation.companyVatNumberRequired": "Partita IVA dell'azienda è obbligatoria",
+  "admin.clientConsents.validation.vehicleVINRequired": "VIN del veicolo è obbligatorio",
+  "admin.clientConsents.validation.uploadDateRequired": "Data di firma è obbligatoria",
+  "admin.clientConsents.validation.invalidUploadDate": "Data di firma non valida o futura",
+  "admin.clientConsents.validation.zipFileRequired": "File ZIP è obbligatorio",
 
   "admin.outagePeriods.tableHeader": "Outages",
   "admin.outagePeriods.autoDetected": "Auto rilevato?",
