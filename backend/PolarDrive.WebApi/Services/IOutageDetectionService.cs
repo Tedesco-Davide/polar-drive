@@ -1,4 +1,4 @@
-namespace PolarDrive.Services;
+namespace PolarDrive.WebApi.Services;
 
 /// <summary>
 /// Interfaccia per il servizio di rilevamento outage

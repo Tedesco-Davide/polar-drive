@@ -2,31 +2,24 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.Data.Constants;
+using PolarDrive.WebApi.Services;
 
 namespace PolarDrive.Services;
 
-public class OutageDetectionService : IOutageDetectionService
+public class OutageDetectionService(
+    PolarDriveDbContext db,
+    IHttpClientFactory httpClientFactory,
+    IWebHostEnvironment env) : IOutageDetectionService
 {
-    private readonly PolarDriveDbContext _db;
-    private readonly PolarDriveLogger _logger;
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly IWebHostEnvironment _env;
+    private readonly PolarDriveDbContext _db = db;
+    private readonly PolarDriveLogger _logger = new PolarDriveLogger(db);
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+    private readonly IWebHostEnvironment _env = env;
 
     // Configurazioni per timeout e soglie
-    private readonly TimeSpan _vehicleInactivityThreshold = TimeSpan.FromHours(4);
-    private readonly TimeSpan _fleetApiTimeout = TimeSpan.FromSeconds(15);
+    private readonly TimeSpan _vehicleInactivityThreshold = TimeSpan.FromMinutes(55);
+    private readonly TimeSpan _fleetApiTimeout = TimeSpan.FromSeconds(60);
     private readonly int _maxRetries = 3;
-
-    public OutageDetectionService(
-        PolarDriveDbContext db,
-        IHttpClientFactory httpClientFactory,
-        IWebHostEnvironment env)
-    {
-        _db = db;
-        _logger = new PolarDriveLogger(db);
-        _httpClientFactory = httpClientFactory;
-        _env = env;
-    }
 
     public async Task CheckFleetApiOutagesAsync()
     {
@@ -59,12 +52,12 @@ public class OutageDetectionService : IOutageDetectionService
     {
         await _logger.Info("OutageDetectionService", "Starting vehicle outage detection");
 
-        var activeVehicles = await _db.ClientVehicles
-            .Where(v => v.IsActiveFlag)
+        var outageVehicles = await _db.ClientVehicles
+            .Where(v => !v.IsActiveFlag && v.IsFetchingDataFlag)
             .Include(v => v.ClientCompany)
             .ToListAsync();
 
-        foreach (var vehicle in activeVehicles)
+        foreach (var vehicle in outageVehicles)
         {
             try
             {
@@ -142,7 +135,7 @@ public class OutageDetectionService : IOutageDetectionService
             {
                 var endpoint = GetFleetApiEndpoint(brand);
                 await _logger.Info("OutageDetectionService", $"Testing endpoint: {endpoint}");
-                
+
                 var response = await httpClient.GetAsync(endpoint);
 
                 if (response.IsSuccessStatusCode)
@@ -187,7 +180,7 @@ public class OutageDetectionService : IOutageDetectionService
             "tesla" => _env.IsDevelopment()
                 ? "http://localhost:5071/api/tesla/health" // ✅ Verifica che questo endpoint esista nel tuo mock
                 : "https://fleet-api.tesla.com/api/1/health",
-                
+
             _ => throw new ArgumentException($"Unknown brand: {brand}")
         };
     }
@@ -254,7 +247,7 @@ public class OutageDetectionService : IOutageDetectionService
 
     private async Task<bool> IsVehicleDownAsync(ClientVehicle vehicle)
     {
-        if (!vehicle.IsActiveFlag || !vehicle.IsFetchingDataFlag)
+        if (!vehicle.IsActiveFlag)
         {
             return true;
         }

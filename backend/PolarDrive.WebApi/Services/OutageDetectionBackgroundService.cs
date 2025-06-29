@@ -1,8 +1,6 @@
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using PolarDrive.Services;
 
-namespace PolarDrive.Services;
+namespace PolarDrive.WebApi.Services;
 
 /// <summary>
 /// Background service che esegue periodicamente il controllo degli outage
@@ -11,7 +9,7 @@ public class OutageDetectionBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<OutageDetectionBackgroundService> _logger;
-    
+
     // Configurazione timing
     private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(2); // Controlla ogni 2 minuti
 
