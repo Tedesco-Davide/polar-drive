@@ -499,7 +499,7 @@ export default function AdminOutagePeriodsTable({
             <tr>
               <td colSpan={8} className="p-8 text-center text-gray-500">
                 {query
-                  ? t("admin.noResultsFound")
+                  ? t("admin.outagePeriods.noResultsFound")
                   : t("admin.outagePeriods.noOutages")}
               </td>
             </tr>

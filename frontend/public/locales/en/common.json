@@ -225,6 +225,8 @@
   "admin.outagePeriods.confirmResolveError": "Error during manual Outage resolution",
   "admin.outagePeriods.outageTypeInfoFleet": "For Fleet Api type outages, it is not necessary to specify a specific company or vehicle",
   "admin.outagePeriods.outageTypeInfoVehicle": "For Vehicle type outages, it is mandatory to specify both VAT number and vehicle VIN",
+  "admin.outagePeriods.noResultsFound": "No outages match your search",
+  "admin.outagePeriods.noOutages": "All systems operational - no outages recorded",
 
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totals",
