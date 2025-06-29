@@ -435,6 +435,115 @@ public class ClientConsentsController : ControllerBase
     }
 
     #endregion
+
+    // Aggiungi questo metodo al ClientConsentsController esistente
+
+    /// <summary>
+    /// Download di tutti i consensi per un'azienda specifica in un unico ZIP
+    /// </summary>
+    [HttpGet("download-all-by-company")]
+    public async Task<IActionResult> DownloadAllConsentsByCompany([FromQuery] string vatNumber)
+    {
+        try
+        {
+            await _logger.Info("ClientConsentsController.DownloadAllConsentsByCompany",
+                "Started download all consents for company", $"VAT: {vatNumber}");
+
+            // Trova l'azienda
+            var company = await _db.ClientCompanies.FirstOrDefaultAsync(c => c.VatNumber == vatNumber);
+            if (company == null)
+            {
+                await _logger.Warning("ClientConsentsController.DownloadAllConsentsByCompany",
+                    "Company not found", $"VAT: {vatNumber}");
+                return NotFound("Company not found");
+            }
+
+            // Trova tutti i consensi dell'azienda che hanno un file ZIP
+            var consents = await _db.ClientConsents
+                .Include(c => c.ClientVehicle)
+                .Where(c => c.ClientCompanyId == company.Id &&
+                           !string.IsNullOrWhiteSpace(c.ZipFilePath))
+                .OrderBy(c => c.UploadDate)
+                .ToListAsync();
+
+            if (!consents.Any())
+            {
+                await _logger.Warning("ClientConsentsController.DownloadAllConsentsByCompany",
+                    "No consents with ZIP files found for company", $"CompanyId: {company.Id}");
+                return NotFound("No consent files found for this company");
+            }
+
+            // Crea un ZIP temporaneo contenente tutti i consensi
+            using var zipStream = new MemoryStream();
+            using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, true))
+            {
+                var processedCount = 0;
+
+                foreach (var consent in consents)
+                {
+                    if (string.IsNullOrWhiteSpace(consent.ZipFilePath) ||
+                        !System.IO.File.Exists(consent.ZipFilePath))
+                    {
+                        await _logger.Warning("ClientConsentsController.DownloadAllConsentsByCompany",
+                            "Consent ZIP file not found", $"ConsentId: {consent.Id}, Path: {consent.ZipFilePath}");
+                        continue;
+                    }
+
+                    try
+                    {
+                        // Leggi il file ZIP del consenso
+                        var consentZipBytes = await System.IO.File.ReadAllBytesAsync(consent.ZipFilePath);
+
+                        // Crea un nome file descrittivo per il consenso
+                        var consentFileName = $"{consent.ConsentType.Replace(" ", "_")}_{consent.UploadDate:yyyyMMdd}_{consent.ClientVehicle?.Vin ?? "unknown"}_{consent.Id}.zip";
+
+                        // Aggiungi il file ZIP del consenso al ZIP principale
+                        var entry = archive.CreateEntry(consentFileName);
+                        using var entryStream = entry.Open();
+                        await entryStream.WriteAsync(consentZipBytes);
+
+                        processedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        await _logger.Error("ClientConsentsController.DownloadAllConsentsByCompany",
+                            $"Error processing consent {consent.Id}", ex.ToString());
+                        // Continua con gli altri consensi
+                    }
+                }
+
+                if (processedCount == 0)
+                {
+                    await _logger.Warning("ClientConsentsController.DownloadAllConsentsByCompany",
+                        "No valid consent files could be processed", $"CompanyId: {company.Id}");
+                    return NotFound("No valid consent files could be processed");
+                }
+
+                await _logger.Info("ClientConsentsController.DownloadAllConsentsByCompany",
+                    $"Successfully processed {processedCount} consent files for company {company.Id}");
+            }
+
+            // Genera il nome del file ZIP finale
+            var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+            var sanitizedCompanyName = System.Text.RegularExpressions.Regex.Replace(
+                company.Name, @"[^a-zA-Z0-9]", "_");
+            var fileName = $"consensi_{sanitizedCompanyName}_{company.VatNumber}_{timestamp}.zip";
+
+            await _logger.Info("ClientConsentsController.DownloadAllConsentsByCompany",
+                "All consents ZIP created successfully",
+                $"Company: {company.Name}, FileName: {fileName}, Size: {zipStream.Length} bytes");
+
+            // Ritorna il file ZIP
+            zipStream.Position = 0;
+            return File(zipStream.ToArray(), "application/zip", fileName);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("ClientConsentsController.DownloadAllConsentsByCompany",
+                $"Error downloading all consents for company with VAT {vatNumber}", ex.ToString());
+            return StatusCode(500, "Internal server error while creating consents archive");
+        }
+    }
 }
 
 /// <summary>

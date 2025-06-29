@@ -327,6 +327,131 @@ export default function AdminMainWorkflow({
     setShowForm(false);
   };
 
+  const handleDownloadAllConsents = async (
+    companyVatNumber: string,
+    companyName: string,
+    vehicleVin: string
+  ) => {
+    try {
+      // Validazione preliminare
+      if (!companyVatNumber || !companyName) {
+        alert(t("admin.mainWorkflow.alerts.missingCompanyData"));
+        return;
+      }
+
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "INFO",
+        "Download all consents triggered",
+        `Company VAT: ${companyVatNumber}, VIN: ${vehicleVin}`
+      );
+
+      // Conferma dall'utente per operazioni su grandi volumi
+      const confirmDownload = confirm(
+        `${t(
+          "admin.mainWorkflow.alerts.confirmDownloadAllConsents"
+        )} ${companyName} (${companyVatNumber})?`
+      );
+
+      if (!confirmDownload) {
+        logFrontendEvent(
+          "AdminMainWorkflow",
+          "INFO",
+          "Download all consents cancelled by user",
+          `Company VAT: ${companyVatNumber}`
+        );
+        return;
+      }
+
+      setIsStatusChanging(true);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/clientconsents/download-all-by-company?vatNumber=${encodeURIComponent(
+          companyVatNumber
+        )}`,
+        {
+          method: "GET",
+          headers: {
+            Accept: "application/zip",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = "Unknown error";
+        try {
+          const errorText = await response.text();
+          errorMessage = errorText;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Verifica che sia effettivamente un file ZIP
+      const contentType = response.headers.get("content-type");
+      if (!contentType?.includes("application/zip")) {
+        throw new Error("Server did not return a ZIP file");
+      }
+
+      const blob = await response.blob();
+
+      // Verifica dimensione minima del file (dovrebbe essere > 22 bytes per un ZIP vuoto)
+      if (blob.size < 22) {
+        throw new Error("Downloaded file appears to be empty or corrupted");
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      const timestamp = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/[:-]/g, "");
+      const sanitizedCompanyName = companyName.replace(/[^a-zA-Z0-9]/g, "_");
+      link.download = `consensi_${sanitizedCompanyName}_${companyVatNumber}_${timestamp}.zip`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "INFO",
+        "All consents downloaded successfully",
+        `Company VAT: ${companyVatNumber}, File size: ${blob.size} bytes`
+      );
+
+      alert(t("admin.mainWorkflow.alerts.allConsentsDownloaded"));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Download failed";
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "ERROR",
+        "Failed to download all consents",
+        `Company VAT: ${companyVatNumber}, Error: ${errorMessage}`
+      );
+
+      // Messaggi di errore più specifici
+      if (errorMessage.includes("not found")) {
+        alert(t("admin.mainWorkflow.alerts.noConsentsFound"));
+      } else if (errorMessage.includes("HTTP 500")) {
+        alert(t("admin.mainWorkflow.alerts.serverErrorDownload"));
+      } else {
+        alert(
+          `${t(
+            "admin.mainWorkflow.alerts.downloadAllConsentsFail"
+          )}: ${errorMessage}`
+        );
+      }
+    } finally {
+      setIsStatusChanging(false);
+    }
+  };
+
   return (
     <div>
       {isStatusChanging && <AdminLoader />}
@@ -476,8 +601,11 @@ export default function AdminMainWorkflow({
                   className="p-2 bg-orange-500 hover:bg-orange-600 text-softWhite rounded"
                   title={t("admin.mainWorkflow.button.zipConsents")}
                   onClick={() => {
-                    alert("TODO");
-                    // azione che fa i check interni se non ci sono dati
+                    handleDownloadAllConsents(
+                      entry.companyVatNumber,
+                      entry.companyName,
+                      entry.vehicleVIN
+                    );
                   }}
                 >
                   <FileArchive size={16} />
