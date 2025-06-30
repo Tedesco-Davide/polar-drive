@@ -500,8 +500,7 @@ public static class RawDataPreparser
         foreach (var command in commands)
         {
             var commandName = GetSafeStringValue(command, "command", "[comando non specificato]");
-            var category = GetCommandCategory(commandName);
-
+            var category = GetCommandCategory(commandName!);
             if (!commandsByCategory.ContainsKey(category))
                 commandsByCategory[category] = [];
 
@@ -608,13 +607,13 @@ public static class RawDataPreparser
 
                 var status = result ? "✅ Successo" : $"❌ Errore{(!string.IsNullOrEmpty(reason) ? $": {reason}" : "")}";
 
-                sb.AppendLine($"    • {timeDisplay} - {GetCommandDisplayName(commandName)}: {status}");
+                sb.AppendLine($"    • {timeDisplay} - {GetCommandDisplayName(commandName!)}: {status}");
 
                 // Mostra parametri se presenti con formattazione migliorata
                 if (command.TryGetProperty("parameters", out var parameters) &&
                     parameters.ValueKind == JsonValueKind.Object)
                 {
-                    var paramDetails = FormatCommandParameters(commandName, parameters);
+                    var paramDetails = FormatCommandParameters(commandName!, parameters);
                     if (!string.IsNullOrEmpty(paramDetails))
                     {
                         sb.AppendLine($"      📋 Parametri: {paramDetails}");
@@ -628,7 +627,7 @@ public static class RawDataPreparser
                 }
 
                 // Analisi specifica per tipo di comando
-                var commandAnalysis = GetCommandAnalysis(commandName, result, parameters);
+                var commandAnalysis = GetCommandAnalysis(commandName!, result, parameters);
                 if (!string.IsNullOrEmpty(commandAnalysis))
                 {
                     sb.AppendLine($"      💡 {commandAnalysis}");
@@ -672,7 +671,7 @@ public static class RawDataPreparser
                     c.TryGetProperty("response", out var resp) &&
                     GetSafeBooleanValue(resp, "result")) * 100.0 / count;
 
-                sb.AppendLine($"    • {GetCommandDisplayName(cmdName)}: {count} volte (successo: {successRate:F0}%)");
+                sb.AppendLine($"    • {GetCommandDisplayName(cmdName!)}: {count} volte (successo: {successRate:F0}%)");
             }
             sb.AppendLine();
         }
@@ -696,7 +695,7 @@ public static class RawDataPreparser
     // Metodi helper aggiuntivi per l'analisi avanzata
     private static string GetCommandAnalysis(string commandName, bool success, JsonElement? parameters)
     {
-        if (!success) return null;
+        if (!success) return string.Empty;
 
         return commandName switch
         {
@@ -709,7 +708,7 @@ public static class RawDataPreparser
             "navigation_request" => "Destinazione impostata - percorso ottimizzato",
             "flash_lights" => "Utile per localizzare il veicolo",
             "honk_horn" => "Comando di localizzazione eseguito",
-            _ => null
+            _ => "Comando eseguito"
         };
     }
 
@@ -726,10 +725,10 @@ public static class RawDataPreparser
                 var cmdName = GetSafeStringValue(command, "command");
                 var estimatedResponseTime = cmdName switch
                 {
-                    var cmd when cmd.StartsWith("charge_") => 2.5,
-                    var cmd when cmd.StartsWith("door_") => 1.0,
-                    var cmd when cmd.StartsWith("climate_") => 3.0,
-                    var cmd when cmd.StartsWith("navigation_") => 4.0,
+                    var cmd when cmd!.StartsWith("charge_") => 2.5,
+                    var cmd when cmd!.StartsWith("door_") => 1.0,
+                    var cmd when cmd!.StartsWith("climate_") => 3.0,
+                    var cmd when cmd!.StartsWith("navigation_") => 4.0,
                     _ => 1.5
                 };
                 responseTimes.Add(estimatedResponseTime);
@@ -749,15 +748,17 @@ public static class RawDataPreparser
         }
 
         var chargeCommands = commands.Count(c =>
-            GetSafeStringValue(c, "command").StartsWith("charge_"));
+            GetSafeStringValue(c, "command")?.StartsWith("charge_") == true);
         if (chargeCommands > 10)
         {
             recommendations.Add("Uso frequente comandi ricarica - considera programmazione automatica");
         }
 
         var climateCommands = commands.Count(c =>
-            GetSafeStringValue(c, "command").Contains("climate") ||
-            GetSafeStringValue(c, "command").Contains("conditioning"));
+        {
+            var cmd = GetSafeStringValue(c, "command");
+            return cmd?.Contains("climate") == true || cmd?.Contains("conditioning") == true;
+        });
         if (climateCommands > 5)
         {
             recommendations.Add("Uso frequente climatizzatore - ottimizza con programmazione partenza");
@@ -867,7 +868,7 @@ public static class RawDataPreparser
 
                 // ✅ UTILIZZO di TranslateShiftState
                 var shiftStateRaw = GetSafeStringValue(driveState, "shift_state", null);
-                var translatedShift = TranslateShiftState(shiftStateRaw);
+                var translatedShift = TranslateShiftState(shiftStateRaw!);
 
                 // ✅ UTILIZZO di FormatCoordinatesItalian
                 var formattedCoords = FormatCoordinatesItalian(latitude, longitude);
@@ -1123,7 +1124,7 @@ public static class RawDataPreparser
                     var expDate = parsedTimeOk ? expDt.ToString("yyyy-MM-dd") : "[data sconosciuta]";
 
                     // Conversione unità odometro se necessario
-                    var odometerDisplay = odometerUnit.ToUpper() == "MI" ?
+                    var odometerDisplay = odometerUnit!.Equals("MI", StringComparison.CurrentCultureIgnoreCase) ?
                         $"{expirationOdometer:N0} mi ({expirationOdometer * 1.60934:N0} km)" :
                         $"{expirationOdometer:N0} {odometerUnit}";
 
@@ -1197,7 +1198,7 @@ public static class RawDataPreparser
     #region Helper Methods
 
     // Metodi helper per gestire valori che potrebbero non esistere o essere null
-    private static string GetSafeStringValue(JsonElement element, string propertyName, string defaultValue = "N/A")
+    private static string? GetSafeStringValue(JsonElement element, string propertyName, string? defaultValue = "N/A")
     {
         return element.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String ?
                prop.GetString() ?? defaultValue : defaultValue;
@@ -1534,7 +1535,7 @@ public static class RawDataPreparser
         var publicKey = GetSafeStringValue(content, "public_key");
         if (publicKey != "N/A")
         {
-            var keyLength = publicKey.Length;
+            var keyLength = publicKey!.Length;
             var keyPreview = keyLength > 20 ? $"{publicKey[..20]}...{publicKey[^10..]}" : publicKey;
             var keyStrength = keyLength switch
             {
@@ -1582,7 +1583,7 @@ public static class RawDataPreparser
                 var vin = GetSafeStringValue(error, "vin");
 
                 // Categorizzazione dell'errore
-                var errorCategory = errorMessage.ToLower() switch
+                var errorCategory = errorMessage!.ToLower() switch
                 {
                     var msg when msg.Contains("gps") => "🗺️ Errore GPS",
                     var msg when msg.Contains("connection") => "📡 Errore connessione",

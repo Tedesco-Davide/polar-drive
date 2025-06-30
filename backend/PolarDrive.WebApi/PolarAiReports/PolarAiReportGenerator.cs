@@ -530,7 +530,6 @@ public class PolarAiReportGenerator
             var jsonResponse = await response.Content.ReadAsStringAsync();
             using var doc = JsonDocument.Parse(jsonResponse);
 
-            // ✅ CORRETTO - Ollama usa "response", non "choices"
             var text = doc.RootElement
                           .GetProperty("response")
                           .GetString();
