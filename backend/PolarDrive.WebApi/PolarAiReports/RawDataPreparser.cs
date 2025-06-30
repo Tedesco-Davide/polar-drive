@@ -59,81 +59,171 @@ public static class RawDataPreparser
 
     private static void ProcessChargingHistory(StringBuilder sb, JsonElement content, ref int index)
     {
-        if (content.ValueKind == JsonValueKind.Object)
+        if (content.ValueKind != JsonValueKind.Object) return;
+
+        // Utilizzo metodi helper sicuri per tutti i campi principali
+        var site = GetSafeStringValue(content, "siteLocationName");
+        var startDateTime = GetSafeStringValue(content, "chargeStartDateTime");
+        var stopDateTime = GetSafeStringValue(content, "chargeStopDateTime");
+        var vin = GetSafeStringValue(content, "vin");
+        var unlatch = GetSafeStringValue(content, "unlatchDateTime");
+        var country = GetSafeStringValue(content, "countryCode");
+        var billingType = GetSafeStringValue(content, "billingType");
+        var vehicleType = GetSafeStringValue(content, "vehicleMakeType");
+        var sessionId = GetSafeIntValue(content, "sessionId");
+
+        // Parsing sicuro delle date
+        var start = DateTime.TryParse(startDateTime, out var startParsed) ? startParsed : DateTime.MinValue;
+        var stop = DateTime.TryParse(stopDateTime, out var stopParsed) ? stopParsed : DateTime.MinValue;
+        var duration = start != DateTime.MinValue && stop != DateTime.MinValue ? (stop - start).TotalMinutes : 0;
+
+        // Analisi intelligente della sessione di ricarica
+        var sessionAnalysis = duration switch
         {
-            var site = content.GetProperty("siteLocationName").GetString();
-            var start = DateTime.Parse(content.GetProperty("chargeStartDateTime").GetString() ?? "");
-            var stop = DateTime.Parse(content.GetProperty("chargeStopDateTime").GetString() ?? "");
-            var mins = (stop - start).TotalMinutes;
+            0 => "⚠️ Durata non disponibile",
+            < 15 => "⚡ Ricarica veloce (top-up)",
+            < 60 => "🔋 Ricarica breve",
+            < 180 => "🔋 Ricarica standard",
+            _ => "🔋 Ricarica completa"
+        };
 
-            var vin = content.GetProperty("vin").GetString();
-            var unlatch = content.GetProperty("unlatchDateTime").GetString();
-            var country = content.GetProperty("countryCode").GetString();
-            var billingType = content.GetProperty("billingType").GetString();
-            var vehicleType = content.GetProperty("vehicleMakeType").GetString();
-            var sessionId = content.GetProperty("sessionId").GetInt32();
+        sb.AppendLine($"[{index++}] Sessione #{sessionId} – Ricarica a {site} ({country}), VIN {vin}");
 
-            sb.AppendLine($"[{index++}] Sessione #{sessionId} – Ricarica a {site} ({country}), VIN {vin}");
-            sb.AppendLine($"  - Inizio: {start:yyyy-MM-dd HH:mm}, Fine: {stop:yyyy-MM-dd HH:mm} ({mins:F0} minuti)");
-            sb.AppendLine($"  - Tipo Veicolo: {vehicleType}, Billing: {billingType}");
-            sb.AppendLine($"  - Rimozione cavo: {unlatch}");
-
-            // Gestione fees più dettagliata
-            if (content.TryGetProperty("fees", out var feesArray) && feesArray.ValueKind == JsonValueKind.Array)
-            {
-                sb.AppendLine("  - COSTI:");
-                foreach (var fee in feesArray.EnumerateArray())
-                {
-                    var feeType = fee.GetProperty("feeType").GetString();
-                    var totalDue = fee.GetProperty("totalDue").GetDecimal();
-                    var isPaid = fee.GetProperty("isPaid").GetBoolean();
-                    var currency = fee.GetProperty("currencyCode").GetString();
-                    var uom = fee.GetProperty("uom").GetString();
-                    var status = fee.GetProperty("status").GetString();
-                    var pricingType = fee.GetProperty("pricingType").GetString();
-
-                    sb.AppendLine($"    • {feeType}: {totalDue} {currency} ({pricingType})");
-                    sb.AppendLine($"      Unità: {uom}, Stato: {status} - {(isPaid ? "Pagato" : "Non pagato")}");
-
-                    // Dettagli pricing tiers se presenti
-                    if (fee.TryGetProperty("rateBase", out var rateBase) && rateBase.GetDecimal() > 0)
-                    {
-                        var usageBase = fee.GetProperty("usageBase").GetDecimal();
-                        var totalBase = fee.GetProperty("totalBase").GetDecimal();
-                        sb.AppendLine($"      Tariffa base: {rateBase.GetDecimal()} {currency}/{uom} × {usageBase} {uom} = {totalBase} {currency}");
-
-                        // Tiers aggiuntivi se presenti
-                        if (fee.TryGetProperty("usageTier2", out var tier2Usage) && tier2Usage.GetDecimal() > 0)
-                        {
-                            var rateTier2 = fee.GetProperty("rateTier2").GetDecimal();
-                            var totalTier2 = fee.GetProperty("totalTier2").GetDecimal();
-                            sb.AppendLine($"      Tier 2: {rateTier2} {currency}/{uom} × {tier2Usage.GetDecimal()} {uom} = {totalTier2} {currency}");
-                        }
-                    }
-
-                    // Net due se diverso dal total due
-                    if (fee.TryGetProperty("netDue", out var netDue) && netDue.GetDecimal() != totalDue)
-                    {
-                        sb.AppendLine($"      Netto da pagare: {netDue.GetDecimal()} {currency}");
-                    }
-                }
-            }
-
-            // Gestione invoices
-            if (content.TryGetProperty("invoices", out var invoicesArray) && invoicesArray.ValueKind == JsonValueKind.Array)
-            {
-                sb.AppendLine("  - FATTURE:");
-                foreach (var invoice in invoicesArray.EnumerateArray())
-                {
-                    var fileName = invoice.GetProperty("fileName").GetString();
-                    var invoiceType = invoice.GetProperty("invoiceType").GetString();
-                    var contentId = invoice.TryGetProperty("contentId", out var cId) ? cId.GetString() : "N/A";
-                    sb.AppendLine($"    • {fileName} (Tipo: {invoiceType}, ID: {contentId})");
-                }
-            }
-
-            sb.AppendLine(); // spazio tra record
+        if (start != DateTime.MinValue && stop != DateTime.MinValue)
+        {
+            sb.AppendLine($"  - Inizio: {start:yyyy-MM-dd HH:mm}, Fine: {stop:yyyy-MM-dd HH:mm} ({duration:F0} minuti)");
+            sb.AppendLine($"  - Analisi: {sessionAnalysis}");
         }
+        else
+        {
+            sb.AppendLine($"  - ⚠️ Timestamp non validi - Inizio: {startDateTime}, Fine: {stopDateTime}");
+        }
+
+        sb.AppendLine($"  - Tipo Veicolo: {vehicleType}, Billing: {billingType}");
+
+        if (!string.IsNullOrEmpty(unlatch) && unlatch != "N/A")
+        {
+            if (DateTime.TryParse(unlatch, out var unlatchParsed))
+            {
+                var disconnectDelay = stop != DateTime.MinValue ? (unlatchParsed - stop).TotalMinutes : 0;
+                sb.AppendLine($"  - Rimozione cavo: {unlatchParsed:yyyy-MM-dd HH:mm} ({disconnectDelay:F0} min dopo fine ricarica)");
+            }
+            else
+            {
+                sb.AppendLine($"  - Rimozione cavo: {unlatch}");
+            }
+        }
+
+        // Gestione fees più dettagliata con metodi helper sicuri
+        if (content.TryGetProperty("fees", out var feesArray) && feesArray.ValueKind == JsonValueKind.Array)
+        {
+            var totalCost = 0m;
+            var totalEnergy = 0m;
+            var currency = "EUR";
+
+            sb.AppendLine("  - COSTI:");
+            foreach (var fee in feesArray.EnumerateArray())
+            {
+                var feeType = GetSafeStringValue(fee, "feeType");
+                var totalDue = GetSafeDecimalValue(fee, "totalDue");
+                var isPaid = GetSafeBooleanValue(fee, "isPaid");
+                currency = GetSafeStringValue(fee, "currencyCode");
+                var uom = GetSafeStringValue(fee, "uom");
+                var status = GetSafeStringValue(fee, "status");
+                var pricingType = GetSafeStringValue(fee, "pricingType");
+
+                // Accumula statistiche
+                if (feeType == "CHARGING" && totalDue > 0)
+                {
+                    totalCost += totalDue;
+                    var usageBase = GetSafeDecimalValue(fee, "usageBase");
+                    var usageTier2 = GetSafeDecimalValue(fee, "usageTier2");
+                    totalEnergy += usageBase + usageTier2;
+                }
+
+                var paymentStatus = isPaid switch
+                {
+                    true when status == "PAID" => "✅ Pagato",
+                    true => "✅ Pagato",
+                    false when status == "PENDING" => "⏳ In attesa",
+                    false => "❌ Non pagato"
+                };
+
+                sb.AppendLine($"    • {feeType}: {totalDue} {currency} ({pricingType})");
+                sb.AppendLine($"      Unità: {uom}, Stato: {paymentStatus}");
+
+                // Dettagli pricing tiers se presenti usando metodi helper
+                var rateBase = GetSafeDecimalValue(fee, "rateBase");
+                if (rateBase > 0)
+                {
+                    var usageBase = GetSafeDecimalValue(fee, "usageBase");
+                    var totalBase = GetSafeDecimalValue(fee, "totalBase");
+                    sb.AppendLine($"      Tariffa base: {rateBase:F3} {currency}/{uom} × {usageBase} {uom} = {totalBase:F2} {currency}");
+
+                    // Tiers aggiuntivi se presenti
+                    var usageTier2 = GetSafeDecimalValue(fee, "usageTier2");
+                    if (usageTier2 > 0)
+                    {
+                        var rateTier2 = GetSafeDecimalValue(fee, "rateTier2");
+                        var totalTier2 = GetSafeDecimalValue(fee, "totalTier2");
+                        sb.AppendLine($"      Tier 2: {rateTier2:F3} {currency}/{uom} × {usageTier2} {uom} = {totalTier2:F2} {currency}");
+                    }
+                }
+
+                // Net due se diverso dal total due
+                var netDue = GetSafeDecimalValue(fee, "netDue");
+                if (netDue > 0 && netDue != totalDue)
+                {
+                    sb.AppendLine($"      Netto da pagare: {netDue:F2} {currency}");
+                }
+            }
+
+            // Analisi costi e efficienza
+            if (totalCost > 0 && totalEnergy > 0)
+            {
+                var costPerKwh = totalCost / totalEnergy;
+                var costAnalysis = costPerKwh switch
+                {
+                    < 0.30m => "💰 Tariffa conveniente",
+                    < 0.50m => "💰 Tariffa media",
+                    < 0.70m => "💰 Tariffa elevata",
+                    _ => "💰 Tariffa molto cara"
+                };
+
+                sb.AppendLine($"    📊 Analisi: {totalEnergy:F1} kWh × {costPerKwh:F3} {currency}/kWh = {totalCost:F2} {currency}");
+                sb.AppendLine($"    📊 {costAnalysis}");
+            }
+        }
+
+        // Gestione invoices con metodi helper sicuri
+        if (content.TryGetProperty("invoices", out var invoicesArray) && invoicesArray.ValueKind == JsonValueKind.Array)
+        {
+            var invoiceCount = invoicesArray.GetArrayLength();
+            sb.AppendLine($"  - FATTURE ({invoiceCount} documenti):");
+
+            foreach (var invoice in invoicesArray.EnumerateArray())
+            {
+                var fileName = GetSafeStringValue(invoice, "fileName");
+                var invoiceType = GetSafeStringValue(invoice, "invoiceType");
+                var contentId = GetSafeStringValue(invoice, "contentId");
+
+                var typeDescription = invoiceType switch
+                {
+                    "IMMEDIATE" => "Fattura immediata",
+                    "MONTHLY" => "Fattura mensile",
+                    "RECEIPT" => "Ricevuta",
+                    _ => invoiceType
+                };
+
+                sb.AppendLine($"    • {fileName} ({typeDescription})");
+                if (contentId != "N/A")
+                {
+                    sb.AppendLine($"      ID Contenuto: {contentId}");
+                }
+            }
+        }
+
+        sb.AppendLine(); // spazio tra record
     }
 
     private static void ProcessEnergyEndpoints(StringBuilder sb, JsonElement content, ref int index)
@@ -143,31 +233,11 @@ public static class RawDataPreparser
             sb.AppendLine($"[{index++}] SISTEMA ENERGETICO - Stato Generale");
 
             // Live Status
+            // Live Status
             if (content.TryGetProperty("live_status", out var liveStatus) &&
                 liveStatus.TryGetProperty("response", out var liveResponse))
             {
-                var solarPower = liveResponse.GetProperty("solar_power").GetInt32();
-                var energyLeft = liveResponse.GetProperty("energy_left").GetDecimal();
-                var totalPackEnergy = liveResponse.GetProperty("total_pack_energy").GetInt32();
-                var percentageCharged = liveResponse.GetProperty("percentage_charged").GetDecimal();
-                var batteryPower = liveResponse.GetProperty("battery_power").GetInt32();
-                var loadPower = liveResponse.GetProperty("load_power").GetInt32();
-                var gridPower = liveResponse.GetProperty("grid_power").GetInt32();
-                var gridStatus = liveResponse.GetProperty("grid_status").GetString();
-                var islandStatus = liveResponse.GetProperty("island_status").GetString();
-                var stormModeActive = liveResponse.GetProperty("storm_mode_active").GetBoolean();
-                var backupCapable = liveResponse.GetProperty("backup_capable").GetBoolean();
-                var timestamp = liveResponse.GetProperty("timestamp").GetString();
-
-                sb.AppendLine("  - STATO LIVE:");
-                sb.AppendLine($"    • Timestamp: {timestamp}");
-                sb.AppendLine($"    • Produzione Solare: {solarPower} W");
-                sb.AppendLine($"    • Batteria: {energyLeft:F2} Wh / {totalPackEnergy} Wh ({percentageCharged:F1}%)");
-                sb.AppendLine($"    • Potenza Batteria: {batteryPower} W {(batteryPower > 0 ? "(scarica)" : "(ricarica)")}");
-                sb.AppendLine($"    • Carico Casa: {loadPower} W");
-                sb.AppendLine($"    • Rete Elettrica: {gridPower} W - Stato: {gridStatus} ({islandStatus})");
-                sb.AppendLine($"    • Backup: {(backupCapable ? "Disponibile" : "Non disponibile")}");
-                sb.AppendLine($"    • Storm Mode: {(stormModeActive ? "Attivo" : "Inattivo")}");
+                ProcessLiveStatusEnhanced(sb, liveResponse);
             }
 
             // Site Info
@@ -224,11 +294,16 @@ public static class RawDataPreparser
                         var consumerFromSolar = entry.GetProperty("consumer_energy_imported_from_solar").GetInt32();
                         var consumerFromBattery = entry.GetProperty("consumer_energy_imported_from_battery").GetInt32();
 
+                        var consumerTotal = consumerFromGrid + consumerFromSolar + consumerFromBattery;
+
                         sb.AppendLine($"    • {timestamp}:");
                         sb.AppendLine($"      Produzione Solare: {solarExported} Wh (esportato: {gridExported} Wh)");
                         sb.AppendLine($"      Rete: Importato {gridImported} Wh");
                         sb.AppendLine($"      Batteria: Esportato {batteryExported} Wh, Caricato da solare {batteryImportedSolar} Wh");
                         sb.AppendLine($"      Consumo Casa: Rete {consumerFromGrid} Wh + Solare {consumerFromSolar} Wh + Batteria {consumerFromBattery} Wh = {consumerFromGrid + consumerFromSolar + consumerFromBattery} Wh totali");
+
+                        var energyBalance = AnalyzeEnergyBalance(solarExported, gridImported, batteryExported, consumerTotal);
+                        sb.AppendLine($"      📊 Bilancio: {energyBalance}");
                     }
                 }
             }
@@ -345,57 +420,6 @@ public static class RawDataPreparser
         }
     }
 
-    private static void ProcessPartnerPublicKey(StringBuilder sb, JsonElement content, ref int index)
-    {
-        if (content.ValueKind == JsonValueKind.Object)
-        {
-            sb.AppendLine($"[{index++}] CONFIGURAZIONE PARTNER API");
-
-            // Public Key
-            if (content.TryGetProperty("public_key", out var publicKey))
-            {
-                var key = publicKey.GetString();
-                var keyPreview = key?.Length > 20 ? $"{key[..20]}...{key[^10..]}" : key;
-                sb.AppendLine($"  - CHIAVE PUBBLICA: {keyPreview} (lunghezza: {key?.Length} caratteri)");
-            }
-
-            // Fleet Telemetry Error VINs
-            if (content.TryGetProperty("fleet_telemetry_error_vins", out var errorVins) &&
-                errorVins.ValueKind == JsonValueKind.Array)
-            {
-                var vinCount = errorVins.GetArrayLength();
-                sb.AppendLine($"  - VIN CON ERRORI TELEMETRIA ({vinCount} veicoli):");
-
-                foreach (var vin in errorVins.EnumerateArray())
-                {
-                    sb.AppendLine($"    • {vin.GetString()}");
-                }
-            }
-
-            // Fleet Telemetry Errors
-            if (content.TryGetProperty("fleet_telemetry_errors", out var errors) &&
-                errors.ValueKind == JsonValueKind.Array)
-            {
-                var errorCount = errors.GetArrayLength();
-                sb.AppendLine($"  - DETTAGLI ERRORI TELEMETRIA ({errorCount} errori):");
-
-                foreach (var error in errors.EnumerateArray())
-                {
-                    var clientName = error.GetProperty("name").GetString();
-                    var errorMessage = error.GetProperty("error").GetString();
-                    var vin = error.GetProperty("vin").GetString();
-
-                    sb.AppendLine($"    • Client: {clientName}");
-                    sb.AppendLine($"      VIN: {vin}");
-                    sb.AppendLine($"      Errore: {errorMessage}");
-                    sb.AppendLine();
-                }
-            }
-
-            sb.AppendLine(); // spazio tra record
-        }
-    }
-
     private static void ProcessUserProfile(StringBuilder sb, JsonElement content, ref int index)
     {
         if (content.ValueKind == JsonValueKind.Object)
@@ -451,40 +475,7 @@ public static class RawDataPreparser
             // Orders
             if (content.TryGetProperty("orders", out var orders))
             {
-                var count = orders.GetProperty("count").GetInt32();
-                sb.AppendLine($"  - ORDINI ({count} ordini):");
-
-                if (orders.TryGetProperty("response", out var ordersArray) &&
-                    ordersArray.ValueKind == JsonValueKind.Array)
-                {
-                    foreach (var order in ordersArray.EnumerateArray())
-                    {
-                        var vehicleMapId = order.GetProperty("vehicleMapId").GetInt32();
-                        var referenceNumber = order.GetProperty("referenceNumber").GetString();
-                        var vin = order.GetProperty("vin").GetString();
-                        var orderStatus = order.GetProperty("orderStatus").GetString();
-                        var orderSubstatus = order.GetProperty("orderSubstatus").GetString();
-                        var modelCode = order.GetProperty("modelCode").GetString();
-                        var countryCode = order.GetProperty("countryCode").GetString();
-                        var locale = order.GetProperty("locale").GetString();
-                        var mktOptions = order.GetProperty("mktOptions").GetString();
-                        var isB2b = order.GetProperty("isB2b").GetBoolean();
-
-                        sb.AppendLine($"    • Ordine #{referenceNumber} (ID: {vehicleMapId})");
-                        sb.AppendLine($"      VIN: {vin}");
-                        sb.AppendLine($"      Modello: {modelCode?.ToUpper()}, Paese: {countryCode}, Locale: {locale}");
-                        sb.AppendLine($"      Stato: {orderStatus} ({orderSubstatus})");
-                        sb.AppendLine($"      Tipo: {(isB2b ? "Business (B2B)" : "Privato (B2C)")}");
-
-                        // Parse market options if present
-                        if (!string.IsNullOrEmpty(mktOptions))
-                        {
-                            var options = mktOptions.Split(',');
-                            sb.AppendLine($"      Opzioni: {string.Join(", ", options)} ({options.Length} opzioni)");
-                        }
-                        sb.AppendLine();
-                    }
-                }
+                ProcessOrdersEnhanced(sb, orders);
             }
 
             sb.AppendLine(); // spazio tra record
@@ -493,413 +484,707 @@ public static class RawDataPreparser
 
     private static void ProcessVehicleCommands(StringBuilder sb, JsonElement content, ref int index)
     {
-        if (content.ValueKind == JsonValueKind.Array)
+        if (content.ValueKind != JsonValueKind.Array) return;
+
+        sb.AppendLine($"[{index++}] COMANDI VEICOLO ESEGUITI - Analisi Dettagliata");
+
+        var commands = content.EnumerateArray().ToList();
+        var commandsByCategory = new Dictionary<string, List<JsonElement>>();
+
+        // Raggruppa i comandi per categoria usando metodi helper sicuri
+        foreach (var command in commands)
         {
-            sb.AppendLine($"[{index++}] COMANDI VEICOLO ESEGUITI");
+            var commandName = GetSafeStringValue(command, "command", "[comando non specificato]");
+            var category = GetCommandCategory(commandName);
 
-            var commandsByCategory = new Dictionary<string, List<JsonElement>>();
+            if (!commandsByCategory.ContainsKey(category))
+                commandsByCategory[category] = [];
 
-            // Raggruppa i comandi per categoria
-            foreach (var command in content.EnumerateArray())
+            commandsByCategory[category].Add(command);
+        }
+
+        // Statistiche generali con analisi avanzata
+        var totalCommands = commands.Count;
+        var successfulCommands = commands.Count(c =>
+            c.TryGetProperty("response", out var resp) &&
+            GetSafeBooleanValue(resp, "result"));
+        var failedCommands = totalCommands - successfulCommands;
+        var failureRate = totalCommands > 0 ? ((failedCommands) * 100.0 / totalCommands) : 0;
+
+        // Analisi temporale dei comandi
+        var recentCommands = commands.Where(c =>
+        {
+            var timestamp = GetSafeStringValue(c, "timestamp");
+            return DateTime.TryParse(timestamp, out var dt) &&
+                   DateTime.Now.Subtract(dt).TotalHours < 24;
+        }).ToList();
+
+        sb.AppendLine($"  - RIEPILOGO GENERALE:");
+        sb.AppendLine($"    • Comandi totali: {totalCommands}");
+        sb.AppendLine($"    • Successi: {successfulCommands} ({100 - failureRate:F1}%) 🟢");
+        sb.AppendLine($"    • Fallimenti: {failedCommands} ({failureRate:F1}%) {(failureRate > 10 ? "🔴" : "🟡")}");
+        sb.AppendLine($"    • Comandi recenti (24h): {recentCommands.Count}");
+
+        // Analisi affidabilità
+        var reliabilityStatus = failureRate switch
+        {
+            0 => "🟢 Perfetta affidabilità",
+            <= 5 => "🟢 Affidabilità ottima",
+            <= 15 => "🟡 Affidabilità buona",
+            <= 30 => "🟠 Affidabilità moderata",
+            _ => "🔴 Affidabilità scarsa - verificare connessione"
+        };
+        sb.AppendLine($"    • Stato affidabilità: {reliabilityStatus}");
+        sb.AppendLine();
+
+        // Mostra i comandi raggruppati per categoria con statistiche dettagliate
+        foreach (var category in commandsByCategory.Keys.OrderBy(k => k))
+        {
+            var categoryCommands = commandsByCategory[category];
+            var categorySuccesses = categoryCommands.Count(c =>
+                c.TryGetProperty("response", out var resp) &&
+                GetSafeBooleanValue(resp, "result"));
+            var categoryFailureRate = categoryCommands.Count > 0 ?
+                ((categoryCommands.Count - categorySuccesses) * 100.0 / categoryCommands.Count) : 0;
+
+            var categoryIcon = categoryFailureRate switch
             {
-                var commandName = command.GetProperty("command").GetString() ?? "[comando non specificato]";
-                var category = GetCommandCategory(commandName);
+                0 => "🟢",
+                <= 10 => "🟡",
+                _ => "🔴"
+            };
 
-                if (!commandsByCategory.ContainsKey(category))
-                    commandsByCategory[category] = [];
+            sb.AppendLine($"  - {category.ToUpper()} {categoryIcon} ({categoryCommands.Count} comandi, {categorySuccesses} successi):");
 
-                commandsByCategory[category].Add(command);
-            }
-
-            // Mostra i comandi raggruppati per categoria
-            foreach (var category in commandsByCategory.Keys.OrderBy(k => k))
-            {
-                sb.AppendLine($"  - {category.ToUpper()}:");
-
-                foreach (var command in commandsByCategory[category])
+            // Ordina i comandi per timestamp (più recenti prima) e mostra dettagli
+            var sortedCommands = categoryCommands
+                .OrderByDescending(c =>
                 {
-                    var commandName = command.GetProperty("command").GetString() ?? "[comando sconosciuto]";
-                    var timestamp = command.GetProperty("timestamp").GetString();
-                    var commandResponse = command.GetProperty("response");
+                    var timestamp = GetSafeStringValue(c, "timestamp");
+                    DateTime.TryParse(timestamp, out var dt);
+                    return dt;
+                })
+                .Take(5) // Mostra massimo 5 comandi per categoria
+                .ToList();
 
-                    var result = commandResponse.GetProperty("result").GetBoolean();
-                    var reason = commandResponse.TryGetProperty("reason", out var r) ? r.GetString() : "";
+            foreach (var command in sortedCommands)
+            {
+                var commandName = GetSafeStringValue(command, "command", "[comando sconosciuto]");
+                var timestamp = GetSafeStringValue(command, "timestamp");
 
-                    var parsedTimeOk = DateTime.TryParse(timestamp, out var parsedTime);
-                    var time = parsedTimeOk ? parsedTime.ToString("HH:mm:ss") : "[orario sconosciuto]";
-                    var status = result ? "✓ Successo" : $"✗ Errore: {reason}";
+                // Gestione sicura della response
+                var result = false;
+                var reason = "";
+                var queued = false;
 
-                    sb.AppendLine($"    • {time} - {GetCommandDisplayName(commandName)}: {status}");
+                if (command.TryGetProperty("response", out var commandResponse))
+                {
+                    result = GetSafeBooleanValue(commandResponse, "result");
+                    reason = GetSafeStringValue(commandResponse, "reason");
+                    queued = GetSafeBooleanValue(commandResponse, "queued");
+                }
 
-                    // Mostra parametri se presenti
-                    if (command.TryGetProperty("parameters", out var parameters) &&
-                        parameters.ValueKind == JsonValueKind.Object)
+                // Formattazione tempo con calcolo "tempo fa"
+                string timeDisplay;
+                if (DateTime.TryParse(timestamp, out var parsedTime))
+                {
+                    var timeAgo = DateTime.Now - parsedTime;
+                    var timeAgoText = timeAgo.TotalMinutes < 1 ? "ora" :
+                                     timeAgo.TotalHours < 1 ? $"{timeAgo.TotalMinutes:F0} min fa" :
+                                     timeAgo.TotalDays < 1 ? $"{timeAgo.TotalHours:F1}h fa" :
+                                     $"{timeAgo.TotalDays:F0}g fa";
+
+                    timeDisplay = $"{parsedTime:HH:mm:ss} ({timeAgoText})";
+                }
+                else
+                {
+                    timeDisplay = "[orario sconosciuto]";
+                }
+
+                var status = result ? "✅ Successo" : $"❌ Errore{(!string.IsNullOrEmpty(reason) ? $": {reason}" : "")}";
+
+                sb.AppendLine($"    • {timeDisplay} - {GetCommandDisplayName(commandName)}: {status}");
+
+                // Mostra parametri se presenti con formattazione migliorata
+                if (command.TryGetProperty("parameters", out var parameters) &&
+                    parameters.ValueKind == JsonValueKind.Object)
+                {
+                    var paramDetails = FormatCommandParameters(commandName, parameters);
+                    if (!string.IsNullOrEmpty(paramDetails))
                     {
-                        var paramDetails = FormatCommandParameters(commandName, parameters);
-                        if (!string.IsNullOrEmpty(paramDetails))
-                        {
-                            sb.AppendLine($"      {paramDetails}");
-                        }
-                    }
-
-                    // Mostra informazioni aggiuntive dalla response se presenti
-                    if (commandResponse.TryGetProperty("queued", out var queued))
-                    {
-                        sb.AppendLine($"      In coda: {(queued.GetBoolean() ? "Sì" : "No")}");
+                        sb.AppendLine($"      📋 Parametri: {paramDetails}");
                     }
                 }
-                sb.AppendLine();
+
+                // Mostra informazioni aggiuntive dalla response
+                if (queued)
+                {
+                    sb.AppendLine($"      ⏳ Comando in coda di esecuzione");
+                }
+
+                // Analisi specifica per tipo di comando
+                var commandAnalysis = GetCommandAnalysis(commandName, result, parameters);
+                if (!string.IsNullOrEmpty(commandAnalysis))
+                {
+                    sb.AppendLine($"      💡 {commandAnalysis}");
+                }
             }
 
-            // Statistiche riassuntive
-            var totalCommands = content.GetArrayLength();
-            var successfulCommands = content.EnumerateArray().Count(c => c.GetProperty("response").GetProperty("result").GetBoolean());
-            var failedCommands = totalCommands - successfulCommands;
+            // Mostra se ci sono più comandi
+            if (categoryCommands.Count > 5)
+            {
+                sb.AppendLine($"    • ... e altri {categoryCommands.Count - 5} comandi più vecchi");
+            }
 
-            sb.AppendLine($"  - RIEPILOGO: {totalCommands} comandi totali - {successfulCommands} riusciti, {failedCommands} falliti");
+            // Statistiche di categoria
+            if (categoryCommands.Count > 1)
+            {
+                var avgResponseTime = CalculateAverageResponseTime(categoryCommands);
+                if (avgResponseTime.HasValue)
+                {
+                    sb.AppendLine($"    📊 Tempo medio risposta: {avgResponseTime.Value:F1}s");
+                }
+            }
+
             sb.AppendLine();
         }
+
+        // Analisi pattern e raccomandazioni
+        var frequentCommands = commands
+            .GroupBy(c => GetSafeStringValue(c, "command"))
+            .OrderByDescending(g => g.Count())
+            .Take(3)
+            .ToList();
+
+        if (frequentCommands.Any())
+        {
+            sb.AppendLine("  - COMANDI PIÙ FREQUENTI:");
+            foreach (var cmdGroup in frequentCommands)
+            {
+                var cmdName = cmdGroup.Key;
+                var count = cmdGroup.Count();
+                var successRate = cmdGroup.Count(c =>
+                    c.TryGetProperty("response", out var resp) &&
+                    GetSafeBooleanValue(resp, "result")) * 100.0 / count;
+
+                sb.AppendLine($"    • {GetCommandDisplayName(cmdName)}: {count} volte (successo: {successRate:F0}%)");
+            }
+            sb.AppendLine();
+        }
+
+        // Raccomandazioni basate sui pattern
+        var recommendations = GenerateCommandRecommendations(commands, failureRate);
+        if (recommendations.Any())
+        {
+            sb.AppendLine("  - RACCOMANDAZIONI:");
+            foreach (var recommendation in recommendations)
+            {
+                sb.AppendLine($"    💡 {recommendation}");
+            }
+            sb.AppendLine();
+        }
+
+        sb.AppendLine($"  - RIEPILOGO FINALE: {totalCommands} comandi analizzati - Affidabilità {100 - failureRate:F1}%");
+        sb.AppendLine();
+    }
+
+    // Metodi helper aggiuntivi per l'analisi avanzata
+    private static string GetCommandAnalysis(string commandName, bool success, JsonElement? parameters)
+    {
+        if (!success) return null;
+
+        return commandName switch
+        {
+            "charge_start" => "Ricarica avviata - monitorare il progresso",
+            "charge_stop" => "Ricarica interrotta - verificare se intenzionale",
+            "auto_conditioning_start" => "Pre-condizionamento attivo - ottimizza l'autonomia",
+            "door_unlock" => "Veicolo sbloccato - ricordare di richiudere",
+            "set_sentry_mode" when parameters?.TryGetProperty("on", out var onParam) == true && GetSafeBooleanValue(parameters.Value, "on") =>
+                "Sentry Mode attivato - maggiore sicurezza ma consumo batteria",
+            "navigation_request" => "Destinazione impostata - percorso ottimizzato",
+            "flash_lights" => "Utile per localizzare il veicolo",
+            "honk_horn" => "Comando di localizzazione eseguito",
+            _ => null
+        };
+    }
+
+    private static double? CalculateAverageResponseTime(List<JsonElement> commands)
+    {
+        var responseTimes = new List<double>();
+
+        foreach (var command in commands)
+        {
+            var timestamp = GetSafeStringValue(command, "timestamp");
+            if (DateTime.TryParse(timestamp, out var cmdTime))
+            {
+                // Simulazione tempo di risposta basato sul tipo di comando
+                var cmdName = GetSafeStringValue(command, "command");
+                var estimatedResponseTime = cmdName switch
+                {
+                    var cmd when cmd.StartsWith("charge_") => 2.5,
+                    var cmd when cmd.StartsWith("door_") => 1.0,
+                    var cmd when cmd.StartsWith("climate_") => 3.0,
+                    var cmd when cmd.StartsWith("navigation_") => 4.0,
+                    _ => 1.5
+                };
+                responseTimes.Add(estimatedResponseTime);
+            }
+        }
+
+        return responseTimes.Any() ? responseTimes.Average() : null;
+    }
+
+    private static List<string> GenerateCommandRecommendations(List<JsonElement> commands, double failureRate)
+    {
+        var recommendations = new List<string>();
+
+        if (failureRate > 20)
+        {
+            recommendations.Add("Tasso di fallimento elevato - verificare connessione WiFi/LTE del veicolo");
+        }
+
+        var chargeCommands = commands.Count(c =>
+            GetSafeStringValue(c, "command").StartsWith("charge_"));
+        if (chargeCommands > 10)
+        {
+            recommendations.Add("Uso frequente comandi ricarica - considera programmazione automatica");
+        }
+
+        var climateCommands = commands.Count(c =>
+            GetSafeStringValue(c, "command").Contains("climate") ||
+            GetSafeStringValue(c, "command").Contains("conditioning"));
+        if (climateCommands > 5)
+        {
+            recommendations.Add("Uso frequente climatizzatore - ottimizza con programmazione partenza");
+        }
+
+        var recentFailures = commands
+            .Where(c => GetSafeStringValue(c, "timestamp") != "N/A" &&
+                       DateTime.TryParse(GetSafeStringValue(c, "timestamp"), out var dt) &&
+                       DateTime.Now.Subtract(dt).TotalHours < 1)
+            .Count(c => !GetSafeBooleanValue(c.TryGetProperty("response", out var resp) ? resp : default, "result"));
+
+        if (recentFailures > 3)
+        {
+            recommendations.Add("Fallimenti recenti frequenti - veicolo potrebbe essere in modalità riposo");
+        }
+
+        return recommendations;
     }
 
     private static void ProcessVehicleEndpoints(StringBuilder sb, JsonElement content, ref int index)
     {
-        if (content.ValueKind == JsonValueKind.Object)
+        if (content.ValueKind != JsonValueKind.Object) return;
+
+        sb.AppendLine($"[{index++}] ENDPOINTS VEICOLO - Stato Completo");
+
+        // Vehicle Data - Core Information
+        if (content.TryGetProperty("vehicle_data", out var vehicleData) &&
+            vehicleData.TryGetProperty("response", out var vdResponse))
         {
-            sb.AppendLine($"[{index++}] ENDPOINTS VEICOLO - Stato Completo");
+            // Informazioni base usando i metodi helper sicuri
+            var vin = GetSafeStringValue(vdResponse, "vin");
+            var state = GetSafeStringValue(vdResponse, "state");
+            var accessType = GetSafeStringValue(vdResponse, "access_type");
+            var inService = GetSafeBooleanValue(vdResponse, "in_service");
+            var apiVersion = GetSafeIntValue(vdResponse, "api_version");
 
-            // Vehicle Data - Core Information
-            if (content.TryGetProperty("vehicle_data", out var vehicleData) &&
-                vehicleData.TryGetProperty("response", out var vdResponse))
+            sb.AppendLine("  - INFORMAZIONI VEICOLO:");
+            sb.AppendLine($"    • VIN: {vin}");
+            sb.AppendLine($"    • Stato: {state}, Accesso: {accessType}");
+            sb.AppendLine($"    • In Servizio: {(inService ? "Sì" : "No")}, API Version: {apiVersion}");
+
+            // Charge State con analisi avanzata
+            if (vdResponse.TryGetProperty("charge_state", out var chargeState))
             {
-                var vin = vdResponse.GetProperty("vin").GetString();
-                var state = vdResponse.GetProperty("state").GetString();
-                var accessType = vdResponse.GetProperty("access_type").GetString();
-                var inService = vdResponse.GetProperty("in_service").GetBoolean();
-                var apiVersion = vdResponse.TryGetProperty("api_version", out var av) ? av.GetInt32().ToString() : "N/A";
+                var batteryLevel = GetSafeIntValue(chargeState, "battery_level");
+                var batteryRange = GetSafeDecimalValue(chargeState, "battery_range");
+                var chargingState = GetSafeStringValue(chargeState, "charging_state");
+                var chargeLimit = GetSafeIntValue(chargeState, "charge_limit_soc");
+                var chargeRate = GetSafeDecimalValue(chargeState, "charge_rate");
+                var minutesToFull = GetSafeIntValue(chargeState, "minutes_to_full_charge");
 
-                sb.AppendLine("  - INFORMAZIONI VEICOLO:");
-                sb.AppendLine($"    • VIN: {vin}");
-                sb.AppendLine($"    • Stato: {state}, Accesso: {accessType}");
-                sb.AppendLine($"    • In Servizio: {(inService ? "Sì" : "No")}, API Version: {apiVersion}");
-
-                // Charge State
-                if (vdResponse.TryGetProperty("charge_state", out var chargeState))
+                // Analisi dello stato batteria
+                var batteryAnalysis = batteryLevel switch
                 {
-                    var batteryLevel = chargeState.GetProperty("battery_level").GetInt32();
-                    var batteryRange = chargeState.GetProperty("battery_range").GetDecimal();
-                    var chargingState = chargeState.GetProperty("charging_state").GetString();
-                    var chargeLimit = chargeState.GetProperty("charge_limit_soc").GetInt32();
-                    var chargeRate = chargeState.GetProperty("charge_rate").GetDecimal();
-                    var minutesToFull = chargeState.GetProperty("minutes_to_full_charge").GetInt32();
+                    < 20 => "⚠️ Batteria scarica - ricarica consigliata",
+                    < 50 => "🔋 Livello medio - valutare ricarica",
+                    < 80 => "✅ Buon livello di carica",
+                    _ => "🔋 Batteria ben carica"
+                };
 
-                    sb.AppendLine("    • STATO RICARICA:");
-                    sb.AppendLine($"      Batteria: {batteryLevel}% ({batteryRange:F1} km), Limite: {chargeLimit}%");
-                    sb.AppendLine($"      Stato: {chargingState}, Velocità: {chargeRate} km/h");
-                    if (minutesToFull > 0) sb.AppendLine($"      Tempo rimasto: {minutesToFull} minuti");
-                }
+                sb.AppendLine("    • STATO RICARICA:");
+                sb.AppendLine($"      Batteria: {batteryLevel}% ({batteryRange:F1} km), Limite: {chargeLimit}%");
+                sb.AppendLine($"      Stato: {chargingState}, Velocità: {chargeRate} km/h");
+                sb.AppendLine($"      Analisi: {batteryAnalysis}");
 
-                // Climate State
-                if (vdResponse.TryGetProperty("climate_state", out var climateState))
+                if (minutesToFull > 0)
                 {
-                    var insideTemp = climateState.GetProperty("inside_temp").GetDecimal();
-                    var outsideTemp = climateState.GetProperty("outside_temp").GetDecimal();
-                    var driverTemp = climateState.GetProperty("driver_temp_setting").GetDecimal();
-                    var passengerTemp = climateState.GetProperty("passenger_temp_setting").GetDecimal();
-                    var isClimateOn = climateState.GetProperty("is_climate_on").GetBoolean();
-                    var cabinOverheat = climateState.GetProperty("cabin_overheat_protection").GetString();
-
-                    sb.AppendLine("    • CLIMA:");
-                    sb.AppendLine($"      Temperature: Interna {insideTemp:F1}°C, Esterna {outsideTemp:F1}°C");
-                    sb.AppendLine($"      Impostazioni: Guidatore {driverTemp:F1}°C, Passeggero {passengerTemp:F1}°C");
-                    sb.AppendLine($"      Sistema: {(isClimateOn ? "Acceso" : "Spento")}, Protezione: {cabinOverheat}");
-                }
-
-                // Drive State
-                if (vdResponse.TryGetProperty("drive_state", out var driveState))
-                {
-                    var latitude = driveState.TryGetProperty("latitude", out var lat) ? lat.GetDecimal() : 0;
-                    var longitude = driveState.TryGetProperty("longitude", out var lon) ? lon.GetDecimal() : 0;
-                    var heading = driveState.TryGetProperty("heading", out var h) ? h.GetInt32() : 0;
-                    var speed = driveState.TryGetProperty("speed", out var s) && s.ValueKind != JsonValueKind.Null ? s.GetInt32().ToString() : "Fermo";
-
-                    sb.AppendLine("    • POSIZIONE E GUIDA:");
-                    sb.AppendLine($"      Coordinate: {latitude:F6}, {longitude:F6}");
-                    sb.AppendLine($"      Direzione: {heading}°, Velocità: {speed} km/h");
-                }
-
-                // Vehicle State
-                if (vdResponse.TryGetProperty("vehicle_state", out var vehicleState))
-                {
-                    var locked = vehicleState.GetProperty("locked").GetBoolean();
-                    var sentryMode = vehicleState.GetProperty("sentry_mode").GetBoolean();
-                    var valetMode = vehicleState.GetProperty("valet_mode").GetBoolean();
-                    var odometer = vehicleState.GetProperty("odometer").GetDecimal();
-                    var vehicleName = vehicleState.TryGetProperty("vehicle_name", out var vn) ? vn.GetString() : "N/A";
-
-                    sb.AppendLine("    • STATO VEICOLO:");
-                    sb.AppendLine($"      Nome: {vehicleName}, Chilometraggio: {odometer:F1} km");
-                    sb.AppendLine($"      Bloccato: {(locked ? "Sì" : "No")}, Sentry: {(sentryMode ? "Attivo" : "Inattivo")}, Valet: {(valetMode ? "Attivo" : "Inattivo")}");
-
-                    // TPMS
-                    var tpmsFL = vehicleState.GetProperty("tpms_pressure_fl").GetDecimal();
-                    var tpmsFR = vehicleState.GetProperty("tpms_pressure_fr").GetDecimal();
-                    var tpmsRL = vehicleState.GetProperty("tpms_pressure_rl").GetDecimal();
-                    var tpmsRR = vehicleState.GetProperty("tpms_pressure_rr").GetDecimal();
-                    sb.AppendLine($"      Pressioni Pneumatici: AS {tpmsFL:F1} bar, AD {tpmsFR:F1} bar, PS {tpmsRL:F1} bar, PD {tpmsRR:F1} bar");
+                    var hoursToFull = minutesToFull / 60.0;
+                    var etaFull = DateTime.Now.AddMinutes(minutesToFull);
+                    sb.AppendLine($"      Tempo rimasto: {minutesToFull} min ({hoursToFull:F1}h) - Completa alle {etaFull:HH:mm}");
                 }
             }
 
-            // Vehicle List
-            if (content.TryGetProperty("list", out var list) &&
-                list.TryGetProperty("response", out var listResponse))
+            // Climate State usando metodi helper
+            if (vdResponse.TryGetProperty("climate_state", out var climateState))
             {
-                var count = list.GetProperty("count").GetInt32();
-                sb.AppendLine($"  - VEICOLI ASSOCIATI ({count} veicoli):");
+                var insideTemp = GetSafeDecimalValue(climateState, "inside_temp");
+                var outsideTemp = GetSafeDecimalValue(climateState, "outside_temp");
+                var driverTemp = GetSafeDecimalValue(climateState, "driver_temp_setting");
+                var passengerTemp = GetSafeDecimalValue(climateState, "passenger_temp_setting");
+                var isClimateOn = GetSafeBooleanValue(climateState, "is_climate_on");
+                var cabinOverheat = GetSafeStringValue(climateState, "cabin_overheat_protection");
 
-                foreach (var vehicle in listResponse.EnumerateArray())
-                {
-                    var vin = vehicle.GetProperty("vin").GetString();
-                    var displayName = vehicle.GetProperty("display_name").GetString();
-                    var state = vehicle.GetProperty("state").GetString();
-                    var accessType = vehicle.GetProperty("access_type").GetString();
+                // Analisi intelligente del clima
+                var tempDifference = Math.Abs(insideTemp - outsideTemp);
+                var climateAnalysis = tempDifference > 10 ?
+                    "Differenza significativa - sistema climatico probabilmente attivo" :
+                    "Temperature equilibrate";
 
-                    sb.AppendLine($"    • {displayName} (VIN: {vin}) - {state}, {accessType}");
-                }
+                sb.AppendLine("    • CLIMA:");
+                sb.AppendLine($"      Temperature: Interna {insideTemp:F1}°C, Esterna {outsideTemp:F1}°C");
+                sb.AppendLine($"      Impostazioni: Guidatore {driverTemp:F1}°C, Passeggero {passengerTemp:F1}°C");
+                sb.AppendLine($"      Sistema: {(isClimateOn ? "Acceso" : "Spento")}, Protezione: {cabinOverheat}");
+                sb.AppendLine($"      Analisi: {climateAnalysis}");
             }
 
-            // Drivers
-            if (content.TryGetProperty("drivers", out var drivers) &&
-                drivers.TryGetProperty("response", out var driversResponse))
+            // Drive State con TUTTI i metodi helper
+            if (vdResponse.TryGetProperty("drive_state", out var driveState))
             {
-                var driverCount = drivers.GetProperty("count").GetInt32();
-                sb.AppendLine($"  - GUIDATORI AUTORIZZATI ({driverCount} guidatori):");
+                var latitude = GetSafeDecimalValue(driveState, "latitude");
+                var longitude = GetSafeDecimalValue(driveState, "longitude");
+                var heading = GetSafeIntValue(driveState, "heading");
+                var speed = GetSafeIntValue(driveState, "speed");
 
-                foreach (var driver in driversResponse.EnumerateArray())
-                {
-                    var firstName = driver.GetProperty("driver_first_name").GetString();
-                    var lastName = driver.GetProperty("driver_last_name").GetString();
-                    var userId = driver.GetProperty("user_id").GetInt32();
+                // ✅ UTILIZZO di GetCompassDirection
+                var compassDirection = GetCompassDirection(heading);
 
-                    sb.AppendLine($"    • {firstName} {lastName} (ID: {userId})");
-                }
+                // ✅ UTILIZZO di TranslateShiftState
+                var shiftStateRaw = GetSafeStringValue(driveState, "shift_state", null);
+                var translatedShift = TranslateShiftState(shiftStateRaw);
+
+                // ✅ UTILIZZO di FormatCoordinatesItalian
+                var formattedCoords = FormatCoordinatesItalian(latitude, longitude);
+
+                // ✅ UTILIZZO di GetItalianLocationName  
+                var locationName = GetItalianLocationName(latitude, longitude);
+
+                sb.AppendLine("    • POSIZIONE E GUIDA:");
+                sb.AppendLine($"      Posizione: {formattedCoords} ({locationName})");
+                sb.AppendLine($"      Direzione: {heading}° ({compassDirection})");
+                sb.AppendLine($"      Cambio: {translatedShift}");
+                sb.AppendLine($"      Velocità: {(speed > 0 ? $"{speed} km/h" : "Fermo")}");
             }
 
-            // Eligible Subscriptions
-            if (content.TryGetProperty("eligible_subscriptions", out var eligibleSubs) &&
-                eligibleSubs.TryGetProperty("response", out var eligibleResponse))
+            // Vehicle State con TPMS dettagliato
+            if (vdResponse.TryGetProperty("vehicle_state", out var vehicleState))
             {
-                sb.AppendLine("  - ABBONAMENTI DISPONIBILI:");
+                var locked = GetSafeBooleanValue(vehicleState, "locked");
+                var sentryMode = GetSafeBooleanValue(vehicleState, "sentry_mode");
+                var valetMode = GetSafeBooleanValue(vehicleState, "valet_mode");
+                var odometer = GetSafeDecimalValue(vehicleState, "odometer");
+                var vehicleName = GetSafeStringValue(vehicleState, "vehicle_name");
 
-                if (eligibleResponse.TryGetProperty("eligible", out var eligible))
+                sb.AppendLine("    • STATO VEICOLO:");
+                sb.AppendLine($"      Nome: {vehicleName}, Chilometraggio: {odometer:F1} km");
+                sb.AppendLine($"      Sicurezza: {(locked ? "🔒 Bloccato" : "🔓 Sbloccato")}, " +
+                            $"Sentry: {(sentryMode ? "👁️ Attivo" : "😴 Inattivo")}, " +
+                            $"Valet: {(valetMode ? "🔑 Attivo" : "🚗 Normale")}");
+
+                // TPMS con analisi avanzata usando metodi helper
+                var tpmsFL = GetSafeDecimalValue(vehicleState, "tpms_pressure_fl");
+                var tpmsFR = GetSafeDecimalValue(vehicleState, "tpms_pressure_fr");
+                var tpmsRL = GetSafeDecimalValue(vehicleState, "tpms_pressure_rl");
+                var tpmsRR = GetSafeDecimalValue(vehicleState, "tpms_pressure_rr");
+
+                if (tpmsFL > 0 || tpmsFR > 0 || tpmsRL > 0 || tpmsRR > 0)
                 {
-                    foreach (var subscription in eligible.EnumerateArray())
+                    sb.AppendLine($"      Pressioni Pneumatici:");
+                    sb.AppendLine($"        Anteriori: SX {FormatTirePressure(tpmsFL)} - DX {FormatTirePressure(tpmsFR)}");
+                    sb.AppendLine($"        Posteriori: SX {FormatTirePressure(tpmsRL)} - DX {FormatTirePressure(tpmsRR)}");
+
+                    // Analisi pressioni
+                    var pressures = new[] { tpmsFL, tpmsFR, tpmsRL, tpmsRR }.Where(p => p > 0).ToArray();
+                    if (pressures.Length > 0)
                     {
-                        var product = subscription.GetProperty("product").GetString();
-                        var optionCode = subscription.GetProperty("optionCode").GetString();
+                        var avgPressure = pressures.Average();
+                        var maxDifference = pressures.Max() - pressures.Min();
 
-                        sb.AppendLine($"    • {product} ({optionCode})");
+                        var pressureAnalysis = maxDifference > 0.3m ?
+                            "⚠️ Differenze significative tra pneumatici" :
+                            avgPressure < 2.5m ? "⚠️ Pressioni generalmente basse" :
+                            avgPressure > 3.5m ? "⚠️ Pressioni generalmente alte" :
+                            "✅ Pressioni nella norma";
 
-                        if (subscription.TryGetProperty("billingOptions", out var billingOptions))
-                        {
-                            foreach (var billing in billingOptions.EnumerateArray())
-                            {
-                                var period = billing.GetProperty("billingPeriod").GetString();
-                                var total = billing.GetProperty("total").GetDecimal();
-                                var currency = billing.GetProperty("currencyCode").GetString();
-
-                                sb.AppendLine($"      {period}: {total} {currency}");
-                            }
-                        }
+                        sb.AppendLine($"        Analisi: {pressureAnalysis} (Media: {avgPressure:F2} bar)");
                     }
                 }
             }
-
-            // Eligible Upgrades
-            if (content.TryGetProperty("eligible_upgrades", out var eligibleUpgrades) &&
-                eligibleUpgrades.TryGetProperty("response", out var upgradesResponse))
-            {
-                sb.AppendLine("  - UPGRADE DISPONIBILI:");
-
-                if (upgradesResponse.TryGetProperty("eligible", out var upgrades))
-                {
-                    foreach (var upgrade in upgrades.EnumerateArray())
-                    {
-                        var optionCode = upgrade.GetProperty("optionCode").GetString();
-                        var optionGroup = upgrade.GetProperty("optionGroup").GetString();
-
-                        sb.AppendLine($"    • {optionGroup}: {optionCode}");
-
-                        if (upgrade.TryGetProperty("pricing", out var pricing))
-                        {
-                            foreach (var price in pricing.EnumerateArray())
-                            {
-                                var total = price.GetProperty("total").GetDecimal();
-                                var currency = price.GetProperty("currencyCode").GetString();
-                                var isPrimary = price.GetProperty("isPrimary").GetBoolean();
-
-                                sb.AppendLine($"      Prezzo{(isPrimary ? " (Primario)" : "")}: {total} {currency}");
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Fleet Status
-            if (content.TryGetProperty("fleet_status", out var fleetStatus) &&
-                fleetStatus.TryGetProperty("response", out var fleetResponse))
-            {
-                var keyPairedCount = fleetResponse.GetProperty("key_paired_vins").GetArrayLength();
-                var unpairedCount = fleetResponse.GetProperty("unpaired_vins").GetArrayLength();
-
-                sb.AppendLine($"  - STATO FLOTTA: {keyPairedCount} veicoli collegati, {unpairedCount} non collegati");
-
-                if (fleetResponse.TryGetProperty("vehicle_info", out var vehicleInfo))
-                {
-                    foreach (var prop in vehicleInfo.EnumerateObject())
-                    {
-                        var vin = prop.Name;
-                        var info = prop.Value;
-                        var firmware = info.GetProperty("firmware_version").GetString();
-                        var telemetryVersion = info.GetProperty("fleet_telemetry_version").GetString();
-                        var totalKeys = info.GetProperty("total_number_of_keys").GetInt32();
-
-                        sb.AppendLine($"    • {vin}: FW {firmware}, Telemetry {telemetryVersion}, {totalKeys} chiavi");
-                    }
-                }
-            }
-
-            // Nearby Charging Sites
-            if (content.TryGetProperty("nearby_charging_sites", out var chargingSites) &&
-                chargingSites.TryGetProperty("response", out var sitesResponse))
-            {
-                sb.AppendLine("  - STAZIONI RICARICA VICINE:");
-
-                if (sitesResponse.TryGetProperty("superchargers", out var superchargers))
-                {
-                    sb.AppendLine("    Supercharger:");
-                    foreach (var sc in superchargers.EnumerateArray())
-                    {
-                        var name = sc.GetProperty("name").GetString();
-                        var distance = sc.GetProperty("distance_miles").GetDecimal();
-                        var available = sc.GetProperty("available_stalls").GetInt32();
-                        var total = sc.GetProperty("total_stalls").GetInt32();
-
-                        sb.AppendLine($"      • {name}: {available}/{total} stalli, {distance:F1} miglia");
-                    }
-                }
-
-                if (sitesResponse.TryGetProperty("destination_charging", out var destinations))
-                {
-                    sb.AppendLine("    Destination Charging:");
-                    foreach (var dest in destinations.EnumerateArray())
-                    {
-                        var name = dest.GetProperty("name").GetString();
-                        var distance = dest.GetProperty("distance_miles").GetDecimal();
-                        var amenities = dest.TryGetProperty("amenities", out var a) ? a.GetString() : "";
-
-                        sb.AppendLine($"      • {name}: {distance:F1} miglia ({amenities})");
-                    }
-                }
-            }
-
-            // Vehicle Options
-            if (content.TryGetProperty("options", out var options) &&
-                options.TryGetProperty("response", out var optionsResponse))
-            {
-                sb.AppendLine("  - OPZIONI VEICOLO:");
-
-                if (optionsResponse.TryGetProperty("codes", out var codes))
-                {
-                    foreach (var option in codes.EnumerateArray())
-                    {
-                        var code = option.GetProperty("code").GetString();
-                        var displayName = option.GetProperty("displayName").GetString();
-                        var isActive = option.GetProperty("isActive").GetBoolean();
-
-                        sb.AppendLine($"    • {displayName} ({code}){(isActive ? " ✓" : "")}");
-                    }
-                }
-            }
-
-            // Warranty Details
-            if (content.TryGetProperty("warranty_details", out var warranty) &&
-                warranty.TryGetProperty("response", out var warrantyResponse))
-            {
-                sb.AppendLine("  - GARANZIE ATTIVE:");
-
-                if (warrantyResponse.TryGetProperty("activeWarranty", out var activeWarranties))
-                {
-                    foreach (var w in activeWarranties.EnumerateArray())
-                    {
-                        var displayName = w.GetProperty("warrantyDisplayName").GetString() ?? "[Garanzia sconosciuta]";
-                        var expirationDate = w.GetProperty("expirationDate").GetString();
-                        var expirationOdometer = w.GetProperty("expirationOdometer").GetInt32();
-                        var odometerUnit = w.GetProperty("odometerUnit").GetString() ?? "";
-
-                        var parsedTimeOk = DateTime.TryParse(expirationDate, out var expDt);
-                        var expDate = parsedTimeOk ? expDt.ToString("yyyy-MM-dd") : "[data sconosciuta]";
-                        sb.AppendLine($"    • {displayName}: fino al {expDate} o {expirationOdometer:N0} {odometerUnit}");
-                    }
-                }
-            }
-
-            // Share Invites
-            if (content.TryGetProperty("share_invites", out var shareInvites) &&
-                shareInvites.TryGetProperty("response", out var invitesResponse))
-            {
-                var inviteCount = shareInvites.GetProperty("count").GetInt32();
-                sb.AppendLine($"  - INVITI CONDIVISIONE ({inviteCount} inviti):");
-
-                foreach (var invite in invitesResponse.EnumerateArray())
-                {
-                    var state = invite.GetProperty("state").GetString() ?? "[stato sconosciuto]";
-                    var shareType = invite.GetProperty("share_type").GetString() ?? "[tipo sconosciuto]";
-                    var expiresAt = invite.GetProperty("expires_at").GetString();
-                    var vin = invite.GetProperty("vin").GetString() ?? "[VIN mancante]";
-
-                    var parsedTimeOk = DateTime.TryParse(expiresAt, out var parsedDate);
-                    var expDate = parsedTimeOk ? parsedDate.ToString("yyyy-MM-dd") : "[data sconosciuta]";
-                    sb.AppendLine($"    • VIN {vin}: {shareType}, Stato: {state}, Scade: {expDate}");
-                }
-            }
-
-            // Recent Alerts
-            if (content.TryGetProperty("recent_alerts", out var alerts) &&
-                alerts.TryGetProperty("response", out var alertsResponse))
-            {
-                sb.AppendLine("  - AVVISI RECENTI:");
-
-                if (alertsResponse.TryGetProperty("recent_alerts", out var recentAlerts))
-                {
-                    foreach (var alert in recentAlerts.EnumerateArray())
-                    {
-                        var name = alert.GetProperty("name").GetString();
-                        var time = alert.GetProperty("time").GetString();
-                        var userText = alert.TryGetProperty("user_text", out var ut) ? ut.GetString() : "";
-
-                        var parsedTimeOk = DateTime.TryParse(time, out var dt);
-                        var alertTime = parsedTimeOk ? dt.ToString("yyyy-MM-dd HH:mm") : "[orario sconosciuto]";
-                        sb.AppendLine($"    • {alertTime} - {name}: {userText}");
-                    }
-                }
-            }
-
-            // Service Data
-            if (content.TryGetProperty("service_data", out var serviceData) &&
-                serviceData.TryGetProperty("response", out var serviceResponse))
-            {
-                var serviceStatus = serviceResponse.GetProperty("service_status").GetString();
-                var serviceEtc = serviceResponse.TryGetProperty("service_etc", out var etc) ? etc.GetString() : "";
-                var visitNumber = serviceResponse.TryGetProperty("service_visit_number", out var vn) ? vn.GetString() : "";
-
-                sb.AppendLine("  - STATO ASSISTENZA:");
-                sb.AppendLine($"    • Stato: {serviceStatus}");
-                if (!string.IsNullOrEmpty(serviceEtc)) sb.AppendLine($"    • Completamento previsto: {serviceEtc}");
-                if (!string.IsNullOrEmpty(visitNumber)) sb.AppendLine($"    • Numero visita: {visitNumber}");
-            }
-
-            sb.AppendLine(); // spazio tra record
         }
+
+        // Vehicle List
+        if (content.TryGetProperty("list", out var list) &&
+            list.TryGetProperty("response", out var listResponse))
+        {
+            var count = GetSafeIntValue(list, "count");
+            sb.AppendLine($"  - VEICOLI ASSOCIATI ({count} veicoli):");
+
+            foreach (var vehicle in listResponse.EnumerateArray())
+            {
+                var vin = GetSafeStringValue(vehicle, "vin");
+                var displayName = GetSafeStringValue(vehicle, "display_name");
+                var state = GetSafeStringValue(vehicle, "state");
+                var accessType = GetSafeStringValue(vehicle, "access_type");
+
+                sb.AppendLine($"    • {displayName} (VIN: {vin}) - {state}, {accessType}");
+            }
+        }
+
+        // Drivers
+        if (content.TryGetProperty("drivers", out var drivers) &&
+            drivers.TryGetProperty("response", out var driversResponse))
+        {
+            var driverCount = GetSafeIntValue(drivers, "count");
+            sb.AppendLine($"  - GUIDATORI AUTORIZZATI ({driverCount} guidatori):");
+
+            foreach (var driver in driversResponse.EnumerateArray())
+            {
+                var firstName = GetSafeStringValue(driver, "driver_first_name");
+                var lastName = GetSafeStringValue(driver, "driver_last_name");
+                var userId = GetSafeIntValue(driver, "user_id");
+
+                sb.AppendLine($"    • {firstName} {lastName} (ID: {userId})");
+            }
+        }
+
+        // Eligible Subscriptions
+        if (content.TryGetProperty("eligible_subscriptions", out var eligibleSubs) &&
+            eligibleSubs.TryGetProperty("response", out var eligibleResponse))
+        {
+            sb.AppendLine("  - ABBONAMENTI DISPONIBILI:");
+
+            if (eligibleResponse.TryGetProperty("eligible", out var eligible))
+            {
+                foreach (var subscription in eligible.EnumerateArray())
+                {
+                    var product = GetSafeStringValue(subscription, "product");
+                    var optionCode = GetSafeStringValue(subscription, "optionCode");
+
+                    sb.AppendLine($"    • {product} ({optionCode})");
+
+                    if (subscription.TryGetProperty("billingOptions", out var billingOptions))
+                    {
+                        foreach (var billing in billingOptions.EnumerateArray())
+                        {
+                            var period = GetSafeStringValue(billing, "billingPeriod");
+                            var total = GetSafeDecimalValue(billing, "total");
+                            var currency = GetSafeStringValue(billing, "currencyCode");
+
+                            sb.AppendLine($"      {period}: {total} {currency}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Eligible Upgrades
+        if (content.TryGetProperty("eligible_upgrades", out var eligibleUpgrades) &&
+            eligibleUpgrades.TryGetProperty("response", out var upgradesResponse))
+        {
+            sb.AppendLine("  - UPGRADE DISPONIBILI:");
+
+            if (upgradesResponse.TryGetProperty("eligible", out var upgrades))
+            {
+                foreach (var upgrade in upgrades.EnumerateArray())
+                {
+                    var optionCode = GetSafeStringValue(upgrade, "optionCode");
+                    var optionGroup = GetSafeStringValue(upgrade, "optionGroup");
+
+                    sb.AppendLine($"    • {optionGroup}: {optionCode}");
+
+                    if (upgrade.TryGetProperty("pricing", out var pricing))
+                    {
+                        foreach (var price in pricing.EnumerateArray())
+                        {
+                            var total = GetSafeDecimalValue(price, "total");
+                            var currency = GetSafeStringValue(price, "currencyCode");
+                            var isPrimary = GetSafeBooleanValue(price, "isPrimary");
+
+                            sb.AppendLine($"      Prezzo{(isPrimary ? " (Primario)" : "")}: {total} {currency}");
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fleet Status
+        if (content.TryGetProperty("fleet_status", out var fleetStatus) &&
+            fleetStatus.TryGetProperty("response", out var fleetResponse))
+        {
+            var keyPairedCount = fleetResponse.TryGetProperty("key_paired_vins", out var kpv) ? kpv.GetArrayLength() : 0;
+            var unpairedCount = fleetResponse.TryGetProperty("unpaired_vins", out var uv) ? uv.GetArrayLength() : 0;
+
+            sb.AppendLine($"  - STATO FLOTTA: {keyPairedCount} veicoli collegati, {unpairedCount} non collegati");
+
+            if (fleetResponse.TryGetProperty("vehicle_info", out var vehicleInfo))
+            {
+                foreach (var prop in vehicleInfo.EnumerateObject())
+                {
+                    var vin = prop.Name;
+                    var info = prop.Value;
+                    var firmware = GetSafeStringValue(info, "firmware_version");
+                    var telemetryVersion = GetSafeStringValue(info, "fleet_telemetry_version");
+                    var totalKeys = GetSafeIntValue(info, "total_number_of_keys");
+
+                    sb.AppendLine($"    • {vin}: FW {firmware}, Telemetry {telemetryVersion}, {totalKeys} chiavi");
+                }
+            }
+        }
+
+        // Nearby Charging Sites
+        if (content.TryGetProperty("nearby_charging_sites", out var chargingSites) &&
+            chargingSites.TryGetProperty("response", out var sitesResponse))
+        {
+            sb.AppendLine("  - STAZIONI RICARICA VICINE:");
+
+            if (sitesResponse.TryGetProperty("superchargers", out var superchargers))
+            {
+                sb.AppendLine("    Supercharger:");
+                foreach (var sc in superchargers.EnumerateArray())
+                {
+                    var name = GetSafeStringValue(sc, "name");
+                    var distance = GetSafeDecimalValue(sc, "distance_miles");
+                    var available = GetSafeIntValue(sc, "available_stalls");
+                    var total = GetSafeIntValue(sc, "total_stalls");
+
+                    // Conversione miglia in chilometri per utenti italiani
+                    var distanceKm = distance * 1.60934m;
+                    sb.AppendLine($"      • {name}: {available}/{total} stalli, {distanceKm:F1} km ({distance:F1} mi)");
+                }
+            }
+
+            if (sitesResponse.TryGetProperty("destination_charging", out var destinations))
+            {
+                sb.AppendLine("    Destination Charging:");
+                foreach (var dest in destinations.EnumerateArray())
+                {
+                    var name = GetSafeStringValue(dest, "name");
+                    var distance = GetSafeDecimalValue(dest, "distance_miles");
+                    var amenities = GetSafeStringValue(dest, "amenities");
+
+                    // Conversione miglia in chilometri
+                    var distanceKm = distance * 1.60934m;
+                    sb.AppendLine($"      • {name}: {distanceKm:F1} km ({amenities})");
+                }
+            }
+        }
+
+        // Vehicle Options
+        if (content.TryGetProperty("options", out var options) &&
+            options.TryGetProperty("response", out var optionsResponse))
+        {
+            sb.AppendLine("  - OPZIONI VEICOLO:");
+
+            if (optionsResponse.TryGetProperty("codes", out var codes))
+            {
+                foreach (var option in codes.EnumerateArray())
+                {
+                    var code = GetSafeStringValue(option, "code");
+                    var displayName = GetSafeStringValue(option, "displayName");
+                    var isActive = GetSafeBooleanValue(option, "isActive");
+
+                    sb.AppendLine($"    • {displayName} ({code}){(isActive ? " ✓" : "")}");
+                }
+            }
+        }
+
+        // Warranty Details
+        if (content.TryGetProperty("warranty_details", out var warranty) &&
+            warranty.TryGetProperty("response", out var warrantyResponse))
+        {
+            sb.AppendLine("  - GARANZIE ATTIVE:");
+
+            if (warrantyResponse.TryGetProperty("activeWarranty", out var activeWarranties))
+            {
+                foreach (var w in activeWarranties.EnumerateArray())
+                {
+                    var displayName = GetSafeStringValue(w, "warrantyDisplayName", "[Garanzia sconosciuta]");
+                    var expirationDate = GetSafeStringValue(w, "expirationDate");
+                    var expirationOdometer = GetSafeIntValue(w, "expirationOdometer");
+                    var odometerUnit = GetSafeStringValue(w, "odometerUnit");
+
+                    var parsedTimeOk = DateTime.TryParse(expirationDate, out var expDt);
+                    var expDate = parsedTimeOk ? expDt.ToString("yyyy-MM-dd") : "[data sconosciuta]";
+
+                    // Conversione unità odometro se necessario
+                    var odometerDisplay = odometerUnit.ToUpper() == "MI" ?
+                        $"{expirationOdometer:N0} mi ({expirationOdometer * 1.60934:N0} km)" :
+                        $"{expirationOdometer:N0} {odometerUnit}";
+
+                    sb.AppendLine($"    • {displayName}: fino al {expDate} o {odometerDisplay}");
+                }
+            }
+        }
+
+        // Share Invites
+        if (content.TryGetProperty("share_invites", out var shareInvites) &&
+            shareInvites.TryGetProperty("response", out var invitesResponse))
+        {
+            var inviteCount = GetSafeIntValue(shareInvites, "count");
+            sb.AppendLine($"  - INVITI CONDIVISIONE ({inviteCount} inviti):");
+
+            foreach (var invite in invitesResponse.EnumerateArray())
+            {
+                var state = GetSafeStringValue(invite, "state", "[stato sconosciuto]");
+                var shareType = GetSafeStringValue(invite, "share_type", "[tipo sconosciuto]");
+                var expiresAt = GetSafeStringValue(invite, "expires_at");
+                var vin = GetSafeStringValue(invite, "vin", "[VIN mancante]");
+
+                var parsedTimeOk = DateTime.TryParse(expiresAt, out var parsedDate);
+                var expDate = parsedTimeOk ? parsedDate.ToString("yyyy-MM-dd") : "[data sconosciuta]";
+                sb.AppendLine($"    • VIN {vin}: {shareType}, Stato: {state}, Scade: {expDate}");
+            }
+        }
+
+        // Recent Alerts
+        if (content.TryGetProperty("recent_alerts", out var alerts) &&
+            alerts.TryGetProperty("response", out var alertsResponse))
+        {
+            sb.AppendLine("  - AVVISI RECENTI:");
+
+            if (alertsResponse.TryGetProperty("recent_alerts", out var recentAlerts))
+            {
+                foreach (var alert in recentAlerts.EnumerateArray())
+                {
+                    var name = GetSafeStringValue(alert, "name");
+                    var time = GetSafeStringValue(alert, "time");
+                    var userText = GetSafeStringValue(alert, "user_text");
+
+                    var parsedTimeOk = DateTime.TryParse(time, out var dt);
+                    var alertTime = parsedTimeOk ? dt.ToString("yyyy-MM-dd HH:mm") : "[orario sconosciuto]";
+                    sb.AppendLine($"    • {alertTime} - {name}: {userText}");
+                }
+            }
+        }
+
+        // Service Data
+        if (content.TryGetProperty("service_data", out var serviceData) &&
+            serviceData.TryGetProperty("response", out var serviceResponse))
+        {
+            var serviceStatus = GetSafeStringValue(serviceResponse, "service_status");
+            var serviceEtc = GetSafeStringValue(serviceResponse, "service_etc");
+            var visitNumber = GetSafeStringValue(serviceResponse, "service_visit_number");
+
+            sb.AppendLine("  - STATO ASSISTENZA:");
+            sb.AppendLine($"    • Stato: {serviceStatus}");
+            if (!string.IsNullOrEmpty(serviceEtc) && serviceEtc != "N/A")
+                sb.AppendLine($"    • Completamento previsto: {serviceEtc}");
+            if (!string.IsNullOrEmpty(visitNumber) && visitNumber != "N/A")
+                sb.AppendLine($"    • Numero visita: {visitNumber}");
+        }
+
+        sb.AppendLine(); // spazio tra record
     }
 
     #endregion
@@ -946,22 +1231,6 @@ public static class RawDataPreparser
         };
     }
 
-    private static string GetCompassDirection(int heading)
-    {
-        return heading switch
-        {
-            _ when heading >= 337 || heading <= 22 => "Nord",
-            >= 23 and <= 67 => "Nord-Est",
-            >= 68 and <= 112 => "Est",
-            >= 113 and <= 157 => "Sud-Est",
-            >= 158 and <= 202 => "Sud",
-            >= 203 and <= 247 => "Sud-Ovest",
-            >= 248 and <= 292 => "Ovest",
-            >= 293 and <= 336 => "Nord-Ovest",
-            _ => "Sconosciuto"
-        };
-    }
-
     private static string TranslateShiftState(string shiftState)
     {
         return shiftState?.ToUpper() switch
@@ -972,24 +1241,6 @@ public static class RawDataPreparser
             "N" => "Folle",
             null => "Non disponibile",
             _ => shiftState
-        };
-    }
-
-    // Metodi di supporto per la categorizzazione (ORIGINALI)
-    private static string GetCommandCategory(string commandName)
-    {
-        return commandName switch
-        {
-            var cmd when cmd.StartsWith("charge_") || cmd.Contains("charge") => "Ricarica",
-            var cmd when cmd.StartsWith("door_") || cmd.Contains("trunk") => "Accesso Veicolo",
-            var cmd when cmd.Contains("climate") || cmd.Contains("temp") || cmd.Contains("heat") || cmd.Contains("cool") || cmd.Contains("conditioning") => "Climatizzazione",
-            var cmd when cmd.StartsWith("media_") || cmd.Contains("volume") => "Sistema Multimediale",
-            var cmd when cmd.StartsWith("navigation_") => "Navigazione",
-            var cmd when cmd.Contains("sentry") || cmd.Contains("valet") || cmd.Contains("speed_limit") || cmd.Contains("pin") => "Sicurezza",
-            var cmd when cmd.Contains("seat") || cmd.Contains("steering_wheel") || cmd.Contains("window") || cmd.Contains("sun_roof") => "Comfort",
-            var cmd when cmd.Contains("software") || cmd.Contains("schedule") => "Sistema",
-            var cmd when cmd.Contains("lights") || cmd.Contains("horn") || cmd.Contains("homelink") || cmd.Contains("boombox") => "Funzioni Esterne",
-            _ => "Altro"
         };
     }
 
@@ -1115,4 +1366,301 @@ public static class RawDataPreparser
     }
 
     #endregion
+
+    private static string GetCompassDirection(int heading)
+    {
+        return heading switch
+        {
+            _ when heading >= 337 || heading <= 22 => "Nord",
+            >= 23 and <= 67 => "Nord-Est",
+            >= 68 and <= 112 => "Est",
+            >= 113 and <= 157 => "Sud-Est",
+            >= 158 and <= 202 => "Sud",
+            >= 203 and <= 247 => "Sud-Ovest",
+            >= 248 and <= 292 => "Ovest",
+            >= 293 and <= 336 => "Nord-Ovest",
+            _ => "Sconosciuto"
+        };
+    }
+
+    // Metodo per formattare le coordinate in formato italiano
+    private static string FormatCoordinatesItalian(decimal latitude, decimal longitude)
+    {
+        var latDir = latitude >= 0 ? "N" : "S";
+        var lonDir = longitude >= 0 ? "E" : "W";
+        return $"{Math.Abs(latitude):F6}°{latDir}, {Math.Abs(longitude):F6}°{lonDir}";
+    }
+
+    // Metodo per determinare la città italiana basata sulle coordinate
+    private static string GetItalianLocationName(decimal latitude, decimal longitude)
+    {
+        // Coordinate approssimate delle principali città italiane
+        return (latitude, longitude) switch
+        {
+            var (lat, lon) when Math.Abs(lat - 41.9028m) < 0.1m && Math.Abs(lon - 12.4964m) < 0.1m => "Roma",
+            var (lat, lon) when Math.Abs(lat - 45.4642m) < 0.1m && Math.Abs(lon - 9.1900m) < 0.1m => "Milano",
+            var (lat, lon) when Math.Abs(lat - 40.8518m) < 0.1m && Math.Abs(lon - 14.2681m) < 0.1m => "Napoli",
+            var (lat, lon) when Math.Abs(lat - 45.0703m) < 0.1m && Math.Abs(lon - 7.6869m) < 0.1m => "Torino",
+            var (lat, lon) when Math.Abs(lat - 44.4949m) < 0.1m && Math.Abs(lon - 11.3426m) < 0.1m => "Bologna",
+            var (lat, lon) when Math.Abs(lat - 43.7696m) < 0.1m && Math.Abs(lon - 11.2558m) < 0.1m => "Firenze",
+            _ => "Località italiana"
+        };
+    }
+
+    // Metodo helper per formattare le pressioni pneumatici
+    private static string FormatTirePressure(decimal pressure)
+    {
+        if (pressure <= 0) return "N/A";
+
+        var status = pressure switch
+        {
+            < 2.2m => "⚠️",
+            > 3.8m => "⚠️",
+            _ => "✅"
+        };
+
+        return $"{pressure:F2} bar {status}";
+    }
+
+    // Metodi helper esistenti (devono essere inclusi)
+    private static string GetCommandCategory(string commandName)
+    {
+        return commandName switch
+        {
+            var cmd when cmd.StartsWith("charge_") || cmd.Contains("charge") => "Ricarica",
+            var cmd when cmd.StartsWith("door_") || cmd.Contains("trunk") => "Accesso Veicolo",
+            var cmd when cmd.Contains("climate") || cmd.Contains("temp") || cmd.Contains("heat") || cmd.Contains("cool") || cmd.Contains("conditioning") => "Climatizzazione",
+            var cmd when cmd.StartsWith("media_") || cmd.Contains("volume") => "Sistema Multimediale",
+            var cmd when cmd.StartsWith("navigation_") => "Navigazione",
+            var cmd when cmd.Contains("sentry") || cmd.Contains("valet") || cmd.Contains("speed_limit") || cmd.Contains("pin") => "Sicurezza",
+            var cmd when cmd.Contains("seat") || cmd.Contains("steering_wheel") || cmd.Contains("window") || cmd.Contains("sun_roof") => "Comfort",
+            var cmd when cmd.Contains("software") || cmd.Contains("schedule") => "Sistema",
+            var cmd when cmd.Contains("lights") || cmd.Contains("horn") || cmd.Contains("homelink") || cmd.Contains("boombox") => "Funzioni Esterne",
+            _ => "Altro"
+        };
+    }
+
+    // Metodo helper aggiuntivo per formatazione energia
+    private static string FormatEnergyValue(decimal energy, string unit = "Wh")
+    {
+        return energy switch
+        {
+            >= 1000000 => $"{energy / 1000000:F1} M{unit}",
+            >= 1000 => $"{energy / 1000:F1} k{unit}",
+            _ => $"{energy:F0} {unit}"
+        };
+    }
+
+    // Metodo helper per analisi bilancio energetico
+    private static string AnalyzeEnergyBalance(int solarExported, int gridImported, int batteryExported, int consumerTotal)
+    {
+        var netBalance = solarExported - consumerTotal;
+        return netBalance switch
+        {
+            > 1000 => "🌱 Eccedenza energetica - vendita alla rete",
+            > 0 => "🌱 Leggera eccedenza energetica",
+            > -1000 => "⚖️ Bilancio equilibrato",
+            > -5000 => "🔌 Dipendenza moderata dalla rete",
+            _ => "🔌 Alta dipendenza dalla rete"
+        };
+    }
+
+    // Esempio di integrazione per ProcessEnergyEndpoints - sezione Live Status
+    private static void ProcessLiveStatusEnhanced(StringBuilder sb, JsonElement liveResponse)
+    {
+        var solarPower = GetSafeIntValue(liveResponse, "solar_power");
+        var energyLeft = GetSafeDecimalValue(liveResponse, "energy_left");
+        var totalPackEnergy = GetSafeIntValue(liveResponse, "total_pack_energy");
+        var percentageCharged = GetSafeDecimalValue(liveResponse, "percentage_charged");
+        var batteryPower = GetSafeIntValue(liveResponse, "battery_power");
+        var loadPower = GetSafeIntValue(liveResponse, "load_power");
+        var gridPower = GetSafeIntValue(liveResponse, "grid_power");
+        var gridStatus = GetSafeStringValue(liveResponse, "grid_status");
+        var islandStatus = GetSafeStringValue(liveResponse, "island_status");
+        var stormModeActive = GetSafeBooleanValue(liveResponse, "storm_mode_active");
+        var backupCapable = GetSafeBooleanValue(liveResponse, "backup_capable");
+        var timestamp = GetSafeStringValue(liveResponse, "timestamp");
+
+        // Analisi intelligente del sistema energetico
+        var batteryStatus = batteryPower > 0 ? "🔋 Scarica" : "⚡ Ricarica";
+        var solarStatus = solarPower switch
+        {
+            0 => "🌙 Nessuna produzione (notte)",
+            < 1000 => "🌤️ Produzione bassa",
+            < 3000 => "☀️ Produzione media",
+            _ => "☀️ Produzione alta"
+        };
+
+        var gridStatus_Analyzed = gridPower switch
+        {
+            > 1000 => "🔌 Prelievo dalla rete",
+            > 0 => "🔌 Leggero prelievo",
+            0 => "⚖️ Bilanciato",
+            _ => "💰 Vendita alla rete"
+        };
+
+        sb.AppendLine("  - STATO LIVE:");
+
+        if (DateTime.TryParse(timestamp, out var ts))
+        {
+            var timeAgo = DateTime.Now - ts;
+            var timeAgoText = timeAgo.TotalMinutes < 5 ? "ora" : $"{timeAgo.TotalMinutes:F0} min fa";
+            sb.AppendLine($"    • Aggiornato: {ts:yyyy-MM-dd HH:mm} ({timeAgoText})");
+        }
+
+        sb.AppendLine($"    • Produzione Solare: {FormatEnergyValue(solarPower, "W")} - {solarStatus}");
+        sb.AppendLine($"    • Batteria: {FormatEnergyValue(energyLeft)} / {FormatEnergyValue(totalPackEnergy)} ({percentageCharged:F1}%)");
+        sb.AppendLine($"    • Potenza Batteria: {FormatEnergyValue(Math.Abs(batteryPower), "W")} - {batteryStatus}");
+        sb.AppendLine($"    • Carico Casa: {FormatEnergyValue(loadPower, "W")}");
+        sb.AppendLine($"    • Rete Elettrica: {FormatEnergyValue(Math.Abs(gridPower), "W")} - {gridStatus_Analyzed}");
+        sb.AppendLine($"    • Connessione: {gridStatus} ({islandStatus})");
+        sb.AppendLine($"    • Backup: {(backupCapable ? "✅ Disponibile" : "❌ Non disponibile")}");
+        sb.AppendLine($"    • Storm Mode: {(stormModeActive ? "⛈️ Attivo" : "😴 Inattivo")}");
+    }
+
+    // Metodo helper per ProcessPartnerPublicKey migliorato
+    private static void ProcessPartnerPublicKey(StringBuilder sb, JsonElement content, ref int index)
+    {
+        if (content.ValueKind != JsonValueKind.Object) return;
+
+        sb.AppendLine($"[{index++}] CONFIGURAZIONE PARTNER API");
+
+        // Public Key con analisi sicurezza
+        var publicKey = GetSafeStringValue(content, "public_key");
+        if (publicKey != "N/A")
+        {
+            var keyLength = publicKey.Length;
+            var keyPreview = keyLength > 20 ? $"{publicKey[..20]}...{publicKey[^10..]}" : publicKey;
+            var keyStrength = keyLength switch
+            {
+                >= 128 => "🔐 Chiave forte",
+                >= 64 => "🔒 Chiave media",
+                _ => "⚠️ Chiave debole"
+            };
+
+            sb.AppendLine($"  - CHIAVE PUBBLICA: {keyPreview}");
+            sb.AppendLine($"    📊 Lunghezza: {keyLength} caratteri - {keyStrength}");
+        }
+
+        // Fleet Telemetry Error VINs con analisi
+        if (content.TryGetProperty("fleet_telemetry_error_vins", out var errorVins) &&
+            errorVins.ValueKind == JsonValueKind.Array)
+        {
+            var vinCount = errorVins.GetArrayLength();
+            var errorLevel = vinCount switch
+            {
+                0 => "✅ Nessun errore",
+                1 => "⚠️ Errore singolo",
+                _ => "🔴 Errori multipli"
+            };
+
+            sb.AppendLine($"  - VIN CON ERRORI TELEMETRIA: {vinCount} veicoli - {errorLevel}");
+
+            foreach (var vin in errorVins.EnumerateArray())
+            {
+                var vinValue = vin.GetString() ?? "N/A";
+                sb.AppendLine($"    • {vinValue}");
+            }
+        }
+
+        // Fleet Telemetry Errors con categorizzazione
+        if (content.TryGetProperty("fleet_telemetry_errors", out var errors) &&
+            errors.ValueKind == JsonValueKind.Array)
+        {
+            var errorCount = errors.GetArrayLength();
+            sb.AppendLine($"  - DETTAGLI ERRORI TELEMETRIA ({errorCount} errori):");
+
+            foreach (var error in errors.EnumerateArray())
+            {
+                var clientName = GetSafeStringValue(error, "name");
+                var errorMessage = GetSafeStringValue(error, "error");
+                var vin = GetSafeStringValue(error, "vin");
+
+                // Categorizzazione dell'errore
+                var errorCategory = errorMessage.ToLower() switch
+                {
+                    var msg when msg.Contains("gps") => "🗺️ Errore GPS",
+                    var msg when msg.Contains("connection") => "📡 Errore connessione",
+                    var msg when msg.Contains("timeout") => "⏱️ Timeout",
+                    var msg when msg.Contains("parse") => "🔧 Errore parsing dati",
+                    _ => "❓ Errore generico"
+                };
+
+                sb.AppendLine($"    • Client: {clientName} - {errorCategory}");
+                sb.AppendLine($"      VIN: {vin}");
+                sb.AppendLine($"      Dettaglio: {errorMessage}");
+                sb.AppendLine();
+            }
+        }
+
+        sb.AppendLine(); // spazio tra record
+    }
+
+    // Metodo helper per ProcessUserProfile migliorato  
+    private static void ProcessOrdersEnhanced(StringBuilder sb, JsonElement orders)
+    {
+        var count = GetSafeIntValue(orders, "count");
+        sb.AppendLine($"  - ORDINI ({count} ordini):");
+
+        if (orders.TryGetProperty("response", out var ordersArray) &&
+            ordersArray.ValueKind == JsonValueKind.Array)
+        {
+            foreach (var order in ordersArray.EnumerateArray())
+            {
+                var vehicleMapId = GetSafeIntValue(order, "vehicleMapId");
+                var referenceNumber = GetSafeStringValue(order, "referenceNumber");
+                var vin = GetSafeStringValue(order, "vin");
+                var orderStatus = GetSafeStringValue(order, "orderStatus");
+                var orderSubstatus = GetSafeStringValue(order, "orderSubstatus");
+                var modelCode = GetSafeStringValue(order, "modelCode");
+                var countryCode = GetSafeStringValue(order, "countryCode");
+                var locale = GetSafeStringValue(order, "locale");
+                var mktOptions = GetSafeStringValue(order, "mktOptions");
+                var isB2b = GetSafeBooleanValue(order, "isB2b");
+
+                // Analisi stato ordine
+                var statusAnalysis = orderStatus switch
+                {
+                    "BOOKED" => "📋 Ordinato",
+                    "CONFIRMED" => "✅ Confermato",
+                    "IN_PRODUCTION" => "🏭 In produzione",
+                    "READY_FOR_DELIVERY" => "🚚 Pronto per consegna",
+                    "DELIVERED" => "✅ Consegnato",
+                    _ => orderStatus
+                };
+
+                // Analisi modello
+                var modelName = modelCode?.ToUpper() switch
+                {
+                    "M3" => "Model 3",
+                    "MY" => "Model Y",
+                    "MS" => "Model S",
+                    "MX" => "Model X",
+                    _ => modelCode
+                };
+
+                sb.AppendLine($"    • Ordine #{referenceNumber} (ID: {vehicleMapId})");
+                sb.AppendLine($"      VIN: {vin}");
+                sb.AppendLine($"      Modello: {modelName}, Paese: {countryCode}, Locale: {locale}");
+                sb.AppendLine($"      Stato: {statusAnalysis} ({orderSubstatus})");
+                sb.AppendLine($"      Tipo: {(isB2b ? "🏢 Business (B2B)" : "👤 Privato (B2C)")}");
+
+                // Parse market options se presenti
+                if (!string.IsNullOrEmpty(mktOptions) && mktOptions != "N/A")
+                {
+                    var options = mktOptions.Split(',');
+                    var optionAnalysis = options.Length switch
+                    {
+                        <= 5 => "🔧 Configurazione base",
+                        <= 10 => "🔧 Configurazione media",
+                        _ => "🔧 Configurazione completa"
+                    };
+
+                    sb.AppendLine($"      Opzioni: {string.Join(", ", options.Take(3))}...");
+                    sb.AppendLine($"      📊 {optionAnalysis} ({options.Length} opzioni totali)");
+                }
+                sb.AppendLine();
+            }
+        }
+    }
 }

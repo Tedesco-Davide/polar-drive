@@ -2,6 +2,11 @@ namespace PolarDrive.Data.Entities;
 
 public class VehicleData
 {
+    /// <summary>
+    /// Indica se questo dato è stato raccolto durante una sessione di Adaptive Profiling
+    /// </summary>
+    public bool IsAdaptiveProfiling { get; set; } = false;
+
     public int Id { get; set; }
 
     public int VehicleId { get; set; }

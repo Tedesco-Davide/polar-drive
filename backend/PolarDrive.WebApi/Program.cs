@@ -72,6 +72,9 @@ builder.Services.AddHostedService<FileCleanupService>();
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
 builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 
+// ✅ SERVIZI SMS
+builder.Services.AddScoped<IAdaptiveProfilingService, AdaptiveProfilingService>();
+
 // Registrazione HttpClientFactory per le chiamate alle API esterne
 builder.Services.AddHttpClient();
 
