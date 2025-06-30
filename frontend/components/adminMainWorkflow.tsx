@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "next-i18next";
-import { FileArchive, UserSearch, Link } from "lucide-react";
+import { FileArchive, UserSearch, Link, MessageSquare } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { FuelType } from "@/types/fuelTypes";
@@ -11,6 +11,7 @@ import {
 } from "@/types/adminWorkflowTypes";
 import { parseISO, isAfter, isValid } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
+import AdminSmsManagementModal from "@/components/AdminSmsManagementModal";
 import AdminLoader from "@/components/adminLoader";
 import SearchBar from "@/components/searchBar";
 import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm";
@@ -452,6 +453,14 @@ export default function AdminMainWorkflow({
     }
   };
 
+  const [smsModalOpen, setSmsModalOpen] = useState(false);
+  const [selectedVehicleForSms, setSelectedVehicleForSms] = useState<{
+    id: number;
+    vin: string;
+    companyName: string;
+    isActive: boolean;
+  } | null>(null);
+
   return (
     <div>
       {isStatusChanging && <AdminLoader />}
@@ -578,6 +587,38 @@ export default function AdminMainWorkflow({
                   <Link size={16} />
                 </button>
                 <button
+                  className={`p-2 ${
+                    entry.isVehicleActive
+                      ? "bg-green-500 hover:bg-green-600"
+                      : "bg-gray-400 cursor-not-allowed opacity-50"
+                  } text-softWhite rounded`}
+                  disabled={!entry.isVehicleActive}
+                  title={
+                    entry.isVehicleActive
+                      ? "Gestisci SMS per questo veicolo"
+                      : "Veicolo non attivo - SMS disabilitato"
+                  }
+                  onClick={() => {
+                    if (entry.isVehicleActive) {
+                      setSelectedVehicleForSms({
+                        id: entry.id,
+                        vin: entry.vehicleVIN,
+                        companyName: entry.companyName,
+                        isActive: entry.isVehicleActive,
+                      });
+                      setSmsModalOpen(true);
+                      logFrontendEvent(
+                        "AdminMainWorkflow",
+                        "INFO",
+                        "SMS management modal opened",
+                        `VIN: ${entry.vehicleVIN}, Active: ${entry.isVehicleActive}`
+                      );
+                    }
+                  }}
+                >
+                  <MessageSquare size={16} />
+                </button>
+                <button
                   className="p-2 bg-purple-500 hover:bg-purple-600 text-softWhite rounded"
                   title={t("admin.mainWorkflow.button.pdfUserAndVehicle")}
                   onClick={() => {
@@ -681,6 +722,20 @@ export default function AdminMainWorkflow({
           resetPage={() => setCurrentPage(1)}
         />
       </div>
+
+      {selectedVehicleForSms && (
+        <AdminSmsManagementModal
+          isOpen={smsModalOpen}
+          onClose={() => {
+            setSmsModalOpen(false);
+            setSelectedVehicleForSms(null);
+          }}
+          vehicleId={selectedVehicleForSms.id}
+          vehicleVin={selectedVehicleForSms.vin}
+          companyName={selectedVehicleForSms.companyName}
+          isVehicleActive={selectedVehicleForSms.isActive}
+        />
+      )}
     </div>
   );
 }

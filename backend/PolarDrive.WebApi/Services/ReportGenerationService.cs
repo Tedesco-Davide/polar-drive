@@ -390,6 +390,7 @@ namespace PolarDrive.WebApi.Services
 
             var aiGen = new PolarAiReportGenerator(db);
             var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
+            // var insights = "TEST_INSIGHTS_NO_AI";
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"No insights for {vehicle.Vin}");
 
