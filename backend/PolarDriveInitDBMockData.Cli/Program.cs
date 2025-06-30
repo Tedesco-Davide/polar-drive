@@ -40,7 +40,7 @@ try
             "ClientConsents",
             "VehicleData",
             "AnonymizedVehiclesData",
-            "DemoSmsEvents",
+            "AdaptiveProfilingSmsEvents",
             "ClientVehicles",
             "ClientCompanies"
         };

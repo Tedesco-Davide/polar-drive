@@ -10,7 +10,7 @@
 4) Integrazione Tesla Fleet API (token, chiamate, caching, gestione errori) 
 5) Test API (Postman o Swagger UI)
 6) Database: SQLite (con Entity Framework)
-7) TWILIO (O ALTERNATIVA) PER RICEZIONE SMS (FUNZIONE DEMO)
+7) TWILIO (O ALTERNATIVA) PER RICEZIONE SMS (FUNZIONE ADAPTIVE PROFILING)
 8) VALUTARE STAMPA PDF: PAGINA 1 = TOOL AI PER DIFFERENZIARE | ALTRE PAGINE = STANDARD | PAGINA 3 = OUTAGE | PAGINA 4 = FLEET API OFFLINE
 
 #################################################################################################################################################################
@@ -24,100 +24,6 @@
 3) Nginx reverse proxy + HTTPS
 4) Espone il backend su https://api.datapolar.ai
 5) Usa Certbot per Let's Encrypt SS
-
-#################################################################################################################################################################
-
-##### ENTITA' DB + SEQUENZA DI CREAZIONE
-
-#################################################################################################################################################################
-
-1.  ClientCompanies                      --> radice
-2.  ClientConsents                       --> consenso firmato, ora FK anche verso ClientCompanies
-3.  ClientTeslaVehicles                  --> richiede ClientCompanies
-4.  TeslaWorkflows                       --> richiede ClientTeslaVehicles
-5.  TeslaWorkflowEvents                  --> richiede ClientTeslaVehicles
-6.  Trigger trg_log_workflow_update      --> dopo Workflows + Events
-8.  PdfReports                           --> FK verso ClientTeslaVehicles (e ClientCompanies)
-9.  TeslaVehicleData
-    DemoSmsEvents
-    OutagePeriods
-    AnonymizedTeslaVehicleData
-10. ClientTeslaTokens                    --> FK verso ClientTeslaVehicles
-11. vw_ClientFullProfile                 --> ultima, aggrega tutto
-
-################################################################################################################################################################# 
-
-1.  ClientCompanies                      – Aziende clienti (una riga per ogni azienda, anche se ha 10 Tesla) (includere sia una colonna per email, che per PEC)
-2.  ClientConsents                       – Consenso firmato del legale rappresentante, associato all’azienda (ed alla singola Tesla)
-3.  ClientTeslaVehicles                  – Veicoli Tesla associati: ogni Tesla con riferimento all’azienda
-3.1 TeslaWorkflows                       – Sintesi operativa sempre 1‑a‑1 con la Tesla (stato corrente)
-3.2 TeslaWorkflowEvents                  – Storico di tutte le transizioni, traccia completa
-3.3 TRIGGER trg_log_workflow_update      – Trigger che popola lo storico eventi
-4.  PdfReports                           – Report PDF rivenduti dal cliente a DATAPOLAR
-5.  TeslaVehicleData                     – Dump orari completi dei dati API
-6.  DemoSmsEvents                        – Eventi DEMO via SMS (auditabile, difendibile, semplice da gestire)
-7.  AnonymizedTeslaVehicleData           – Dati anonimizzati di default => Dump già anonimizzati e rivendibili
-8.  OutagePeriods                        – Outage veri, autonomi, pronti per il PDF - Tracciare quando l’accesso a livello di API Tesla globale fallisce
-10. ClientTeslaTokens                    – Salvare per ogni Tesla la coppia token, traccia scadenze, automatizza rinnovi
-11. vw_ClientFullProfile                 – View di “profilo cliente” (Alcune Info + TeslaWorkflows (attuale) + TeslaWorkflowEvents (storico delle Tesla del cliente))
-
-#################################################################################################################################################################
-
-##### SVILUPPO BACKEND - RICEZIONE JSON CONTENENTE I DATI IN FORM
-
-📦 Web API necessarie (minime e chiare)
-Ecco l'elenco delle Web API che ha senso creare, basato sulle tue tabelle:
-
-✅ 1. ClientCompaniesController
-Gestisce: le aziende clienti
-POST / PUT / DELETE / GET
-Validazioni: partita IVA, nome univoco, ecc.
-
-✅ 2. ClientTeslaVehiclesController
-Gestisce: i veicoli Tesla associati alle aziende
-Controlla coerenza IsActive, IsFetching, date
-Relazione con ClientCompanies
-
-✅ 3. ClientConsentsController
-Gestisce: i consensi firmati PDF
-GET solo per visione, POST per caricare nuovi
-Nessuna modifica o delete
-
-✅ 4. PdfReportsController
-Gestisce: i PDF generati dai dati Tesla
-GET solo in lettura, eventualmente download
-Nessuna creazione manuale
-
-✅ 5. TeslaVehicleDataController
-(opzionale, solo per debug)
-Visualizza gli orari raw da Tesla (se vuoi esportarli, testare…)
-
-✅ 6. PolarDriveLogsController
-(opzionale, solo admin/dev)
-Endpoint GET per vedere i log tecnici
-Nessun endpoint di creazione: i log vengono generati automaticamente
-
-#################################################################################################################################################################
-
-DOWNLOAD PDF A RUNTIME (SENZA SALVARE TUTTI I PDF SULLA MACCHINA)
-
-🧠 Strategia: Generazione PDF “on-demand” a runtime
-✅ Vantaggi:
-Nessun salvataggio su disco: zero file permanenti = meno manutenzione
-Risparmi spazio e I/O
-Puoi sempre rigenerare lo stesso file identico, essendo deterministico (dati + layout PDF = output fisso)
-Ogni download produce un file nuovo, solo se serve
-📁 Dal punto di vista utente:
-A video viene segnato come generato → perché tu sai che i dati ci sono e sarebbe identico ogni volta
-👉 Ma il file esiste solo nel momento del click
-🧱 Conclusione
-✅ Sì, puoi fare tutto on-demand a runtime
-✅ È fiscalmente legittimo se i dati sono archiviati
-✅ È efficiente, pulito e scalabile
-✅ È perfettamente compatibile col mindset PolarDrive
-
-Se vuoi ti scrivo il controller ReportsController.cs pronto per .NET che genera tutto a memoria e lo restituisce 👇
-Scrivimi solo: “vai col controller runtime” 
 
 #################################################################################################################################################################
 
@@ -141,7 +47,7 @@ La chiave resta fuori dal database, quindi se il DB viene rubato, i dati restano
 
 #################################################################################################################################################################
 
-##### SVILUPPO DB (.EXE PER CREAZIONE RIGHE ANONIMIZZATE DA RIGHE ESISTENTI)
+##### SVILUPPO DB .CLI (.EXE PER CREAZIONE RIGHE ANONIMIZZATE DA RIGHE ESISTENTI)
 
 POPOLARE IL CAMPO AnonymizedJson DI AnonymizedTeslaVehicleData =>
 UTILIZZARE UN CLI (FILE .EXE) DA UTILIZZARE UNA TANTUM, SOLO QUANDO SI VUOLE POPOLARE LA TABELLA, PER ESPORTARE IL DATI =>
@@ -153,136 +59,18 @@ RISULTATO:
 - Funziona con DB interamente cifrato
 - Il database resta inaccessibile a chiunque non abbia la password
 
-using System;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using Dapper;
-using Microsoft.Data.Sqlite;
-using SQLitePCL;
-
-namespace DatPolarAnonymizerCli
-{
-    class Program
-    {
-        static void Main(string[] args)
-        {
-            // Inizializza SQLCipher
-            Raw.SetProvider(new SQLite3Provider_sqlcipher());
-            Batteries_V2.Init();
-
-            // Leggi la password da variabile d'ambiente
-            var aesKey = Environment.GetEnvironmentVariable("POLARDRIVE_AES_KEY");
-            if (string.IsNullOrWhiteSpace(aesKey))
-            {
-                Console.WriteLine("❌ Errore: variabile POLARDRIVE_AES_KEY non impostata.");
-                return;
-            }
-
-            string connStr = $"Data Source=datapolar.db;Password={aesKey}";
-
-            using var connection = new SqliteConnection(connStr);
-            connection.Open();
-
-            var rows = connection.Query("SELECT Id, TeslaVehicleId, Timestamp, RawJson FROM TeslaVehicleData");
-
-            foreach (var row in rows)
-            {
-                string anonJson = AnonymizeJson(row.RawJson);
-
-                int affected = connection.Execute("""
-                    INSERT OR IGNORE INTO AnonymizedTeslaVehicleData 
-                    (OriginalDataId, Timestamp, TeslaVehicleId, AnonymizedJson)
-                    VALUES (@OriginalDataId, @Timestamp, @TeslaVehicleId, @AnonymizedJson)
-                """, new
-                {
-                    OriginalDataId = row.Id,
-                    Timestamp = row.Timestamp,
-                    TeslaVehicleId = row.TeslaVehicleId,
-                    AnonymizedJson = anonJson
-                });
-
-                if (affected > 0)
-                    Console.WriteLine($"✔ Anonimizzato ID {row.Id}");
-                else
-                    Console.WriteLine($"⏭ Già presente, salto ID {row.Id}");
-            }
-
-            Console.WriteLine("🟢 Completato.");
-        }
-
-        static string AnonymizeJson(string rawJson)
-        {
-            var json = JsonNode.Parse(rawJson);
-
-            json?.AsObject().Remove("vin");
-            json?.AsObject().Remove("vehicle_id");
-
-            var driveState = json?["drive_state"] as JsonObject;
-            if (driveState != null)
-            {
-                if (driveState["latitude"] is JsonValue lat)
-                    driveState["latitude"] = Math.Round(lat.GetValue<double>(), 1);
-
-                if (driveState["longitude"] is JsonValue lon)
-                    driveState["longitude"] = Math.Round(lon.GetValue<double>(), 1);
-            }
-
-            return json?.ToJsonString(new JsonSerializerOptions { WriteIndented = false }) ?? "{}";
-        }
-    }
-}
-
 #################################################################################################################################################################
 
-##### FUNZIONE DEMO
+##### FUNZIONE ADAPTIVE PROFILING
 
-Ogni SMS ricevuto con DEMO (anche solo testo libero) viene registrato come DEMO_ON
-Durata della modalità DEMO: 4 ore dal timestamp di ricezione (ReceivedAt)
+Ogni SMS ricevuto con ADAPTIVE PROFILING (anche solo testo libero) viene registrato come ADAPTIVE_PROFILING_ON
+Durata della modalità ADAPTIVE PROFILING: 4 ore dal timestamp di ricezione (ReceivedAt)
 Durante quelle 4 ore 
-=> Ogni riga salvata in TeslaVehicleData riceve is_demo = true
-=> Verrà segnalata nei report PDF come uso non aziendale (es. amici, parenti)
-Dopo 4 ore, si ritorna a is_demo = false in automatico
+=> Ogni riga salvata in TeslaVehicleData riceve is_adaptive_profiling = true
+Dopo 4 ore, si ritorna a is_adaptive_profiling = false in automatico
 Nessuna disattivazione manuale necessaria
 
 #################################################################################################################################################################
-
-##### SITUAZIONE OUTAGE
-
-Sistema con soglia di "tolleranza outage"
-Ad es: 10 giorni → richiedi PEC
-Ma se il blackout dura > 30 giorni consecutivi, e non arriva PEC → triggeri azione automatica
-Azione automatica: termini il contratto unilateralmente
-Per tutelarti, puoi applicare clausola di cessazione automatica o warning PEC come da contratto PolarDrive.
-Ma non basta interrompere il servizio => bisogno di proteggersi retroattivamente, per quei 3 mesi già loggati.
- 3. Flag di non-difendibilità fiscale nel report (PDF)
-Nei PDF mensili, inserisci una frase automatica tipo:
-⚠️ Il veicolo è risultato inattivo per più di 30 giorni consecutivi, senza alcuna dichiarazione del cliente.
-In assenza di giustificazioni, il periodo potrebbe non essere fiscalmente deducibile al 100%.
-PolarDrive ha notificato formalmente la situazione al cliente in data 01/10/2025.
-✅ 4. E se poi scattano 2-3 mesi di outage?
-📁 Continui comunque a salvare i OutagePeriods
-
-#################################################################################################################################################################
-
-##### SITUAZIONE TOKENS
-
-🔐 Considerazioni di sicurezza
-Cifra AccessToken e RefreshToken a riposo (es. AES256)
-Aggiorna UpdatedAt ogni volta che fai un refresh
-Non loggare mai i token in chiaro
-Mai esporli in API o log di errore
-
-AccessToken	ogni 8h (o quando necessario)
-RefreshToken	ogni volta che ne ottieni uno nuovo (è incluso nel refresh flow)
-AccessTokenExpiresAt	valore restituito da Tesla nel token refresh (es. now + 8h)
-RefreshTokenExpiresAt	opzionale (di solito now + 45 giorni)
-
-Così il tuo backend sa SEMPRE:
-se è ora di rinnovare l’access token
-se un token è scaduto
-se deve notificare l’amministratore
-se deve fare logout completo o rigenerazione manuale
-
 #################################################################################################################################################################
 #################################################################################################################################################################
 #################################################################################################################################################################
@@ -295,3 +83,11 @@ se deve fare logout completo o rigenerazione manuale
 #################################################################################################################################################################
 
 GPT DICE DI VALUTARE SCRIPT SCRAPING NEL CASO TESLA CAMBI GLI ENDPOINT IN FUTURO
+
+allora adesso col tuo aiuto, avrei bisogno di sviluppare quel bottone che io ho chiamato "Storico PDF per Azienda/Veicolo", ma che in realtà ad oggi sto ancora decidendo cosa dovrebbe fare effettivamente. aiutami a pensera insieme cosa dovrebbe fare, e poi sviluppami il codice.
+io stavo pensando: che avrei bisogno di quel bottone, che al click, per quel cliente, mi scarichi un PDF contente in modo statico (senza implementare AI, quindi con template fisso e stampa dati) le seguenti informazioni:
+info azienda, da quando è  stata registrata con datapolar per avere i miei servizi, il numero di veicoli (con tutte le info a seguito dei veicoli stessi) che ha registrato sotto di lei, il numero di outages (sia fleet api che vehicle api) che hanno coinvolto l'azienda (esempio: se veicolo API => ha impattatto direttamente l'azienda, se fleet api => l'azienda è stata impattata indirettament nel caso la fleet combacia col veicolo aziendale (esempio fleet outage tesla => impatta tesla di azienda X ). quanti e quali veicoli ha in stato attivo/non attivo, quanti e quali veicoli ha in stato fetching/non fetching, il numero e quali tipologie di consensi ho caricato, il numero totale di pdf, ed anche quanti pdf per ogni veicolo ha
+insomma io ho bisogno di questo PDF come un recap delle info dell'azienda che ho registrato nel mio sistema polardrive.
+se ce qualche altra statistica o qualche altra cosa che possiamo includere nel pdf "a gratis" senza troppi sforzi, che tu credi possa essere utile come recap, mettila pure.
+ti allego tutto il codice di cui potresti aver bisogno per capire come sviluppare.
+mi aspetto che utilizzi puppeteer + template HTML fisso (SENZA uso di AI) + controller dedicato backend, per creare appunto la logica ed il codice per permettere finalmente il download di questo PDF con info da quel bottone.
