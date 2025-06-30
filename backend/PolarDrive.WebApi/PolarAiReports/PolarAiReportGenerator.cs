@@ -259,7 +259,7 @@ public class PolarAiReportGenerator
         }
 
         // 3) genero e ritorno il report
-        return await GenerateSummary(historicalData, monitoringPeriod, analysisLevel, dataHours);
+        return await GenerateSummary(historicalData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
     }
 
     /// <summary>
@@ -345,7 +345,7 @@ public class PolarAiReportGenerator
         }
     }
 
-    private async Task<string> GenerateSummary(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
+    private async Task<string> GenerateSummary(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
     {
         if (!rawJsonList.Any())
             return "Nessun dato veicolo disponibile per l'analisi.";
@@ -355,7 +355,7 @@ public class PolarAiReportGenerator
             $"Records: {rawJsonList.Count}, Ore: {dataHours}");
 
         // ✅ PROMPT ottimizzato per Polar Ai
-        var prompt = BuildPrompt(rawJsonList, monitoringPeriod, analysisLevel, dataHours);
+        var prompt = await BuildPrompt(rawJsonList, monitoringPeriod, analysisLevel, dataHours, vehicleId);
         const int maxRetries = 3;
         const int retryDelaySeconds = 30;
 
@@ -395,9 +395,9 @@ public class PolarAiReportGenerator
     /// <summary>
     /// Costruisce il prompt ottimizzato per Polar Ai
     /// </summary>
-    private string BuildPrompt(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours)
+    private async Task<string> BuildPrompt(List<string> rawJsonList, TimeSpan monitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
     {
-        var parsedPrompt = RawDataPreparser.GenerateInsightPrompt(rawJsonList);
+        var parsedPrompt = await RawDataPreparser.GenerateInsightPrompt(rawJsonList, vehicleId, _dbContext);
         var stats = GenerateDataStatistics(rawJsonList, monitoringPeriod, dataHours);
 
         return $@"

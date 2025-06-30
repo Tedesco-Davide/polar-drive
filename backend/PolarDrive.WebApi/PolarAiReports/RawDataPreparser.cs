@@ -1,12 +1,15 @@
 using System.Globalization;
 using System.Text;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.Entities;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
 public static class RawDataPreparser
 {
-    public static string GenerateInsightPrompt(List<string> rawJsonList)
+    public static async Task<string> GenerateInsightPrompt(List<string> rawJsonList, int vehicleId, PolarDriveDbContext dbContext)
     {
         var sb = new StringBuilder();
         int index = 1;
@@ -51,6 +54,8 @@ public static class RawDataPreparser
                 }
             }
         }
+
+        index = await ProcessAdaptiveProfilingSms(sb, vehicleId, dbContext, index);
 
         return sb.ToString();
     }
@@ -1662,5 +1667,169 @@ public static class RawDataPreparser
                 sb.AppendLine();
             }
         }
+    }
+
+    private static async Task<int> ProcessAdaptiveProfilingSms(StringBuilder sb, int vehicleId, PolarDriveDbContext dbContext, int index)
+    {
+        try
+        {
+            // Recupera tutti gli eventi SMS per il veicolo negli ultimi 30 giorni
+            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+
+            var smsEvents = await dbContext.AdaptiveProfilingSmsEvents
+                .Where(e => e.VehicleId == vehicleId && e.ReceivedAt >= thirtyDaysAgo)
+                .OrderByDescending(e => e.ReceivedAt)
+                .ToListAsync();
+
+            if (!smsEvents.Any())
+            {
+                sb.AppendLine($"[{index++}] ADAPTIVE PROFILING SMS - Nessun evento registrato negli ultimi 30 giorni");
+                sb.AppendLine();
+                return index;
+            }
+
+            sb.AppendLine($"[{index++}] ADAPTIVE PROFILING SMS - Storico Sessioni ({smsEvents.Count} eventi)");
+
+            // Statistiche generali
+            var onEvents = smsEvents.Where(e => e.ParsedCommand == "ADAPTIVE_PROFILING_ON").ToList();
+            var offEvents = smsEvents.Where(e => e.ParsedCommand == "ADAPTIVE_PROFILING_OFF").ToList();
+
+            sb.AppendLine("  - RIEPILOGO ATTIVAZIONI:");
+            sb.AppendLine($"    • Sessioni avviate: {onEvents.Count}");
+            sb.AppendLine($"    • Sessioni terminate manualmente: {offEvents.Count}");
+            sb.AppendLine($"    • Sessioni terminate automaticamente: {Math.Max(0, onEvents.Count - offEvents.Count)}");
+
+            // Verifica sessione attiva
+            var activeSession = await GetActiveAdaptiveSession(vehicleId, dbContext);
+            if (activeSession != null)
+            {
+                var remainingTime = activeSession.ReceivedAt.AddHours(4) - DateTime.UtcNow;
+                sb.AppendLine($"    • 🟢 SESSIONE ATTIVA: {remainingTime.TotalMinutes:F0} min rimanenti");
+                sb.AppendLine($"      Avviata: {activeSession.ReceivedAt:yyyy-MM-dd HH:mm}");
+                sb.AppendLine($"      Descrizione: {activeSession.MessageContent}");
+            }
+            else
+            {
+                sb.AppendLine($"    • ⚪ Nessuna sessione attiva");
+            }
+
+            // Storico dettagliato delle ultime 10 sessioni
+            sb.AppendLine("  - STORICO SESSIONI (ultime 10):");
+
+            var recentSessions = onEvents.Take(10);
+            foreach (var session in recentSessions)
+            {
+                var endTime = session.ReceivedAt.AddHours(4);
+                var wasActiveFor = Math.Min(4, (DateTime.UtcNow - session.ReceivedAt).TotalHours);
+
+                // Trova eventuale comando OFF correlato
+                var offCommand = offEvents
+                    .Where(off => off.ReceivedAt > session.ReceivedAt && off.ReceivedAt <= endTime)
+                    .OrderBy(off => off.ReceivedAt)
+                    .FirstOrDefault();
+
+                var duration = offCommand != null
+                    ? (offCommand.ReceivedAt - session.ReceivedAt).TotalHours
+                    : Math.Min(4, wasActiveFor);
+
+                var status = offCommand != null ? "Terminata manualmente" :
+                            wasActiveFor >= 4 ? "Terminata automaticamente" : "In corso";
+
+                sb.AppendLine($"    • {session.ReceivedAt:yyyy-MM-dd HH:mm} - Durata: {duration:F1}h ({status})");
+                sb.AppendLine($"      Comando: {session.MessageContent}");
+
+                if (offCommand != null)
+                {
+                    sb.AppendLine($"      Stop: {offCommand.ReceivedAt:yyyy-MM-dd HH:mm} - {offCommand.MessageContent}");
+                }
+            }
+
+            // Analisi pattern di utilizzo
+            AnalyzeAdaptivePatterns(sb, onEvents);
+
+            // Conteggio dati raccolti durante sessioni adaptive
+            var adaptiveDataCount = await dbContext.VehiclesData
+                .Where(d => d.VehicleId == vehicleId && d.IsAdaptiveProfiling)
+                .CountAsync();
+
+            sb.AppendLine($"  - DATI RACCOLTI: {adaptiveDataCount:N0} record telemetrici durante sessioni Adaptive");
+
+            sb.AppendLine();
+            return index;
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"[{index++}] ADAPTIVE PROFILING SMS - Errore nel recupero dati: {ex.Message}");
+            sb.AppendLine();
+            return index;
+        }
+    }
+
+    private static void AnalyzeAdaptivePatterns(StringBuilder sb, List<AdaptiveProfilingSmsEvent> onEvents)
+    {
+        if (onEvents.Count < 2) return;
+
+        sb.AppendLine("  - ANALISI PATTERN:");
+
+        // Analisi orari preferiti
+        var hourGroups = onEvents
+            .GroupBy(e => e.ReceivedAt.Hour)
+            .OrderByDescending(g => g.Count())
+            .Take(3);
+
+        sb.AppendLine("    📊 Orari preferiti:");
+        foreach (var group in hourGroups)
+        {
+            sb.AppendLine($"      • {group.Key:00}:xx - {group.Count()} attivazioni");
+        }
+
+        // Analisi giorni della settimana
+        var dayGroups = onEvents
+            .GroupBy(e => e.ReceivedAt.DayOfWeek)
+            .OrderByDescending(g => g.Count())
+            .Take(3);
+
+        sb.AppendLine("    📅 Giorni preferiti:");
+        foreach (var group in dayGroups)
+        {
+            var dayName = group.Key switch
+            {
+                DayOfWeek.Monday => "Lunedì",
+                DayOfWeek.Tuesday => "Martedì",
+                DayOfWeek.Wednesday => "Mercoledì",
+                DayOfWeek.Thursday => "Giovedì",
+                DayOfWeek.Friday => "Venerdì",
+                DayOfWeek.Saturday => "Sabato",
+                DayOfWeek.Sunday => "Domenica",
+                _ => group.Key.ToString()
+            };
+            sb.AppendLine($"      • {dayName} - {group.Count()} attivazioni");
+        }
+
+        // Frequenza di utilizzo
+        var totalDays = (DateTime.UtcNow - onEvents.Min(e => e.ReceivedAt)).TotalDays;
+        var frequency = onEvents.Count / Math.Max(totalDays, 1);
+
+        var frequencyDescription = frequency switch
+        {
+            >= 1 => "🔥 Uso quotidiano",
+            >= 0.5 => "📈 Uso frequente",
+            >= 0.2 => "📊 Uso regolare",
+            _ => "📉 Uso occasionale"
+        };
+
+        sb.AppendLine($"    🔄 Frequenza: {frequency:F2} sessioni/giorno - {frequencyDescription}");
+    }
+
+    private static async Task<AdaptiveProfilingSmsEvent?> GetActiveAdaptiveSession(int vehicleId, PolarDriveDbContext dbContext)
+    {
+        var fourHoursAgo = DateTime.UtcNow.AddHours(-4);
+
+        return await dbContext.AdaptiveProfilingSmsEvents
+            .Where(e => e.VehicleId == vehicleId
+                     && e.ParsedCommand == "ADAPTIVE_PROFILING_ON"
+                     && e.ReceivedAt >= fourHoursAgo)
+            .OrderByDescending(e => e.ReceivedAt)
+            .FirstOrDefaultAsync();
     }
 }
