@@ -1,3 +1,4 @@
+using Microsoft.OpenApi.Models;
 using PolarDrive.TeslaMockApiService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -5,7 +6,31 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// ✅ CONFIGURAZIONE SWAGGER CORRETTA
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "PolarDrive Tesla Mock API",
+        Version = "v1",
+        Description = "Mock API per simulare Tesla API durante development"
+    });
+
+    // ✅ Gestisci conflitti di nomi se presenti
+    c.CustomSchemaIds(type => type.FullName);
+});
+
+// ✅ CORS CONFIGURATION
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowWebAPI", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // ✅ Registra tutti i servizi Tesla Mock
 builder.Services.AddTeslaMockServices();

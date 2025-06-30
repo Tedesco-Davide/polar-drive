@@ -19,6 +19,8 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
+    public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
+    public DbSet<SmsAuditLog> SmsAuditLogs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

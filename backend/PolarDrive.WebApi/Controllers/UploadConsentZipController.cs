@@ -8,6 +8,7 @@ using System.Globalization;
 
 namespace PolarDrive.WebApi.Controllers;
 
+[ApiExplorerSettings(IgnoreApi = true)]
 [ApiController]
 [Route("api/[controller]")]
 public class UploadConsentZipController : ControllerBase
@@ -31,14 +32,17 @@ public class UploadConsentZipController : ControllerBase
     /// ✅ AGGIORNATO: Upload consent con nuova gestione storage (mantenuto per compatibilità)
     /// </summary>
     [HttpPost]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(200)]
+    [ProducesResponseType(400)]
     public async Task<IActionResult> UploadConsent(
-        [FromForm] int clientCompanyId,
-        [FromForm] int vehicleId,
-        [FromForm] string consentType,
-        [FromForm] string uploadDate,
-        [FromForm] string companyVatNumber,
-        [FromForm] string vehicleVIN,
-        [FromForm] IFormFile zipFile
+        int clientCompanyId,
+        int vehicleId,
+        string consentType,
+        string uploadDate,
+        string companyVatNumber,
+        string vehicleVIN,
+        IFormFile zipFile
     )
     {
         if (zipFile == null || zipFile.Length == 0)
@@ -132,9 +136,10 @@ public class UploadConsentZipController : ControllerBase
     /// ✅ NUOVO: Upload ZIP a consent esistente (allineato agli outages)
     /// </summary>
     [HttpPost("{consentId}/upload-zip")]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadZipToExistingConsent(
         int consentId,
-        [FromForm] IFormFile zipFile,
+        IFormFile zipFile,
         [FromQuery] bool replaceExisting = false)
     {
         var consent = await _db.ClientConsents.FirstOrDefaultAsync(c => c.Id == consentId);

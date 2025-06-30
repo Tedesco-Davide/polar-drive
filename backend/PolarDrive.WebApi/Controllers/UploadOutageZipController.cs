@@ -8,6 +8,7 @@ using PolarDrive.Data.Constants;
 
 namespace PolarDrive.WebApi.Controllers;
 
+[ApiExplorerSettings(IgnoreApi = true)]
 [ApiController]
 [Route("api/[controller]")]
 public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
@@ -313,10 +314,10 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
         {
             // ✅ Verifica solo che sia un ZIP valido, senza controllare il contenuto
             using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
-            
+
             // ✅ Log del contenuto per debug (opzionale)
             var fileCount = archive.Entries.Count(e => !e.FullName.EndsWith("/"));
-            await _logger.Info("ProcessZipFileAsync", "ZIP file processed successfully.", 
+            await _logger.Info("ProcessZipFileAsync", "ZIP file processed successfully.",
                 $"FileName: {zipFile.FileName}, Files count: {fileCount}");
         }
         catch (InvalidDataException ex)

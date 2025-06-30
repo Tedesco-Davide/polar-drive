@@ -7,9 +7,16 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AdaptiveProfilingSmsController(PolarDriveDbContext db) : ControllerBase
+public class AdaptiveProfilingSmsController : ControllerBase
 {
-    private readonly PolarDriveLogger _logger = new(db);
+    private readonly PolarDriveDbContext db;
+    private readonly PolarDriveLogger _logger;
+
+    public AdaptiveProfilingSmsController(PolarDriveDbContext db)
+    {
+        this.db = db;
+        this._logger = new PolarDriveLogger(db);
+    }
 
     /// <summary>
     /// Riceve SMS con comando ADAPTIVE e attiva modalità Adaptive Profiling per 4 ore
