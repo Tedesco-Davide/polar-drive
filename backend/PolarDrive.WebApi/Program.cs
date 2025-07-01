@@ -8,6 +8,7 @@ using PolarDrive.WebApi.Production;
 using Hangfire;
 using Hangfire.MemoryStorage;
 using PolarDrive.Services;
+using PolarDrive.WebApi.Controllers;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +76,7 @@ builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 // ✅ SERVIZI SMS / TWILIO
 builder.Services.AddScoped<IAdaptiveProfilingService, AdaptiveProfilingService>();
 builder.Services.AddScoped<ITwilioConfigurationService, TwilioService>();
+builder.Services.AddScoped<AdaptiveProfilingSmsController>();
 
 // Registrazione HttpClientFactory per le chiamate alle API esterne
 builder.Services.AddHttpClient();

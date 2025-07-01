@@ -42,9 +42,11 @@ public class TwilioService : ITwilioConfigurationService
 
     public bool IsPhoneNumberAllowed(string phoneNumber)
     {
-        if (!_config.AllowedPhoneNumbers.Any())
-            return true; // Se la lista è vuota, accetta tutti
+        // Se la lista è null o vuota, accetta tutti i numeri
+        if (_config?.AllowedPhoneNumbers?.Any() != true)
+            return true;
 
+        // Altrimenti controlla se il numero è nella whitelist
         return _config.AllowedPhoneNumbers.Contains(phoneNumber);
     }
 

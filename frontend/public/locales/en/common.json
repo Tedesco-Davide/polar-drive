@@ -76,6 +76,7 @@
   "admin.vehicleVIN": "Vehicle VIN",
   "admin.basicPlaceholder": "—",
   "admin.cancelEditRow": "Close edit and undo changes",
+  "admin.close": "Close",
   "admin.confirmEditRow": "Save changes",
   "admin.successEditRow": "Row updated successfully!",
   "admin.errorEditRow": "ERROR: There was an error while trying to update the row",

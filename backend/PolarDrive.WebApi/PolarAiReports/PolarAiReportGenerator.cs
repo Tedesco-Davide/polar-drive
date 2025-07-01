@@ -365,8 +365,8 @@ public class PolarAiReportGenerator
                 $"Tentativo {attempt}/{maxRetries} con Polar Ai",
                 $"Analisi: {analysisLevel}");
 
-            //var aiResponse = await TryGenerateWithPolarAi(prompt, analysisLevel);
-            var aiResponse = "TEST_POLAR_AI_NO_ELAB";
+            var aiResponse = await TryGenerateWithPolarAi(prompt, analysisLevel);
+            //var aiResponse = "TEST_POLAR_AI_NO_ELAB";
 
             if (!string.IsNullOrWhiteSpace(aiResponse))
             {

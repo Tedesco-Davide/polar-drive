@@ -15,17 +15,17 @@ public class TwilioSmsController : ControllerBase
 {
     private readonly PolarDriveDbContext _db;
     private readonly ITwilioConfigurationService _twilioConfig;
-    private readonly IAdaptiveProfilingService _adaptiveService;
+    private readonly AdaptiveProfilingSmsController _adaptiveController;
     private readonly PolarDriveLogger _logger;
 
     public TwilioSmsController(
         PolarDriveDbContext db,
         ITwilioConfigurationService twilioConfig,
-        IAdaptiveProfilingService adaptiveService)
+        AdaptiveProfilingSmsController adaptiveController)
     {
         _db = db;
         _twilioConfig = twilioConfig;
-        _adaptiveService = adaptiveService;
+        _adaptiveController = adaptiveController;
         _logger = new PolarDriveLogger(db);
     }
 
@@ -107,8 +107,7 @@ public class TwilioSmsController : ControllerBase
             }
 
             // 📱 3. ELABORAZIONE COMANDO
-            var adaptiveController = new AdaptiveProfilingSmsController(_db);
-            var result = await adaptiveController.ReceiveSms(new ReceiveSmsDTO
+            var result = await _adaptiveController.ReceiveSms(new ReceiveSmsDTO
             {
                 VehicleId = vehicleId.Value,
                 MessageContent = dto.Body
@@ -326,6 +325,35 @@ public class TwilioSmsController : ControllerBase
         catch (Exception ex)
         {
             await _logger.Error("TwilioSms.GetPhoneMappings", "Error retrieving phone mappings", $"Error: {ex.Message}");
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    [HttpDelete("phone-mappings/{id}")]
+    public async Task<ActionResult> DeletePhoneMapping(int id)
+    {
+        try
+        {
+            var mapping = await _db.PhoneVehicleMappings
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (mapping == null)
+            {
+                return NotFound(new { error = "Phone mapping not found" });
+            }
+
+            _db.PhoneVehicleMappings.Remove(mapping);
+            await _db.SaveChangesAsync();
+
+            await _logger.Info("TwilioSms.DeletePhoneMapping", "Phone mapping deleted permanently",
+                $"MappingId: {id}, Phone: {mapping.PhoneNumber}, VehicleId: {mapping.VehicleId}");
+
+            return Ok(new { message = "Phone mapping deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("TwilioSms.DeletePhoneMapping", "Error deleting phone mapping",
+                $"Error: {ex.Message}, MappingId: {id}");
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
