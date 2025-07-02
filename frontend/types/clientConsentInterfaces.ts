@@ -1,4 +1,4 @@
-// ✅ AGGIORNATO: Interfacce allineate agli outages
+//  Interfacce allineate agli outages
 
 export interface ClientConsent {
   id: number;
@@ -16,12 +16,12 @@ export interface ClientConsent {
   vehicleVIN: string;
   companyVatNumber: string;
   notes?: string;
-  // ✅ AGGIORNATO: Campo dal DTO come negli outages
+  //  Campo dal DTO come negli outages
   hasZipFile: boolean;
   zipFile?: File | null;
 }
 
-// ✅ NUOVO: Form data per creazione consent (allineato agli outages)
+// Form data per creazione consent (allineato agli outages)
 export interface ConsentFormData {
   consentType:
     | "Consent Activation"
@@ -36,7 +36,7 @@ export interface ConsentFormData {
   zipFile: File | null;
 }
 
-// ✅ NUOVO: Request per creazione consent via API
+// Request per creazione consent via API
 export interface CreateConsentRequest {
   clientCompanyId: number;
   vehicleId: number;
@@ -45,7 +45,7 @@ export interface CreateConsentRequest {
   notes?: string;
 }
 
-// ✅ NUOVO: Risultato upload consent
+// Risultato upload consent
 export type UploadConsentResult = {
   id?: number;
   consentHash?: string;

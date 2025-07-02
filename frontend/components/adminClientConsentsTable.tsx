@@ -270,7 +270,7 @@ export default function AdminClientConsents({
         </thead>
         <tbody>
           {currentPageData.map((consent) => {
-            // ✅ AGGIORNATO: Usa il campo hasZipFile dal DTO come negli outages
+            //  Usa il campo hasZipFile dal DTO come negli outages
             const hasZipFile =
               consent.hasZipFile ||
               !!(consent.zipFilePath && consent.zipFilePath.trim());

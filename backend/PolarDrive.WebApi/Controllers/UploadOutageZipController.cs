@@ -15,7 +15,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 {
     private readonly PolarDriveLogger _logger = new(db);
 
-    // ✅ AGGIORNATO: usa la stessa struttura del FileManager
+    //  usa la stessa struttura del FileManager
     private readonly string _outageZipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "outages-zips");
 
     [HttpPost]

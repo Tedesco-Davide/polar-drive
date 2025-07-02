@@ -17,7 +17,7 @@ public class ClientConsentsController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly PolarDriveLogger _logger;
 
-    // ✅ AGGIORNATO: usa storage/consents-zips invece di wwwroot
+    //  usa storage/consents-zips invece di wwwroot
     private readonly string _consentZipStoragePath;
 
     public ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironment env)
@@ -26,7 +26,7 @@ public class ClientConsentsController : ControllerBase
         _env = env;
         _logger = new PolarDriveLogger(db);
 
-        // ✅ AGGIORNATO: usa storage/consents-zips come negli outages
+        //  usa storage/consents-zips come negli outages
         _consentZipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "consents-zips");
     }
 
@@ -51,7 +51,7 @@ public class ClientConsentsController : ControllerBase
                 ConsentHash = c.ConsentHash,
                 ConsentType = c.ConsentType,
                 Notes = c.Notes,
-                // ✅ NUOVO: Campo calcolato per presenza ZIP (allineato agli outages)
+                // Campo calcolato per presenza ZIP (allineato agli outages)
                 HasZipFile = !string.IsNullOrWhiteSpace(c.ZipFilePath)
             }).ToListAsync();
 
@@ -59,7 +59,7 @@ public class ClientConsentsController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Crea un nuovo consent manualmente (allineato agli outages)
+    /// Crea un nuovo consent manualmente (allineato agli outages)
     /// </summary>
     [HttpPost]
     public async Task<IActionResult> Post([FromBody] CreateConsentRequest request)
@@ -155,7 +155,7 @@ public class ClientConsentsController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Upload di un file ZIP per un consent (allineato agli outages)
+    /// Upload di un file ZIP per un consent (allineato agli outages)
     /// </summary>
     [HttpPost("{id}/upload-zip")]
     public async Task<IActionResult> UploadZip(int id, IFormFile zipFile)
@@ -235,7 +235,7 @@ public class ClientConsentsController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Download di un file ZIP (allineato agli outages)
+    ///  Download di un file ZIP (allineato agli outages)
     /// </summary>
     [HttpGet("{id}/download")]
     public async Task<IActionResult> DownloadZip(int id)
@@ -253,7 +253,7 @@ public class ClientConsentsController : ControllerBase
                 return NotFound("No ZIP file associated with this consent");
             }
 
-            // ✅ AGGIORNATO: usa il path completo direttamente
+            //  usa il path completo direttamente
             if (!System.IO.File.Exists(consent.ZipFilePath))
             {
                 return NotFound("ZIP file not found on server");
@@ -276,7 +276,7 @@ public class ClientConsentsController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Elimina il file ZIP di un consent (allineato agli outages)
+    /// Elimina il file ZIP di un consent (allineato agli outages)
     /// </summary>
     [HttpDelete("{id}/delete-zip")]
     public async Task<IActionResult> DeleteZip(int id)
@@ -294,7 +294,7 @@ public class ClientConsentsController : ControllerBase
                 return BadRequest("No ZIP file associated with this consent");
             }
 
-            // ✅ AGGIORNATO: usa il path completo direttamente
+            //  usa il path completo direttamente
             if (System.IO.File.Exists(consent.ZipFilePath))
             {
                 try
@@ -363,7 +363,7 @@ public class ClientConsentsController : ControllerBase
     #region Private Methods
 
     /// <summary>
-    /// ✅ AGGIORNATO: ProcessZipFileAsync ora accetta qualsiasi contenuto (allineato agli outages)
+    ///  ProcessZipFileAsync ora accetta qualsiasi contenuto (allineato agli outages)
     /// </summary>
     private async Task<(string? zipFilePath, string hash)> ProcessZipFileAsync(IFormFile zipFile, string? filePrefix = null)
     {

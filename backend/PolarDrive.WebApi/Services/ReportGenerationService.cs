@@ -183,7 +183,7 @@ namespace PolarDrive.WebApi.Services
 
             var vehicle = report.ClientVehicle;
 
-            // ✅ NUOVO: Controlla se ci sono dati nel periodo del report
+            // Controlla se ci sono dati nel periodo del report
             var dataCount = await db.VehiclesData
                 .Where(vd => vd.VehicleId == vehicle!.Id &&
                              vd.Timestamp >= report.ReportPeriodStart &&
@@ -349,7 +349,7 @@ namespace PolarDrive.WebApi.Services
                 MonitoringDays = (end - start).TotalDays
             };
 
-            // ✅ NUOVO: Controlla se ci sono dati prima di creare il report
+            // Controlla se ci sono dati prima di creare il report
             var dataCount = await db.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId &&
                              vd.Timestamp >= period.Start &&
@@ -370,7 +370,7 @@ namespace PolarDrive.WebApi.Services
                 Notes = $"[{period.AnalysisLevel}] DataHours: {period.DataHours}, Monitoring: {period.MonitoringDays:F1}d"
             };
 
-            // ✅ NUOVO: Se non ci sono dati, imposta status e NON generare file
+            // Se non ci sono dati, imposta status e NON generare file
             if (dataCount == 0)
             {
                 report.Status = "NO-DATA";

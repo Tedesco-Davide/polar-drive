@@ -16,7 +16,7 @@ public class OutagePeriodsController : ControllerBase
     private readonly IWebHostEnvironment _env;
     private readonly PolarDriveLogger _logger;
 
-    // ✅ AGGIORNATO: usa la stessa struttura degli altri controller
+    //  usa la stessa struttura degli altri controller
     private readonly string _outageZipStoragePath;
 
     public OutagePeriodsController(PolarDriveDbContext db, IWebHostEnvironment env)
@@ -25,7 +25,7 @@ public class OutagePeriodsController : ControllerBase
         _env = env;
         _logger = new PolarDriveLogger(db);
 
-        // ✅ AGGIORNATO: usa storage/outages-zips invece di wwwroot/zips-outages
+        //  usa storage/outages-zips invece di wwwroot/zips-outages
         _outageZipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "outages-zips");
     }
 
@@ -298,7 +298,7 @@ public class OutagePeriodsController : ControllerBase
                 return NotFound("No ZIP file associated with this outage");
             }
 
-            // ✅ AGGIORNATO: usa il path completo direttamente
+            //  usa il path completo direttamente
             if (!System.IO.File.Exists(outage.ZipFilePath))
             {
                 return NotFound("ZIP file not found on server");
@@ -339,7 +339,7 @@ public class OutagePeriodsController : ControllerBase
                 return BadRequest("No ZIP file associated with this outage");
             }
 
-            // ✅ AGGIORNATO: usa il path completo direttamente
+            //  usa il path completo direttamente
             if (System.IO.File.Exists(outage.ZipFilePath))
             {
                 try
@@ -429,10 +429,10 @@ public class OutagePeriodsController : ControllerBase
         {
             // ✅ Verifica solo che sia un ZIP valido, senza controllare il contenuto
             using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
-            
+
             // ✅ Log del contenuto per debug (opzionale)
             var fileCount = archive.Entries.Count(e => !e.FullName.EndsWith("/"));
-            await _logger.Info("ProcessZipFileAsync", "ZIP file processed successfully.", 
+            await _logger.Info("ProcessZipFileAsync", "ZIP file processed successfully.",
                 $"FileName: {zipFile.FileName}, Files count: {fileCount}");
         }
         catch (InvalidDataException ex)

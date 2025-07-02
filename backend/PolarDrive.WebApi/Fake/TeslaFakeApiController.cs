@@ -23,7 +23,7 @@ public class TeslaFakeApiController : ControllerBase
         _env = env;
         _logger = new PolarDriveLogger(_db);
 
-        // ✅ NUOVO: Ottieni riferimenti agli scheduler per controllo manuale
+        // Ottieni riferimenti agli scheduler per controllo manuale
         try
         {
             _fakeScheduler = serviceProvider.GetService<PolarDriveScheduler>();
@@ -35,7 +35,7 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Forza la generazione di un report di test
+    ///  Forza la generazione di un report di test
     /// </summary>
     [HttpPost("GenerateReport")]
     public async Task<IActionResult> GenerateReport()
@@ -155,7 +155,7 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Controlla e gestisce gli scheduler
+    /// Controlla e gestisce gli scheduler
     /// </summary>
     [HttpPost("ControlScheduler")]
     public async Task<IActionResult> ControlScheduler([FromBody] SchedulerControlRequest request)
@@ -379,7 +379,7 @@ public class TeslaFakeApiController : ControllerBase
     #region Helper Methods
 
     /// <summary>
-    /// ✅ NUOVO: Genera report per veicolo (sostituisce il vecchio ReportGeneratorJob)
+    /// Genera report per veicolo (sostituisce il vecchio ReportGeneratorJob)
     /// </summary>
     private async Task<int?> GenerateReportForVehicle(int vehicleId, string analysisLevel)
     {

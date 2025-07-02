@@ -16,7 +16,7 @@ public class UploadConsentZipController : ControllerBase
     private readonly PolarDriveDbContext _db;
     private readonly PolarDriveLogger _logger;
 
-    // ✅ AGGIORNATO: usa storage/consents-zips come il ClientConsentsController
+    //  usa storage/consents-zips come il ClientConsentsController
     private readonly string _consentZipStoragePath;
 
     public UploadConsentZipController(PolarDriveDbContext db)
@@ -24,12 +24,12 @@ public class UploadConsentZipController : ControllerBase
         _db = db;
         _logger = new PolarDriveLogger(db);
 
-        // ✅ AGGIORNATO: usa storage/consents-zips invece di wwwroot
+        //  usa storage/consents-zips invece di wwwroot
         _consentZipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "consents-zips");
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Upload consent con nuova gestione storage (mantenuto per compatibilità)
+    ///  Upload consent con nuova gestione storage (mantenuto per compatibilità)
     /// </summary>
     [HttpPost]
     [Consumes("multipart/form-data")]
@@ -133,7 +133,7 @@ public class UploadConsentZipController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Upload ZIP a consent esistente (allineato agli outages)
+    /// Upload ZIP a consent esistente (allineato agli outages)
     /// </summary>
     [HttpPost("{consentId}/upload-zip")]
     [Consumes("multipart/form-data")]
@@ -221,7 +221,7 @@ public class UploadConsentZipController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Elimina ZIP da consent esistente (allineato agli outages)
+    /// Elimina ZIP da consent esistente (allineato agli outages)
     /// </summary>
     [HttpDelete("{consentId}/delete-zip")]
     public async Task<IActionResult> DeleteZipFromConsent(int consentId)
@@ -272,7 +272,7 @@ public class UploadConsentZipController : ControllerBase
     #region Private Methods
 
     /// <summary>
-    /// ✅ AGGIORNATO: ProcessZipFileAsync ora accetta qualsiasi contenuto (allineato agli outages)
+    ///  ProcessZipFileAsync ora accetta qualsiasi contenuto (allineato agli outages)
     /// </summary>
     private async Task<(string? zipFilePath, string hash)> ProcessZipFileAsync(IFormFile zipFile, string? filePrefix = null)
     {

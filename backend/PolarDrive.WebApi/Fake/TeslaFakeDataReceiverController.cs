@@ -343,7 +343,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     }
 
     /// <summary>
-    /// ✅ NUOVO: Endpoint per statistiche globali development
+    /// Endpoint per statistiche globali development
     /// </summary>
     [HttpGet("GlobalStats")]
     public async Task<IActionResult> GetGlobalStats()

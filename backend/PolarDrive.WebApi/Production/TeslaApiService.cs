@@ -45,14 +45,14 @@ public class TeslaApiService
             .Include(v => v.ClientCompany)
             .ToListAsync();
 
-        // ✅ NUOVO: Separa per tipo contratto per logging
+        // Separa per tipo contratto per logging
         var activeContractVehicles = fetchingVehicles.Count(v => v.IsActiveFlag);
         var gracePeriodVehicles = fetchingVehicles.Count(v => !v.IsActiveFlag);
 
         await _logger.Info(source,
             $"Found {fetchingVehicles.Count} Tesla vehicles for data fetching (Active: {activeContractVehicles}, Grace Period: {gracePeriodVehicles})");
 
-        // ✅ NUOVO: Warning se ci sono veicoli in grace period
+        // Warning se ci sono veicoli in grace period
         if (gracePeriodVehicles > 0)
         {
             await _logger.Warning(source,
@@ -67,7 +67,7 @@ public class TeslaApiService
         {
             try
             {
-                // ✅ NUOVO: Log contract status per ogni veicolo in grace period
+                // Log contract status per ogni veicolo in grace period
                 if (!vehicle.IsActiveFlag)
                 {
                     await _logger.Info(source,
@@ -88,7 +88,7 @@ public class TeslaApiService
                         break;
                 }
 
-                // ✅ NUOVO: Pausa tra veicoli per evitare rate limiting
+                // Pausa tra veicoli per evitare rate limiting
                 await Task.Delay(TimeSpan.FromSeconds(2));
             }
             catch (Exception ex)
@@ -120,14 +120,14 @@ public class TeslaApiService
             return VehicleFetchResult.Error;
         }
 
-        // ✅ NUOVO: Controlla se deve fetchare dati
+        // Controlla se deve fetchare dati
         if (!vehicle.IsFetchingDataFlag)
         {
             await _logger.Info(source, $"Vehicle {vin} is not fetching data, skipping");
             return VehicleFetchResult.Skipped;
         }
 
-        // ✅ NUOVO: Log se è in grace period
+        // Log se è in grace period
         if (!vehicle.IsActiveFlag)
         {
             await _logger.Info(source,
@@ -196,7 +196,7 @@ public class TeslaApiService
 
         try
         {
-            // ✅ NUOVO: Statistiche separate per grace period
+            // Statistiche separate per grace period
             var activeVehicles = await _db.ClientVehicles
                 .CountAsync(v => v.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase) &&
                                v.IsActiveFlag && v.IsFetchingDataFlag);
@@ -225,10 +225,10 @@ public class TeslaApiService
 
             var isHealthy = await IsServiceAvailableAsync();
 
-            // ✅ NUOVO: Ottieni info sui token
+            // Ottieni info sui token
             var tokenInfo = await GetTokenStatusAsync();
 
-            // ✅ NUOVO: Log grace period nelle statistiche
+            // Log grace period nelle statistiche
             if (gracePeriodVehicles > 0)
             {
                 await _logger.Debug(source, $"Statistics include {gracePeriodVehicles} vehicles in grace period");
@@ -267,7 +267,7 @@ public class TeslaApiService
     }
 
     /// <summary>
-    /// ✅ NUOVO: Ottieni status dei token OAuth
+    /// Ottieni status dei token OAuth
     /// </summary>
     public async Task<TokenStatus> GetTokenStatusAsync()
     {
@@ -300,7 +300,7 @@ public class TeslaApiService
     }
 
     /// <summary>
-    /// ✅ NUOVO: Metodo per refresh di tutti i token scaduti
+    /// Metodo per refresh di tutti i token scaduti
     /// </summary>
     public async Task<int> RefreshExpiredTokensAsync()
     {
@@ -355,7 +355,7 @@ public class TeslaApiService
     {
         const string source = "TeslaApiService.FetchDataForSingleVehicle";
 
-        // ✅ NUOVO: Log contract status all'inizio del fetch
+        // Log contract status all'inizio del fetch
         var contractStatus = GetContractStatus(vehicle);
         if (!vehicle.IsActiveFlag)
         {
