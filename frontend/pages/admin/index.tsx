@@ -64,6 +64,7 @@ export default function AdminDashboard() {
       setWorkflowData(
         data.map((entry) => ({
           id: entry.id,
+          companyId: entry.clientCompany?.id ?? 0,
           companyVatNumber: entry.clientCompany?.vatNumber ?? "",
           companyName: entry.clientCompany?.name ?? "",
           referentName: entry.clientCompany?.referentName ?? "",

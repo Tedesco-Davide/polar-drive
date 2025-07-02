@@ -147,7 +147,20 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             await transaction.CommitAsync();
             await _logger.Info("AdminFullClientInsertController.Post", "Full client workflow completed successfully.");
 
-            return Ok("SERVER MESSAGE: Workflow executed successfully!");
+            return Ok(new
+            {
+                message = "Workflow executed successfully!",
+                data = new
+                {
+                    companyId = company.Id,
+                    companyName = company.Name,
+                    companyVatNumber = company.VatNumber,
+                    vehicleId = vehicle.Id,
+                    vehicleVin = vehicle.Vin,
+                    vehicleBrand = vehicle.Brand,
+                    vehicleModel = vehicle.Model
+                }
+            });
         }
         catch (Exception ex)
         {

@@ -1,6 +1,7 @@
 import { FuelType } from "./fuelTypes";
 
 export type adminWorkflowTypesInputForm = {
+  companyId: number;
   companyVatNumber: string;
   companyName: string;
   referentName: string;

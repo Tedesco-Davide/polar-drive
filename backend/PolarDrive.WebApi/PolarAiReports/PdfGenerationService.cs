@@ -503,19 +503,4 @@ try {{
             }
         }
     }
-
-    /// <summary>
-    /// Converte direttamente HTML string in PDF (metodo convenienza)
-    /// </summary>
-    public async Task<byte[]> GeneratePdfFromHtmlAsync(string htmlContent, string fileName = "report.pdf", PdfConversionOptions? options = null)
-    {
-        var tempReport = new PdfReport
-        {
-            Id = 0,
-            ReportPeriodStart = DateTime.UtcNow.AddDays(-1),
-            ReportPeriodEnd = DateTime.UtcNow
-        };
-
-        return await ConvertHtmlToPdfAsync(htmlContent, tempReport, options);
-    }
 }

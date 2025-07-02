@@ -112,6 +112,15 @@
   "admin.downloadError": "Generic error while downloading",
   "admin.tableRefreshButton": "🔄REFRESH",
 
+  "admin.mainWorkflow.alerts.confirmGenerateProfile": "Do you want to generate the complete profile for the company",
+  "admin.mainWorkflow.alerts.clientProfileGenerated": "Client profile generated and downloaded successfully!",
+  "admin.mainWorkflow.alerts.clientProfileGeneratedHtml": "Client profile generated in HTML format (PDF not available)",
+  "admin.mainWorkflow.alerts.companyNotFound": "Company not found in the system",
+  "admin.mainWorkflow.alerts.noProfileDataAvailable": "No data available to generate the profile",
+  "admin.mainWorkflow.alerts.serverErrorGeneration": "Server error during PDF generation",
+  "admin.mainWorkflow.alerts.generateProfileFail": "Error during profile generation",
+  "admin.mainWorkflow.button.pdfUserAndVehicle": "Generate complete client profile with all data and statistics",
+
   "No_Data": "No Data",
   "Mensile": "Monthly",
   "Settimanale": "Weekly",
@@ -143,7 +152,6 @@
   "admin.mainWorkflow.button.managePdfReports": "Manage PDF Reports",
   "admin.mainWorkflow.button.zipConsents": "Download all company consents (.zip)",
   "admin.mainWorkflow.button.singleZipConsent": "Consent (.zip)",
-  "admin.mainWorkflow.button.pdfUserAndVehicle": "User/Vehicle PDF history",
   "admin.mainWorkflow.headers.isVehicleAuthorized": "Vehicle Authorization",
   "admin.mainWorkflow.headers.isVehicleActive": "Change Vehicle status",
   "admin.mainWorkflow.headers.isVehicleFetchingData": "Change Data fetching",

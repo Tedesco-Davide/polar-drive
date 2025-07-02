@@ -112,6 +112,15 @@
   "admin.downloadError": "Errore generico durante il download",
   "admin.tableRefreshButton": "🔄REFRESH",
 
+  "admin.mainWorkflow.alerts.confirmGenerateProfile": "Vuoi generare il profilo completo per l'azienda",
+  "admin.mainWorkflow.alerts.clientProfileGenerated": "Profilo cliente generato e scaricato con successo!",
+  "admin.mainWorkflow.alerts.clientProfileGeneratedHtml": "Profilo cliente generato in formato HTML (PDF non disponibile)",
+  "admin.mainWorkflow.alerts.companyNotFound": "Azienda non trovata nel sistema",
+  "admin.mainWorkflow.alerts.noProfileDataAvailable": "Nessun dato disponibile per generare il profilo",
+  "admin.mainWorkflow.alerts.serverErrorGeneration": "Errore del server durante la generazione del PDF",
+  "admin.mainWorkflow.alerts.generateProfileFail": "Errore durante la generazione del profilo",
+  "admin.mainWorkflow.button.pdfUserAndVehicle": "Genera profilo completo cliente con tutti i dati e statistiche",
+
   "No_Data": "Nessun Dato",
   "Mensile": "Mensile",
   "Settimanale": "Settimanale",
@@ -143,7 +152,6 @@
   "admin.mainWorkflow.button.managePdfReports": "Gestione Report PDF",
   "admin.mainWorkflow.button.zipConsents": "Scarica tutti i consensi dell'azienda (.zip)",
   "admin.mainWorkflow.button.singleZipConsent": "Consenso (.zip)",
-  "admin.mainWorkflow.button.pdfUserAndVehicle": "Storico PDF per Azienda/Veicolo",
   "admin.mainWorkflow.headers.isVehicleAuthorized": "Autorizzazione Veicolo",
   "admin.mainWorkflow.headers.isVehicleActive": "Modifica stato Veicolo",
   "admin.mainWorkflow.headers.isVehicleFetchingData": "Modifica acquisizione Dati",

@@ -27,6 +27,7 @@ export default function AdminMainWorkflow({
   refreshWorkflowData: () => Promise<void>;
 }) {
   const [formData, setFormData] = useState<adminWorkflowTypesInputForm>({
+    companyId: 0,
     companyVatNumber: "",
     companyName: "",
     referentName: "",
@@ -307,6 +308,7 @@ export default function AdminMainWorkflow({
 
     // ✅ Reset del form
     setFormData({
+      companyId: 0,
       companyVatNumber: "",
       companyName: "",
       referentName: "",
@@ -479,6 +481,148 @@ export default function AdminMainWorkflow({
     isActive: boolean;
   } | null>(null);
 
+  const handleGenerateClientProfile = async (
+    companyId: number,
+    companyName: string,
+    vatNumber: string
+  ) => {
+    try {
+      // Validazione preliminare
+      if (!companyId || !companyName) {
+        alert(t("admin.mainWorkflow.alerts.missingCompanyData"));
+        return;
+      }
+
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "INFO",
+        "Client profile PDF generation triggered",
+        `CompanyId: ${companyId}, VAT: ${vatNumber}`
+      );
+
+      // Conferma dall'utente
+      const confirmGeneration = confirm(
+        `${t(
+          "admin.mainWorkflow.alerts.confirmGenerateProfile"
+        )} ${companyName} (${vatNumber})?`
+      );
+
+      if (!confirmGeneration) {
+        logFrontendEvent(
+          "AdminMainWorkflow",
+          "INFO",
+          "Client profile generation cancelled by user",
+          `CompanyId: ${companyId}`
+        );
+        return;
+      }
+
+      setIsStatusChanging(true);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/ClientProfile/${companyId}/generate-profile-pdf`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      // Gestisci risposte JSON (messaggi di errore)
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "Errore nella generazione del PDF");
+        }
+
+        // Se la risposta è JSON ma ok, potrebbe essere un messaggio informativo
+        if (result.message) {
+          alert(result.message);
+          return;
+        }
+      }
+
+      if (!response.ok) {
+        let errorMessage = "Errore sconosciuto";
+        try {
+          const errorText = await response.text();
+          errorMessage = errorText;
+        } catch {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      // Verifica che sia effettivamente un file PDF
+      if (!contentType?.includes("application/pdf")) {
+        throw new Error("Il server non ha restituito un file PDF valido");
+      }
+
+      const blob = await response.blob();
+
+      // Verifica dimensione minima del file
+      if (blob.size < 100) {
+        throw new Error("Il file PDF generato sembra essere vuoto o corrotto");
+      }
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      const timestamp = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replace(/[:-]/g, "");
+      const sanitizedCompanyName = companyName.replace(/[^a-zA-Z0-9]/g, "_");
+      link.download = `profilo_cliente_${sanitizedCompanyName}_${vatNumber}_${timestamp}.pdf`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "INFO",
+        "Client profile PDF downloaded successfully",
+        `CompanyId: ${companyId}, File size: ${blob.size} bytes`
+      );
+
+      alert(t("admin.mainWorkflow.alerts.clientProfileGenerated"));
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Generazione PDF fallita";
+
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "ERROR",
+        "Failed to generate client profile PDF",
+        `CompanyId: ${companyId}, Error: ${errorMessage}`
+      );
+
+      // Messaggi di errore più specifici
+      if (errorMessage.includes("not found")) {
+        alert(t("admin.mainWorkflow.alerts.companyNotFound"));
+      } else if (errorMessage.includes("no data")) {
+        alert(t("admin.mainWorkflow.alerts.noProfileDataAvailable"));
+      } else if (errorMessage.includes("HTTP 500")) {
+        alert(t("admin.mainWorkflow.alerts.serverErrorGeneration"));
+      } else {
+        alert(
+          `${t(
+            "admin.mainWorkflow.alerts.generateProfileFail"
+          )}: ${errorMessage}`
+        );
+      }
+    } finally {
+      setIsStatusChanging(false);
+    }
+  };
+
   return (
     <div>
       {isStatusChanging && <AdminLoader />}
@@ -640,8 +784,11 @@ export default function AdminMainWorkflow({
                   className="p-2 bg-purple-500 hover:bg-purple-600 text-softWhite rounded"
                   title={t("admin.mainWorkflow.button.pdfUserAndVehicle")}
                   onClick={() => {
-                    alert("TODO");
-                    // azione che fa i check interni se non ci sono dati
+                    handleGenerateClientProfile(
+                      entry.companyId,
+                      entry.companyName,
+                      entry.companyVatNumber
+                    );
                   }}
                 >
                   <UserSearch size={16} />
