@@ -108,6 +108,8 @@
   "admin.validation.zipTooLarge": "Il file .zip supera la dimensione massima consentita",
   "admin.companyFound": "Azienda trovata",
   "admin.vehicleFound": "Veicolo trovato",
+  "admin.noFileAvailable": "Nessun file disponibile per il download",
+  "admin.downloadError": "Errore generico durante il download",
   "admin.tableRefreshButton": "🔄REFRESH",
 
   "No_Data": "Nessun Dato",

@@ -356,7 +356,7 @@ export default function AdminSmsManagementModal({
         {activeTab === "mappings" && (
           <div>
             {/* Form Aggiunta Numero */}
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
               <h3 className="font-semibold mb-3 text-polarNight dark:text-softWhite">
                 Associa Nuovo Numero
               </h3>
@@ -366,7 +366,7 @@ export default function AdminSmsManagementModal({
                   disabled={loading || !isVehicleActive}
                   className={`px-4 py-2 rounded text-white font-bold ${
                     !isVehicleActive
-                      ? "bg-gray-400 cursor-not-allowed opacity-50"
+                      ? "bg-gray-400 cursor-not-allowed opacity-20"
                       : "bg-blue-500 hover:bg-blue-600"
                   }`}
                 >
@@ -397,7 +397,7 @@ export default function AdminSmsManagementModal({
             </div>
 
             {/* Lista Numeri */}
-            <div className="space-y-3">
+            <div>
               {phoneMappings.length === 0 ? (
                 <p className="text-gray-500 text-start py-4">
                   Nessun numero associato a questo veicolo
@@ -406,7 +406,7 @@ export default function AdminSmsManagementModal({
                 phoneMappings.map((mapping) => (
                   <div
                     key={mapping.id}
-                    className="flex items-center py-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-x-4"
+                    className="flex items-center py-2 bg-gray-50 dark:bg-gray-800 rounded-lg space-x-4"
                   >
                     <button
                       className="p-2 bg-red-500 text-softWhite rounded hover:bg-red-600"
@@ -437,7 +437,7 @@ export default function AdminSmsManagementModal({
               )}
             </div>
             <button
-              className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
+              className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 mt-6"
               onClick={() => {
                 logFrontendEvent("SmsModal", "INFO", "Sms modal closed");
                 onClose();
@@ -449,16 +449,16 @@ export default function AdminSmsManagementModal({
         )}
 
         {activeTab === "audit" && (
-          <div className="space-y-3">
+          <div>
             {auditLogs.length === 0 ? (
-              <p className="text-gray-500 text-start py-4">
+              <p className="text-gray-500 text-start py-3">
                 Nessun SMS ricevuto per questo veicolo
               </p>
             ) : (
               auditLogs.map((log) => (
                 <div
                   key={log.id}
-                  className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                  className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4"
                 >
                   <div className="flex items-center mb-2 space-x-2">
                     <span
@@ -487,7 +487,7 @@ export default function AdminSmsManagementModal({
               ))
             )}
             <button
-              className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
+              className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 mt-5"
               onClick={() => {
                 logFrontendEvent("SmsModal", "INFO", "Sms modal closed");
                 onClose();

@@ -370,13 +370,32 @@ export default function AdminMainWorkflow({
         `${API_BASE_URL}/api/clientconsents/download-all-by-company?vatNumber=${encodeURIComponent(
           companyVatNumber
         )}`,
-        {
-          method: "GET",
-          headers: {
-            Accept: "application/zip",
-          },
-        }
+        { method: "GET" }
       );
+
+      // Gestisci risposte JSON (messaggi informativi)
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const result = await response.json();
+
+        if (!result.success) {
+          throw new Error(result.message || "Download failed");
+        }
+
+        if (!result.hasData) {
+          alert(
+            result.message || t("admin.mainWorkflow.alerts.noConsentsFound")
+          );
+          logFrontendEvent(
+            "AdminMainWorkflow",
+            "INFO",
+            "No consents available for download",
+            `Company VAT: ${companyVatNumber}, Message: ${result.message}`
+          );
+          return;
+        }
+      }
 
       if (!response.ok) {
         let errorMessage = "Unknown error";
@@ -390,7 +409,6 @@ export default function AdminMainWorkflow({
       }
 
       // Verifica che sia effettivamente un file ZIP
-      const contentType = response.headers.get("content-type");
       if (!contentType?.includes("application/zip")) {
         throw new Error("Server did not return a ZIP file");
       }
@@ -536,7 +554,7 @@ export default function AdminMainWorkflow({
                   className={`p-2 ${
                     !entry.clientOAuthAuthorized
                       ? "bg-cyan-500 hover:bg-cyan-600"
-                      : "bg-slate-500 cursor-not-allowed opacity-20 text-slate-200"
+                      : "bg-slate-400 cursor-not-allowed opacity-20 text-slate-200"
                   } text-softWhite rounded`}
                   disabled={entry.clientOAuthAuthorized}
                   title={t("admin.mainWorkflow.alerts.urlGenerationTooltip")}
@@ -590,7 +608,7 @@ export default function AdminMainWorkflow({
                   className={`p-2 ${
                     entry.isVehicleActive
                       ? "bg-green-500 hover:bg-green-600"
-                      : "bg-gray-400 cursor-not-allowed opacity-50"
+                      : "bg-gray-400 cursor-not-allowed opacity-20"
                   } text-softWhite rounded`}
                   disabled={!entry.isVehicleActive}
                   title={

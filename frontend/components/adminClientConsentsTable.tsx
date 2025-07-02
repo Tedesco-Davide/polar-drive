@@ -157,17 +157,43 @@ export default function AdminClientConsents({
   };
 
   // ✅ Gestione download ZIP (come negli outages)
-  const handleZipDownload = (consentId: number) => {
-    window.open(
-      `${API_BASE_URL}/api/clientconsents/${consentId}/download`,
-      "_blank"
-    );
-    logFrontendEvent(
-      "AdminClientConsentsTable",
-      "INFO",
-      "ZIP download triggered",
-      `Consent ID: ${consentId}`
-    );
+  const handleZipDownload = async (consentId: number) => {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/clientconsents/${consentId}/download`
+      );
+
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const result = await response.json();
+        alert(result.message || t("admin.noFileAvailable"));
+        return;
+      }
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `consent_${consentId}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      logFrontendEvent(
+        "AdminClientConsentsTable",
+        "INFO",
+        "ZIP download completed",
+        `Consent ID: ${consentId}`
+      );
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Download failed";
+      alert(`${t("admin.downloadError")}: ${errorMessage}`);
+    }
   };
 
   // ✅ Gestione delete ZIP (nuova funzionalità)

@@ -144,7 +144,7 @@ try
                 Model = "Model 3",
                 Trim = "Long Range",
                 Color = "Ultra Red",
-                IsActiveFlag = true,              // ← ATTIVO per default
+                IsActiveFlag = false,              // ← ATTIVO per default
                 IsFetchingDataFlag = true,        // ← FETCHING attivo per default
                 ClientOAuthAuthorized = true,     // ← AUTORIZZATO per default
                 FirstActivationAt = DateTime.Now,

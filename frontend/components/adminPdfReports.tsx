@@ -369,7 +369,7 @@ export default function AdminPdfReports({
                 <td className="p-4 space-x-2">
                   {/* Download Button */}
                   <button
-                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400"
+                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
                     title={
                       status.text === "PROCESSING"
                         ? t("admin.vehicleReports.downloadDisabledProcessing")
@@ -391,7 +391,7 @@ export default function AdminPdfReports({
 
                   {/* Regenerate Button */}
                   <button
-                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400"
+                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
                     title={
                       status.text === "PROCESSING"
                         ? t("admin.vehicleReports.regenerateDisabledProcessing")
