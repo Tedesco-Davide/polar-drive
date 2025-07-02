@@ -42,12 +42,29 @@ public class TwilioService : ITwilioConfigurationService
 
     public bool IsPhoneNumberAllowed(string phoneNumber)
     {
-        // Se la lista è null o vuota, accetta tutti i numeri
-        if (_config?.AllowedPhoneNumbers?.Any() != true)
+        // In Development, accetta tutti i numeri
+        var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+        if (env == "Development")
+        {
+            Console.WriteLine($"🔴 DEV MODE: Allowing all numbers ({phoneNumber})");
             return true;
+        }
 
-        // Altrimenti controlla se il numero è nella whitelist
-        return _config.AllowedPhoneNumbers.Contains(phoneNumber);
+        // In produzione, usa la whitelist
+        if (_config?.AllowedPhoneNumbers?.Any() != true)
+        {
+            // Se non c'è whitelist configurata, per sicurezza RIFIUTA
+            Console.WriteLine($"⚠️ PROD MODE: No whitelist configured - REJECTING {phoneNumber}");
+            return false;
+        }
+
+        var isAllowed = _config.AllowedPhoneNumbers.Contains(phoneNumber);
+        if (!isAllowed)
+        {
+            Console.WriteLine($"⚠️ PROD MODE: Phone {phoneNumber} not in whitelist");
+        }
+
+        return isAllowed;
     }
 
     public Task<bool> IsRateLimitExceeded(string phoneNumber)

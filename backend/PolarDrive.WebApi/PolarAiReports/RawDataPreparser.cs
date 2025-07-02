@@ -14,46 +14,46 @@ public static class RawDataPreparser
         var sb = new StringBuilder();
         int index = 1;
 
-        foreach (var raw in rawJsonList)
-        {
-            using var doc = JsonDocument.Parse(raw);
-            var root = doc.RootElement;
+        // foreach (var raw in rawJsonList)
+        // {
+        //     using var doc = JsonDocument.Parse(raw);
+        //     var root = doc.RootElement;
 
-            // PRIMA: Prova la struttura originale Tesla (response.data)
-            if (root.TryGetProperty("response", out var response) && response.TryGetProperty("data", out var dataArray))
-            {
-                foreach (var item in dataArray.EnumerateArray())
-                {
-                    var type = item.GetProperty("type").GetString();
-                    var content = item.GetProperty("content");
+        //     // PRIMA: Prova la struttura originale Tesla (response.data)
+        //     if (root.TryGetProperty("response", out var response) && response.TryGetProperty("data", out var dataArray))
+        //     {
+        //         foreach (var item in dataArray.EnumerateArray())
+        //         {
+        //             var type = item.GetProperty("type").GetString();
+        //             var content = item.GetProperty("content");
 
-                    switch (type)
-                    {
-                        case "charging_history":
-                            ProcessChargingHistory(sb, content, ref index);
-                            break;
-                        case "energy_endpoints":
-                            ProcessEnergyEndpoints(sb, content, ref index);
-                            break;
-                        case "partner_public_key":
-                            ProcessPartnerPublicKey(sb, content, ref index);
-                            break;
-                        case "user_profile":
-                            ProcessUserProfile(sb, content, ref index);
-                            break;
-                        case "vehicle_commands":
-                            ProcessVehicleCommands(sb, content, ref index);
-                            break;
-                        case "vehicle_endpoints":
-                            ProcessVehicleEndpoints(sb, content, ref index);
-                            break;
-                        default:
-                            sb.AppendLine($"[{index++}] Tipo dati non riconosciuto: {type}");
-                            break;
-                    }
-                }
-            }
-        }
+        //             switch (type)
+        //             {
+        //                 case "charging_history":
+        //                     ProcessChargingHistory(sb, content, ref index);
+        //                     break;
+        //                 case "energy_endpoints":
+        //                     ProcessEnergyEndpoints(sb, content, ref index);
+        //                     break;
+        //                 case "partner_public_key":
+        //                     ProcessPartnerPublicKey(sb, content, ref index);
+        //                     break;
+        //                 case "user_profile":
+        //                     ProcessUserProfile(sb, content, ref index);
+        //                     break;
+        //                 case "vehicle_commands":
+        //                     ProcessVehicleCommands(sb, content, ref index);
+        //                     break;
+        //                 case "vehicle_endpoints":
+        //                     ProcessVehicleEndpoints(sb, content, ref index);
+        //                     break;
+        //                 default:
+        //                     sb.AppendLine($"[{index++}] Tipo dati non riconosciuto: {type}");
+        //                     break;
+        //             }
+        //         }
+        //     }
+        // }
 
         index = await ProcessAdaptiveProfilingSms(sb, vehicleId, dbContext, index);
 
