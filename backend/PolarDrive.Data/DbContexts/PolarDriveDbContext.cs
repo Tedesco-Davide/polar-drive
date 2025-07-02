@@ -8,23 +8,20 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 {
     public DbSet<ClientCompany> ClientCompanies => Set<ClientCompany>();
     public DbSet<ClientVehicle> ClientVehicles => Set<ClientVehicle>();
-    public DbSet<VehicleWorkflow> VehicleWorkflows => Set<VehicleWorkflow>();
-    public DbSet<VehicleWorkflowEvent> VehicleWorkflowsEvent => Set<VehicleWorkflowEvent>();
     public DbSet<ClientConsent> ClientConsents => Set<ClientConsent>();
     public DbSet<PdfReport> PdfReports => Set<PdfReport>();
     public DbSet<VehicleData> VehiclesData => Set<VehicleData>();
     public DbSet<AdaptiveProfilingSmsEvent> AdaptiveProfilingSmsEvents => Set<AdaptiveProfilingSmsEvent>();
-    public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
     public DbSet<SmsAuditLog> SmsAuditLogs { get; set; }
+    public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // ✅ RIMUOVI il logger da OnModelCreating per evitare problemi circolari
         try
         {
             base.OnModelCreating(modelBuilder);
@@ -41,24 +38,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasOne(e => e.ClientCompany)
                     .WithMany()
                     .HasForeignKey(e => e.ClientCompanyId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<VehicleWorkflow>(entity =>
-            {
-                entity.HasKey(e => e.VehicleId);
-
-                entity.HasOne(e => e.ClientVehicle)
-                    .WithOne()
-                    .HasForeignKey<VehicleWorkflow>(e => e.VehicleId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<VehicleWorkflowEvent>(entity =>
-            {
-                entity.HasOne(e => e.ClientVehicle)
-                    .WithMany()
-                    .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -155,7 +134,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
             modelBuilder.Entity<PolarDriveLog>(entity =>
             {
-                // ✅ SQLite usa DATETIME('now') invece di CURRENT_TIMESTAMP
                 entity.Property(e => e.Timestamp)
                     .HasDefaultValueSql("DATETIME('now')");
 
@@ -164,15 +142,13 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasDefaultValue(PolarDriveLogLevel.INFO);
             });
 
-            // ✅ Configurazione CORRETTA per AdminFileManager con SQLite
             modelBuilder.Entity<AdminFileManager>(entity =>
             {
                 entity.ToTable("AdminFileManager");
 
-                // Configurazione proprietà base
                 entity.Property(e => e.RequestedAt)
                     .IsRequired()
-                    .HasDefaultValueSql("DATETIME('now')"); // ✅ SQLite syntax
+                    .HasDefaultValueSql("DATETIME('now')");
 
                 entity.Property(e => e.Status)
                     .IsRequired()
@@ -191,28 +167,26 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasMaxLength(100);
 
                 entity.Property(e => e.ZipFileSizeMB)
-                    .HasColumnType("REAL"); // ✅ SQLite non supporta DECIMAL con precisione
+                    .HasColumnType("REAL");
 
-                // ✅ Configurazione per le liste JSON - CORRETTA per SQLite
                 entity.Property(e => e.CompanyList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("TEXT"); // ✅ SQLite usa TEXT invece di nvarchar(max)
+                    .HasColumnType("TEXT");
 
                 entity.Property(e => e.VinList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("TEXT"); // ✅ SQLite usa TEXT
+                    .HasColumnType("TEXT");
 
                 entity.Property(e => e.BrandList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("TEXT"); // ✅ SQLite usa TEXT
+                    .HasColumnType("TEXT");
 
-                // Indici per performance
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.RequestedAt);
                 entity.HasIndex(e => e.PeriodStart);
@@ -223,7 +197,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
         }
         catch (Exception ex)
         {
-            // ✅ Logging semplice senza dipendenze circolari
             Console.WriteLine($"❌ Error during OnModelCreating: {ex.Message}");
             throw;
         }
