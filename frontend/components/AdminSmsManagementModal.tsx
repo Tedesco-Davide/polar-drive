@@ -486,6 +486,15 @@ export default function AdminSmsManagementModal({
                 </div>
               ))
             )}
+            <button
+              className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
+              onClick={() => {
+                logFrontendEvent("SmsModal", "INFO", "Sms modal closed");
+                onClose();
+              }}
+            >
+              {t("admin.close")}
+            </button>
           </div>
         )}
 

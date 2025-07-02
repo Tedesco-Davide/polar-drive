@@ -14,46 +14,45 @@ public static class RawDataPreparser
         var sb = new StringBuilder();
         int index = 1;
 
-        // foreach (var raw in rawJsonList)
-        // {
-        //     using var doc = JsonDocument.Parse(raw);
-        //     var root = doc.RootElement;
+        foreach (var raw in rawJsonList)
+        {
+            using var doc = JsonDocument.Parse(raw);
+            var root = doc.RootElement;
 
-        //     // PRIMA: Prova la struttura originale Tesla (response.data)
-        //     if (root.TryGetProperty("response", out var response) && response.TryGetProperty("data", out var dataArray))
-        //     {
-        //         foreach (var item in dataArray.EnumerateArray())
-        //         {
-        //             var type = item.GetProperty("type").GetString();
-        //             var content = item.GetProperty("content");
+            if (root.TryGetProperty("response", out var response) && response.TryGetProperty("data", out var dataArray))
+            {
+                foreach (var item in dataArray.EnumerateArray())
+                {
+                    var type = item.GetProperty("type").GetString();
+                    var content = item.GetProperty("content");
 
-        //             switch (type)
-        //             {
-        //                 case "charging_history":
-        //                     ProcessChargingHistory(sb, content, ref index);
-        //                     break;
-        //                 case "energy_endpoints":
-        //                     ProcessEnergyEndpoints(sb, content, ref index);
-        //                     break;
-        //                 case "partner_public_key":
-        //                     ProcessPartnerPublicKey(sb, content, ref index);
-        //                     break;
-        //                 case "user_profile":
-        //                     ProcessUserProfile(sb, content, ref index);
-        //                     break;
-        //                 case "vehicle_commands":
-        //                     ProcessVehicleCommands(sb, content, ref index);
-        //                     break;
-        //                 case "vehicle_endpoints":
-        //                     ProcessVehicleEndpoints(sb, content, ref index);
-        //                     break;
-        //                 default:
-        //                     sb.AppendLine($"[{index++}] Tipo dati non riconosciuto: {type}");
-        //                     break;
-        //             }
-        //         }
-        //     }
-        // }
+                    switch (type)
+                    {
+                        case "charging_history":
+                            ProcessChargingHistory(sb, content, ref index);
+                            break;
+                        case "energy_endpoints":
+                            ProcessEnergyEndpoints(sb, content, ref index);
+                            break;
+                        case "partner_public_key":
+                            ProcessPartnerPublicKey(sb, content, ref index);
+                            break;
+                        case "user_profile":
+                            ProcessUserProfile(sb, content, ref index);
+                            break;
+                        case "vehicle_commands":
+                            ProcessVehicleCommands(sb, content, ref index);
+                            break;
+                        case "vehicle_endpoints":
+                            ProcessVehicleEndpoints(sb, content, ref index);
+                            break;
+                        default:
+                            sb.AppendLine($"[{index++}] Tipo dati non riconosciuto: {type}");
+                            break;
+                    }
+                }
+            }
+        }
 
         index = await ProcessAdaptiveProfilingSms(sb, vehicleId, dbContext, index);
 
@@ -1675,7 +1674,7 @@ public static class RawDataPreparser
         try
         {
             // Recupera tutti gli eventi SMS per il veicolo negli ultimi 30 giorni
-            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            var thirtyDaysAgo = DateTime.Now.AddDays(-30);
 
             var smsEvents = await dbContext.AdaptiveProfilingSmsEvents
                 .Where(e => e.VehicleId == vehicleId && e.ReceivedAt >= thirtyDaysAgo)
@@ -1704,7 +1703,7 @@ public static class RawDataPreparser
             var activeSession = await GetActiveAdaptiveSession(vehicleId, dbContext);
             if (activeSession != null)
             {
-                var remainingTime = activeSession.ReceivedAt.AddHours(4) - DateTime.UtcNow;
+                var remainingTime = activeSession.ReceivedAt.AddHours(4) - DateTime.Now;
                 sb.AppendLine($"    • 🟢 SESSIONE ATTIVA: {remainingTime.TotalMinutes:F0} min rimanenti");
                 sb.AppendLine($"      Avviata: {activeSession.ReceivedAt:yyyy-MM-dd HH:mm}");
                 sb.AppendLine($"      Descrizione: {activeSession.MessageContent}");
@@ -1721,7 +1720,7 @@ public static class RawDataPreparser
             foreach (var session in recentSessions)
             {
                 var endTime = session.ReceivedAt.AddHours(4);
-                var wasActiveFor = Math.Min(4, (DateTime.UtcNow - session.ReceivedAt).TotalHours);
+                var wasActiveFor = Math.Min(4, (DateTime.Now - session.ReceivedAt).TotalHours);
 
                 // Trova eventuale comando OFF correlato
                 var offCommand = offEvents
@@ -1808,7 +1807,7 @@ public static class RawDataPreparser
         }
 
         // Frequenza di utilizzo
-        var totalDays = (DateTime.UtcNow - onEvents.Min(e => e.ReceivedAt)).TotalDays;
+        var totalDays = (DateTime.Now - onEvents.Min(e => e.ReceivedAt)).TotalDays;
         var frequency = onEvents.Count / Math.Max(totalDays, 1);
 
         var frequencyDescription = frequency switch
@@ -1824,7 +1823,7 @@ public static class RawDataPreparser
 
     private static async Task<AdaptiveProfilingSmsEvent?> GetActiveAdaptiveSession(int vehicleId, PolarDriveDbContext dbContext)
     {
-        var fourHoursAgo = DateTime.UtcNow.AddHours(-4);
+        var fourHoursAgo = DateTime.Now.AddHours(-4);
 
         return await dbContext.AdaptiveProfilingSmsEvents
             .Where(e => e.VehicleId == vehicleId

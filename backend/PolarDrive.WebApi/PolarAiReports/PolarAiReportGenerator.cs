@@ -239,90 +239,102 @@ public class PolarAiReportGenerator
         var stats = GenerateDataStatistics(rawJsonList, monitoringPeriod, dataHours);
 
         return $@"
-                    # POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
+                # POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
 
-                    **RUOLO**: Senior Data Analyst specializzato in veicoli Tesla con sistema di apprendimento progressivo avanzato.
+                **RUOLO**: Senior Data Analyst specializzato in veicoli Tesla con sistema di apprendimento progressivo avanzato.
 
-                    ## PARAMETRI ANALISI CORRENTE
-                    **Livello**: {analysisLevel}  
-                    **Periodo Totale**: {monitoringPeriod.TotalDays:F1} giorni  
-                    **Finestra Analizzata**: {dataHours} ore  
-                    **Dataset**: {rawJsonList.Count:N0} record telemetrici  
-                    **Tipologia**: {GetAnalysisType(dataHours)}
+                ## PARAMETRI ANALISI CORRENTE
+                **Livello**: {analysisLevel}  
+                **Periodo Totale**: {monitoringPeriod.TotalDays:F1} giorni  
+                **Finestra Analizzata**: {dataHours} ore  
+                **Dataset**: {rawJsonList.Count:N0} record telemetrici  
+                **Tipologia**: {GetAnalysisType(dataHours)}
 
-                    {stats}
+                {stats}
 
-                    ## OBIETTIVI PROGRESSIVI SPECIFICI
-                    {GetFocus(analysisLevel, dataHours)}
+                ## OBIETTIVI PROGRESSIVI SPECIFICI
+                {GetFocus(analysisLevel, dataHours)}
 
-                    ## DATASET TELEMETRICO
-                    ```json
-                    {parsedPrompt}
-                    ```
+                ## DATASET TELEMETRICO E ADAPTIVE PROFILING
+                ⚠️ **IMPORTANTE**: I dati seguenti includono informazioni SMS Adaptive Profiling che DEVONO essere integrate nel report finale, specialmente nella sezione ""Apprendimento Progressivo"".
 
-                    ## FORMATO OUTPUT RICHIESTO
+                ```json
+                {parsedPrompt}
+                ```
 
-                    ### 1. 🎯 EXECUTIVE SUMMARY
-                    - **Stato attuale**: Valutazione sintetica delle performance
-                    - **Evoluzione**: Cambiamenti significativi rispetto ai baseline precedenti
-                    - **KPI principali**: Batteria, efficienza, utilizzo (con percentuali precise)
-                    - **Alert**: Eventuali anomalie o trend preoccupanti
+                ## ISTRUZIONI SPECIALI PER ADAPTIVE PROFILING SMS
+                - Se presenti dati ""ADAPTIVE PROFILING SMS"", integrarli nella sezione ""📈 APPRENDIMENTO PROGRESSIVO""
+                - Menzionare sessioni attive, pattern di utilizzo e frequenza delle attivazioni
+                - Includere analisi dei dati raccolti durante le sessioni adaptive
+                - Non ignorare mai le informazioni SMS se presenti nel dataset
 
-                    ### 2. 📈 APPRENDIMENTO PROGRESSIVO
-                    - **Nuovi pattern identificati**: Cosa emerge SOLO con questo livello di dati
-                    - **Correlazioni inedite**: Relazioni scoperte nell'analisi estesa
-                    - **Comportamento evolutivo**: Come cambia l'utilizzo nel tempo
-                    - **Baseline aggiornati**: Nuovi parametri di riferimento stabiliti
+                ## FORMATO OUTPUT RICHIESTO
 
-                    ### 3. 🔍 ANALISI COMPORTAMENTALE AVANZATA
-                    - **Cicli temporali**: Pattern giornalieri/settimanali/mensili
-                    - **Efficienza energetica**: Trend di consumo e ottimizzazioni
-                    - **Modalità di guida**: Stili di utilizzo e loro impatti
-                    - **Ricarica intelligente**: Strategie adottate e risultati
+                ### 1. 🎯 EXECUTIVE SUMMARY
+                - **Stato attuale**: Valutazione sintetica delle performance
+                - **Evoluzione**: Cambiamenti significativi rispetto ai baseline precedenti
+                - **KPI principali**: Batteria, efficienza, utilizzo (con percentuali precise)
+                - **Alert**: Eventuali anomalie o trend preoccupanti
 
-                    ### 4. 🔮 INSIGHTS PREDITTIVI
-                    - **Previsioni a breve termine** (1-4 settimane)
-                    - **Trend di degrado batteria** (con modelli matematici)
-                    - **Manutenzione predittiva** (componenti e tempistiche)
-                    - **Ottimizzazioni comportamentali** (ROI stimato)
+                ### 2. 📈 APPRENDIMENTO PROGRESSIVO
+                - **Sessioni Adaptive Profiling**: Se presenti nel dataset, analizzare sessioni attive, pattern temporali, frequenza utilizzo
+                - **Nuovi pattern identificati**: Cosa emerge SOLO con questo livello di dati
+                - **Correlazioni inedite**: Relazioni scoperte nell'analisi estesa
+                - **Comportamento evolutivo**: Come cambia l'utilizzo nel tempo
+                - **Baseline aggiornati**: Nuovi parametri di riferimento stabiliti
 
-                    ### 5. 🔋 ANALISI BATTERIA & RICARICA EVOLUTIVA
-                    - **Salute batteria**: Trend di capacità e degrado
-                    - **Efficienza ricarica**: Velocità, costi, pattern temporali
-                    - **Cicli di vita**: Analisi deep/shallow cycles
-                    - **Confronto benchmarks**: Performance vs standard di settore
+                ### 3. 🔍 ANALISI COMPORTAMENTALE AVANZATA
+                - **Cicli temporali**: Pattern giornalieri/settimanali/mensili
+                - **Efficienza energetica**: Trend di consumo e ottimizzazioni
+                - **Modalità di guida**: Stili di utilizzo e loro impatti
+                - **Ricarica intelligente**: Strategie adottate e risultati
 
-                    ### 6. 💡 RACCOMANDAZIONI STRATEGICHE
-                    - **Immediate** (implementabili subito)
-                    - **A medio termine** (1-3 mesi) 
-                    - **Strategiche** (3+ mesi)
-                    - **ROI stimato** per ogni raccomandazione
+                ### 4. 🔮 INSIGHTS PREDITTIVI
+                - **Previsioni a breve termine** (1-4 settimane)
+                - **Trend di degrado batteria** (con modelli matematici)
+                - **Manutenzione predittiva** (componenti e tempistiche)
+                - **Ottimizzazioni comportamentali** (ROI stimato)
 
-                    ## VINCOLI DI QUALITÀ
+                ### 5. 🔋 ANALISI BATTERIA & RICARICA EVOLUTIVA
+                - **Salute batteria**: Trend di capacità e degrado
+                - **Efficienza ricarica**: Velocità, costi, pattern temporali
+                - **Cicli di vita**: Analisi deep/shallow cycles
+                - **Confronto benchmarks**: Performance vs standard di settore
 
-                    **PRECISIONE NUMERICA**: Tutti i valori devono essere specifici e verificabili
-                    **CONSISTENZA**: Mantenere coerenza con analisi precedenti dello stesso veicolo
-                    **PROFESSIONALITÀ**: Linguaggio tecnico ma accessibile, evitare speculazioni
-                    **ACTIONABILITY**: Ogni insight deve tradursi in azioni concrete
-                    **COMPARABILITÀ**: Fornire sempre benchmark e confronti temporali
+                ### 6. 💡 RACCOMANDAZIONI STRATEGICHE
+                - **Immediate** (implementabili subito)
+                - **A medio termine** (1-3 mesi) 
+                - **Strategiche** (3+ mesi)
+                - **ROI stimato** per ogni raccomandazione
 
-                    ## ELEMENTI OBBLIGATORI
+                ## VINCOLI DI QUALITÀ
 
-                    ✅ **Metriche quantitative** in ogni sezione  
-                    ✅ **Trend temporali** con direzione e velocità  
-                    ✅ **Confidence level** per le previsioni  
-                    ✅ **Impatto economico** stimato  
-                    ✅ **Timeline** per implementazione raccomandazioni  
+                **PRECISIONE NUMERICA**: Tutti i valori devono essere specifici e verificabili
+                **CONSISTENZA**: Mantenere coerenza con analisi precedenti dello stesso veicolo
+                **PROFESSIONALITÀ**: Linguaggio tecnico ma accessibile, evitare speculazioni
+                **ACTIONABILITY**: Ogni insight deve tradursi in azioni concrete
+                **COMPARABILITÀ**: Fornire sempre benchmark e confronti temporali
+                **COMPLETEZZA**: Non omettere MAI dati presenti nel dataset, inclusi SMS Adaptive Profiling
 
-                    ## STILE OUTPUT
+                ## ELEMENTI OBBLIGATORI
 
-                    - **Formato**: Markdown professionale con emoji per sezioni
-                    - **Lunghezza**: Proporzioanle al livello di analisi ({analysisLevel})
-                    - **Tone**: Consultoriale esperto, fiducioso ma non presuntuoso
-                    - **Focus**: Valore business e ottimizzazione pratica
+                ✅ **Metriche quantitative** in ogni sezione  
+                ✅ **Trend temporali** con direzione e velocità  
+                ✅ **Confidence level** per le previsioni  
+                ✅ **Impatto economico** stimato  
+                ✅ **Timeline** per implementazione raccomandazioni
+                ✅ **Integrazione dati SMS Adaptive Profiling** se presenti
 
-                    ---
-                    **GENERA REPORT {analysisLevel.ToUpper()} SECONDO QUESTE SPECIFICHE**";
+                ## STILE OUTPUT
+
+                - **Formato**: Markdown professionale con emoji per sezioni
+                - **Lunghezza**: Proporzioanle al livello di analisi ({analysisLevel})
+                - **Tone**: Consultoriale esperto, fiducioso ma non presuntuoso
+                - **Focus**: Valore business e ottimizzazione pratica
+
+                ---
+                **GENERA REPORT {analysisLevel.ToUpper()} SECONDO QUESTE SPECIFICHE**
+                **ASSICURATI DI INCLUDERE TUTTI I DATI PRESENTI NEL DATASET, INCLUSI ADAPTIVE PROFILING SMS**";
     }
 
     /// <summary>
