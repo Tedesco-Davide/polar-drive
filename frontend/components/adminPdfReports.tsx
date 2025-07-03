@@ -12,6 +12,7 @@ import AdminLoader from "@/components/adminLoader";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
+import { ApiErrorResponse, ApiResponse } from "@/types/apiResponse";
 
 export default function AdminPdfReports({
   t,
@@ -199,57 +200,148 @@ export default function AdminPdfReports({
         }
       );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      let result: unknown;
+      try {
+        result = await response.json();
+      } catch {
+        // ✅ TRADUZIONE AGGIUNTA
+        throw new Error(
+          t("admin.vehicleReports.errors.serverError", { 0: response.status })
+        );
       }
 
-      const result = await response.json();
+      if (!response.ok) {
+        const errorMessage = getErrorMessage(result, response.status);
+        throw new Error(errorMessage);
+      }
 
-      if (result.success) {
-        setLocalReports((prev) =>
-          prev.map((r) =>
-            r.id === report.id
-              ? {
-                  ...r,
-                  status: "PROCESSING",
-                  regenerationCount: r.regenerationCount + 1,
-                }
-              : r
-          )
-        );
+      // ✅ VERIFICA CHE LA RISPOSTA SIA UNA SUCCESS RESPONSE
+      if (result && typeof result === "object" && "success" in result) {
+        const apiResult = result as ApiResponse;
 
-        alert(t("admin.vehicleReports.regenerateReportSuccess"));
+        if (apiResult.success) {
+          setLocalReports((prev) =>
+            prev.map((r) =>
+              r.id === report.id
+                ? {
+                    ...r,
+                    status: "PROCESSING",
+                    regenerationCount: r.regenerationCount + 1,
+                  }
+                : r
+            )
+          );
 
-        if (refreshRef.current) {
-          await refreshRef.current();
+          alert(t("admin.vehicleReports.regenerateReportSuccess"));
+
+          if (refreshRef.current) {
+            await refreshRef.current();
+          }
+
+          logFrontendEvent(
+            "AdminPdfReports",
+            "INFO",
+            "Regeneration completed with immediate refresh",
+            `ReportId: ${report.id}`
+          );
+        } else {
+          throw new Error(
+            apiResult.message || t("admin.vehicleReports.regenerateReportFail")
+          );
         }
-
-        logFrontendEvent(
-          "AdminPdfReports",
-          "INFO",
-          "Regeneration completed with immediate refresh",
-          `ReportId: ${report.id}`
-        );
       } else {
-        throw new Error(
-          result.message || t("admin.vehicleReports.regenerateReportFail")
-        );
+        // ✅ TRADUZIONE AGGIUNTA
+        throw new Error(t("admin.vehicleReports.errors.invalidServerResponse"));
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : String(error);
+        error instanceof Error
+          ? error.message
+          : t("admin.vehicleReports.errors.unknownRegeneration");
+
       logFrontendEvent(
         "AdminPdfReports",
         "ERROR",
         "Regeneration failed",
         `ReportId: ${report.id}, Error: ${errorMessage}`
       );
+
       alert(
         `${t("admin.vehicleReports.regenerateReportError")}: ${errorMessage}`
       );
     } finally {
       setRegeneratingId(null);
+    }
+  };
+
+  const isApiErrorResponse = (
+    response: unknown
+  ): response is ApiErrorResponse => {
+    return (
+      typeof response === "object" &&
+      response !== null &&
+      "success" in response &&
+      (response as ApiErrorResponse).success === false &&
+      "message" in response &&
+      typeof (response as ApiErrorResponse).message === "string"
+    );
+  };
+
+  // ✅ ENUM PER I CODICI DI ERRORE (OPZIONALE, MA ANCORA MEGLIO)
+  enum RegenerationErrorCode {
+    ALREADY_PROCESSING = "ALREADY_PROCESSING",
+    NO_DATA_AVAILABLE = "NO_DATA_AVAILABLE",
+    INSUFFICIENT_DATA = "INSUFFICIENT_DATA",
+    VEHICLE_DELETED = "VEHICLE_DELETED",
+    COMPANY_DELETED = "COMPANY_DELETED",
+    MAX_REGENERATIONS_REACHED = "MAX_REGENERATIONS_REACHED",
+    INTERNAL_ERROR = "INTERNAL_ERROR",
+  }
+
+  // ✅ VERSIONE CON ENUM (ANCORA PIÙ TYPE-SAFE)
+  const getErrorMessage = (result: unknown, statusCode: number): string => {
+    if (isApiErrorResponse(result) && result.code) {
+      switch (result.code as RegenerationErrorCode) {
+        case RegenerationErrorCode.ALREADY_PROCESSING:
+          return t("admin.vehicleReports.errors.alreadyProcessing");
+        case RegenerationErrorCode.NO_DATA_AVAILABLE:
+          return t("admin.vehicleReports.errors.noDataAvailable");
+        case RegenerationErrorCode.INSUFFICIENT_DATA:
+          return t("admin.vehicleReports.errors.insufficientData");
+        case RegenerationErrorCode.VEHICLE_DELETED:
+          return t("admin.vehicleReports.errors.vehicleDeleted");
+        case RegenerationErrorCode.COMPANY_DELETED:
+          return t("admin.vehicleReports.errors.companyDeleted");
+        case RegenerationErrorCode.MAX_REGENERATIONS_REACHED:
+          return t("admin.vehicleReports.errors.maxRegenerationsReached");
+        default:
+          return (
+            result.message ||
+            t("admin.vehicleReports.errors.unknownRegeneration")
+          );
+      }
+    }
+
+    if (isApiErrorResponse(result)) {
+      return result.message;
+    }
+
+    // Errori HTTP generici basati sul status code
+    switch (statusCode) {
+      case 404:
+        return t("admin.vehicleReports.errors.reportNotFound");
+      case 400:
+        return t("admin.vehicleReports.errors.badRequest");
+      case 401:
+        return t("admin.vehicleReports.errors.unauthorized");
+      case 403:
+        return t("admin.vehicleReports.errors.forbidden");
+      case 500:
+        return t("admin.vehicleReports.errors.internalServer");
+      case 503:
+        return t("admin.vehicleReports.errors.serviceUnavailable");
+      default:
+        return t("admin.vehicleReports.errors.defaultRegeneration");
     }
   };
 

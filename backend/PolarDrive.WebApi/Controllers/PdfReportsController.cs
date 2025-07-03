@@ -291,7 +291,22 @@ public class PdfReportsController : ControllerBase
             if (report == null)
             {
                 await _logger.Warning("PdfReportsController.RegenerateReport", "Report not found.", $"ReportId: {id}");
-                return NotFound();
+                return NotFound(new { success = false, message = "Report non trovato" });
+            }
+
+            // ✅ VALIDAZIONE PRE-RIGENERAZIONE
+            var validationResult = await ValidateReportForRegeneration(report);
+            if (!validationResult.IsValid)
+            {
+                await _logger.Warning("PdfReportsController.RegenerateReport",
+                    "Report validation failed", $"ReportId: {id}, Reason: {validationResult.Reason}");
+
+                return BadRequest(new
+                {
+                    success = false,
+                    message = validationResult.Reason,
+                    code = validationResult.ErrorCode
+                });
             }
 
             var vehicleId = report.ClientVehicleId;
@@ -302,7 +317,7 @@ public class PdfReportsController : ControllerBase
             if (vehicle == null)
             {
                 await _logger.Warning("PdfReportsController.RegenerateReport", "Vehicle not found.", $"VehicleId: {vehicleId}");
-                return BadRequest(new { success = false, message = "SERVER ERROR → INTERNAL ERROR: Vehicle not found" });
+                return BadRequest(new { success = false, message = "Veicolo non trovato", code = "VEHICLE_NOT_FOUND" });
             }
 
             report.RegenerationCount++;
@@ -312,23 +327,70 @@ public class PdfReportsController : ControllerBase
 
             BackgroundJob.Enqueue(() => ProcessReportRegenerationAsync(report.Id));
 
-            await db.SaveChangesAsync();
-
             await _logger.Info("PdfReportsController.RegenerateReport", "Report regenerated successfully.",
                 $"ReportId: {report.Id}, RegenerationCount: {report.RegenerationCount}");
 
             return Ok(new
             {
                 success = true,
-                message = "Report regenerated successfully",
+                message = "Report rigenerato con successo",
                 regenerationCount = report.RegenerationCount
             });
         }
         catch (Exception ex)
         {
             await _logger.Error("PdfReportsController.RegenerateReport", "Regeneration error occurred.", $"ReportId: {id}, Error: {ex}");
-            return StatusCode(500, new { success = false, message = "SERVER ERROR → INTERNAL ERROR: Regeneration failed!" });
+            return StatusCode(500, new
+            {
+                success = false,
+                message = "Errore interno durante la rigenerazione",
+                code = "INTERNAL_ERROR"
+            });
         }
+    }
+
+    // ✅ METODO DI VALIDAZIONE
+    private async Task<(bool IsValid, string Reason, string ErrorCode)> ValidateReportForRegeneration(Data.Entities.PdfReport report)
+    {
+        // 1. Controlla se già in processing
+        if (report.Status == "PROCESSING")
+        {
+            return (false, "Il report è già in fase di rigenerazione", "ALREADY_PROCESSING");
+        }
+
+        // 2. Controlla se ci sono dati sufficienti
+        var dataCount = await CountDataRecordsForReport(report);
+        if (dataCount == 0)
+        {
+            return (false, "Non ci sono dati disponibili per questo periodo", "NO_DATA_AVAILABLE");
+        }
+
+        if (dataCount < MIN_RECORDS_FOR_GENERATION)
+        {
+            return (false, $"Dati insufficienti per la rigenerazione (trovati {dataCount}, richiesti almeno {MIN_RECORDS_FOR_GENERATION})", "INSUFFICIENT_DATA");
+        }
+
+        // 3. Controlla se il veicolo esiste ancora
+        var vehicleExists = await db.ClientVehicles.AnyAsync(v => v.Id == report.ClientVehicleId);
+        if (!vehicleExists)
+        {
+            return (false, "Il veicolo associato al report non esiste più", "VEHICLE_DELETED");
+        }
+
+        // 4. Controlla se la company esiste ancora
+        var companyExists = await db.ClientCompanies.AnyAsync(c => c.Id == report.ClientCompanyId);
+        if (!companyExists)
+        {
+            return (false, "L'azienda associata al report non esiste più", "COMPANY_DELETED");
+        }
+
+        // 5. Limite di rigenerazioni (opzionale)
+        if (report.RegenerationCount >= 10)
+        {
+            return (false, "Raggiunto il limite massimo di rigenerazioni per questo report", "MAX_REGENERATIONS_REACHED");
+        }
+
+        return (true, "", "");
     }
 
     private async Task ProcessReportRegenerationAsync(int reportId)
