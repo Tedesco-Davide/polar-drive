@@ -51,6 +51,9 @@ export default function AdminMainWorkflow({
   const [showForm, setShowForm] = useState(false);
   const [isStatusChanging, setIsStatusChanging] = useState(false);
   const { t } = useTranslation("");
+  const [generatingProfileId, setGeneratingProfileId] = useState<number | null>(
+    null
+  );
 
   const { query, setQuery, filteredData } = useSearchFilter<WorkflowRow>(
     internalWorkflowData,
@@ -517,7 +520,8 @@ export default function AdminMainWorkflow({
         return;
       }
 
-      setIsStatusChanging(true);
+      // ✅ Imposta il loader specifico per questo companyId invece del loader globale
+      setGeneratingProfileId(companyId);
 
       const response = await fetch(
         `${API_BASE_URL}/api/ClientProfile/${companyId}/generate-profile-pdf`,
@@ -619,7 +623,8 @@ export default function AdminMainWorkflow({
         );
       }
     } finally {
-      setIsStatusChanging(false);
+      // ✅ Reset del loader specifico
+      setGeneratingProfileId(null);
     }
   };
 
@@ -781,8 +786,9 @@ export default function AdminMainWorkflow({
                   <MessageSquare size={16} />
                 </button>
                 <button
-                  className="p-2 bg-purple-500 hover:bg-purple-600 text-softWhite rounded"
+                  className="p-2 text-softWhite rounded bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
                   title={t("admin.mainWorkflow.button.pdfUserAndVehicle")}
+                  disabled={generatingProfileId === entry.companyId}
                   onClick={() => {
                     handleGenerateClientProfile(
                       entry.companyId,
@@ -791,7 +797,11 @@ export default function AdminMainWorkflow({
                     );
                   }}
                 >
-                  <UserSearch size={16} />
+                  {generatingProfileId === entry.companyId ? (
+                    <AdminLoader inline />
+                  ) : (
+                    <UserSearch size={16} />
+                  )}
                 </button>
                 <button
                   className="p-2 bg-orange-500 hover:bg-orange-600 text-softWhite rounded"
