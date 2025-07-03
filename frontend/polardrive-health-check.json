@@ -1,0 +1,112 @@
+{
+  "info": {
+    "name": "PolarDrive Health Check",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://localhost:5041"
+    },
+    {
+      "key": "vehicleId",
+      "value": "1"
+    },
+    {
+      "key": "companyId",
+      "value": "1"
+    },
+    {
+      "key": "reportId",
+      "value": "1"
+    },
+    {
+      "key": "sampleVin",
+      "value": "TESTVIN123456789"
+    },
+    {
+      "key": "testVatNumber",
+      "value": "IT12345678901"
+    },
+    {
+      "key": "testPhoneNumber",
+      "value": "+393331234567"
+    }
+  ],
+  "item": [
+    {
+      "name": "API Health Status",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/OutageSystem/health",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "5041",
+          "path": [
+            "api",
+            "OutageSystem",
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "System Statistics",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/OutageSystem/stats",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "5041",
+          "path": [
+            "api",
+            "OutageSystem",
+            "stats"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Quick CRUD Test",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/api/ClientCompanies",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "5041",
+          "path": [
+            "api",
+            "ClientCompanies"
+          ]
+        }
+      }
+    }
+  ]
+}

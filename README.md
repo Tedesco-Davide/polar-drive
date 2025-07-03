@@ -27,6 +27,15 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 
 ---
 
+### 🧪 TEST AUTOMATICO API
+
+_(Tasto destro sulla cartella `frontend` → Open in integrated Terminal)_
+
+- `node converter.js` → Lanciare questo comando ogni volta che si aggiorna il file converter.js → Genera collection Postman ottimizzata con parametri e body corretti
+- `newman run polardrive-collection-fixed.json --insecure` → Testa tutti gli endpoint automaticamente
+
+---
+
 ### 🚗 TESLA MOCK API SERVICE
 
 _(Tasto destro sulla cartella `backend/PolarDrive.TeslaMockApiService` → Open in integrated Terminal)_
