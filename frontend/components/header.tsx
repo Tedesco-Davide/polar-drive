@@ -8,7 +8,6 @@ import { useRouter } from "next/router";
 import Link from "next/link";
 import Image from "next/image";
 import LanguageSwitcher from "./languageSwitcher";
-import Chip from "./chip";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
@@ -32,20 +31,26 @@ export default function Header() {
     <header className="fixed top-0 left-0 w-full z-[100] backdrop-blur bg-white/30 dark:bg-polarNight/30 text-polarNight dark:text-articWhite">
       <div className="container px-6 flex h-16 items-center justify-between">
         {/* Logo */}
-        <Chip className="bg-polarNight border-none hover:bg-polarNight dark:hover:bg-polarNight">
-          <Link href="/" className="flex items-center space-x-2">
-            <Image
-              src="/logo/DataPolar_Logo_Big.png"
-              alt="DataPolar Logo"
-              width={28}
-              height={28}
-              priority
-            />
-            <span className="ftext-sm md:text-2xl font-bold tracking-wide text-softWhite">
-              DataPolar
-            </span>
-          </Link>
-        </Chip>
+        <Link href="/" className="flex items-baseline space-x-1">
+          <Image
+            src="/logo/DataPolar_Logo.svg"
+            alt="DataPolar Logo"
+            width={35}
+            height={0}
+            priority
+          />
+          <Image
+            src={
+              theme === "light"
+                ? "/logo/DataPolar_Lettering_Light.svg"
+                : "/logo/DataPolar_Lettering_Dark.svg"
+            }
+            alt="DataPolar Lettering"
+            width={125}
+            height={0}
+            priority
+          />
+        </Link>
 
         {/* Desktop Nav */}
         <nav className="hidden md:flex items-center gap-8">
