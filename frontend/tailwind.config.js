@@ -14,6 +14,31 @@ module.exports = {
       },
     },
     extend: {
+      animation: {
+        "gradient-shift": "gradient-shift 15s ease infinite",
+        float: "float 8s ease-in-out infinite",
+        "pulse-glow": "pulse-glow 3s ease-in-out infinite",
+        shine: "shine 0.8s ease-in-out",
+      },
+      keyframes: {
+        "gradient-shift": {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0) rotate(0deg)" },
+          "50%": { transform: "translateY(-20px) rotate(180deg)" },
+        },
+        "pulse-glow": {
+          "0%, 100%": { boxShadow: "0 0 20px rgba(92, 77, 225, 0.3)" },
+          "50%": { boxShadow: "0 0 40px rgba(92, 77, 225, 0.6)" },
+        },
+        shine: {
+          "0%": { transform: "translateX(-100%) skewX(-12deg)" },
+          "100%": { transform: "translateX(200%) skewX(-12deg)" },
+        },
+      },
       fontFamily: {
         sans: ["Satoshi", "sans-serif"],
       },

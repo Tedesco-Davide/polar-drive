@@ -89,7 +89,6 @@ Certificazioni e Standard di Eccellenza
 
 DataPolar opera secondo i più elevati standard internazionali di qualità, sicurezza e conformità normativa:
 
-- **Startup Innovativa Certificata**: Iscrizione alla sezione speciale del Registro delle Imprese con tutti i requisiti di legge
 - **GDPR Compliance Totale**: Conformità integrale al Regolamento Europeo sulla Privacy con processi certificati
 - **Ricerca Sviluppata Internamente**: Attività di R&D focalizzate sullo sviluppo di PolarAi e tecnologie proprietarie
 - **Quality Management**: Processi aziendali strutturati secondo best practices internazionali

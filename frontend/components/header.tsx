@@ -1,20 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon, Menu, X } from "lucide-react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import Link from "next/link";
 import Image from "next/image";
+import { gsap } from "gsap";
 import LanguageSwitcher from "./languageSwitcher";
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { t } = useTranslation();
   const router = useRouter();
+  const headerRef = useRef<HTMLHeadElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const navigation = [
     { label: "header.home", href: "/" },
@@ -25,36 +29,101 @@ export default function Header() {
 
   useEffect(() => {
     setMounted(true);
+
+    // Header scroll effect
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY;
+      setScrolled(scrollPosition > 50);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    // Animate header on scroll - SOLO blur e shadow, NO cambio colore
+    if (headerRef.current) {
+      gsap.to(headerRef.current, {
+        backdropFilter: scrolled ? "blur(25px)" : "blur(15px)",
+        boxShadow: scrolled
+          ? "0 8px 32px rgba(92, 77, 225, 0.15)"
+          : "0 4px 16px rgba(92, 77, 225, 0.08)",
+        duration: 0.4,
+        ease: "power2.out",
+      });
+    }
+  }, [scrolled]);
+
+  const toggleMobileMenu = () => {
+    setMenuOpen(!menuOpen);
+
+    if (mobileMenuRef.current) {
+      if (!menuOpen) {
+        // Opening animation
+        gsap.fromTo(
+          mobileMenuRef.current,
+          { opacity: 0, y: -20 },
+          { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }
+        );
+
+        // Animate menu items
+        const menuItems =
+          mobileMenuRef.current.querySelectorAll(".mobile-nav-item");
+        gsap.fromTo(
+          menuItems,
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.3,
+            stagger: 0.1,
+            delay: 0.1,
+            ease: "power2.out",
+          }
+        );
+      } else {
+        // Closing animation
+        gsap.to(mobileMenuRef.current, {
+          opacity: 0,
+          y: -20,
+          duration: 0.3,
+          ease: "power2.in",
+        });
+      }
+    }
+  };
+
   return (
-    <header className="fixed top-0 left-0 w-full z-[100] backdrop-blur bg-white/30 dark:bg-polarNight/30 text-polarNight dark:text-articWhite">
+    <header
+      ref={headerRef}
+      className="fixed top-0 left-0 w-full z-[100] bg-articWhite/20 dark:bg-polarNight/20 backdrop-blur-md border-b border-white/20 dark:border-white/10 text-polarNight dark:text-articWhite transition-all duration-300"
+    >
       <div className="container px-6 flex h-16 items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-baseline space-x-1">
-          <Image
-            src="/logo/DataPolar_Logo.svg"
-            alt="DataPolar Logo"
-            width={35}
-            height={0}
-            priority
-          />
-          <Image
-            src={
-              theme === "light"
-                ? "/logo/DataPolar_Lettering_Light.svg"
-                : "/logo/DataPolar_Lettering_Dark.svg"
-            }
-            alt="DataPolar Lettering"
-            width={125}
-            height={0}
-            priority
-          />
+        <Link href="/" className="flex items-center space-x-2 group">
+          <div className="relative">
+            <Image
+              src="/logo/DataPolar_Logo.svg"
+              alt="DataPolar Logo"
+              width={35}
+              height={35}
+              priority
+            />
+          </div>
+          <div className="relative overflow-hidden">
+            <Image
+              src="/logo/DataPolar_Lettering.svg"
+              alt="DataPolar Lettering"
+              width={125}
+              height={30}
+              priority
+            />
+          </div>
         </Link>
 
-        {/* Desktop Nav */}
+        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-8">
-          {navigation.map((item) => {
+          {navigation.map((item, index) => {
             const isAnchor = item.href.startsWith("#");
             const anchorTarget = item.href;
 
@@ -78,17 +147,21 @@ export default function Header() {
                 key={item.label}
                 href={`/${anchorTarget}`}
                 onClick={handleClick}
-                className="text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-softWhite transition"
+                className="relative text-sm font-semibold text-polarNight/90 dark:text-articWhite/90 hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 group px-3 py-2 rounded-lg hover:bg-white/20 dark:hover:bg-white/10"
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {t(item.label)}
+                <span className="absolute -bottom-1 left-3 w-0 h-0.5 bg-gradient-to-r from-coldIndigo to-glacierBlue transition-all duration-300 group-hover:w-[calc(100%-1.5rem)] rounded-full" />
               </a>
             ) : (
               <Link
                 key={item.label}
                 href={item.href}
-                className="text-sm font-bold text-gray-700 dark:text-gray-300 hover:text-black dark:hover:text-softWhite transition"
+                className="relative text-sm font-semibold text-polarNight/90 dark:text-articWhite/90 hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 group px-3 py-2 rounded-lg hover:bg-white/20 dark:hover:bg-white/10"
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {t(item.label)}
+                <span className="absolute -bottom-1 left-3 w-0 h-0.5 bg-gradient-to-r from-coldIndigo to-glacierBlue transition-all duration-300 group-hover:w-[calc(100%-1.5rem)] rounded-full" />
               </Link>
             );
           })}
@@ -96,77 +169,100 @@ export default function Header() {
 
         {/* Right section */}
         <div className="flex items-center space-x-3">
-          <LanguageSwitcher />
+          <div className="opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.3s_forwards]">
+            <LanguageSwitcher />
+          </div>
 
           {mounted && (
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="ml-2 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
+              className="p-2.5 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 group border border-white/20 dark:border-white/10 hover:border-coldIndigo/30 dark:hover:border-glacierBlue/30 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.4s_forwards]"
               aria-label="Toggle Theme"
             >
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              <div className="relative w-5 h-5">
+                {theme === "dark" ? (
+                  <Sun className="w-5 h-5 transition-transform duration-300 group-hover:rotate-180 text-yellow-400" />
+                ) : (
+                  <Moon className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12 text-indigo-600" />
+                )}
+              </div>
             </button>
           )}
 
+          {/* Mobile Menu Button */}
           <button
-            className="md:hidden p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800"
-            onClick={() => setMenuOpen(!menuOpen)}
+            className="md:hidden p-2.5 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 border border-white/20 dark:border-white/10 hover:border-coldIndigo/30 dark:hover:border-glacierBlue/30 opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.5s_forwards]"
+            onClick={toggleMobileMenu}
             aria-label="Toggle menu"
           >
-            {menuOpen ? <X size={20} /> : <Menu size={20} />}
+            <div className="relative w-6 h-6">
+              {menuOpen ? (
+                <X className="w-6 h-6 transition-transform duration-300 rotate-90" />
+              ) : (
+                <Menu className="w-6 h-6 transition-transform duration-300" />
+              )}
+            </div>
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
-          menuOpen ? "max-h-[300px] opacity-100 py-6" : "max-h-0 opacity-0 py-0"
-        } px-6 flex flex-col items-center space-y-6 text-center`}
+        ref={mobileMenuRef}
+        className={`md:hidden absolute top-full left-0 w-full transition-all duration-300 ease-in-out ${
+          menuOpen ? "opacity-100 visible" : "opacity-0 invisible"
+        } bg-articWhite/95 dark:bg-polarNight/95 backdrop-blur-xl border-t border-white/20 dark:border-white/10`}
       >
-        {navigation.map((item) => {
-          const isAnchor = item.href.startsWith("#");
-          const anchorTarget = item.href;
+        <div className="px-6 py-6 space-y-3">
+          {navigation.map((item) => {
+            const isAnchor = item.href.startsWith("#");
+            const anchorTarget = item.href;
 
-          const handleClick = (e: React.MouseEvent) => {
-            e.preventDefault();
-            setMenuOpen(false);
-            const targetPath = `/${anchorTarget}`;
-            if (isAnchor) {
-              if (router.pathname !== "/") {
-                router.push(targetPath);
-              } else {
-                const element = document.querySelector(anchorTarget);
-                if (element) {
-                  element.scrollIntoView({ behavior: "smooth" });
+            const handleClick = (e: React.MouseEvent) => {
+              e.preventDefault();
+              setMenuOpen(false);
+
+              if (isAnchor) {
+                const targetPath = `/${anchorTarget}`;
+                if (router.pathname !== "/") {
+                  router.push(targetPath);
+                } else {
+                  const element = document.querySelector(anchorTarget);
+                  if (element) {
+                    element.scrollIntoView({ behavior: "smooth" });
+                  }
                 }
+              } else {
+                router.push(item.href);
               }
-            } else {
-              router.push(item.href);
-            }
-          };
+            };
 
-          return isAnchor ? (
-            <a
-              key={item.label}
-              href={`/${anchorTarget}`}
-              onClick={handleClick}
-              className="text-base font-semibold text-polarNight dark:text-softWhite hover:text-black dark:hover:text-softWhite transition"
-            >
-              {t(item.label)}
-            </a>
-          ) : (
-            <a
-              key={item.label}
-              href={item.href}
-              onClick={handleClick}
-              className="text-base font-semibold text-polarNight dark:text-softWhite hover:text-black dark:hover:text-softWhite transition"
-            >
-              {t(item.label)}
-            </a>
-          );
-        })}
+            return (
+              <a
+                key={item.label}
+                href={isAnchor ? `/${anchorTarget}` : item.href}
+                onClick={handleClick}
+                className="mobile-nav-item block text-base font-semibold text-polarNight dark:text-articWhite hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 py-3 px-4 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 border border-transparent hover:border-coldIndigo/20 dark:hover:border-glacierBlue/20"
+              >
+                {t(item.label)}
+              </a>
+            );
+          })}
+        </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </header>
   );
 }

@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="6 29 112 42" width="200" height="0">
 
   <defs>
+    
     <style type="text/css">
       @font-face {
         font-family: "Satoshi-Regular";
@@ -10,39 +11,43 @@
       }
 
       .customText {
-        font-family: "Satoshi-Regular", sans-serif;
+        font-family: "Satoshi-Regular";
         font-size: 25.77px;
         font-weight: 300;
       }
     </style>
-  </defs>
-  
-  <defs>
+
     <clipPath id="waveClip">
-      <rect x="0" y="" width="108.5" height="100"/>
+      <rect x="0" y="" width="109" height="100"/>
     </clipPath>
 
-    <!-- Gradiente aurora boreale -->
+    <!-- Gradiente aurora boreale con colori DataPolar -->
     <linearGradient id="aurora1" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#00D9FF;stop-opacity:0.8" />
-      <stop offset="50%" style="stop-color:#4FA8C5;stop-opacity:0.9" />
-      <stop offset="100%" style="stop-color:#2E86AB;stop-opacity:0.8" />
+      <stop offset="0%" style="stop-color:#5C4DE1;stop-opacity:0.8" />
+      <stop offset="50%" style="stop-color:#A7C6ED;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#5C4DE1;stop-opacity:0.8" />
     </linearGradient>
     
     <linearGradient id="aurora2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#B8E0ED;stop-opacity:0.6" />
-      <stop offset="50%" style="stop-color:#00FF88;stop-opacity:0.7" />
-      <stop offset="100%" style="stop-color:#4FA8C5;stop-opacity:0.6" />
+      <stop offset="0%" style="stop-color:#A7C6ED;stop-opacity:0.6" />
+      <stop offset="50%" style="stop-color:#5C4DE1;stop-opacity:0.7" />
+      <stop offset="100%" style="stop-color:#A7C6ED;stop-opacity:0.6" />
     </linearGradient>
     
     <linearGradient id="aurora3" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#E8F4F8;stop-opacity:0.5" />
-      <stop offset="100%" style="stop-color:#B8E0ED;stop-opacity:0.7" />
+      <stop offset="0%" style="stop-color:#F8F9FA;stop-opacity:0.5" />
+      <stop offset="100%" style="stop-color:#A7C6ED;stop-opacity:0.7" />
+    </linearGradient>
+    
+    <!-- Gradiente per il testo -->
+    <linearGradient id="textGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#1C2D44;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#5C4DE1;stop-opacity:1" />
     </linearGradient>
     
     <!-- Filtro per effetto glow -->
     <filter id="glow">
-      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
       <feMerge>
         <feMergeNode in="coloredBlur"/>
         <feMergeNode in="SourceGraphic"/>
@@ -78,31 +83,31 @@
               values="M 0 40 Q 15 35 30 40 T 60 35 T 90 40 T 115 35;
                       M 0 40 Q 15 40 30 35 T 60 40 T 90 35 T 115 40;
                       M 0 40 Q 15 35 30 40 T 60 35 T 90 40 T 115 35"
-              dur="4s" repeatCount="indefinite"/>
+              dur="5s" repeatCount="indefinite"/>
     </path>
     
-    <!-- Punti di dati -->
+    <!-- Punti di dati con colori DataPolar -->
     <g>
-      <circle cx="10" cy="25" r="2" fill="#FFFFFF" opacity="0.9">
+      <circle cx="10" cy="25" r="2" fill="#5C4DE1" opacity="0.9">
         <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite"/>
       </circle>
-      <circle cx="30" cy="30" r="2" fill="#FFFFFF" opacity="0.9">
+      <circle cx="30" cy="30" r="2" fill="#A7C6ED" opacity="0.9">
         <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2s" repeatCount="indefinite"/>
       </circle>
-      <circle cx="60" cy="25" r="2" fill="#FFFFFF" opacity="0.9">
+      <circle cx="60" cy="25" r="2" fill="#5C4DE1" opacity="0.9">
         <animate attributeName="opacity" values="0.9;0.3;0.9" dur="2s" repeatCount="indefinite"/>
       </circle>
-      <circle cx="100" cy="30" r="2" fill="#FFFFFF" opacity="0.9">
+      <circle cx="100" cy="30" r="2" fill="#A7C6ED" opacity="0.9">
         <animate attributeName="opacity" values="0.3;0.9;0.3" dur="2s" repeatCount="indefinite"/>
       </circle>
     </g>
   </g>
   
-  <!-- Logo text moderno -->
+  <!-- Logo text senza font personalizzato -->
   <g transform="translate(6, 70)">
     <text class="customText">
-      <tspan fill="#f5f5f5">Data</tspan>
-      <tspan fill="#4FC3F7" font-weight="bold" dx="-7">Polar</tspan>
+      <tspan fill="#8B7DE8">Data</tspan>
+      <tspan fill="#5C4DE1" font-weight="600" dx="-7">Polar</tspan>
     </text>
   </g>
 
