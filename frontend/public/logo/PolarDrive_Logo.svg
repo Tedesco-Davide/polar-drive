@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <!-- Gradienti ispirati ai colori DataPolar -->
+    <linearGradient id="electricGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5C4DE1;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#A7C6ED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00D9FF;stop-opacity:1" />
+    </linearGradient>
+    
+    <linearGradient id="roadGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1B4965;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#2E86AB;stop-opacity:0.3" />
+    </linearGradient>
+    
+    <radialGradient id="centerGlow">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#A7C6ED;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#5C4DE1;stop-opacity:0.4" />
+    </radialGradient>
+    
+    <!-- Filtro glow -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Pattern per effetto circuito -->
+    <pattern id="circuitPattern" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="5" cy="5" r="1" fill="#A7C6ED" opacity="0.6"/>
+      <circle cx="35" cy="35" r="1" fill="#A7C6ED" opacity="0.6"/>
+      <path d="M5,5 L35,35" stroke="#A7C6ED" stroke-width="0.5" opacity="0.3"/>
+    </pattern>
+  </defs>
+  
+  <!-- Centro principale -->
+  <g transform="translate(100, 100)">
+    
+    <!-- Strada/percorso stilizzato (base) -->
+    <path d="M -60 40 Q -60 0 -40 -30 Q -20 -50 0 -50 Q 20 -50 40 -30 Q 60 0 60 40"
+          fill="none" stroke="url(#roadGradient)" stroke-width="3" opacity="0.5"/>
+    
+    <!-- Anelli orbitali (connessioni dati) -->
+    <g opacity="0.7">
+      <circle cx="0" cy="0" r="70" fill="none" stroke="#A7C6ED" stroke-width="1" 
+              stroke-dasharray="5,10" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" 
+                          from="0 0 0" to="360 0 0" dur="40s" repeatCount="indefinite"/>
+      </circle>
+      
+      <circle cx="0" cy="0" r="50" fill="none" stroke="#5C4DE1" stroke-width="1.5" 
+              stroke-dasharray="10,5" opacity="0.6">
+        <animateTransform attributeName="transform" type="rotate" 
+                          from="0 0 0" to="-360 0 0" dur="30s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+    
+    <!-- Auto stilizzata (vista dall'alto) -->
+    <g transform="scale(1.2)">
+      <!-- Corpo auto -->
+      <path d="M -15 -20 L -15 15 Q -15 20 -10 20 L 10 20 Q 15 20 15 15 L 15 -20 Q 15 -25 10 -25 L -10 -25 Q -15 -25 -15 -20 Z"
+            fill="url(#electricGradient)" stroke="#FFFFFF" stroke-width="1" opacity="0.9"/>
+      
+      <!-- Parabrezza -->
+      <path d="M -10 -15 L -10 -5 Q -10 -3 -8 -3 L 8 -3 Q 10 -3 10 -5 L 10 -15"
+            fill="#1B4965" opacity="0.7"/>
+      
+      <!-- Luci LED (elettriche) -->
+      <circle cx="-8" cy="-20" r="2" fill="#00D9FF" filter="url(#glow)">
+        <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="8" cy="-20" r="2" fill="#00D9FF" filter="url(#glow)">
+        <animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/>
+      </circle>
+      
+      <!-- Indicatore centrale (connessione/GPS) -->
+      <circle cx="0" cy="5" r="3" fill="url(#centerGlow)" filter="url(#glow)"/>
+    </g>
+    
+    <!-- Nodi di connessione (Fleet API) -->
+    <g>
+      <!-- Nodo Nord (GPS/Navigazione) -->
+      <circle cx="0" cy="-60" r="4" fill="#5C4DE1" opacity="0.8">
+        <animate attributeName="r" values="4;6;4" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      
+      <!-- Nodo Est (Batteria/Energia) -->
+      <circle cx="60" cy="0" r="4" fill="#00D9FF" opacity="0.8">
+        <animate attributeName="r" values="4;6;4" dur="3s" begin="0.5s" repeatCount="indefinite"/>
+      </circle>
+      
+      <!-- Nodo Sud (Dati/Cloud) -->
+      <circle cx="0" cy="60" r="4" fill="#A7C6ED" opacity="0.8">
+        <animate attributeName="r" values="4;6;4" dur="3s" begin="1s" repeatCount="indefinite"/>
+      </circle>
+      
+      <!-- Nodo Ovest (Controllo/Sistema) -->
+      <circle cx="-60" cy="0" r="4" fill="#4FA8C5" opacity="0.8">
+        <animate attributeName="r" values="4;6;4" dur="3s" begin="1.5s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+    
+    <!-- Linee di connessione dinamiche -->
+    <g opacity="0.5">
+      <path d="M 0 0 L 0 -60" stroke="#5C4DE1" stroke-width="1" stroke-dasharray="2,4">
+        <animate attributeName="stroke-dashoffset" from="0" to="-6" dur="1s" repeatCount="indefinite"/>
+      </path>
+      <path d="M 0 0 L 60 0" stroke="#00D9FF" stroke-width="1" stroke-dasharray="2,4">
+        <animate attributeName="stroke-dashoffset" from="0" to="-6" dur="1s" repeatCount="indefinite"/>
+      </path>
+      <path d="M 0 0 L 0 60" stroke="#A7C6ED" stroke-width="1" stroke-dasharray="2,4">
+        <animate attributeName="stroke-dashoffset" from="0" to="-6" dur="1s" repeatCount="indefinite"/>
+      </path>
+      <path d="M 0 0 L -60 0" stroke="#4FA8C5" stroke-width="1" stroke-dasharray="2,4">
+        <animate attributeName="stroke-dashoffset" from="0" to="-6" dur="1s" repeatCount="indefinite"/>
+      </path>
+    </g>
+    
+    <!-- Particelle di dati in movimento -->
+    <g>
+      <circle r="2" fill="#00D9FF" opacity="0.8">
+        <animateMotion dur="4s" repeatCount="indefinite">
+          <mpath href="#dataPath1"/>
+        </animateMotion>
+      </circle>
+      <circle r="2" fill="#5C4DE1" opacity="0.8">
+        <animateMotion dur="4s" begin="1s" repeatCount="indefinite">
+          <mpath href="#dataPath2"/>
+        </animateMotion>
+      </circle>
+      <circle r="2" fill="#A7C6ED" opacity="0.8">
+        <animateMotion dur="4s" begin="2s" repeatCount="indefinite">
+          <mpath href="#dataPath3"/>
+        </animateMotion>
+      </circle>
+    </g>
+    
+    <!-- Percorsi nascosti per le particelle -->
+    <path id="dataPath1" d="M 0 -60 Q 30 -30 60 0 Q 30 30 0 60 Q -30 30 -60 0 Q -30 -30 0 -60" fill="none"/>
+    <path id="dataPath2" d="M 60 0 Q 30 30 0 60 Q -30 30 -60 0 Q -30 -30 0 -60 Q 30 -30 60 0" fill="none"/>
+    <path id="dataPath3" d="M -60 0 Q -30 -30 0 -60 Q 30 -30 60 0 Q 30 30 0 60 Q -30 30 -60 0" fill="none"/>
+  </g>
+</svg>
