@@ -120,15 +120,6 @@ export default function Mission() {
       </div>
 
       <div className="relative z-20 max-w-7xl mx-auto">
-        {/* Hero Quote */}
-        <div className="text-center mb-16 animate-on-scroll">
-          <blockquote className="text-2xl md:text-4xl font-bold text-coldIndigo dark:text-glacierBlue mb-6 italic">
-            &quot;Immagina un mondo in cui ogni decisione aziendale sia guidata
-            da dati intelligenti&quot;
-          </blockquote>
-          <div className="w-24 h-1 bg-gradient-to-r from-coldIndigo to-glacierBlue mx-auto rounded-full" />
-        </div>
-
         {/* Chi Siamo */}
         <div className="mb-20 animate-on-scroll">
           <h2 className="text-3xl md:text-5xl font-bold bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent text-center mb-8">
@@ -136,20 +127,19 @@ export default function Mission() {
           </h2>
           <div className="max-w-4xl mx-auto text-center space-y-6">
             <p className="text-lg md:text-xl leading-relaxed text-polarNight/80 dark:text-articWhite/80">
-              Benvenuto in{" "}
               <strong className="text-coldIndigo dark:text-glacierBlue">
                 DataPolar
-              </strong>
-              , la Tech Data Company specializzata nella raccolta, gestione,
-              elaborazione e analisi avanzata di Dati. Al cuore della nostra
-              attività risiede la capacità di manipolare i dati trasformandoli
-              in valore concreto per le nostre aziende partner.
+              </strong>{" "}
+              è una Tech Data Company che trasforma informazioni complesse in
+              soluzioni concrete. Specializziamo nella raccolta, elaborazione e
+              analisi intelligente dei dati, creando valore tangibile per i
+              nostri partner attraverso insights strategici e tecnologie
+              all&apos;avanguardia.
             </p>
             <p className="text-lg md:text-xl leading-relaxed text-polarNight/80 dark:text-articWhite/80">
-              Attraverso l&apos;uso avanzato di Intelligenza Artificiale (AI),
-              DataPolar consente ai professionisti di ogni settore di
-              ottimizzare i propri servizi e prodotti. La nostra intelligenza
-              artificiale proprietaria{" "}
+              Grazie alle tecnologie di Intelligenza Artificiale più avanzate,
+              DataPolar trasforma i dati in vantaggio competitivo per i
+              professionisti di ogni settore. La nostra IA proprietaria{" "}
               <strong className="text-coldIndigo dark:text-glacierBlue">
                 PolarAi
               </strong>{" "}
@@ -289,6 +279,11 @@ export default function Mission() {
                 title: "Salute e Benessere",
                 desc: "Supportiamo soluzioni innovative nella sanità per cure personalizzate",
               },
+              {
+                icon: "🔍",
+                title: "Analisi Predittiva",
+                desc: "Prevediamo tendenze e comportamenti futuri attraverso modelli di machine learning avanzati",
+              },
             ].map((area, index) => (
               <div
                 key={index}
@@ -415,7 +410,7 @@ export default function Mission() {
               responsabile, automatizzato e compatibile con un futuro digitale
               sostenibile.
             </p>
-            <button className="px-8 py-4 bg-gradient-to-r from-coldIndigo to-glacierBlue text-white font-semibold rounded-full hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-coldIndigo/30">
+            <button className="px-8 py-4 bg-coldIndigo text-white font-semibold rounded-full hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-coldIndigo/30">
               Scopri PolarDrive™
             </button>
           </div>

@@ -9,7 +9,7 @@
   "header.contacts": "Contacts",
 
   "hero.title": "PolarDrive is the first fiscal tool based on hourly data collected via the Vehicle Fleet API. It automates, archives, and certifies the exclusive business use of your company car.",
-  "hero.subtitle": "Traceable innovation.",
+  "hero.subtitle": "Imagine a world where every business decision is driven by intelligent data",
   "hero.CTA": "Discover PolarDrive",
 
   "mission.title": "Our Mission",
@@ -28,7 +28,7 @@
   "contact.placeholder.company": "Your company",
   "contact.placeholder.website": "Your website or social media",
   "contact.placeholder.message": "Tell us about your project",
-  "contact.submit": "Send Message →",
+  "contact.submit": "Send Message",
   "contact.loading": "Sending…",
   "contact.success": "Message sent successfully!",
   "contact.error.send": "Error sending the message. Please try again.",

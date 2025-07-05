@@ -9,7 +9,7 @@
   "header.contacts": "Contatti",
 
   "hero.title": "PolarDrive è il primo strumento fiscale basato su dati orari raccolti via Veicolo Fleet API. Automatizza, archivia e certifica l’uso esclusivo della tua auto aziendale.",
-  "hero.subtitle": "Innovazione tracciabile.",
+  "hero.subtitle": "Immagina un mondo in cui ogni decisione aziendale sia guidata da dati intelligenti",
   "hero.CTA": "Scopri PolarDrive",
 
   "mission.title": "La nostra missione",
@@ -28,7 +28,7 @@
   "contact.placeholder.company": "La tua azienda",
   "contact.placeholder.website": "Il tuo sito o social",
   "contact.placeholder.message": "Dicci qualcosa sul tuo progetto",
-  "contact.submit": "Invia Messaggio →",
+  "contact.submit": "Invia Messaggio",
   "contact.loading": "Invio in corso…",
   "contact.success": "Messaggio inviato con successo!",
   "contact.error.send": "Errore nell'invio. Riprova.",

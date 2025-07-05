@@ -139,7 +139,7 @@ export default function Contacts() {
     <section
       ref={sectionRef}
       id="contacts"
-      className="relative w-full overflow-hidden min-h-screen py-24 px-6 scroll-mt-16"
+      className="relative w-full overflow-hidden py-12 px-6 scroll-mt-16"
     >
       {/* Animated Background */}
       <div className="absolute inset-0 z-0">
@@ -243,7 +243,7 @@ export default function Contacts() {
               <button
                 type="submit"
                 disabled={loading}
-                className="group relative px-8 py-4 bg-gradient-to-r from-coldIndigo to-glacierBlue text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-coldIndigo/25 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                className="group relative px-8 py-4 bg-coldIndigo text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-coldIndigo/25 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
               >
                 <span className="relative z-10 flex items-center gap-2">
                   {loading ? t("contact.loading") : t("contact.submit")}
@@ -253,9 +253,6 @@ export default function Contacts() {
                     </span>
                   )}
                 </span>
-
-                {/* Shine effect */}
-                <div className="absolute inset-0 -top-1 -bottom-1 bg-gradient-to-r from-transparent via-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:animate-[shine_0.8s_ease-in-out] pointer-events-none" />
               </button>
             </div>
           </form>
