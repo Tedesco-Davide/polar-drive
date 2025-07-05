@@ -2,6 +2,7 @@
 
 // import { useTranslation } from "next-i18next";
 import { useEffect, useRef } from "react";
+import { useRouter } from "next/router";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 
@@ -12,7 +13,12 @@ if (typeof window !== "undefined") {
 
 export default function Mission() {
   // const { t } = useTranslation();
+  const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
+
+  const navigateToPolarDrive = () => {
+    router.push("/products/polardrive");
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -410,7 +416,10 @@ export default function Mission() {
               responsabile, automatizzato e compatibile con un futuro digitale
               sostenibile.
             </p>
-            <button className="px-8 py-4 bg-coldIndigo text-white font-semibold rounded-full hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-coldIndigo/30">
+            <button
+              onClick={navigateToPolarDrive}
+              className="px-8 py-4 bg-coldIndigo text-white font-semibold rounded-full hover:scale-105 transition-all duration-300 hover:shadow-xl hover:shadow-coldIndigo/30"
+            >
               Scopri PolarDrive™
             </button>
           </div>

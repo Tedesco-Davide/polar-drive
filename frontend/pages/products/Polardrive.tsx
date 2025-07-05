@@ -228,7 +228,18 @@ export default function PolarDrivePage() {
   };
 
   const scrollToContacts = () => {
-    window.location.href = "/#contacts";
+    const anchorTarget = "#contacts";
+
+    if (router.pathname !== "/") {
+      // Se non siamo sulla homepage, naviga alla homepage con l'anchor
+      window.location.href = `/${anchorTarget}`;
+    } else {
+      // Se siamo già sulla homepage, scrolla direttamente alla sezione
+      const element = document.querySelector(anchorTarget);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      }
+    }
   };
 
   return (
@@ -276,8 +287,8 @@ export default function PolarDrivePage() {
           </div>
 
           {/* Content */}
-          <div className="relative z-20 container mx-auto px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="relative z-20 container mx-auto px-4 md:px-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
               {/* Text Content */}
               <div className="space-y-8">
                 <div>
@@ -345,9 +356,9 @@ export default function PolarDrivePage() {
               </div>
 
               {/* Product Image */}
-              <div className="relative">
-                <div className="relative w-full h-80 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10">
-                  <div className="relative w-full h-full p-8">
+              <div className="relative mt-8 lg:mt-0">
+                <div className="relative w-full h-64 md:h-80 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                  <div className="relative w-full h-full p-6 md:p-8">
                     <Image
                       src="/logo/PolarDrive_Logo.svg"
                       alt="PolarDrive Logo"
@@ -562,7 +573,7 @@ export default function PolarDrivePage() {
                 onClick={scrollToContacts}
                 className="inline-flex items-center gap-3 px-10 py-5 bg-coldIndigo text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-coldIndigo/30 group"
               >
-                <span>Richiedi una Demo</span>
+                <span>Contattaci</span>
                 <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
               </button>
             </div>

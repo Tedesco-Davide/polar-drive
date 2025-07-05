@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useTranslation } from "next-i18next";
+import { useRouter } from "next/router";
 import { gsap } from "gsap";
 
 export default function Hero() {
-  const { t } = useTranslation();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const quoteRef = useRef<HTMLParagraphElement>(null);
@@ -22,38 +22,27 @@ export default function Hero() {
       const tl = gsap.timeline();
 
       // Set initial states
-      gsap.set([quoteRef.current, titleRef.current, ctaRef.current], {
+      gsap.set([quoteRef.current, titleRef.current], {
         opacity: 0,
         y: 30,
       });
 
-      // Animate in sequence
+      // Animate in sequence (senza il CTA button)
       tl.to(quoteRef.current, {
         opacity: 1,
         y: 0,
         duration: 0.8,
         ease: "power2.out",
-      })
-        .to(
-          titleRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.6,
-            ease: "power2.out",
-          },
-          "-=0.4"
-        )
-        .to(
-          ctaRef.current,
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.5,
-            ease: "power2.out",
-          },
-          "-=0.3"
-        );
+      }).to(
+        titleRef.current,
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+        },
+        "-=0.4"
+      );
 
       // Animazione leggera per i pallini fluttuanti (solo alcuni)
       const floatingElements =
@@ -84,7 +73,8 @@ export default function Hero() {
       });
     }
 
-    document.getElementById("contacts")?.scrollIntoView({ behavior: "smooth" });
+    // Naviga alla pagina PolarDrive
+    router.push("/products/polardrive");
   };
 
   return (
@@ -143,7 +133,7 @@ export default function Hero() {
           onClick={handleCtaClick}
           className="mb-20 inline-flex items-center gap-3 px-10 py-5 bg-coldIndigo text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-coldIndigo/30 cursor-pointer group"
         >
-          <span>{t("hero.CTA")}™</span>
+          <span>Scopri PolarDrive™</span>
         </div>
       </div>
 
