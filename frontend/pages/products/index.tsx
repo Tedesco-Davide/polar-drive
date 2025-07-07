@@ -243,7 +243,7 @@ export default function Products() {
 
                   {/* Product Image */}
                   <div className="relative">
-                    <div className="relative w-full h-80 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                    <div className="relative w-full h-40 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10">
                       <div className="relative w-full h-full p-8">
                         <Image
                           src="/logo/PolarDrive_Logo.svg"

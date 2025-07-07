@@ -105,7 +105,7 @@ export default function Hero() {
       </div>
 
       {/* Content */}
-      <div className="relative z-20 container mx-auto px-6 text-center">
+      <div className="relative z-20 container mx-auto px-6 text-center lg:mt-24">
         {/* Citazione in evidenza */}
         <div className="text-center mb-8">
           <blockquote className="text-2xl md:text-4xl font-bold italic text-coldIndigo dark:text-glacierBlue mb-6">
@@ -117,7 +117,7 @@ export default function Hero() {
         {/* Titolo principale */}
         <h1
           ref={titleRef}
-          className="text-4xl md:text-6xl lg:text-7xl font-bold mb-40 leading-tight"
+          className="text-4xl md:text-6xl lg:text-7xl font-bold mb-20 leading-tight"
         >
           <span className="text-polarNight/70 dark:text-articWhite/70">
             Benvenuto in{" "}
