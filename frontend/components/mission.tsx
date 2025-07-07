@@ -140,7 +140,7 @@ export default function Mission() {
               soluzioni concrete. Specializziamo nella raccolta, elaborazione e
               analisi intelligente dei dati, creando valore tangibile per i
               nostri partner attraverso insights strategici e tecnologie
-              all&apos;avanguardia.
+              all&apos;avanguardia
             </p>
             <p className="text-lg md:text-xl leading-relaxed text-polarNight/80 dark:text-articWhite/80">
               Grazie alle tecnologie di Intelligenza Artificiale più avanzate,
@@ -149,7 +149,7 @@ export default function Mission() {
               <strong className="text-coldIndigo dark:text-glacierBlue">
                 PolarAi
               </strong>{" "}
-              rappresenta il cuore tecnologico dell&apos;azienda.
+              rappresenta il cuore tecnologico dell&apos;azienda
             </p>
           </div>
         </div>
@@ -225,7 +225,7 @@ export default function Mission() {
         {/* Mission Statement */}
         <div className="mb-20 animate-on-scroll">
           <h3 className="text-2xl md:text-4xl font-bold text-center mb-8 text-coldIndigo dark:text-glacierBlue">
-            La Nostra Mission
+            Il Futuro che ci definisce
           </h3>
           <div className="max-w-4xl mx-auto text-center">
             <blockquote className="text-xl md:text-2xl font-semibold text-polarNight dark:text-articWhite mb-8 italic">
@@ -321,7 +321,7 @@ export default function Mission() {
                 <p className="text-polarNight/80 dark:text-articWhite/80 leading-relaxed">
                   Operiamo esclusivamente attraverso partnership commerciali
                   B2B, collaborando con aziende e realtà industriali di ogni
-                  settore per produrre soluzioni personalizzate basate sui dati.
+                  settore per produrre soluzioni personalizzate basate sui dati
                 </p>
               </div>
               <div className="p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
@@ -331,7 +331,7 @@ export default function Mission() {
                 <p className="text-polarNight/80 dark:text-articWhite/80 leading-relaxed">
                   Offriamo documentazione automatizzata e AI-powered per studi
                   legali, commercialisti e revisori, con report generati da IA
-                  locale nel rispetto del GDPR.
+                  locale nel rispetto del GDPR
                 </p>
               </div>
             </div>
@@ -349,7 +349,7 @@ export default function Mission() {
                 {[
                   "🌍 IA eseguita in locale su server privati in Europa",
                   "🚫 Nessun dato trasmesso a OpenAI, Google o Amazon",
-                  "🔒 Report generati senza uscita di dati sensibili",
+                  "🔒 Documentazione generata senza uscita di dati sensibili",
                   "🏠 Modelli ospitati su infrastruttura dedicata",
                   "📊 Processo auditabile e tracciato end-to-end",
                   "🔰️️ Privacy-by-design e local AI execution",
@@ -412,9 +412,9 @@ export default function Mission() {
               PolarDrive™
             </h3>
             <p className="text-lg text-polarNight/80 dark:text-articWhite/80 mb-6">
-              La scelta naturale per chi vuole raccogliere dati in modo
-              responsabile, automatizzato e compatibile con un futuro digitale
-              sostenibile.
+              La scelta naturale per le aziende che vogliono trasformare i
+              propri dati in vantaggio competitivo attraverso tecnologie
+              sostenibili
             </p>
             <button
               onClick={navigateToPolarDrive}

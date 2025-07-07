@@ -167,7 +167,7 @@ export default function Contacts() {
           {t("contact.title")}
         </h2>
 
-        <p className="text-lg md:text-xl leading-relaxed mb-12 text-polarNight/80 dark:text-articWhite/80 max-w-2xl mx-auto">
+        <p className="text-lg md:text-xl leading-relaxed mb-8 text-polarNight/80 dark:text-articWhite/80 max-w-2xl mx-auto">
           {t("contact.description")}
         </p>
 
@@ -183,7 +183,6 @@ export default function Contacts() {
                   name="name"
                   type="text"
                   required
-                  placeholder={t("contact.placeholder.name")}
                   className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
@@ -196,7 +195,6 @@ export default function Contacts() {
                   name="email"
                   type="email"
                   required
-                  placeholder={t("contact.placeholder.email")}
                   className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
@@ -208,7 +206,6 @@ export default function Contacts() {
                 <input
                   name="company"
                   type="text"
-                  placeholder={t("contact.placeholder.company")}
                   className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
@@ -220,7 +217,6 @@ export default function Contacts() {
                 <input
                   name="website"
                   type="text"
-                  placeholder={t("contact.placeholder.website")}
                   className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
@@ -234,7 +230,6 @@ export default function Contacts() {
                 name="message"
                 rows={5}
                 required
-                placeholder={t("contact.placeholder.message")}
                 className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm resize-none"
               />
             </div>
