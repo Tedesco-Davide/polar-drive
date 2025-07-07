@@ -20,11 +20,16 @@ import {
   Building2,
   Truck,
   Zap,
-  Globe,
   Lock,
   CheckCircle,
   Users,
   Award,
+  TrendingUp,
+  Briefcase,
+  Crown,
+  Gem,
+  Landmark,
+  Compass,
 } from "lucide-react";
 
 // Register GSAP plugins
@@ -45,31 +50,37 @@ export default function PolarDrivePage() {
       icon: Brain,
       title: "Analisi automatizzate e continuative",
       description:
-        "Grazie a un motore AI-based, i dati raccolti vengono elaborati e sintetizzati in report periodici intelligenti, pronti per essere utilizzati in contesti operativi, amministrativi o decisionali.",
+        "Grazie a un motore AI-based, i dati raccolti vengono elaborati e sintetizzati in report periodici intelligenti, pronti per essere utilizzati in contesti operativi, amministrativi o decisionali che richiedono documentazione certificata",
     },
     {
       icon: Battery,
       title: "Supporto alla transizione ecologica",
       description:
-        "I dati aggregati contribuiscono a individuare aree di miglioramento energetico, ottimizzare i percorsi, limitare le emissioni indirette e favorire l'adozione di comportamenti a basso impatto.",
+        "I dati aggregati contribuiscono a individuare aree di miglioramento energetico, ottimizzare i percorsi, limitare le emissioni indirette e favorire l'adozione di comportamenti qualificabili per incentivi e agevolazioni a basso impatto",
     },
     {
       icon: Radar,
       title: "Monitoraggio avanzato del territorio",
       description:
-        "PolarDrive mappa in modo dinamico il comportamento degli strumenti mobili, fornendo insight preziosi per la progettazione urbana, le reti infrastrutturali, i punti di ricarica e l'evoluzione delle abitudini di spostamento.",
+        "Ottenuto mappando in modo dinamico il comportamento dei veicoli elettrici connessi, fornendo insight preziosi per la progettazione urbana sostenibile, le reti infrastrutturali, i punti di ricarica e l'identificazione di opportunità economiche strategiche legate all'evoluzione delle abitudini di spostamento",
     },
     {
       icon: Shield,
       title: "Protezione e anonimizzazione totale",
       description:
-        "Ogni dato viene trattato secondo i più rigorosi standard europei. Il sistema è GDPR-proof by design: tutte le informazioni sono anonimizzate, aggregate e cifrate.",
+        "Ogni dato viene trattato secondo i più rigorosi standard europei. Il sistema è GDPR-proof by design e genera documentazione che soddisfa requisiti normativi specifici per trasparenza e tracciabilità",
     },
     {
       icon: FileText,
       title: "Valore documentale",
       description:
-        "PolarDrive genera documentazione certificabile utile a supportare audit, rendicontazioni, e attività conformi a normative di settore, in ottica di trasparenza e tracciabilità.",
+        "Generando documentazione certificabile strategicamente rilevante per supportare audit, rendicontazioni, e attività conformi a normative di settore con implicazioni economiche vantaggiose, in ottica di trasparenza e tracciabilità",
+    },
+    {
+      icon: TrendingUp,
+      title: "Intelligence predittiva avanzata",
+      description:
+        "Algoritmi di machine learning elaborano pattern comportamentali per prevedere tendenze operative future e identificare inefficienze nascoste. Le analisi predittive facilitano investimenti strategici qualificati e supportano la pianificazione di lungo termine con vantaggi competitivi documentabili",
     },
   ];
 
@@ -77,22 +88,47 @@ export default function PolarDrivePage() {
     {
       icon: Building2,
       title: "Comparti industriali e logistici",
-      description: "Ottimizzazione dei processi operativi e logistici",
+      description: "Efficienza operativa e controllo della supply chain",
     },
     {
       icon: Zap,
       title: "Servizi di mobilità sostenibile",
-      description: "Soluzioni avanzate per la mobilità del futuro",
+      description:
+        "Tecnologie intelligenti per l'ecosistema della mobilità green",
     },
     {
       icon: Truck,
-      title: "Gestori di flotte elettriche",
+      title: "Gestori e fornitori di flotte elettriche",
       description: "Monitoraggio e ottimizzazione delle flotte aziendali",
     },
     {
-      icon: Users,
-      title: "Enti pubblici e privati",
+      icon: Landmark,
+      title: "Comuni, province, enti pubblici e privati",
       description: "Raccolta dati territoriali per decisioni strategiche",
+    },
+    {
+      icon: Briefcase,
+      title: "Holdings e gruppi societari",
+      description:
+        "Soluzioni scalabili per diversificazione strategica e gestione integrata multi-business",
+    },
+    {
+      icon: Users,
+      title: "Società di investimento e fondi",
+      description:
+        "Intelligence data-driven per portafogli sostenibili con performance economiche ottimizzate",
+    },
+    {
+      icon: Crown,
+      title: "Grandi corporazioni e multinazionali",
+      description:
+        "Strategie ESG integrate con impatti patrimoniali misurabili e strutturati",
+    },
+    {
+      icon: Gem,
+      title: "Family office e gestioni patrimoniali",
+      description:
+        "Veicoli di investimento green con gestione patrimoniale efficiente e trasparente",
     },
   ];
 
@@ -251,7 +287,7 @@ export default function PolarDrivePage() {
         </title>
         <meta
           name="description"
-          content="PolarDrive™: la piattaforma intelligente che trasforma il movimento in conoscenza. Gestione automatizzata di strumenti mobili connessi per analisi di sostenibilità e efficienza energetica."
+          content="PolarDrive™: la piattaforma intelligente che trasforma il movimento in conoscenza. Gestione automatizzata di veicoli elettrici connessi per analisi di sostenibilità e efficienza energetica."
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -287,7 +323,7 @@ export default function PolarDrivePage() {
           </div>
 
           {/* Content */}
-          <div className="relative z-20 container mx-auto px-4 md:p-6">
+          <div className="relative z-20 container mx-auto p-6">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
               {/* Text Content */}
               <div className="space-y-8">
@@ -304,7 +340,7 @@ export default function PolarDrivePage() {
                   <blockquote className="text-xl md:text-2xl font-semibold text-polarNight dark:text-articWhite mb-8 italic border-l-4 border-coldIndigo pl-6">
                     &quot;Il tramite per un futuro del pianeta migliore, che
                     trasforma il movimento in conoscenza. Un futuro in cui ogni
-                    strumento mobile diventa un centro di intelligenza
+                    veicolo elettrico diventa un centro di intelligenza
                     attiva&quot;
                   </blockquote>
                 </div>
@@ -315,40 +351,37 @@ export default function PolarDrivePage() {
                     istante operativo viene trasformato in dati oggettivi. Dati
                     che aiutano a prendere decisioni più consapevoli, a
                     migliorare l&apos;impatto ambientale, ed a rendere le
-                    aziende più efficienti e trasparenti.
+                    aziende più efficienti e trasparenti
                   </p>
 
                   {/* Sezione "Cos'è PolarDrive" integrata */}
                   <div className="border-t border-coldIndigo/30 pt-8">
                     <h2 className="text-2xl md:text-3xl font-bold mb-4 text-coldIndigo dark:text-glacierBlue">
-                      Cos&apos;è PolarDrive
+                      Cos&apos;è PolarDrive™
                     </h2>
                     <div className="space-y-4 text-base md:text-lg leading-relaxed text-polarNight/80 dark:text-articWhite/80">
                       <p>
-                        <strong className="text-coldIndigo dark:text-glacierBlue">
-                          PolarDrive™
-                        </strong>{" "}
-                        è una piattaforma intelligente sviluppata da DataPolar
-                        per la gestione automatizzata di strumenti mobili
-                        connessi, utilizzati per la raccolta, analisi e
-                        valorizzazione di dati ambientali, operativi e
-                        logistici.
+                        E&lsquo; una piattaforma intelligente sviluppata da
+                        DataPolar per la gestione automatizzata di veicoli
+                        elettrici connessi, utilizzati per la raccolta, analisi
+                        e valorizzazione di dati ambientali, operativi e
+                        logistici
                       </p>
                       <p>
                         Integrandosi direttamente con le principali piattaforme
                         API ufficiali di veicoli elettrici di nuova generazione,
-                        PolarDrive trasforma ogni dispositivo mobile compatibile
-                        in una fonte costante di dati strutturati, raccolti con
-                        cadenza continua ed utilizzabili per analisi di
-                        efficienza energetica, sostenibilità, pianificazione
-                        strategica digitale e territoriale avanzate.
+                        trasforma ogni dispositivo mobile compatibile in una
+                        fonte costante di dati strutturati, raccolti con cadenza
+                        continua ed utilizzabili per analisi di efficienza
+                        energetica, sostenibilità, pianificazione strategica
+                        digitale e territoriale avanzate
                       </p>
                       <p>
                         Attraverso l&apos;automazione totale della raccolta e la
                         generazione ricorrente di report intelligenti,
-                        PolarDrive consente una tracciabilità completa e
+                        PolarDrive™ consente una tracciabilità completa e
                         certificabile delle dinamiche operative legate alla
-                        mobilità strumentale.
+                        mobilità elettrica
                       </p>
                     </div>
                   </div>
@@ -357,7 +390,7 @@ export default function PolarDrivePage() {
 
               {/* Product Image */}
               <div className="relative mt-8 lg:mt-0">
-                <div className="relative w-full h-64 md:h-80 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                <div className="relative w-full h-64 md:h-80 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10 mb-14 lg:mb-0">
                   <div className="relative w-full h-full p-6 md:p-8">
                     <Image
                       src="/logo/PolarDrive_Logo.svg"
@@ -395,22 +428,22 @@ export default function PolarDrivePage() {
           </div>
 
           <div className="relative z-20 max-w-5xl mx-auto text-center animate-on-scroll">
-            <h2 className="text-3xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent">
-              La Nostra Visione
+            <h2 className="text-3xl mud:text-5xl font-bold mb-8 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent">
+              Il miglior alleato per la tua Evoluzione Aziendale
             </h2>
 
             <div className="p-8 bg-gradient-to-r from-coldIndigo/10 to-glacierBlue/10 backdrop-blur-sm rounded-3xl border border-coldIndigo/20">
               <p className="text-xl md:text-2xl font-semibold text-polarNight dark:text-articWhite mb-6">
-                Mettere i dati in movimento al servizio di un&apos;economia più
-                trasparente, efficiente e sostenibile.
+                Trasformiamo insieme i dati per un&apos;economia più
+                trasparente, efficiente e sostenibile
               </p>
               <p className="text-lg leading-relaxed text-polarNight/80 dark:text-articWhite/80">
-                Con PolarDrive, ogni attività svolta da uno strumento mobile
-                diventa parte di un ecosistema intelligente, in cui ogni
-                chilometro percorso, ogni sosta, ogni condizione operativa viene
-                tracciata in tempo reale per generare valore informativo,
-                migliorare i processi e contribuire a un impatto ambientale
-                positivo.
+                Con PolarDrive™ qualunque attività svolta da un veicolo
+                elettrico connesso, diventa parte di un ecosistema intelligente,
+                in cui ogni chilometro percorso, ogni sosta, ogni condizione
+                operativa viene tracciata in tempo reale per generare valore
+                informativo, migliorare i processi e contribuire a un impatto
+                ambientale positivo
               </p>
             </div>
           </div>
@@ -424,7 +457,7 @@ export default function PolarDrivePage() {
 
           <div className="relative z-20 max-w-7xl mx-auto">
             <h2 className="text-3xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
-              I Benefici di PolarDrive
+              I Benefici di PolarDrive™
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -455,13 +488,13 @@ export default function PolarDrivePage() {
         <section className="relative w-full overflow-hidden py-24 px-6">
           <div className="relative z-20 max-w-6xl mx-auto">
             <h2 className="text-3xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
-              A chi è rivolto PolarDrive
+              A chi è rivolto PolarDrive™
             </h2>
 
             <p className="text-lg text-center mb-12 text-polarNight/80 dark:text-articWhite/80 max-w-4xl mx-auto animate-on-scroll">
-              PolarDrive è progettato per essere integrato in ogni contesto in
-              cui strumenti mobili connessi vengano utilizzati come parte
-              operativa, strategica o analitica dei processi aziendali:
+              Progettato per essere integrato in ogni business, in cui veicoli
+              elettrici connessi vogliano essere utilizzati come parte
+              operativa, strategica o analitica dei processi aziendali
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -504,9 +537,9 @@ export default function PolarDrivePage() {
                     </h3>
                   </div>
                   <p className="text-polarNight/80 dark:text-articWhite/80 mb-6">
-                    PolarDrive è progettato per operare in pieno allineamento
+                    PolarDrive™ è progettato per operare in pieno allineamento
                     con le più recenti normative europee su privacy, ambiente e
-                    tecnologie digitali.
+                    tecnologie digitali
                   </p>
                   <ul className="space-y-3">
                     {complianceFeatures.map((feature, index) => (
@@ -533,8 +566,8 @@ export default function PolarDrivePage() {
                     </h3>
                   </div>
                   <p className="text-polarNight/80 dark:text-articWhite/80 mb-6">
-                    PolarDrive non è solo raccolta dati: è anche protezione
-                    delle infrastrutture informative mobili.
+                    PolarDrive™ non è solo raccolta dati: è anche protezione
+                    delle infrastrutture informative mobili
                   </p>
                   <ul className="space-y-3">
                     {securityFeatures.map((feature, index) => (
@@ -560,20 +593,21 @@ export default function PolarDrivePage() {
 
           <div className="relative z-20 max-w-4xl mx-auto text-center animate-on-scroll">
             <div className="p-12 bg-gradient-to-r from-coldIndigo/20 to-glacierBlue/20 backdrop-blur-sm rounded-3xl border border-coldIndigo/30">
-              <Globe className="w-16 h-16 mx-auto mb-6 text-coldIndigo dark:text-glacierBlue" />
+              <Compass className="w-16 h-16 mx-auto mb-6 text-coldIndigo dark:text-glacierBlue" />
               <h3 className="text-3xl md:text-4xl font-bold mb-6 text-coldIndigo dark:text-glacierBlue">
-                Trasforma il movimento in conoscenza
+                Naviga con DataPolar verso il futuro ed ottimizza le tue risorse
               </h3>
               <p className="text-lg text-polarNight/80 dark:text-articWhite/80 mb-8 max-w-2xl mx-auto">
-                Unisciti alla rivoluzione della mobilità intelligente. Scopri
-                come PolarDrive™ può trasformare la tua organizzazione in un
-                ecosistema di dati sostenibile e intelligente.
+                Scopri come PolarDrive™ può convertire le tue spese operative in
+                investimenti intelligenti con ritorni misurabili e vantaggi
+                economici strutturati. <br /> La partnership che ridefinisce il
+                ROI della tua organizzazione
               </p>
               <button
                 onClick={scrollToContacts}
                 className="inline-flex items-center gap-3 px-10 py-5 bg-coldIndigo text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-coldIndigo/30 group"
               >
-                <span>Contattaci</span>
+                <span>Diventa Partner</span>
                 <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
               </button>
             </div>

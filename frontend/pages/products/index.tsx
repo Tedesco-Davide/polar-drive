@@ -32,16 +32,16 @@ export default function Products() {
   const product = {
     id: "polardrive",
     name: "PolarDrive™",
-    tagline: "La scelta naturale per il futuro digitale sostenibile",
+    tagline: "La scelta naturale per un futuro digitale sostenibile",
     description:
-      "Sistema avanzato di raccolta e analisi dati basato su Intelligenza Artificiale proprietaria. Elaborazione locale, privacy garantita, risultati intelligenti.",
+      "Sistema avanzato di raccolta e analisi dati dei veicoli elettrici, basato su Intelligenza Artificiale proprietaria. Elaborazione locale, privacy garantita, risultati intelligenti con documentazione certificabile per ottimizzazione di spese aziendali e compliance normativa strutturata",
     image: "/logo/DataPolar_Logo_PolarDrive.png",
     href: "/products/polardrive",
     highlights: [
-      "🌍 AI eseguita in locale su server europei",
-      "🔒 100% GDPR Compliant",
-      "⚡ Processing real-time",
-      "🎯 Analisi predittive avanzate",
+      "🔒 100% GDPR Compliant con certificazioni per benefici economici",
+      "🎯 Analisi predittive per investimenti qualificati e opportunità di business",
+      "⚡ Processing real-time per efficienza operativa e vantaggi finanziari",
+      "🌍 AI eseguita in locale su server europei, con gestione criptata dei dati",
     ],
   };
 
@@ -147,7 +147,7 @@ export default function Products() {
         <title>{t("app.title.products")}</title>
         <meta
           name="description"
-          content="Scopri i prodotti innovativi di DataPolar: soluzioni avanzate di AI e analisi dati per il futuro digitale sostenibile."
+          content="Scopri i prodotti innovativi di DataPolar: soluzioni avanzate di AI e analisi dati per il futuro digitale sostenibile"
         />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -197,7 +197,7 @@ export default function Products() {
               <p className="text-lg md:text-xl leading-relaxed text-polarNight/80 dark:text-articWhite/80 max-w-3xl mx-auto">
                 Soluzioni innovative di Intelligenza Artificiale e analisi dati
                 progettate per trasformare il modo in cui le aziende gestiscono
-                e utilizzano le informazioni. Privacy garantita.
+                e utilizzano le informazioni. Privacy garantita
               </p>
             </div>
 
