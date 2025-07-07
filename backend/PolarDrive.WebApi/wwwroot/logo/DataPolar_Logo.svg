@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="40 29 120 139" width="200" height="0">
+
+  <defs>
+    <!-- Gradiente network -->
+    <radialGradient id="networkGrad">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#B8E0ED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1B4965;stop-opacity:0.8" />
+    </radialGradient>
+    
+    <!-- Gradiente per stella principale -->
+    <radialGradient id="starGradient" cx="50%" cy="50%">
+      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
+      <stop offset="30%" style="stop-color:#B8E0ED;stop-opacity:1" />
+      <stop offset="70%" style="stop-color:#4FA8C5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1B4965;stop-opacity:1" />
+    </radialGradient>
+    
+    <!-- Gradiente per raggi -->
+    <linearGradient id="rayGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#E8F4F8;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#4FA8C5;stop-opacity:0.2" />
+    </linearGradient>
+    
+    <!-- Glow per nodi -->
+    <filter id="nodeGlow">
+      <feGaussianBlur stdDeviation="2" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Effetto glow per stella -->
+    <filter id="starGlow">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Network con stella polare centrale -->
+  <g transform="translate(100, 100)">
+    <!-- Collegamenti network di sfondo -->
+    <g opacity="0.3">
+      <!-- Connessioni primarie -->
+      <line x1="0" y1="-60" x2="52" y2="-30" stroke="#4FA8C5" stroke-width="1"/>
+      <line x1="0" y1="-60" x2="-52" y2="-30" stroke="#4FA8C5" stroke-width="1"/>
+      <line x1="52" y1="30" x2="0" y2="60" stroke="#4FA8C5" stroke-width="1"/> 
+      <line x1="0" y1="60" x2="-52" y2="30" stroke="#4FA8C5" stroke-width="1"/>    
+      <line x1="-52" y1="30" x2="-52" y2="-30" stroke="#4FA8C5" stroke-width="1"/>
+      <line x1="52" y1="-30" x2="52" y2="30" stroke="#4FA8C5" stroke-width="1"/>
+
+      <!-- Connessioni interne -->
+      <line x1="0" y1="-60" x2="0" y2="0" stroke="#4FA8C5" stroke-width="0.5"/>
+      <line x1="52" y1="-30" x2="0" y2="0" stroke="#4FA8C5" stroke-width="0.5"/>
+      <line x1="52" y1="30" x2="0" y2="0" stroke="#4FA8C5" stroke-width="0.5"/>
+      <line x1="0" y1="60" x2="0" y2="0" stroke="#4FA8C5" stroke-width="0.5"/>
+      <line x1="-52" y1="30" x2="0" y2="0" stroke="#4FA8C5" stroke-width="0.5"/>
+      <line x1="-52" y1="-30" x2="0" y2="0" stroke="#4FA8C5" stroke-width="0.5"/>
+    </g>
+    
+    <!-- Stella Polare centrale (dal secondo logo) -->
+    <g>
+      <!-- Raggi lunghi -->
+      <g opacity="0.8">
+        <path d="M 0 -30 L 3 -15 L 0 0 L -3 -15 Z" fill="url(#rayGradient)"/>
+        <path d="M 0 30 L 3 15 L 0 0 L -3 15 Z" fill="url(#rayGradient)"/>
+        <path d="M -30 0 L -15 3 L 0 0 L -15 -3 Z" fill="url(#rayGradient)"/>
+        <path d="M 30 0 L 15 3 L 0 0 L 15 -3 Z" fill="url(#rayGradient)"/>
+      </g>
+      
+      <!-- Raggi corti diagonali -->
+      <g opacity="0.6">
+        <path d="M -20 -20 L -10 -10 L 0 0 L -10 -10 Z" fill="url(#rayGradient)" transform="rotate(0)"/>
+        <path d="M 20 -20 L 10 -10 L 0 0 L 10 -10 Z" fill="url(#rayGradient)" transform="rotate(90)"/>
+        <path d="M 20 20 L 10 10 L 0 0 L 10 10 Z" fill="url(#rayGradient)" transform="rotate(180)"/>
+        <path d="M -20 20 L -10 10 L 0 0 L -10 10 Z" fill="url(#rayGradient)" transform="rotate(270)"/>
+      </g>
+      
+      <!-- Stella centrale a 8 punte -->
+      <path d="M 0 -15 L 4 -4 L 15 0 L 4 4 L 0 15 L -4 4 L -15 0 L -4 -4 Z" 
+            fill="url(#starGradient)" filter="url(#starGlow)"/>
+      
+      <!-- Centro luminoso -->
+      <circle cx="0" cy="0" r="3" fill="#FFFFFF" opacity="0.9"/>
+      
+      <!-- Anello orbitale (rappresenta i dati) -->
+      <circle cx="0" cy="0" r="22" fill="none" stroke="#2E86AB" stroke-width="1" 
+              stroke-dasharray="2,3" opacity="0.5">
+        <animateTransform attributeName="transform" type="rotate" 
+                          from="0 0 0" to="360 0 0" dur="30s" repeatCount="indefinite"/>
+      </circle>
+      
+      <!-- Punti dati orbitanti -->
+      <g>
+        <circle cx="22" cy="0" r="2" fill="#4FA8C5" opacity="0.8">
+          <animateTransform attributeName="transform" type="rotate" 
+                            from="0 0 0" to="-360 0 0" dur="30s" repeatCount="indefinite"/>
+        </circle>
+        <circle cx="-22" cy="0" r="2" fill="#4FA8C5" opacity="0.8">
+          <animateTransform attributeName="transform" type="rotate" 
+                            from="0 0 0" to="-360 0 0" dur="30s" repeatCount="indefinite"/>
+        </circle>
+      </g>
+    </g>
+    
+    <!-- Nodi network esterni -->
+    <g>
+      <!-- Nodo Nord (principale) -->
+      <circle cx="0" cy="-60" r="8" fill="#1B4965" filter="url(#nodeGlow)"/>
+      <circle cx="0" cy="-60" r="4" fill="#FFFFFF"/>
+      
+      <!-- Altri nodi -->
+      <circle cx="52" cy="-30" r="6" fill="#2E86AB" opacity="0.9"/>
+      <circle cx="52" cy="-30" r="3" fill="#FFFFFF"/>
+      
+      <circle cx="52" cy="30" r="6" fill="#2E86AB" opacity="0.9"/>
+      <circle cx="52" cy="30" r="3" fill="#FFFFFF"/>
+      
+      <circle cx="0" cy="60" r="6" fill="#2E86AB" opacity="0.9"/>
+      <circle cx="0" cy="60" r="3" fill="#FFFFFF"/>
+      
+      <circle cx="-52" cy="30" r="6" fill="#2E86AB" opacity="0.9"/>
+      <circle cx="-52" cy="30" r="3" fill="#FFFFFF"/>
+      
+      <circle cx="-52" cy="-30" r="6" fill="#2E86AB" opacity="0.9"/>
+      <circle cx="-52" cy="-30" r="3" fill="#FFFFFF"/>
+    </g>
+    
+    <!-- Particelle di dati in movimento -->
+    <g>
+      <circle r="2" fill="#00D9FF" opacity="0.8">
+        <animateMotion dur="6s" repeatCount="indefinite">
+          <mpath href="#dataPath1"/>
+        </animateMotion>
+      </circle>
+      <circle r="2" fill="#00FF88" opacity="0.8">
+        <animateMotion dur="8s" repeatCount="indefinite">
+          <mpath href="#dataPath2"/>
+        </animateMotion>
+      </circle>
+    </g>
+    
+    <!-- Percorsi per le particelle -->
+    <path id="dataPath1" d="M 0 -60 L 52 -30 L 52 30 L 0 60 L -52 30 L -52 -30 Z" fill="none"/>
+    <path id="dataPath2" d="M 0 0 L 0 -60 L -52 -30 L -52 30 L 0 60 L 52 30 L 52 -30 L 0 0" fill="none"/>
+  </g>
+</svg>
