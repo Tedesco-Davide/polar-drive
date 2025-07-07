@@ -256,7 +256,7 @@ export default function Mission() {
                 desc: "Ottimizziamo la gestione delle reti energetiche per aumentare l'efficienza e ridurre i consumi",
               },
               {
-                icon: "🛡️",
+                icon: "🔰️",
                 title: "Sicurezza Stradale",
                 desc: "Analizziamo dati in tempo reale per potenziare la sicurezza e prevenire incidenti",
               },
@@ -352,7 +352,7 @@ export default function Mission() {
                   "🔒 Report generati senza uscita di dati sensibili",
                   "🏠 Modelli ospitati su infrastruttura dedicata",
                   "📊 Processo auditabile e tracciato end-to-end",
-                  "🛡️ Privacy-by-design e local AI execution",
+                  "🔰️️ Privacy-by-design e local AI execution",
                 ].map((feature, index) => (
                   <div key={index} className="flex items-center space-x-3">
                     <span className="text-2xl">{feature.slice(0, 2)}</span>
