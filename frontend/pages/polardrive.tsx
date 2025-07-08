@@ -384,7 +384,7 @@ export default function PolarDrivePage() {
 
                 <div className="space-y-6">
                   {/* Paragrafo principale in card con testo identico */}
-                  <div className="relative p-6 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10 dark:border-white/20">
+                  <div className="relative p-6 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10">
                     <p className="text-lg md:text-xl leading-relaxed text-polarNight/90 dark:text-articWhite/90">
                       Ogni percorso, ogni interazione con l&apos;ambiente, ogni
                       istante operativo viene trasformato in dati oggettivi.
@@ -404,7 +404,7 @@ export default function PolarDrivePage() {
                   <div className="absolute inset-0 bg-gradient-to-br from-coldIndigo/30 to-glacierBlue/30 rounded-3xl blur-2xl animate-pulse" />
 
                   {/* Main product container */}
-                  <div className="relative w-full h-64 md:h-80 lg:h-[26rem] bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-gray-300 dark:border-white/10 dark:border-white/20 overflow-hidden lg:mb-0">
+                  <div className="relative w-full h-64 md:h-80 lg:h-[26rem] bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-gray-300 dark:border-white/10 overflow-hidden lg:mb-0">
                     {/* Animated grid background */}
                     <div className="absolute inset-0 bg-[length:40px_40px] bg-[linear-gradient(to_right,rgba(167,198,237,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(167,198,237,0.1)_1px,transparent_1px)] animate-pulse" />
 
