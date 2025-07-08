@@ -309,120 +309,309 @@ export default function PolarDrivePage() {
           ref={heroRef}
           className="relative w-full overflow-hidden min-h-screen flex items-center pt-16"
         >
-          {/* Background */}
+          {/* Background Migliorato */}
           <div className="absolute inset-0 z-0">
             {mounted && (
-              <div className="absolute inset-0 bg-[length:60px_60px] bg-[radial-gradient(circle_at_1px_1px,rgba(167,198,237,0.1)_1px,transparent_0)]" />
+              <>
+                {/* Grid Pattern Animato più elaborato */}
+                <div className="absolute inset-0 bg-[length:80px_80px] bg-[radial-gradient(circle_at_1px_1px,rgba(167,198,237,0.15)_1px,transparent_0)] animate-pulse" />
+
+                {/* Gradients originali potenziati */}
+                <div className="absolute inset-0 bg-glacierBlue/10 blur-3xl" />
+
+                {/* Orbs originali migliorati */}
+                <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] bg-gradient-radial from-coldIndigo/20 via-coldIndigo/10 to-transparent rounded-full blur-3xl animate-pulse" />
+                <div
+                  className="absolute bottom-1/3 right-1/4 w-[700px] h-[700px] bg-gradient-radial from-glacierBlue/20 via-glacierBlue/10 to-transparent rounded-full blur-3xl animate-pulse"
+                  style={{ animationDelay: "2s" }}
+                />
+
+                {/* Nuovi elementi decorativi */}
+                <div
+                  className="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-gradient-radial from-articWhite/5 to-transparent rounded-full blur-2xl animate-pulse"
+                  style={{ animationDelay: "4s" }}
+                />
+
+                {/* Elementi Geometrici Fluttuanti */}
+                <div
+                  className="absolute top-20 right-20 w-8 h-8 border border-coldIndigo/30 rotate-45 animate-spin"
+                  style={{ animationDuration: "20s" }}
+                />
+                <div
+                  className="absolute bottom-32 left-16 w-6 h-6 bg-glacierBlue/20 rounded-full animate-bounce"
+                  style={{ animationDelay: "1s", animationDuration: "3s" }}
+                />
+                <div
+                  className="absolute top-1/3 right-1/3 w-4 h-4 border-2 border-coldIndigo/40 rounded-full animate-ping"
+                  style={{ animationDelay: "2s" }}
+                />
+              </>
             )}
-            <div className="absolute inset-0 bg-gradient-to-br from-coldIndigo/20 via-glacierBlue/10 to-transparent" />
-            <div className="absolute top-1/4 left-1/3 w-[500px] h-[500px] bg-gradient-radial from-coldIndigo/15 to-transparent rounded-full blur-3xl animate-pulse" />
-            <div
-              className="absolute bottom-1/3 right-1/4 w-[600px] h-[600px] bg-gradient-radial from-glacierBlue/15 to-transparent rounded-full blur-3xl animate-pulse"
-              style={{ animationDelay: "2s" }}
-            />
           </div>
 
           {/* Content */}
-          <div className="relative z-20 container mx-auto p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-              {/* Text Content */}
+          <div className="relative z-20 container mx-auto pt-5 pb-20 lg:p-20">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
+              {/* Text Content con miglioramenti visivi ma testo identico */}
               <div className="space-y-8">
                 <div>
                   <h1
                     ref={titleRef}
                     className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight"
                   >
-                    <span className="bg-gradient-to-r from-coldIndigo via-glacierBlue to-coldIndigo bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-coldIndigo via-glacierBlue to-coldIndigo bg-clip-text text-transparent bg-[length:200%_200%] animate-gradient-x">
                       PolarDrive™
                     </span>
                   </h1>
 
-                  <blockquote className="text-xl md:text-2xl font-semibold text-polarNight dark:text-articWhite mb-8 italic border-l-4 border-coldIndigo pl-6">
-                    &quot;Il tramite per un futuro del pianeta migliore, che
-                    trasforma il movimento in conoscenza. Un futuro in cui ogni
-                    veicolo elettrico diventa un centro di intelligenza
-                    attiva&quot;
-                  </blockquote>
+                  {/* Quote con design migliorato ma testo identico */}
+                  <div className="relative">
+                    <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-coldIndigo to-glacierBlue rounded-full" />
+                    <blockquote className="text-xl md:text-2xl font-semibold text-polarNight dark:text-articWhite mb-8 italic pl-8 relative">
+                      <span className="text-6xl text-coldIndigo/30 absolute -top-4 -left-2">
+                        &quot;
+                      </span>
+                      Il tramite per un futuro del pianeta migliore, che
+                      trasforma il movimento in conoscenza. Un futuro in cui
+                      ogni veicolo elettrico diventa un centro di intelligenza
+                      attiva
+                      <span className="text-6xl text-coldIndigo/30 absolute -bottom-8 right-0">
+                        &quot;
+                      </span>
+                    </blockquote>
+                  </div>
                 </div>
 
                 <div className="space-y-6">
-                  <p className="text-lg md:text-xl leading-relaxed text-polarNight/80 dark:text-articWhite/80">
-                    Ogni percorso, ogni interazione con l&apos;ambiente, ogni
-                    istante operativo viene trasformato in dati oggettivi. Dati
-                    che aiutano a prendere decisioni più consapevoli, a
-                    migliorare l&apos;impatto ambientale, ed a rendere le
-                    aziende più efficienti e trasparenti
-                  </p>
-
-                  {/* Sezione "Cos'è PolarDrive" integrata */}
-                  <div className="border-t border-coldIndigo/30 pt-8">
-                    <h2 className="text-2xl md:text-3xl font-bold mb-4 text-coldIndigo dark:text-glacierBlue">
-                      Cos&apos;è PolarDrive™
-                    </h2>
-                    <div className="space-y-4 text-base md:text-lg leading-relaxed text-polarNight/80 dark:text-articWhite/80">
-                      <p>
-                        E&lsquo; una piattaforma intelligente sviluppata da
-                        DataPolar per la gestione automatizzata di veicoli
-                        elettrici connessi, utilizzati per la raccolta, analisi
-                        e valorizzazione di dati ambientali, operativi e
-                        logistici
-                      </p>
-                      <p>
-                        Integrandosi direttamente con le principali piattaforme
-                        API ufficiali di veicoli elettrici di nuova generazione,
-                        trasforma ogni dispositivo mobile compatibile in una
-                        fonte costante di dati strutturati, raccolti con cadenza
-                        continua ed utilizzabili per analisi di efficienza
-                        energetica, sostenibilità, pianificazione strategica
-                        digitale e territoriale avanzate
-                      </p>
-                      <p>
-                        Attraverso l&apos;automazione totale della raccolta e la
-                        generazione ricorrente di report intelligenti,
-                        PolarDrive™ consente una tracciabilità completa e
-                        certificabile delle dinamiche operative legate alla
-                        mobilità elettrica
-                      </p>
-                    </div>
+                  {/* Paragrafo principale in card con testo identico */}
+                  <div className="relative p-6 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10 dark:border-white/20">
+                    <p className="text-lg md:text-xl leading-relaxed text-polarNight/90 dark:text-articWhite/90">
+                      Ogni percorso, ogni interazione con l&apos;ambiente, ogni
+                      istante operativo viene trasformato in dati oggettivi.
+                      Dati che aiutano a prendere decisioni più consapevoli, a
+                      migliorare l&apos;impatto ambientale, ed a rendere le
+                      aziende più efficienti e trasparenti
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Product Image */}
+              {/* Product Image migliorata */}
               <div className="relative mt-8 lg:mt-0">
-                <div className="relative w-full h-64 md:h-80 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10 mb-14 lg:mb-0">
-                  <div className="relative w-full h-full p-6 md:p-8">
-                    <Image
-                      src="/logo/PolarDrive_Logo.svg"
-                      alt="PolarDrive Logo"
-                      fill
-                      className="object-contain"
-                      priority
+                {/* Container principale con effetti avanzati */}
+                <div className="relative">
+                  {/* Background glow effect */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-coldIndigo/30 to-glacierBlue/30 rounded-3xl blur-2xl animate-pulse" />
+
+                  {/* Main product container */}
+                  <div className="relative w-full h-64 md:h-80 lg:h-[26rem] bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-gray-300 dark:border-white/10 dark:border-white/20 overflow-hidden lg:mb-0">
+                    {/* Animated grid background */}
+                    <div className="absolute inset-0 bg-[length:40px_40px] bg-[linear-gradient(to_right,rgba(167,198,237,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(167,198,237,0.1)_1px,transparent_1px)] animate-pulse" />
+
+                    {/* Logo container identico all'originale */}
+                    <div className="relative w-full h-full p-6 md:p-8">
+                      <Image
+                        src="/logo/PolarDrive_Logo.svg"
+                        alt="PolarDrive Logo"
+                        fill
+                        className="object-contain drop-shadow-2xl"
+                        priority
+                      />
+                    </div>
+
+                    {/* Floating elements migliorati ma mantenendo le posizioni originali */}
+                    <div
+                      className="absolute top-6 left-6 w-6 h-6 border-2 border-coldIndigo/40 rounded-full animate-spin"
+                      style={{ animationDuration: "8s" }}
+                    />
+                    <div
+                      className="absolute top-12 right-8 w-4 h-4 bg-glacierBlue/40 rounded-full animate-bounce"
+                      style={{ animationDelay: "1s", animationDuration: "2s" }}
+                    />
+                    <div
+                      className="absolute bottom-8 left-12 w-8 h-8 border border-coldIndigo/30 rotate-45 animate-pulse"
+                      style={{ animationDelay: "2s" }}
+                    />
+                    <div
+                      className="absolute bottom-6 right-6 w-5 h-5 bg-gradient-to-r from-coldIndigo/40 to-glacierBlue/40 rounded-full animate-ping"
+                      style={{ animationDelay: "0.5s" }}
+                    />
+
+                    {/* Nuovi elementi decorativi */}
+                    <div
+                      className="absolute top-1/4 right-1/4 w-3 h-3 bg-articWhite/30 rounded-full animate-pulse"
+                      style={{ animationDelay: "3s" }}
+                    />
+                    <div
+                      className="absolute bottom-1/3 left-1/4 w-2 h-8 bg-gradient-to-b from-coldIndigo/40 to-transparent rounded-full animate-pulse"
+                      style={{ animationDelay: "1.5s" }}
                     />
                   </div>
 
-                  {/* Floating elements around logo */}
-                  <div className="absolute top-6 left-6 w-4 h-4 rounded-full bg-coldIndigo/40 animate-pulse" />
+                  {/* Statistiche fluttuanti */}
                   <div
-                    className="absolute top-12 right-8 w-3 h-3 rounded-full bg-glacierBlue/40 animate-pulse"
-                    style={{ animationDelay: "1s" }}
-                  />
-                  <div
-                    className="absolute bottom-8 left-12 w-5 h-5 rounded-full bg-coldIndigo/30 animate-pulse"
-                    style={{ animationDelay: "2s" }}
-                  />
-                  <div
-                    className="absolute bottom-6 right-6 w-4 h-4 rounded-full bg-glacierBlue/30 animate-pulse"
-                    style={{ animationDelay: "0.5s" }}
-                  />
+                    className="absolute -top-4 -right-4 bg-white/10 backdrop-blur-sm rounded-2xl border border-coldIndigo/30 p-4 animate-bounce"
+                    style={{ animationDuration: "3s", animationDelay: "2s" }}
+                  >
+                    <div className="text-coldIndigo dark:text-glacierBlue font-bold text-lg">
+                      AI
+                    </div>
+                    <div className="text-xs text-polarNight/60 dark:text-articWhite/60">
+                      Powered
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sezione "Cos'è PolarDrive" ridisegnata ma con testo identico */}
+            <div className="relative mt-10">
+              <div className="absolute inset-0 bg-gradient-to-r from-coldIndigo/5 to-glacierBlue/5 rounded-3xl blur-xl" />
+              <div className="relative border border-coldIndigo/20 bg-white/5 backdrop-blur-sm rounded-3xl p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <h2 className="text-2xl md:text-3xl font-bold text-coldIndigo dark:text-glacierBlue">
+                    Cos&apos;è PolarDrive™
+                  </h2>
+                </div>
+
+                <div className="space-y-4 text-base md:text-lg leading-relaxed text-polarNight/80 dark:text-articWhite/80">
+                  <p className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-coldIndigo rounded-full mt-3 flex-shrink-0" />
+                    E&lsquo; una piattaforma intelligente sviluppata da
+                    DataPolar per la gestione automatizzata di veicoli elettrici
+                    connessi, utilizzati per la raccolta, analisi e
+                    valorizzazione di dati ambientali, operativi e logistici
+                  </p>
+                  <p className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-glacierBlue rounded-full mt-3 flex-shrink-0" />
+                    Integrandosi direttamente con le principali piattaforme API
+                    ufficiali di veicoli elettrici di nuova generazione,
+                    trasforma ogni dispositivo mobile compatibile in una fonte
+                    costante di dati strutturati, raccolti con cadenza continua
+                    ed utilizzabili per analisi di efficienza energetica,
+                    sostenibilità, pianificazione strategica digitale e
+                    territoriale avanzate
+                  </p>
+                  <p className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-coldIndigo rounded-full mt-3 flex-shrink-0" />
+                    Attraverso l&apos;automazione totale della raccolta e la
+                    generazione ricorrente di report intelligenti, PolarDrive™
+                    consente una tracciabilità completa e certificabile delle
+                    dinamiche operative legate alla mobilità elettrica
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
+        {/* CSS Aggiuntivo per le animazioni */}
+        <style jsx global>{`
+          @keyframes particle-float {
+            0% {
+              transform: translateY(100vh) rotate(0deg);
+              opacity: 0;
+            }
+            10% {
+              opacity: 0.6;
+            }
+            90% {
+              opacity: 0.6;
+            }
+            100% {
+              transform: translateY(-100vh) rotate(360deg);
+              opacity: 0;
+            }
+          }
+
+          .particle {
+            pointer-events: none;
+          }
+
+          /* Improve text rendering */
+          * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+          }
+
+          /* Custom focus styles */
+          button:focus-visible,
+          a:focus-visible {
+            outline: 2px solid #5c4de1;
+            outline-offset: 2px;
+          }
+
+          /* Gradient background utilities */
+          .bg-gradient-radial {
+            background: radial-gradient(circle, var(--tw-gradient-stops));
+          }
+
+          /* Responsive adjustments */
+          @media (max-width: 768px) {
+            .particle {
+              display: none;
+            }
+          }
+
+          /* Prefers-reduced-motion */
+          @media (prefers-reduced-motion: reduce) {
+            .particle,
+            .animate-pulse {
+              animation: none !important;
+            }
+          }
+
+          @keyframes gradient-x {
+            0%,
+            100% {
+              background-position: 0% 50%;
+            }
+            50% {
+              background-position: 100% 50%;
+            }
+          }
+
+          @keyframes fade-in {
+            from {
+              opacity: 0;
+              transform: translateY(10px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+
+          .animate-gradient-x {
+            animation: gradient-x 6s ease infinite;
+          }
+
+          .animate-fade-in {
+            animation: fade-in 1s ease-out;
+          }
+
+          /* Miglioramenti per accessibilità */
+          @media (prefers-reduced-motion: reduce) {
+            .animate-gradient-x,
+            .animate-fade-in,
+            .animate-pulse,
+            .animate-bounce,
+            .animate-spin,
+            .animate-ping {
+              animation: none !important;
+            }
+          }
+
+          /* Responsive improvements */
+          @media (max-width: 768px) {
+            .floating-stats {
+              display: none;
+            }
+          }
+        `}</style>
+
         {/* Vision Section */}
-        <section className="relative w-full overflow-hidden py-24 px-6">
+        <section className="relative w-full overflow-hidden pt-10 pb-8 md:pt-24 md:pb-24 px-6">
           <div className="absolute inset-0 z-0">
             <div className="absolute top-1/4 right-1/3 w-[400px] h-[400px] rounded-full bg-glacierBlue/10 blur-3xl animate-pulse" />
           </div>
@@ -450,13 +639,13 @@ export default function PolarDrivePage() {
         </section>
 
         {/* Benefits Section */}
-        <section className="relative w-full overflow-hidden py-24 px-6">
+        <section className="relative w-full overflow-hidden pt-5 pb-5 md:pt-24 md:pb-24 px-6">
           <div className="absolute inset-0 z-0">
             <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] rounded-full bg-coldIndigo/10 blur-3xl animate-pulse" />
           </div>
 
           <div className="relative z-20 max-w-7xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-12 md:mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
               I Benefici di PolarDrive™
             </h2>
 
@@ -466,7 +655,7 @@ export default function PolarDrivePage() {
                 return (
                   <div
                     key={index}
-                    className="card-stagger p-8 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 hover:border-coldIndigo/30 transition-all duration-300 group"
+                    className="card-stagger p-8 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10 hover:border-coldIndigo/30 transition-all duration-300 group"
                   >
                     <div className="w-16 h-16 mb-6 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <Icon className="w-8 h-8 text-coldIndigo dark:text-glacierBlue" />
@@ -485,9 +674,9 @@ export default function PolarDrivePage() {
         </section>
 
         {/* Target Audience Section */}
-        <section className="relative w-full overflow-hidden py-24 px-6">
+        <section className="relative w-full overflow-hidden pt-10 pb-8 md:pt-24 md:pb-24 px-6">
           <div className="relative z-20 max-w-6xl mx-auto">
-            <h2 className="text-3xl md:text-5xl font-bold text-center mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
+            <h2 className="text-3xl md:text-5xl font-bold text-center mb-12 md:mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
               A chi è rivolto PolarDrive™
             </h2>
 
@@ -503,7 +692,7 @@ export default function PolarDrivePage() {
                 return (
                   <div
                     key={index}
-                    className="card-stagger p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-coldIndigo/30 transition-all duration-300 group text-center"
+                    className="card-stagger p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10 hover:border-coldIndigo/30 transition-all duration-300 group text-center"
                   >
                     <div className="w-12 h-12 mx-auto mb-4 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                       <Icon className="w-6 h-6 text-coldIndigo dark:text-glacierBlue" />
@@ -522,12 +711,12 @@ export default function PolarDrivePage() {
         </section>
 
         {/* Compliance Section */}
-        <section className="relative w-full overflow-hidden py-24 px-6">
+        <section className="relative w-full overflow-hidden pt-5 pb-20 md:pt-24 md:pb-24 px-6">
           <div className="relative z-20 max-w-6xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Legal Compliance */}
               <div className="animate-on-scroll">
-                <div className="p-8 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+                <div className="p-8 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10">
                   <div className="flex items-center mb-6">
                     <div className="w-12 h-12 mr-4 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-xl flex items-center justify-center">
                       <Award className="w-6 h-6 text-coldIndigo dark:text-glacierBlue" />
@@ -556,7 +745,7 @@ export default function PolarDrivePage() {
 
               {/* Security */}
               <div className="animate-on-scroll">
-                <div className="p-8 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+                <div className="p-8 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10">
                   <div className="flex items-center mb-6">
                     <div className="w-12 h-12 mr-4 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-xl flex items-center justify-center">
                       <Lock className="w-6 h-6 text-coldIndigo dark:text-glacierBlue" />
@@ -614,63 +803,6 @@ export default function PolarDrivePage() {
           </div>
         </section>
       </div>
-
-      {/* Global Styles for Animations */}
-      <style jsx global>{`
-        @keyframes particle-float {
-          0% {
-            transform: translateY(100vh) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 0.6;
-          }
-          90% {
-            opacity: 0.6;
-          }
-          100% {
-            transform: translateY(-100vh) rotate(360deg);
-            opacity: 0;
-          }
-        }
-
-        .particle {
-          pointer-events: none;
-        }
-
-        /* Improve text rendering */
-        * {
-          -webkit-font-smoothing: antialiased;
-          -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* Custom focus styles */
-        button:focus-visible,
-        a:focus-visible {
-          outline: 2px solid #5c4de1;
-          outline-offset: 2px;
-        }
-
-        /* Gradient background utilities */
-        .bg-gradient-radial {
-          background: radial-gradient(circle, var(--tw-gradient-stops));
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-          .particle {
-            display: none;
-          }
-        }
-
-        /* Prefers-reduced-motion */
-        @media (prefers-reduced-motion: reduce) {
-          .particle,
-          .animate-pulse {
-            animation: none !important;
-          }
-        }
-      `}</style>
     </>
   );
 }

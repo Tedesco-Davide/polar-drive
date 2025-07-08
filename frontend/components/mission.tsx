@@ -17,7 +17,7 @@ export default function Mission() {
   const sectionRef = useRef<HTMLElement>(null);
 
   const navigateToPolarDrive = () => {
-    router.push("/products/polardrive");
+    router.push("/polardrive");
   };
 
   useEffect(() => {
@@ -101,7 +101,7 @@ export default function Mission() {
     >
       {/* Background Gradient Enhanced */}
       <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-polarNight/30 via-coldIndigo/10 to-glacierBlue/5 dark:from-articWhite/5 dark:via-coldIndigo/15 dark:to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-br from-polarNight/5 via-coldIndigo/5 dark:from-articWhite/5 dark:via-coldIndigo/15 dark:to-transparent" />
         <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] rounded-full bg-coldIndigo/15 blur-3xl animate-pulse" />
         <div
           className="absolute bottom-1/4 right-1/3 w-[800px] h-[800px] rounded-full bg-glacierBlue/10 blur-3xl animate-pulse"
@@ -147,7 +147,7 @@ export default function Mission() {
               DataPolar trasforma i dati in vantaggio competitivo per i
               professionisti di ogni settore. La nostra IA proprietaria{" "}
               <strong className="text-coldIndigo dark:text-glacierBlue">
-                PolarAi
+                PolarAi™
               </strong>{" "}
               rappresenta il cuore tecnologico dell&apos;azienda
             </p>
@@ -163,7 +163,7 @@ export default function Mission() {
             { number: 5, suffix: "★", label: "Rating Sicurezza" },
           ].map((stat, index) => (
             <div key={index} className="text-center card-stagger">
-              <div className="p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-coldIndigo/30 transition-all duration-300">
+              <div className="p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10 hover:border-coldIndigo/30 transition-all duration-300">
                 <div className="text-3xl md:text-4xl font-bold text-coldIndigo dark:text-glacierBlue mb-2">
                   <span className="counter" data-target={stat.number}>
                     {stat.number}
@@ -187,7 +187,7 @@ export default function Mission() {
             {[
               {
                 icon: "🧠",
-                title: "PolarAi - IA Proprietaria",
+                title: "PolarAi™ - IA Proprietaria",
                 desc: "Intelligenza Artificiale interna sviluppata completamente in-house, specializzata in modelli di machine learning avanzati e algoritmi predittivi per l'elaborazione intelligente di big data complessi",
               },
               {
@@ -208,7 +208,7 @@ export default function Mission() {
             ].map((item, index) => (
               <div
                 key={index}
-                className="card-stagger p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-coldIndigo/30 transition-all duration-300 group"
+                className="card-stagger p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10 hover:border-coldIndigo/30 transition-all duration-300 group"
               >
                 <div className="text-4xl mb-4">{item.icon}</div>
                 <h4 className="text-xl font-semibold mb-3 text-coldIndigo dark:text-glacierBlue">
@@ -293,7 +293,7 @@ export default function Mission() {
             ].map((area, index) => (
               <div
                 key={index}
-                className="card-stagger p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-coldIndigo/30 transition-all duration-300 group"
+                className="card-stagger p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10 hover:border-coldIndigo/30 transition-all duration-300 group"
               >
                 <div className="text-3xl mb-4">{area.icon}</div>
                 <h4 className="text-lg font-semibold mb-3 text-coldIndigo dark:text-glacierBlue">
@@ -314,7 +314,7 @@ export default function Mission() {
           </h3>
           <div className="max-w-4xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+              <div className="p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10">
                 <h4 className="text-xl font-semibold mb-4 text-coldIndigo dark:text-glacierBlue">
                   Collaborazioni Strategiche
                 </h4>
@@ -324,7 +324,7 @@ export default function Mission() {
                   settore per produrre soluzioni personalizzate basate sui dati
                 </p>
               </div>
-              <div className="p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+              <div className="p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10">
                 <h4 className="text-xl font-semibold mb-4 text-coldIndigo dark:text-glacierBlue">
                   Studi Professionali
                 </h4>
@@ -386,12 +386,12 @@ export default function Mission() {
               {
                 icon: "🔬",
                 title: "R&D Interna",
-                desc: "Ricerca e sviluppo focalizzate su PolarAi e tecnologie proprietarie",
+                desc: "Ricerca e sviluppo focalizzate su PolarAi™ e tecnologie proprietarie",
               },
             ].map((cert, index) => (
               <div
                 key={index}
-                className="card-stagger text-center p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 hover:border-coldIndigo/30 transition-all duration-300"
+                className="card-stagger text-center p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10 hover:border-coldIndigo/30 transition-all duration-300"
               >
                 <div className="text-4xl mb-4">{cert.icon}</div>
                 <h4 className="text-lg font-semibold mb-3 text-coldIndigo dark:text-glacierBlue">

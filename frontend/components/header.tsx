@@ -23,7 +23,7 @@ export default function Header() {
   const navigation = [
     { label: "header.home", href: "/" },
     { label: "header.mission", href: "#mission" },
-    { label: "header.products", href: "/products" },
+    { label: "header.products", href: "/polardrive" },
     { label: "header.contacts", href: "#contacts" },
   ];
 

@@ -1,20 +1,20 @@
 {
   "app.title.home-mission-contacts": "Home | DataPolar",
   "app.title.products": "Prodotti | DataPolar",
-  "app.title.polardrive": "PolarDrive | DataPolar",
+  "app.title.polardrive": "PolarDrive™ | DataPolar",
 
   "header.home": "Home",
   "header.mission": "Mission",
-  "header.products": "Prodotti",
+  "header.products": "Polardrive™",
   "header.contacts": "Contatti",
 
-  "hero.title": "PolarDrive è il primo strumento fiscale basato su dati orari raccolti via Veicolo Fleet API. Automatizza, archivia e certifica l’uso esclusivo della tua auto aziendale.",
+  "hero.title": "PolarDrive™ è il primo strumento fiscale basato su dati orari raccolti via Veicolo Fleet API. Automatizza, archivia e certifica l’uso esclusivo della tua auto aziendale.",
   "hero.subtitle": "Immagina un mondo in cui ogni decisione aziendale sia guidata da dati intelligenti",
-  "hero.CTA": "Scopri PolarDrive",
+  "hero.CTA": "Scopri PolarDrive™",
 
   "mission.title": "La nostra missione",
   "mission.paragraph1": "In DataPolar crediamo che ogni azienda debba avere accesso a strumenti fiscali chiari, tracciabili e automatizzati. Vogliamo rendere semplice ciò che è complicato.",
-  "mission.paragraph2": "PolarDrive nasce da un'esigenza concreta: dimostrare con dati oggettivi l'uso aziendale di un'auto. Nessuna strategia borderline, solo trasparenza, sicurezza e automazione.",
+  "mission.paragraph2": "PolarDrive™ nasce da un'esigenza concreta: dimostrare con dati oggettivi l'uso aziendale di un'auto. Nessuna strategia borderline, solo trasparenza, sicurezza e automazione.",
 
   "contact.title": "Contattaci",
   "contact.description": "Cerchi un partner affidabile per progetti innovativi nel campo dell'AI? Contattaci per esplorare insieme le opportunità del futuro digitale",
@@ -33,7 +33,7 @@
   "products.subtitle": "Soluzioni tech per aziende orientate al futuro.",
   "products.polardrive.description": "Certifica l'utilizzo aziendale della tua Veicolo. 100% deducibile. 100% difendibile.",
 
-  "polardrive.title": "PolarDrive",
+  "polardrive.title": "PolarDrive™",
   "polardrive.subtitle": "La soluzione definitiva per la deducibilità al 100% della tua Veicolo aziendale.",
   "polardrive.benefits.title": "Vantaggi Fiscali",
   "polardrive.benefits.item1": "Massima deducibilità e detraibilità IVA",
@@ -43,7 +43,7 @@
   "polardrive.features.item1": "Raccolta dati oraria tramite Veicolo Fleet API",
   "polardrive.features.item2": "Report PDF automatici e personalizzati",
   "polardrive.features.item3": "Componente AI locale per sintesi visiva",
-  "polardrive.CTA": "Scopri come attivare PolarDrive",
+  "polardrive.CTA": "Scopri come attivare PolarDrive™",
   "polardrive.chips.deductible": "100% Fiscalmente Deducibile",
   "polardrive.chips.compatible": "Compatibile con Veicolo Fleet API",
   "polardrive.chips.gdpr": "Conforme GDPR e Auditabile",

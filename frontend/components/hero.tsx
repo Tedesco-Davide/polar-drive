@@ -43,7 +43,7 @@ export default function Hero() {
         }
       }, 100);
     }
-    router.push("/products/polardrive");
+    router.push("/polardrive");
   };
 
   return (

@@ -172,65 +172,65 @@ export default function Contacts() {
         </p>
 
         {/* Enhanced Form */}
-        <div className="bg-white/5 dark:bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 shadow-2xl">
+        <div className="bg-white/5 dark:bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-gray-300 dark:border-white/10 shadow-2xl">
           <form ref={formRef} className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="form-element space-y-2">
-                <label className="block text-sm font-semibold text-left text-coldIndigo">
+                <label className="block text-sm font-semibold text-left text-polarNight dark:text-glacierBlue">
                   {t("contact.label.name")}
                 </label>
                 <input
                   name="name"
                   type="text"
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-gray-300 dark:border-white/10 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
 
               <div className="form-element space-y-2">
-                <label className="block text-sm font-semibold text-left text-coldIndigo">
+                <label className="block text-sm font-semibold text-left text-polarNight dark:text-glacierBlue">
                   {t("contact.label.email")}
                 </label>
                 <input
                   name="email"
                   type="email"
                   required
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-gray-300 dark:border-white/10 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
 
               <div className="form-element space-y-2">
-                <label className="block text-sm font-semibold text-left text-coldIndigo">
+                <label className="block text-sm font-semibold text-left text-polarNight dark:text-glacierBlue">
                   {t("contact.label.company")}
                 </label>
                 <input
                   name="company"
                   type="text"
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-gray-300 dark:border-white/10 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
 
               <div className="form-element space-y-2">
-                <label className="block text-sm font-semibold text-left text-coldIndigo">
+                <label className="block text-sm font-semibold text-left text-polarNight dark:text-glacierBlue">
                   {t("contact.label.website")}
                 </label>
                 <input
                   name="website"
                   type="text"
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-gray-300 dark:border-white/10 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm"
                 />
               </div>
             </div>
 
             <div className="form-element space-y-2">
-              <label className="block text-sm font-semibold text-left text-coldIndigo">
+              <label className="block text-sm font-semibold text-left text-polarNight dark:text-glacierBlue">
                 {t("contact.label.message")}
               </label>
               <textarea
                 name="message"
                 rows={5}
                 required
-                className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-white/20 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm resize-none"
+                className="w-full px-4 py-3 rounded-xl bg-white/10 dark:bg-white/5 border border-gray-300 dark:border-white/10 text-polarNight dark:text-softWhite placeholder:text-polarNight/50 dark:placeholder:text-softWhite/50 focus:outline-none focus:ring-2 focus:ring-coldIndigo/50 focus:border-coldIndigo transition-all duration-300 backdrop-blur-sm resize-none"
               />
             </div>
 

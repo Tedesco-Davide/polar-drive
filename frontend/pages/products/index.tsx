@@ -36,7 +36,7 @@ export default function Products() {
     description:
       "Sistema avanzato di raccolta e analisi dati dei veicoli elettrici, basato su Intelligenza Artificiale proprietaria. Elaborazione locale, privacy garantita, risultati intelligenti con documentazione certificabile per ottimizzazione di spese aziendali e compliance normativa strutturata",
     image: "/logo/DataPolar_Logo_PolarDrive.png",
-    href: "/products/polardrive",
+    href: "/polardrive",
     highlights: [
       "🔒 100% GDPR Compliant con certificazioni per benefici economici",
       "🎯 Analisi predittive per investimenti qualificati e opportunità di business",
@@ -203,7 +203,7 @@ export default function Products() {
 
             {/* PolarDrive Product Card */}
             <div ref={productCardRef} className="mb-12">
-              <div className="bg-white/5 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-white/10 shadow-2xl">
+              <div className="bg-white/5 dark:bg-white/5 backdrop-blur-xl rounded-3xl p-8 md:p-12 border border-gray-300 shadow-2xl">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                   {/* Product Info */}
                   <div className="space-y-6">
@@ -243,7 +243,7 @@ export default function Products() {
 
                   {/* Product Image */}
                   <div className="relative">
-                    <div className="relative w-full h-40 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-white/10">
+                    <div className="relative w-full h-40 lg:h-96 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-2xl flex items-center justify-center backdrop-blur-sm border border-gray-300">
                       <div className="relative w-full h-full p-8">
                         <Image
                           src="/logo/PolarDrive_Logo.svg"

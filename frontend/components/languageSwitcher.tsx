@@ -17,7 +17,7 @@ export default function LanguageSwitcher() {
   };
 
   return (
-    <div className="xl:ml-[69px] flex space-x-4">
+    <div className="hidden md:flex xl:ml-[69px] items-center space-x-4">
       <button onClick={() => switchTo("it")} aria-label="Italiano">
         <Image src="/icons/flag-it.svg" alt="IT" width={24} height={16} />
       </button>
