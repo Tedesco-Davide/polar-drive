@@ -293,6 +293,43 @@ export default function PolarDrivePage() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
+      {/* SVG Background con Pattern Esagonale */}
+      <svg
+        className="fixed inset-0 w-screen h-screen z-0"
+        viewBox="0 0 1920 1080"
+        preserveAspectRatio="xMidYMid slice"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 0,
+        }}
+      >
+        <defs>
+          {/* Pattern esagonale per griglia tech */}
+          <pattern
+            id="hexGridMission"
+            width="100"
+            height="87"
+            patternUnits="userSpaceOnUse"
+          >
+            <polygon
+              points="50,0 93.3,25 93.3,62 50,87 6.7,62 6.7,25"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="1"
+              opacity="0.15"
+            />
+            <circle cx="50" cy="43.5" r="2" fill="#06b6d4" opacity="0.4" />
+          </pattern>
+        </defs>
+
+        {/* Griglia esagonale di sfondo */}
+        <rect width="100%" height="100%" fill="url(#hexGridMission)" />
+      </svg>
+
       {/* Particle System Background */}
       <div
         ref={particlesRef}
@@ -309,46 +346,6 @@ export default function PolarDrivePage() {
           ref={heroRef}
           className="relative w-full overflow-hidden min-h-screen flex items-center pt-16"
         >
-          {/* Background Migliorato */}
-          <div className="absolute inset-0 z-0">
-            {mounted && (
-              <>
-                {/* Grid Pattern Animato più elaborato */}
-                <div className="absolute inset-0 bg-[length:80px_80px] bg-[radial-gradient(circle_at_1px_1px,rgba(167,198,237,0.15)_1px,transparent_0)] animate-pulse" />
-
-                {/* Gradients originali potenziati */}
-                <div className="absolute inset-0 bg-glacierBlue/10 blur-3xl" />
-
-                {/* Orbs originali migliorati */}
-                <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] bg-gradient-radial from-coldIndigo/20 via-coldIndigo/10 to-transparent rounded-full blur-3xl animate-pulse" />
-                <div
-                  className="absolute bottom-1/3 right-1/4 w-[700px] h-[700px] bg-gradient-radial from-glacierBlue/20 via-glacierBlue/10 to-transparent rounded-full blur-3xl animate-pulse"
-                  style={{ animationDelay: "2s" }}
-                />
-
-                {/* Nuovi elementi decorativi */}
-                <div
-                  className="absolute top-1/2 left-1/4 w-[400px] h-[400px] bg-gradient-radial from-articWhite/5 to-transparent rounded-full blur-2xl animate-pulse"
-                  style={{ animationDelay: "4s" }}
-                />
-
-                {/* Elementi Geometrici Fluttuanti */}
-                <div
-                  className="absolute top-20 right-20 w-8 h-8 border border-coldIndigo/30 rotate-45 animate-spin"
-                  style={{ animationDuration: "20s" }}
-                />
-                <div
-                  className="absolute bottom-32 left-16 w-6 h-6 bg-glacierBlue/20 rounded-full animate-bounce"
-                  style={{ animationDelay: "1s", animationDuration: "3s" }}
-                />
-                <div
-                  className="absolute top-1/3 right-1/3 w-4 h-4 border-2 border-coldIndigo/40 rounded-full animate-ping"
-                  style={{ animationDelay: "2s" }}
-                />
-              </>
-            )}
-          </div>
-
           {/* Content */}
           <div className="relative z-20 container mx-auto pt-5 pb-20 lg:p-20">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
@@ -406,7 +403,7 @@ export default function PolarDrivePage() {
                   {/* Main product container */}
                   <div className="relative w-full h-64 md:h-80 lg:h-[26rem] bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-gray-300 dark:border-white/10 overflow-hidden lg:mb-0">
                     {/* Animated grid background */}
-                    <div className="absolute inset-0 bg-[length:40px_40px] bg-[linear-gradient(to_right,rgba(167,198,237,0.1)_1px,transparent_1px),linear-gradient(to_bottom,rgba(167,198,237,0.1)_1px,transparent_1px)] animate-pulse" />
+                    <div className="absolute inset-0 bg-[length:40px_40px] bg-[linear-gradient(to_right,rgba(59,130,246,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.15)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(167,198,237,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(167,198,237,0.08)_1px,transparent_1px)] animate-[gridPulse_4s_ease-in-out_infinite]" />
 
                     {/* Logo container identico all'originale */}
                     <div className="relative w-full h-full p-6 md:p-8">
@@ -608,14 +605,48 @@ export default function PolarDrivePage() {
               display: none;
             }
           }
+
+          @keyframes gridPulse {
+            0%,
+            100% {
+              opacity: 0.3;
+              transform: scale(1);
+            }
+            50% {
+              opacity: 0.6;
+              transform: scale(1.005);
+            }
+          }
+
+          /* Alternativa con movimento fluido */
+          @keyframes gridFloat {
+            0%,
+            100% {
+              opacity: 0.2;
+              background-position: 0 0, 0 0;
+            }
+            50% {
+              opacity: 0.5;
+              background-position: 20px 20px, 20px 20px;
+            }
+          }
+
+          /* Per un effetto più sottile */
+          @keyframes gridGlow {
+            0%,
+            100% {
+              opacity: 0.25;
+              filter: brightness(1);
+            }
+            50% {
+              opacity: 0.45;
+              filter: brightness(1.2);
+            }
+          }
         `}</style>
 
         {/* Vision Section */}
-        <section className="relative w-full overflow-hidden pt-10 pb-8 md:pt-24 md:pb-24 px-6">
-          <div className="absolute inset-0 z-0">
-            <div className="absolute top-1/4 right-1/3 w-[400px] h-[400px] rounded-full bg-glacierBlue/10 blur-3xl animate-pulse" />
-          </div>
-
+        <section className="relative w-full overflow-hidden pt-10 pb-8 md:pt-24 md:pb-24 px-6 ">
           <div className="relative z-20 max-w-5xl mx-auto text-center animate-on-scroll">
             <h2 className="text-3xl mud:text-5xl font-bold mb-8 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent">
               Il miglior alleato per la tua Evoluzione Aziendale
@@ -640,10 +671,6 @@ export default function PolarDrivePage() {
 
         {/* Benefits Section */}
         <section className="relative w-full overflow-hidden pt-5 pb-5 md:pt-24 md:pb-24 px-6">
-          <div className="absolute inset-0 z-0">
-            <div className="absolute top-1/3 left-1/4 w-[400px] h-[400px] rounded-full bg-coldIndigo/10 blur-3xl animate-pulse" />
-          </div>
-
           <div className="relative z-20 max-w-7xl mx-auto">
             <h2 className="text-3xl md:text-5xl font-bold text-center mb-12 md:mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
               I Benefici di PolarDrive™
@@ -745,7 +772,7 @@ export default function PolarDrivePage() {
 
               {/* Security */}
               <div className="animate-on-scroll">
-                <div className="p-8 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10">
+                <div className="h-full p-8 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10">
                   <div className="flex items-center mb-6">
                     <div className="w-12 h-12 mr-4 bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-xl flex items-center justify-center">
                       <Lock className="w-6 h-6 text-coldIndigo dark:text-glacierBlue" />
@@ -777,7 +804,7 @@ export default function PolarDrivePage() {
         {/* Final CTA Section */}
         <section className="relative w-full overflow-hidden py-24 px-6">
           <div className="absolute inset-0 z-0">
-            <div className="absolute inset-0 bg-gradient-to-br from-coldIndigo/10 via-glacierBlue/10 to-transparent" />
+            <div className="absolute inset-0" />
           </div>
 
           <div className="relative z-20 max-w-4xl mx-auto text-center animate-on-scroll">
