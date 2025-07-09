@@ -139,24 +139,44 @@ export default function Contacts() {
     <section
       ref={sectionRef}
       id="contacts"
-      className="relative w-full overflow-hidden py-12 px-6 scroll-mt-16"
+      className="relative w-full overflow-hidden py-12 px-6 scroll-mt-16 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-indigo-950 dark:via-blue-950 dark:to-indigo-900"
     >
-      {/* Animated Background */}
-      <div className="absolute inset-0 z-0">
-        {mounted && (
-          <div className="absolute inset-0 bg-gradient-to-br from-coldIndigo/10 via-glacierBlue/5 to-transparent" />
-        )}
-        <div className="absolute top-1/3 left-1/4 w-64 h-64 bg-coldIndigo/20 rounded-full blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-1/3 right-1/4 w-96 h-96 bg-glacierBlue/20 rounded-full blur-3xl animate-pulse"
-          style={{ animationDelay: "2s" }}
-        />
-      </div>
+      {/* SVG Background con Pattern Esagonale */}
+      <svg
+        className="fixed inset-0 w-screen h-screen z-0"
+        viewBox="0 0 1920 1080"
+        preserveAspectRatio="xMidYMid slice"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 0,
+        }}
+      >
+        <defs>
+          {/* Pattern esagonale per griglia tech */}
+          <pattern
+            id="hexGridMission"
+            width="100"
+            height="87"
+            patternUnits="userSpaceOnUse"
+          >
+            <polygon
+              points="50,0 93.3,25 93.3,62 50,87 6.7,62 6.7,25"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="1"
+              opacity="0.15"
+            />
+            <circle cx="50" cy="43.5" r="2" fill="#06b6d4" opacity="0.4" />
+          </pattern>
+        </defs>
 
-      {/* Grid Pattern */}
-      {mounted && (
-        <div className="absolute inset-0 z-5 bg-[length:40px_40px] bg-[radial-gradient(circle_at_1px_1px,rgba(92,77,225,0.1)_1px,transparent_0)] opacity-50" />
-      )}
+        {/* Griglia esagonale di sfondo */}
+        <rect width="100%" height="100%" fill="url(#hexGridMission)" />
+      </svg>
 
       {/* Content */}
       <div className="relative z-20 max-w-4xl mx-auto text-center text-polarNight dark:text-articWhite">

@@ -97,7 +97,7 @@ export default function Mission() {
     <section
       ref={sectionRef}
       id="mission"
-      className="relative w-full overflow-hidden py-12 px-6 scroll-mt-16 bg-gradient-to-bl from-slate-50 via-blue-50 to-indigo-100 dark:from-indigo-900 dark:via-blue-950 dark:to-indigo-950"
+      className="relative w-full overflow-hidden py-12 px-6 scroll-mt-16 bg-gradient-to-bl from-indigo-100 via-blue-50 to-slate-50 dark:from-indigo-900 dark:via-blue-950 dark:to-indigo-950"
     >
       {/* SVG Background con Pattern Esagonale */}
       <svg
@@ -178,7 +178,8 @@ export default function Mission() {
             { number: 5, suffix: "★", label: "Rating Sicurezza" },
           ].map((stat, index) => (
             <div key={index} className="text-center card-stagger">
-              <div className="p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10 hover:border-coldIndigo/30 transition-all duration-300">
+              <div className="h-full flex flex-col justify-center p-6 bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-xl border border-gray-300 dark:border-white/10 hover:border-coldIndigo/30 transition-all duration-300">
+                {" "}
                 <div className="text-3xl md:text-4xl font-bold text-coldIndigo dark:text-glacierBlue mb-2">
                   <span className="counter" data-target={stat.number}>
                     {stat.number}
