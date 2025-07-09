@@ -86,23 +86,6 @@ export default function Hero() {
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
-
-          {/* Pattern esagonale per griglia tech */}
-          <pattern
-            id="hexGrid"
-            width="100"
-            height="87"
-            patternUnits="userSpaceOnUse"
-          >
-            <polygon
-              points="50,0 93.3,25 93.3,62 50,87 6.7,62 6.7,25"
-              fill="none"
-              stroke="#3b82f6"
-              strokeWidth="1"
-              opacity="0.15"
-            />
-            <circle cx="50" cy="43.5" r="2" fill="#06b6d4" opacity="0.4" />
-          </pattern>
         </defs>
 
         {/* Griglia esagonale di sfondo */}
@@ -484,7 +467,7 @@ export default function Hero() {
         {/* Icone tech animate */}
         <div className="absolute top-[25%] right-[12%] w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-blue-500 opacity-50 animate-bounce" />
         <div className="absolute bottom-[30%] left-[20%] w-10 h-10 rounded-xl bg-gradient-to-br from-orange-400 to-red-500 opacity-40 animate-pulse" />
-        <div className="absolute top-[40%] right-[25%] w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 opacity-70 animate-ping" />
+        <div className="absolute top-[40%] right-[25%] w-4 h-4 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 opacity-10 animate-ping" />
         <div className="absolute bottom-[20%] right-[15%] w-6 h-6 rounded-lg bg-gradient-to-br from-purple-400 to-pink-500 opacity-50 animate-bounce" />
 
         {/* Elementi geometrici */}

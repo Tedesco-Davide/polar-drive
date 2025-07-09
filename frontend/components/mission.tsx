@@ -97,33 +97,48 @@ export default function Mission() {
     <section
       ref={sectionRef}
       id="mission"
-      className="relative w-full overflow-hidden py-24 px-6 scroll-mt-16"
+      className="relative w-full overflow-hidden py-12 px-6 scroll-mt-16 bg-gradient-to-bl from-slate-50 via-blue-50 to-indigo-100 dark:from-indigo-900 dark:via-blue-950 dark:to-indigo-950"
     >
-      {/* Background Gradient Enhanced */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-polarNight/5 via-coldIndigo/5 dark:from-articWhite/5 dark:via-coldIndigo/15 dark:to-transparent" />
-        <div className="absolute top-1/4 left-1/3 w-[600px] h-[600px] rounded-full bg-coldIndigo/15 blur-3xl animate-pulse" />
-        <div
-          className="absolute bottom-1/4 right-1/3 w-[800px] h-[800px] rounded-full bg-glacierBlue/10 blur-3xl animate-pulse"
-          style={{ animationDelay: "3s" }}
-        />
-      </div>
-
-      {/* Floating Grid Pattern */}
-      <div className="absolute inset-0 z-5 opacity-20">
-        <div className="grid grid-cols-8 gap-2 h-full">
-          {Array.from({ length: 64 }).map((_, i) => (
-            <div
-              key={i}
-              className="bg-gradient-to-br from-coldIndigo/3 to-glacierBlue/3 rounded backdrop-blur-sm"
-              style={{
-                animationDelay: `${i * 0.05}s`,
-                animation: "pulse 6s ease-in-out infinite",
-              }}
+      {/* SVG Background con Pattern Esagonale */}
+      <svg
+        className="fixed inset-0 w-screen h-screen z-0"
+        viewBox="0 0 1920 1080"
+        preserveAspectRatio="xMidYMid slice"
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100vw",
+          height: "100vh",
+          zIndex: 0,
+        }}
+      >
+        <defs>
+          {/* Pattern esagonale per griglia tech */}
+          <pattern
+            id="hexGridMission"
+            width="100"
+            height="87"
+            patternUnits="userSpaceOnUse"
+          >
+            <polygon
+              points="50,0 93.3,25 93.3,62 50,87 6.7,62 6.7,25"
+              fill="none"
+              stroke="#3b82f6"
+              strokeWidth="1"
+              opacity="0.15"
             />
-          ))}
-        </div>
-      </div>
+            <circle cx="50" cy="43.5" r="2" fill="#06b6d4" opacity="0.4" />
+          </pattern>
+        </defs>
+
+        {/* Griglia esagonale di sfondo */}
+        <rect width="100%" height="100%" fill="url(#hexGridMission)" />
+      </svg>
+
+      {/* Background Gradient Enhanced - RIMOSSO (sostituito dal gradient nel className principale) */}
+
+      {/* Floating Grid Pattern - RIMOSSO (sostituito dalla griglia esagonale SVG) */}
 
       <div className="relative z-20 max-w-7xl mx-auto">
         {/* Chi Siamo */}
@@ -425,18 +440,6 @@ export default function Mission() {
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 0.2;
-          }
-          50% {
-            opacity: 0.6;
-          }
-        }
-      `}</style>
     </section>
   );
 }
