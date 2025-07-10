@@ -1,6 +1,5 @@
 import { GetStaticProps } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
-import { useTranslation } from "next-i18next";
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import { gsap } from "gsap";
@@ -18,7 +17,6 @@ if (typeof window !== "undefined") {
 }
 
 export default function Home() {
-  const { t } = useTranslation("header");
   const router = useRouter();
   const particlesRef = useRef<HTMLDivElement>(null);
 
@@ -91,8 +89,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>{t("meta.title")}</title>
-        <meta name="description" content={t("meta.description")} />
+        <title>DataPolar</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
 

@@ -15,7 +15,7 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { t } = useTranslation("header");
+  const { t, ready } = useTranslation("header"); // ✅ Aggiunto 'ready'
   const router = useRouter();
   const headerRef = useRef<HTMLHeadElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -93,6 +93,82 @@ export default function Header() {
     }
   };
 
+  // ✅ Funzione per ottenere il testo con fallback
+  const getNavigationText = (label: string) => {
+    if (!ready) {
+      // Fallback statico durante il caricamento
+      switch (label) {
+        case "header.home":
+          return "Home";
+        case "header.mission":
+          return "Mission";
+        case "header.polardrive":
+          return "PolarDrive™";
+        case "header.contacts":
+          return "Contattaci";
+        default:
+          return "";
+      }
+    }
+    return t(label);
+  };
+
+  // ✅ Se non è montato, mostra un placeholder che matcha il server
+  if (!mounted) {
+    return (
+      <header className="fixed top-0 left-0 w-full z-[100] bg-articWhite/20 dark:bg-polarNight/20 backdrop-blur-md border-b border-white/20 dark:border-white/10 text-polarNight dark:text-articWhite transition-all duration-300">
+        <div className="container px-6 flex h-16 items-center justify-between">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2 group">
+            <div className="relative">
+              <Image
+                src="/logo/DataPolar_Logo.svg"
+                alt="DataPolar Logo"
+                width={35}
+                height={35}
+                priority
+              />
+            </div>
+            <div className="relative overflow-hidden">
+              <Image
+                src="/logo/DataPolar_Lettering.svg"
+                alt="DataPolar Lettering"
+                width={125}
+                height={30}
+                priority
+              />
+            </div>
+          </Link>
+
+          {/* Desktop Navigation - placeholder */}
+          <nav className="hidden md:flex items-center gap-8">
+            {navigation.map((item) => (
+              <div
+                key={item.label}
+                className="relative text-sm font-semibold text-polarNight/90 dark:text-articWhite/90 px-3 py-2"
+              >
+                {getNavigationText(item.label)}
+              </div>
+            ))}
+          </nav>
+
+          {/* Right section - placeholder */}
+          <div className="flex items-center space-x-3">
+            <div className="opacity-0">
+              <LanguageSwitcher />
+            </div>
+            <div className="p-2.5 rounded-xl border border-white/20 dark:border-white/10 opacity-0">
+              <div className="w-5 h-5" />
+            </div>
+            <div className="md:hidden p-2.5 rounded-xl border border-white/20 dark:border-white/10 opacity-0">
+              <div className="w-6 h-6" />
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header
       ref={headerRef}
@@ -150,7 +226,8 @@ export default function Header() {
                 className="relative text-sm font-semibold text-polarNight/90 dark:text-articWhite/90 hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 group px-3 py-2 rounded-lg hover:bg-white/20 dark:hover:bg-white/10"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                {t(item.label)}
+                {getNavigationText(item.label)}{" "}
+                {/* ✅ Usa la funzione con fallback */}
                 <span className="absolute -bottom-1 left-3 w-0 h-0.5 bg-gradient-to-r from-coldIndigo to-glacierBlue transition-all duration-300 group-hover:w-[calc(100%-1.5rem)] rounded-full" />
               </a>
             ) : (
@@ -160,7 +237,8 @@ export default function Header() {
                 className="relative text-sm font-semibold text-polarNight/90 dark:text-articWhite/90 hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 group px-3 py-2 rounded-lg hover:bg-white/20 dark:hover:bg-white/10"
                 style={{ animationDelay: `${index * 0.1}s` }}
               >
-                {t(item.label)}
+                {getNavigationText(item.label)}{" "}
+                {/* ✅ Usa la funzione con fallback */}
                 <span className="absolute -bottom-1 left-3 w-0 h-0.5 bg-gradient-to-r from-coldIndigo to-glacierBlue transition-all duration-300 group-hover:w-[calc(100%-1.5rem)] rounded-full" />
               </Link>
             );
@@ -244,7 +322,8 @@ export default function Header() {
                 onClick={handleClick}
                 className="mobile-nav-item block text-base font-semibold text-polarNight dark:text-articWhite hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 py-3 px-4 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 border border-transparent hover:border-coldIndigo/20 dark:hover:border-glacierBlue/20"
               >
-                {t(item.label)}
+                {getNavigationText(item.label)}{" "}
+                {/* ✅ Usa la funzione con fallback */}
               </a>
             );
           })}

@@ -3,6 +3,7 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import { logFrontendEvent } from "@/utils/logger";
 import { useState } from "react";
+import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 
 export default function LanguageSwitcher() {
   const router = useRouter();
@@ -31,8 +32,14 @@ export default function LanguageSwitcher() {
         // ✅ Ripristina la posizione di scroll dopo il cambio lingua
         setTimeout(() => {
           window.scrollTo(0, scrollPosition);
+
+          // ✅ Forza il refresh di tutti i ScrollTrigger dopo il cambio lingua
+          if (typeof window !== "undefined" && ScrollTrigger) {
+            ScrollTrigger.refresh();
+          }
+
           setIsChanging(false);
-        }, 100);
+        }, 200); // ✅ Aumentato il timeout per dare più tempo al DOM
       })
       .catch(() => {
         setIsChanging(false);

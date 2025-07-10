@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useTranslation } from "next-i18next";
+import { useRouter } from "next/router";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 import { logFrontendEvent } from "@/utils/logger";
@@ -13,6 +14,7 @@ if (typeof window !== "undefined") {
 
 export default function Contacts() {
   const { t } = useTranslation("contacts");
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -24,48 +26,88 @@ export default function Contacts() {
     logFrontendEvent("ContactsForm", "INFO", "Contacts form mounted");
   }, []);
 
+  // ✅ Nuovo useEffect che si attiva quando cambia la lingua
   useEffect(() => {
-    if (mounted && titleRef.current && formRef.current) {
-      // Title animation
-      gsap.fromTo(
-        titleRef.current,
-        { opacity: 0, y: 50 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: titleRef.current,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse",
-          },
+    if (mounted) {
+      // Pulisce le animazioni esistenti
+      ScrollTrigger.getAll().forEach((trigger) => {
+        if (
+          trigger.trigger === titleRef.current ||
+          trigger.trigger === formRef.current
+        ) {
+          trigger.kill();
         }
-      );
+      });
 
-      // Form animation
-      const formElements = formRef.current.querySelectorAll(".form-element");
-      gsap.fromTo(
-        formElements,
-        { opacity: 0, y: 30, rotationX: 15 },
-        {
-          opacity: 1,
-          y: 0,
-          rotationX: 0,
-          duration: 0.8,
-          ease: "power3.out",
-          stagger: 0.1,
-          scrollTrigger: {
-            trigger: formRef.current,
-            start: "top 80%",
-            end: "bottom 20%",
-            toggleActions: "play none none reverse",
-          },
-        }
-      );
+      // Reinizializza le animazioni
+      setTimeout(() => {
+        initializeAnimations();
+      }, 100);
     }
-  }, [mounted]);
+  }, [mounted, router.locale]); // ✅ Aggiunto router.locale come dipendenza
+
+  const initializeAnimations = () => {
+    if (!titleRef.current || !formRef.current) return;
+
+    // Reset degli stili iniziali
+    gsap.set(titleRef.current, { opacity: 0, y: 50 });
+    gsap.set(formRef.current.querySelectorAll(".form-element"), {
+      opacity: 0,
+      y: 30,
+      rotationX: 15,
+    });
+
+    // Title animation
+    gsap.to(titleRef.current, {
+      opacity: 1,
+      y: 0,
+      duration: 0.8,
+      ease: "power3.out",
+      scrollTrigger: {
+        trigger: titleRef.current,
+        start: "top 80%",
+        end: "bottom 20%",
+        toggleActions: "play none none reverse",
+        refreshPriority: 1, // ✅ Priorità alta per il refresh
+      },
+    });
+
+    // Form animation
+    const formElements = formRef.current.querySelectorAll(".form-element");
+    gsap.to(formElements, {
+      opacity: 1,
+      y: 0,
+      rotationX: 0,
+      duration: 0.8,
+      ease: "power3.out",
+      stagger: 0.1,
+      scrollTrigger: {
+        trigger: formRef.current,
+        start: "top 80%",
+        end: "bottom 20%",
+        toggleActions: "play none none reverse",
+        refreshPriority: 1, // ✅ Priorità alta per il refresh
+      },
+    });
+  };
+
+  // ✅ Cleanup più robusto
+  useEffect(() => {
+    // Cattura i valori correnti delle ref
+    const titleElement = titleRef.current;
+    const formElement = formRef.current;
+
+    return () => {
+      ScrollTrigger.getAll().forEach((trigger) => {
+        if (
+          trigger.trigger === titleElement ||
+          trigger.trigger === formElement
+        ) {
+          trigger.kill();
+        }
+      });
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
