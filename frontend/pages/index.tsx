@@ -18,7 +18,7 @@ if (typeof window !== "undefined") {
 }
 
 export default function Home() {
-  const { t } = useTranslation("");
+  const { t } = useTranslation("header");
   const router = useRouter();
   const particlesRef = useRef<HTMLDivElement>(null);
 
@@ -91,11 +91,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>{t("app.title.home-mission-contacts")}</title>
-        <meta
-          name="description"
-          content="DataPolar - Startup Innovativa per lo sviluppo di prodotti e servizi ad alto valore tecnologico"
-        />
+        <title>{t("meta.title")}</title>
+        <meta name="description" content={t("meta.description")} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
 

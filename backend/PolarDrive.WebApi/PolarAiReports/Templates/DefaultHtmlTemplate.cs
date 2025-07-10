@@ -7,7 +7,7 @@ public static class DefaultHtmlTemplate
 <head>
     <meta charset=""utf-8"" />
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
-    <title>PolarDrive Report {{reportId}}</title>
+    <title>PolarDrive™ Report {{reportId}}</title>
     {{styles}}
 </head>
 <body>
@@ -19,7 +19,7 @@ public static class DefaultHtmlTemplate
                 <img src=""data:image/png;base64,{{logoBase64}}"" alt=""Logo Aziendale"" class=""logo"" />
             </div>
             {{/if}}
-            <h1 class=""report-title"">PolarDrive Report</h1>
+            <h1 class=""report-title"">PolarDrive™ Report</h1>
             <div class=""report-id"">Report ID: {{reportId}}</div>
         </header>
 
@@ -77,8 +77,8 @@ public static class DefaultHtmlTemplate
         <!-- Footer -->
         <footer class=""report-footer footer"">
             <div class=""footer-content"">
-                <p>Report generato da PolarDrive v{{reportVersion}} - {{generatedAt}}</p>
-                <p class=""company-info"">DataPolar SRLS - Startup Innovativa</p>
+                <p>Report generato da PolarDrive™™ v{{reportVersion}} - {{generatedAt}}</p>
+                <p class=""company-info"">DataPolar - The future is now</p>
             </div>
         </footer>
     </div>
