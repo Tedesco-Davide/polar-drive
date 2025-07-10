@@ -2,6 +2,7 @@
 
 import { GetStaticProps } from "next";
 import { serverSideTranslations } from "next-i18next/serverSideTranslations";
+import { useTranslation } from "next-i18next";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { gsap } from "gsap";
@@ -38,6 +39,7 @@ if (typeof window !== "undefined") {
 }
 
 export default function PolarDrivePage() {
+  const { t } = useTranslation("polardrive");
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
@@ -48,102 +50,91 @@ export default function PolarDrivePage() {
   const benefits = [
     {
       icon: Brain,
-      title: "Analisi automatizzate e continuative",
-      description:
-        "Grazie a un motore AI-based, i dati raccolti vengono elaborati e sintetizzati in report periodici intelligenti, pronti per essere utilizzati in contesti operativi, amministrativi o decisionali che richiedono documentazione certificata",
+      title: t("benefits.automated_analysis.title"),
+      description: t("benefits.automated_analysis.description"),
     },
     {
       icon: Battery,
-      title: "Supporto alla transizione ecologica",
-      description:
-        "I dati aggregati contribuiscono a individuare aree di miglioramento energetico, ottimizzare i percorsi, limitare le emissioni indirette e favorire l'adozione di comportamenti qualificabili per incentivi e agevolazioni a basso impatto",
+      title: t("benefits.ecological_transition.title"),
+      description: t("benefits.ecological_transition.description"),
     },
     {
       icon: Radar,
-      title: "Monitoraggio avanzato del territorio",
-      description:
-        "Ottenuto mappando in modo dinamico il comportamento dei veicoli elettrici connessi, fornendo insight preziosi per la progettazione urbana sostenibile, le reti infrastrutturali, i punti di ricarica e l'identificazione di opportunità economiche strategiche legate all'evoluzione delle abitudini di spostamento",
+      title: t("benefits.territory_monitoring.title"),
+      description: t("benefits.territory_monitoring.description"),
     },
     {
       icon: Shield,
-      title: "Protezione e anonimizzazione totale",
-      description:
-        "Ogni dato viene trattato secondo i più rigorosi standard europei. Il sistema è GDPR-proof by design e genera documentazione che soddisfa requisiti normativi specifici per trasparenza e tracciabilità",
+      title: t("benefits.data_protection.title"),
+      description: t("benefits.data_protection.description"),
     },
     {
       icon: FileText,
-      title: "Valore documentale",
-      description:
-        "Generando documentazione certificabile strategicamente rilevante per supportare audit, rendicontazioni, e attività conformi a normative di settore con implicazioni economiche vantaggiose, in ottica di trasparenza e tracciabilità",
+      title: t("benefits.document_value.title"),
+      description: t("benefits.document_value.description"),
     },
     {
       icon: TrendingUp,
-      title: "Intelligence predittiva avanzata",
-      description:
-        "Algoritmi di machine learning elaborano pattern comportamentali per prevedere tendenze operative future e identificare inefficienze nascoste. Le analisi predittive facilitano investimenti strategici qualificati e supportano la pianificazione di lungo termine con vantaggi competitivi documentabili",
+      title: t("benefits.predictive_intelligence.title"),
+      description: t("benefits.predictive_intelligence.description"),
     },
   ];
 
   const targetAudience = [
     {
       icon: Building2,
-      title: "Comparti industriali e logistici",
-      description: "Efficienza operativa e controllo della supply chain",
+      title: t("target_audience.industrial_logistics.title"),
+      description: t("target_audience.industrial_logistics.description"),
     },
     {
       icon: Zap,
-      title: "Servizi di mobilità sostenibile",
-      description:
-        "Tecnologie intelligenti per l'ecosistema della mobilità green",
+      title: t("target_audience.sustainable_mobility.title"),
+      description: t("target_audience.sustainable_mobility.description"),
     },
     {
       icon: Truck,
-      title: "Gestori e fornitori di flotte elettriche",
-      description: "Monitoraggio e ottimizzazione delle flotte aziendali",
+      title: t("target_audience.fleet_managers.title"),
+      description: t("target_audience.fleet_managers.description"),
     },
     {
       icon: Landmark,
-      title: "Comuni, province, enti pubblici e privati",
-      description: "Raccolta dati territoriali per decisioni strategiche",
+      title: t("target_audience.public_entities.title"),
+      description: t("target_audience.public_entities.description"),
     },
     {
       icon: Briefcase,
-      title: "Holdings e gruppi societari",
-      description:
-        "Soluzioni scalabili per diversificazione strategica e gestione integrata multi-business",
+      title: t("target_audience.holdings.title"),
+      description: t("target_audience.holdings.description"),
     },
     {
       icon: Users,
-      title: "Società di investimento e fondi",
-      description:
-        "Intelligence data-driven per portafogli sostenibili con performance economiche ottimizzate",
+      title: t("target_audience.investment_companies.title"),
+      description: t("target_audience.investment_companies.description"),
     },
     {
       icon: Crown,
-      title: "Grandi corporazioni e multinazionali",
-      description:
-        "Strategie ESG integrate con impatti patrimoniali misurabili e strutturati",
+      title: t("target_audience.corporations.title"),
+      description: t("target_audience.corporations.description"),
     },
     {
       icon: Gem,
-      title: "Family office e gestioni patrimoniali",
-      description:
-        "Veicoli di investimento green con gestione patrimoniale efficiente e trasparente",
+      title: t("target_audience.family_office.title"),
+      description: t("target_audience.family_office.description"),
     },
   ];
 
   const complianceFeatures = [
-    "Conformità al Regolamento GDPR (art. 5, 6, 25, 32, 35)",
-    "Protezione dei dati by design, con minimizzazione e anonimizzazione integrata",
-    "Trattamento delle informazioni esclusivamente in forma aggregata e cifrata",
-    "Raccolta e conservazione dei consensi secondo standard verificabili e certificabili",
+    t("compliance.gdpr_conformity"),
+    t("compliance.data_protection_design"),
+    t("compliance.aggregated_treatment"),
+    t("compliance.consent_collection"),
   ];
 
   const securityFeatures = [
-    "Tutte le interazioni sono cifrate con protocolli end-to-end",
-    "Il motore di raccolta è progettato per essere leggero, isolato e sicuro",
-    "Policy di cyber hygiene per ridurre i rischi digitali associati alla mobilità connessa",
-    "Protezione dall'esposizione involontaria a violazioni o trattamenti impropri",
+    t("security.encrypted_interactions"),
+    t("security.lightweight_engine"),
+    t("security.cyber_hygiene"),
+    t("security.protection_violations"),
   ];
 
   useEffect(() => {
@@ -165,50 +156,61 @@ export default function PolarDrivePage() {
 
   useEffect(() => {
     if (mounted) {
-      // Animate elements on scroll
-      gsap.utils
-        .toArray<Element>(".animate-on-scroll")
-        .forEach((element: Element) => {
-          gsap.fromTo(
-            element,
-            { opacity: 0, y: 50 },
-            {
-              opacity: 1,
-              y: 0,
-              duration: 0.8,
-              ease: "power3.out",
-              scrollTrigger: {
-                trigger: element,
-                start: "top 85%",
-                end: "bottom 15%",
-                toggleActions: "play none none reverse",
-              },
-            }
-          );
-        });
+      // ✅ Pulisce tutti i trigger esistenti prima di crearne di nuovi
+      ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
 
-      // Staggered animations for cards
-      gsap.utils
-        .toArray<Element>(".card-stagger")
-        .forEach((element: Element, index: number) => {
-          gsap.fromTo(
-            element,
-            { opacity: 0, y: 30, scale: 0.95 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              duration: 0.6,
-              ease: "back.out(1.2)",
-              delay: index * 0.1,
-              scrollTrigger: {
-                trigger: element,
-                start: "top 85%",
-                toggleActions: "play none none reverse",
-              },
-            }
-          );
-        });
+      // ✅ Aspetta un frame per assicurarsi che il DOM sia pronto
+      requestAnimationFrame(() => {
+        // Animate elements on scroll
+        gsap.utils
+          .toArray<Element>(".animate-on-scroll")
+          .forEach((element: Element) => {
+            gsap.fromTo(
+              element,
+              { opacity: 0, y: 50 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: element,
+                  start: "top 85%",
+                  end: "bottom 15%",
+                  toggleActions: "play none none reverse",
+                  refreshPriority: -1, // ✅ Priorità per il refresh
+                },
+              }
+            );
+          });
+
+        // Staggered animations for cards
+        gsap.utils
+          .toArray<Element>(".card-stagger")
+          .forEach((element: Element, index: number) => {
+            gsap.fromTo(
+              element,
+              { opacity: 0, y: 30, scale: 0.95 },
+              {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                duration: 0.6,
+                ease: "back.out(1.2)",
+                delay: index * 0.1,
+                scrollTrigger: {
+                  trigger: element,
+                  start: "top 85%",
+                  toggleActions: "play none none reverse",
+                  refreshPriority: -1, // ✅ Priorità per il refresh
+                },
+              }
+            );
+          });
+
+        // ✅ Refresh ScrollTrigger dopo aver impostato tutti i trigger
+        ScrollTrigger.refresh();
+      });
 
       // Hero animations
       if (titleRef.current && quoteRef.current) {
@@ -236,7 +238,31 @@ export default function PolarDrivePage() {
         );
       }
     }
-  }, [mounted]);
+  }, [mounted, router.locale]);
+
+  // ✅ Nuovo useEffect per gestire i cambi di rotta
+  useEffect(() => {
+    const handleRouteChange = () => {
+      // Aspetta che il contenuto sia caricato prima di refresh
+      setTimeout(() => {
+        ScrollTrigger.refresh();
+      }, 100);
+    };
+
+    router.events.on("routeChangeComplete", handleRouteChange);
+
+    return () => {
+      router.events.off("routeChangeComplete", handleRouteChange);
+    };
+  }, [router]);
+
+  // ✅ useEffect separato per monitorare i cambi di locale
+  useEffect(() => {
+    // Refresh ScrollTrigger quando la locale cambia
+    setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 200);
+  }, [router.locale]);
 
   const createParticleSystem = () => {
     if (!particlesRef.current) return;
@@ -281,14 +307,8 @@ export default function PolarDrivePage() {
   return (
     <>
       <Head>
-        <title>
-          PolarDrive™ - Piattaforma Intelligente per Mobilità Sostenibile |
-          DataPolar
-        </title>
-        <meta
-          name="description"
-          content="PolarDrive™: la piattaforma intelligente che trasforma il movimento in conoscenza. Gestione automatizzata di veicoli elettrici connessi per analisi di sostenibilità e efficienza energetica."
-        />
+        <title>{t("meta.title")}</title>
+        <meta name="description" content={t("meta.description")} />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -368,10 +388,7 @@ export default function PolarDrivePage() {
                       <span className="text-6xl text-coldIndigo/30 absolute -top-4 -left-2">
                         &quot;
                       </span>
-                      Il tramite per un futuro del pianeta migliore, che
-                      trasforma il movimento in conoscenza. Un futuro in cui
-                      ogni veicolo elettrico diventa un centro di intelligenza
-                      attiva
+                      {t("hero.quote")}
                       <span className="text-6xl text-coldIndigo/30 absolute -bottom-8 right-0">
                         &quot;
                       </span>
@@ -383,11 +400,7 @@ export default function PolarDrivePage() {
                   {/* Paragrafo principale in card con testo identico */}
                   <div className="relative p-6 bg-gradient-to-r from-white/10 to-white/5 backdrop-blur-sm rounded-2xl border border-gray-300 dark:border-white/10">
                     <p className="text-lg md:text-xl leading-relaxed text-polarNight/90 dark:text-articWhite/90">
-                      Ogni percorso, ogni interazione con l&apos;ambiente, ogni
-                      istante operativo viene trasformato in dati oggettivi.
-                      Dati che aiutano a prendere decisioni più consapevoli, a
-                      migliorare l&apos;impatto ambientale, ed a rendere le
-                      aziende più efficienti e trasparenti
+                      {t("hero.description")}
                     </p>
                   </div>
                 </div>
@@ -396,12 +409,12 @@ export default function PolarDrivePage() {
               {/* Product Image migliorata */}
               <div className="relative mt-8 lg:mt-0">
                 {/* Container principale con effetti avanzati */}
-                <div className="relative">
+                <div className="relative h-full">
                   {/* Background glow effect */}
                   <div className="absolute inset-0 bg-gradient-to-br from-coldIndigo/30 to-glacierBlue/30 rounded-3xl blur-2xl animate-pulse" />
 
                   {/* Main product container */}
-                  <div className="relative w-full h-64 md:h-80 lg:h-[26rem] bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-gray-300 dark:border-white/10 overflow-hidden lg:mb-0">
+                  <div className="relative w-full h-64 md:h-80 lg:h-full bg-gradient-to-br from-coldIndigo/20 to-glacierBlue/20 rounded-3xl flex items-center justify-center backdrop-blur-sm border border-gray-300 dark:border-white/10 overflow-hidden lg:mb-0">
                     {/* Animated grid background */}
                     <div className="absolute inset-0 bg-[length:40px_40px] bg-[linear-gradient(to_right,rgba(59,130,246,0.15)_1px,transparent_1px),linear-gradient(to_bottom,rgba(59,130,246,0.15)_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,rgba(167,198,237,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(167,198,237,0.08)_1px,transparent_1px)] animate-[gridPulse_4s_ease-in-out_infinite]" />
 
@@ -454,7 +467,7 @@ export default function PolarDrivePage() {
                       AI
                     </div>
                     <div className="text-xs text-polarNight/60 dark:text-articWhite/60">
-                      Powered
+                      {t("hero.ai_powered")}
                     </div>
                   </div>
                 </div>
@@ -467,34 +480,22 @@ export default function PolarDrivePage() {
               <div className="relative border border-coldIndigo/20 bg-white/5 backdrop-blur-sm rounded-3xl p-8">
                 <div className="flex items-center gap-4 mb-6">
                   <h2 className="text-2xl md:text-3xl font-bold text-coldIndigo dark:text-glacierBlue">
-                    Cos&apos;è PolarDrive™
+                    {t("what_is.title")}
                   </h2>
                 </div>
 
                 <div className="space-y-4 text-base md:text-lg leading-relaxed text-polarNight/80 dark:text-articWhite/80">
                   <p className="flex items-start gap-3">
                     <span className="w-2 h-2 bg-coldIndigo rounded-full mt-3 flex-shrink-0" />
-                    E&lsquo; una piattaforma intelligente sviluppata da
-                    DataPolar per la gestione automatizzata di veicoli elettrici
-                    connessi, utilizzati per la raccolta, analisi e
-                    valorizzazione di dati ambientali, operativi e logistici
+                    {t("what_is.point1")}
                   </p>
                   <p className="flex items-start gap-3">
                     <span className="w-2 h-2 bg-glacierBlue rounded-full mt-3 flex-shrink-0" />
-                    Integrandosi direttamente con le principali piattaforme API
-                    ufficiali di veicoli elettrici di nuova generazione,
-                    trasforma ogni dispositivo mobile compatibile in una fonte
-                    costante di dati strutturati, raccolti con cadenza continua
-                    ed utilizzabili per analisi di efficienza energetica,
-                    sostenibilità, pianificazione strategica digitale e
-                    territoriale avanzate
+                    {t("what_is.point2")}
                   </p>
                   <p className="flex items-start gap-3">
                     <span className="w-2 h-2 bg-coldIndigo rounded-full mt-3 flex-shrink-0" />
-                    Attraverso l&apos;automazione totale della raccolta e la
-                    generazione ricorrente di report intelligenti, PolarDrive™
-                    consente una tracciabilità completa e certificabile delle
-                    dinamiche operative legate alla mobilità elettrica
+                    {t("what_is.point3")}
                   </p>
                 </div>
               </div>
@@ -649,21 +650,15 @@ export default function PolarDrivePage() {
         <section className="relative w-full overflow-hidden pt-10 pb-8 md:pt-24 md:pb-24 px-6 ">
           <div className="relative z-20 max-w-5xl mx-auto text-center animate-on-scroll">
             <h2 className="text-3xl mud:text-5xl font-bold mb-8 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent">
-              Il miglior alleato per la tua Evoluzione Aziendale
+              {t("vision.title")}
             </h2>
 
             <div className="p-8 bg-gradient-to-r from-coldIndigo/10 to-glacierBlue/10 backdrop-blur-sm rounded-3xl border border-coldIndigo/20">
               <p className="text-xl md:text-2xl font-semibold text-polarNight dark:text-articWhite mb-6">
-                Trasformiamo insieme i dati per un&apos;economia più
-                trasparente, efficiente e sostenibile
+                {t("vision.subtitle")}
               </p>
               <p className="text-lg leading-relaxed text-polarNight/80 dark:text-articWhite/80">
-                Con PolarDrive™ qualunque attività svolta da un veicolo
-                elettrico connesso, diventa parte di un ecosistema intelligente,
-                in cui ogni chilometro percorso, ogni sosta, ogni condizione
-                operativa viene tracciata in tempo reale per generare valore
-                informativo, migliorare i processi e contribuire a un impatto
-                ambientale positivo
+                {t("vision.description")}
               </p>
             </div>
           </div>
@@ -673,7 +668,7 @@ export default function PolarDrivePage() {
         <section className="relative w-full overflow-hidden pt-5 pb-5 md:pt-24 md:pb-24 px-6">
           <div className="relative z-20 max-w-7xl mx-auto">
             <h2 className="text-3xl md:text-5xl font-bold text-center mb-12 md:mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
-              I Benefici di PolarDrive™
+              {t("benefits.title")}
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -704,13 +699,11 @@ export default function PolarDrivePage() {
         <section className="relative w-full overflow-hidden pt-10 pb-8 md:pt-24 md:pb-24 px-6">
           <div className="relative z-20 max-w-6xl mx-auto">
             <h2 className="text-3xl md:text-5xl font-bold text-center mb-12 md:mb-16 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll">
-              A chi è rivolto PolarDrive™
+              {t("target_audience.title")}
             </h2>
 
             <p className="text-lg text-center mb-12 text-polarNight/80 dark:text-articWhite/80 max-w-4xl mx-auto animate-on-scroll">
-              Progettato per essere integrato in ogni business, in cui veicoli
-              elettrici connessi vogliano essere utilizzati come parte
-              operativa, strategica o analitica dei processi aziendali
+              {t("target_audience.description")}
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -749,13 +742,11 @@ export default function PolarDrivePage() {
                       <Award className="w-6 h-6 text-coldIndigo dark:text-glacierBlue" />
                     </div>
                     <h3 className="text-2xl font-bold text-coldIndigo dark:text-glacierBlue">
-                      Legalità e conformità al centro
+                      {t("compliance.title")}
                     </h3>
                   </div>
                   <p className="text-polarNight/80 dark:text-articWhite/80 mb-6">
-                    PolarDrive™ è progettato per operare in pieno allineamento
-                    con le più recenti normative europee su privacy, ambiente e
-                    tecnologie digitali
+                    {t("compliance.description")}
                   </p>
                   <ul className="space-y-3">
                     {complianceFeatures.map((feature, index) => (
@@ -778,12 +769,11 @@ export default function PolarDrivePage() {
                       <Lock className="w-6 h-6 text-coldIndigo dark:text-glacierBlue" />
                     </div>
                     <h3 className="text-2xl font-bold text-coldIndigo dark:text-glacierBlue">
-                      Cybersecurity e integrità operativa
+                      {t("security.title")}
                     </h3>
                   </div>
                   <p className="text-polarNight/80 dark:text-articWhite/80 mb-6">
-                    PolarDrive™ non è solo raccolta dati: è anche protezione
-                    delle infrastrutture informative mobili
+                    {t("security.description")}
                   </p>
                   <ul className="space-y-3">
                     {securityFeatures.map((feature, index) => (
@@ -811,19 +801,16 @@ export default function PolarDrivePage() {
             <div className="p-12 bg-gradient-to-r from-coldIndigo/20 to-glacierBlue/20 backdrop-blur-sm rounded-3xl border border-coldIndigo/30">
               <Compass className="w-16 h-16 mx-auto mb-6 text-coldIndigo dark:text-glacierBlue" />
               <h3 className="text-3xl md:text-4xl font-bold mb-6 text-coldIndigo dark:text-glacierBlue">
-                Naviga con DataPolar verso il futuro ed ottimizza le tue risorse
+                {t("cta.title")}
               </h3>
               <p className="text-lg text-polarNight/80 dark:text-articWhite/80 mb-8 max-w-2xl mx-auto">
-                Scopri come PolarDrive™ può convertire le tue spese operative in
-                investimenti intelligenti con ritorni misurabili e vantaggi
-                economici strutturati. <br /> La partnership che ridefinisce il
-                ROI della tua organizzazione
+                {t("cta.description")}
               </p>
               <button
                 onClick={scrollToContacts}
                 className="inline-flex items-center gap-3 px-10 py-5 bg-coldIndigo text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-coldIndigo/30 group"
               >
-                <span>Diventa Partner</span>
+                <span>{t("cta.button")}</span>
                 <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
               </button>
             </div>
@@ -837,7 +824,10 @@ export default function PolarDrivePage() {
 export const getStaticProps: GetStaticProps = async ({ locale }) => {
   return {
     props: {
-      ...(await serverSideTranslations(locale ?? "it", ["common"])),
+      ...(await serverSideTranslations(locale ?? "it", [
+        "common",
+        "polardrive",
+      ])),
     },
   };
 };
