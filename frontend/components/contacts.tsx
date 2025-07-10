@@ -12,7 +12,7 @@ if (typeof window !== "undefined") {
 }
 
 export default function Contacts() {
-  const { t } = useTranslation();
+  const { t } = useTranslation("contacts");
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -128,8 +128,8 @@ export default function Contacts() {
         "Failed to submit contact form",
         err instanceof Error ? err.message : String(err)
       );
-      console.error(t("admin.genericApiError"), err);
-      alert(err instanceof Error ? err.message : t("admin.genericApiError"));
+      console.error(t("contact.error.generic"), err);
+      alert(err instanceof Error ? err.message : t("contact.error.generic"));
     } finally {
       setLoading(false);
     }

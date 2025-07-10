@@ -1,9 +1,11 @@
 "use client";
 
+import { useTranslation } from "next-i18next";
 import { useEffect, useState, useRef } from "react";
 import router from "next/router";
 
 export default function Hero() {
+  const { t } = useTranslation("hero");
   const [mounted, setMounted] = useState(false);
   const heroRef = useRef<HTMLElement>(null);
   const quoteRef = useRef<HTMLParagraphElement>(null);
@@ -478,13 +480,12 @@ export default function Hero() {
         <div className="absolute top-[85%] right-[30%] w-5 h-5 rotate-12 bg-gradient-to-br from-indigo-400 to-purple-500 opacity-45 animate-pulse" />
       </div>
 
-      {/* Content - MANTENUTO IDENTICO */}
+      {/* Content con traduzioni */}
       <div className="relative z-20 container mx-auto px-6 text-center lg:mt-24">
         {/* Citazione in evidenza */}
         <div className="text-center mb-8">
           <blockquote className="text-2xl md:text-4xl font-light italic text-coldIndigo dark:text-[#b0c4de] mb-6">
-            &quot;Immagina un mondo in cui ogni decisione aziendale sia guidata
-            da dati intelligenti&quot;
+            &quot;{t("hero.quote")}&quot;
           </blockquote>
         </div>
 
@@ -493,9 +494,9 @@ export default function Hero() {
           ref={titleRef}
           className="text-4xl md:text-6xl lg:text-7xl font-bold mb-20 leading-tight"
         >
-          <span className="text-slate-400">Benvenuto in </span>
+          <span className="text-slate-400">{t("hero.welcome")} </span>
           <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-400 bg-clip-text text-transparent bg-[length:200%_100%] animate-gradient-shift">
-            DataPolar
+            {t("hero.company_name")}
           </span>
         </h1>
 
@@ -505,7 +506,7 @@ export default function Hero() {
           onClick={handleCtaClick}
           className="mb-20 inline-flex items-center gap-3 px-10 py-5 bg-coldIndigo text-white font-semibold rounded-full transition-all duration-300 hover:scale-105 hover:shadow-xl hover:shadow-blue-500/30 cursor-pointer group"
         >
-          <span>Scopri PolarDrive™</span>
+          <span>{t("hero.cta_button")}</span>
         </div>
       </div>
 

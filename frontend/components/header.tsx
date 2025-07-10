@@ -15,7 +15,7 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { t } = useTranslation();
+  const { t } = useTranslation("header");
   const router = useRouter();
   const headerRef = useRef<HTMLHeadElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
@@ -23,7 +23,7 @@ export default function Header() {
   const navigation = [
     { label: "header.home", href: "/" },
     { label: "header.mission", href: "#mission" },
-    { label: "header.products", href: "/polardrive" },
+    { label: "header.polardrive", href: "/polardrive" },
     { label: "header.contacts", href: "#contacts" },
   ];
 

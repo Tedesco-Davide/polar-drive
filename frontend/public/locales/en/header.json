@@ -1,0 +1,12 @@
+{
+  "meta": {
+    "title": "DataPolar - Navigation | Innovative Startup",
+    "description": "Navigate DataPolar website: discover our mission, PolarDrive™ and contact us to transform your data into competitive advantage."
+  },
+  "header": {
+    "home": "Home",
+    "mission": "Mission",
+    "polardrive": "PolarDrive™",
+    "contacts": "Contact Us"
+  }
+}
