@@ -222,9 +222,12 @@ export default function PolarDrivePage() {
           <link rel="icon" href="/favicon.ico" />
         </Head>
 
+        {/* AGGIUNGI QUESTO GRADIENTE ANCHE QUI! */}
+        <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-900 z-0" />
+
         {/* SVG Background */}
         <svg
-          className="fixed inset-0 w-screen h-screen z-0"
+          className="fixed inset-0 w-screen h-screen z-10"
           viewBox="0 0 1920 1080"
           preserveAspectRatio="xMidYMid slice"
           style={{
@@ -233,7 +236,7 @@ export default function PolarDrivePage() {
             left: 0,
             width: "100vw",
             height: "100vh",
-            zIndex: 0,
+            zIndex: 10,
           }}
         >
           <defs>
@@ -245,7 +248,7 @@ export default function PolarDrivePage() {
             >
               <polygon
                 points="50,0 93.3,25 93.3,62 50,87 6.7,62 6.7,25"
-                fill="none"
+                fill="transparent"
                 stroke="#3b82f6"
                 strokeWidth="1"
                 opacity="0.15"
@@ -259,39 +262,8 @@ export default function PolarDrivePage() {
         {/* Particle System Background */}
         <div
           ref={particlesRef}
-          className="fixed inset-0 pointer-events-none z-0"
-          style={{ zIndex: 1 }}
+          className="fixed inset-0 pointer-events-none z-20"
         />
-
-        {/* Header e Loading Content */}
-        <div className="relative z-10">
-          <Header />
-
-          {/* Loading content skeleton */}
-          <div className="min-h-screen flex items-center pt-16">
-            <div className="container mx-auto pt-5 pb-20 lg:p-20">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12">
-                {/* Text Content skeleton */}
-                <div className="space-y-8">
-                  <div className="space-y-4">
-                    <div className="w-80 h-16 bg-gray-300 dark:bg-gray-600 rounded-2xl animate-pulse" />
-                    <div className="space-y-3">
-                      <div className="w-full h-6 bg-gray-300 dark:bg-gray-600 rounded animate-pulse" />
-                      <div className="w-3/4 h-6 bg-gray-300 dark:bg-gray-600 rounded animate-pulse" />
-                      <div className="w-5/6 h-6 bg-gray-300 dark:bg-gray-600 rounded animate-pulse" />
-                    </div>
-                  </div>
-                  <div className="w-full h-32 bg-gray-300 dark:bg-gray-600 rounded-2xl animate-pulse" />
-                </div>
-
-                {/* Product Image skeleton */}
-                <div className="relative mt-8 lg:mt-0">
-                  <div className="w-full h-64 md:h-80 lg:h-full bg-gray-300 dark:bg-gray-600 rounded-3xl animate-pulse" />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
       </>
     );
   }
@@ -395,6 +367,8 @@ export default function PolarDrivePage() {
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
+      <div className="fixed inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-900 z-0" />
+
       {/* SVG Background */}
       <svg
         className="fixed inset-0 w-screen h-screen z-0"
@@ -418,7 +392,7 @@ export default function PolarDrivePage() {
           >
             <polygon
               points="50,0 93.3,25 93.3,62 50,87 6.7,62 6.7,25"
-              fill="none"
+              fill="transparent"
               stroke="#3b82f6"
               strokeWidth="1"
               opacity="0.15"
@@ -432,12 +406,11 @@ export default function PolarDrivePage() {
       {/* Particle System Background */}
       <div
         ref={particlesRef}
-        className="fixed inset-0 pointer-events-none z-0"
-        style={{ zIndex: 1 }}
+        className="fixed inset-0 pointer-events-none z-20"
       />
 
       {/* Main Content */}
-      <div className="relative z-10">
+      <div className="relative z-30">
         <Header />
 
         {/* Hero Section */}
@@ -575,7 +548,7 @@ export default function PolarDrivePage() {
         {/* Vision Section */}
         <section className="relative w-full overflow-hidden pt-10 pb-8 md:pt-24 md:pb-24 px-6">
           <div className="relative z-20 max-w-5xl mx-auto text-center animate-on-scroll">
-            <h2 className="text-3xl md:text-5xl font-bold mb-8 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent">
+            <h2 className="text-3xl md:leading-relaxed md:text-5xl font-bold mb-8 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent">
               {t("vision.title")}
             </h2>
 
@@ -659,6 +632,12 @@ export default function PolarDrivePage() {
         {/* Compliance Section */}
         <section className="relative w-full overflow-hidden pt-5 pb-20 md:pt-24 md:pb-24 px-6">
           <div className="relative z-20 max-w-6xl mx-auto">
+            <h2 className="text-3xl md:leading-relaxed md:text-5xl font-bold text-center mb-12 md:mb-12 bg-gradient-to-r from-coldIndigo to-glacierBlue bg-clip-text text-transparent animate-on-scroll leading-6">
+              {t("compliance.card_title")}
+            </h2>
+            <p className="text-lg text-center mb-12 text-polarNight/80 dark:text-articWhite/80 max-w-4xl mx-auto animate-on-scroll">
+              {t("compliance.card_desciption")}
+            </p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
               {/* Legal Compliance */}
               <div className="animate-on-scroll">

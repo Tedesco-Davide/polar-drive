@@ -53,7 +53,7 @@ export default function Hero() {
       ref={heroRef}
       className="relative w-full overflow-hidden min-h-screen flex items-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-950 dark:via-blue-950 dark:to-indigo-900"
     >
-      {/* SVG Background Completamente Nuovo */}
+      {/* SVG Background */}
       <svg
         ref={svgRef}
         className="absolute inset-0 w-full h-full z-0"

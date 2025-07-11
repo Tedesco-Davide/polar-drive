@@ -83,7 +83,9 @@
     }
   },
   "compliance": {
-    "title": "Legality and compliance at the center",
+    "card_title": "European Regulatory Compliance",
+    "card_desciption": "A native solution for European regulatory compliance, designed from the ground up to meet GDPR and technological standards",
+    "title": "Legality at the center",
     "description": "PolarDrive™ is designed to operate in full alignment with the latest European regulations on privacy, environment and digital technologies",
     "gdpr_conformity": "Compliance with GDPR Regulation (art. 5, 6, 25, 32, 35)",
     "data_protection_design": "Data protection by design, with integrated minimization and anonymization",

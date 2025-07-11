@@ -96,7 +96,7 @@ export default function Header() {
   // ✅ Funzione per ottenere il testo con fallback sicuro
   const getNavigationText = (label: string) => {
     if (!ready) {
-      // Fallback statico durante il caricamento
+      const isItalian = router.locale === "it";
       switch (label) {
         case "header.home":
           return "Home";
@@ -105,7 +105,7 @@ export default function Header() {
         case "header.polardrive":
           return "PolarDrive™";
         case "header.contacts":
-          return "Contatti";
+          return isItalian ? "Contatti" : "Contacts";
         default:
           return "";
       }
@@ -113,9 +113,19 @@ export default function Header() {
     return t(label);
   };
 
+  useEffect(() => {
+    if (ready && mounted) {
+      const timer = setTimeout(() => {
+        setMenuOpen(false);
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [ready, router.locale, mounted]);
+
   // ✅ Renderizza sempre l'header, ma con fallback per i testi
   return (
     <header
+      key={`header-${router.locale}-${ready}`}
       ref={headerRef}
       className="fixed top-0 left-0 w-full z-[100] bg-articWhite/20 dark:bg-polarNight/20 backdrop-blur-md border-b border-white/20 dark:border-white/10 text-polarNight dark:text-articWhite transition-all duration-300"
     >
