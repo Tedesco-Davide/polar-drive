@@ -865,6 +865,7 @@ export const getStaticProps: GetStaticProps = async ({ locale }) => {
     props: {
       ...(await serverSideTranslations(locale ?? "it", [
         "common",
+        "header",
         "polardrive",
       ])),
     },
