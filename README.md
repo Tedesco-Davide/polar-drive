@@ -1,29 +1,27 @@
 # PolarDrive 🚗❄️
 
-Repository unificato per il progetto **PolarDrive**.
+Repository backend per il progetto **PolarDrive**.
 
 ---
 
 ## ⚙️ Comandi
 
-### 🔷 FRONTEND GENERICO
-
-_(Tasto destro sulla cartella `frontend` → Open in integrated Terminal)_
-
-- `npm run dev` → Avvio classico in dev
-- `npm lista` → Visualizza tutti i pacchetti installati
-- `npm i` → Reinstalla tutti i pacchetti
-
----
-
 ### 🔶 BACKEND GENERICO
 
 _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 
+#### **🚀 SVILUPPO (Development)**
+
 - `dotnet build` → Rebuild completo della soluzione
 - `dotnet run --project PolarDriveInitDB.Cli` → Crea un nuovo DB da zero nella cartella `PolarDriveInitDB.Cli`
-- `dotnet run --project PolarDriveInitDBMockData.Cli` → Aggiunge dati di mock al DB creato
-- `dotnet run --project PolarDrive.WebApi` → Avvia la WebAPI principale
+- `dotnet run --project PolarDriveInitDBMockData.Cli` → Aggiunge dati di mock al DB creato (opzionale)
+- `dotnet run --project PolarDrive.WebApi` → Avvia la WebAPI principale in modalità sviluppo
+
+#### **📦 PRODUZIONE (Production)**
+
+- `dotnet build --configuration Release` → Build ottimizzata per produzione
+- `dotnet run --project PolarDriveInitDB.Cli --configuration Release` → Crea DB (produzione)
+- `dotnet run --project PolarDrive.WebApi --configuration Release` → Avvia WebAPI in produzione
 
 ---
 
