@@ -6,6 +6,16 @@ Repository backend per il progetto **PolarDrive**.
 
 ## ⚙️ Comandi
 
+### 🔷 FRONTEND POLARDRIVE ADMIN
+
+_(Tasto destro sulla cartella `frontend` → Open in integrated Terminal)_
+
+#### **🚀 SVILUPPO (Development)**
+
+- `npm i` → Installa/reinstalla tutti i pacchetti
+- `npm run dev` → Avvio in modalità sviluppo (hot reload, debug attivo)
+- `npm list` → Visualizza tutti i pacchetti installati
+
 ### 🔶 BACKEND GENERICO
 
 _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
