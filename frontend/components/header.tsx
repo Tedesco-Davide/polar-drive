@@ -5,9 +5,9 @@ import { useTheme } from "next-themes";
 import { Sun, Moon, Menu, X } from "lucide-react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
+import { gsap } from "gsap";
 import Link from "next/link";
 import Image from "next/image";
-import { gsap } from "gsap";
 import LanguageSwitcher from "./languageSwitcher";
 
 export default function Header() {
@@ -15,17 +15,10 @@ export default function Header() {
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const { t, ready } = useTranslation("header");
+  const { ready } = useTranslation("header");
   const router = useRouter();
   const headerRef = useRef<HTMLHeadElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-
-  const navigation = [
-    { label: "header.home", href: "/" },
-    { label: "header.mission", href: "#mission" },
-    { label: "header.polardrive", href: "/polardrive" },
-    { label: "header.contacts", href: "#contacts" },
-  ];
 
   useEffect(() => {
     setMounted(true);
@@ -93,26 +86,6 @@ export default function Header() {
     }
   };
 
-  // ✅ Funzione per ottenere il testo con fallback sicuro
-  const getNavigationText = (label: string) => {
-    if (!ready) {
-      const isItalian = router.locale === "it";
-      switch (label) {
-        case "header.home":
-          return "Home";
-        case "header.mission":
-          return "Mission";
-        case "header.polardrive":
-          return "PolarDrive™";
-        case "header.contacts":
-          return isItalian ? "Contatti" : "Contacts";
-        default:
-          return "";
-      }
-    }
-    return t(label);
-  };
-
   useEffect(() => {
     if (ready && mounted) {
       const timer = setTimeout(() => {
@@ -129,7 +102,7 @@ export default function Header() {
       ref={headerRef}
       className="fixed top-0 left-0 w-full z-[100] bg-articWhite/20 dark:bg-polarNight/20 backdrop-blur-md border-b border-white/20 dark:border-white/10 text-polarNight dark:text-articWhite transition-all duration-300"
     >
-      <div className="container px-6 flex h-16 items-center justify-between">
+      <div className="px-6 flex h-16 items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2 group">
           <div className="relative">
@@ -151,52 +124,6 @@ export default function Header() {
             />
           </div>
         </Link>
-
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-8">
-          {navigation.map((item, index) => {
-            const isAnchor = item.href.startsWith("#");
-            const anchorTarget = item.href;
-
-            const handleClick = (e: React.MouseEvent) => {
-              if (isAnchor) {
-                e.preventDefault();
-                const targetPath = `/${anchorTarget}`;
-                if (router.pathname !== "/") {
-                  router.push(targetPath);
-                } else {
-                  const element = document.querySelector(anchorTarget);
-                  if (element) {
-                    element.scrollIntoView({ behavior: "smooth" });
-                  }
-                }
-              }
-            };
-
-            return isAnchor ? (
-              <a
-                key={item.label}
-                href={`/${anchorTarget}`}
-                onClick={handleClick}
-                className="relative text-sm font-semibold text-polarNight/90 dark:text-articWhite/90 hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 group px-3 py-2 rounded-lg hover:bg-white/20 dark:hover:bg-white/10"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                {getNavigationText(item.label)}
-                <span className="absolute -bottom-1 left-3 w-0 h-0.5 bg-gradient-to-r from-coldIndigo to-glacierBlue transition-all duration-300 group-hover:w-[calc(100%-1.5rem)] rounded-full" />
-              </a>
-            ) : (
-              <Link
-                key={item.label}
-                href={item.href}
-                className="relative text-sm font-semibold text-polarNight/90 dark:text-articWhite/90 hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 group px-3 py-2 rounded-lg hover:bg-white/20 dark:hover:bg-white/10"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                {getNavigationText(item.label)}
-                <span className="absolute -bottom-1 left-3 w-0 h-0.5 bg-gradient-to-r from-coldIndigo to-glacierBlue transition-all duration-300 group-hover:w-[calc(100%-1.5rem)] rounded-full" />
-              </Link>
-            );
-          })}
-        </nav>
 
         {/* Right section */}
         <div className="flex items-center space-x-3">
@@ -244,51 +171,6 @@ export default function Header() {
               )}
             </div>
           </button>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      <div
-        ref={mobileMenuRef}
-        className={`md:hidden absolute top-full left-0 w-full transition-all duration-300 ease-in-out ${
-          menuOpen ? "opacity-100 visible" : "opacity-0 invisible"
-        } bg-articWhite/95 dark:bg-polarNight/95 backdrop-blur-xl border-t border-white/20 dark:border-white/10`}
-      >
-        <div className="px-6 py-6 space-y-3">
-          {navigation.map((item) => {
-            const isAnchor = item.href.startsWith("#");
-            const anchorTarget = item.href;
-
-            const handleClick = (e: React.MouseEvent) => {
-              e.preventDefault();
-              setMenuOpen(false);
-
-              if (isAnchor) {
-                const targetPath = `/${anchorTarget}`;
-                if (router.pathname !== "/") {
-                  router.push(targetPath);
-                } else {
-                  const element = document.querySelector(anchorTarget);
-                  if (element) {
-                    element.scrollIntoView({ behavior: "smooth" });
-                  }
-                }
-              } else {
-                router.push(item.href);
-              }
-            };
-
-            return (
-              <a
-                key={item.label}
-                href={isAnchor ? `/${anchorTarget}` : item.href}
-                onClick={handleClick}
-                className="mobile-nav-item block text-base font-semibold text-polarNight dark:text-articWhite hover:text-coldIndigo dark:hover:text-glacierBlue transition-all duration-300 py-3 px-4 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 border border-transparent hover:border-coldIndigo/20 dark:hover:border-glacierBlue/20"
-              >
-                {getNavigationText(item.label)}
-              </a>
-            );
-          })}
         </div>
       </div>
 

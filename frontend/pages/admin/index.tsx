@@ -472,7 +472,7 @@ export default function AdminDashboard() {
                 {activeTab === "ComingSoon" && (
                   <div>
                     <p className="text-xl text-gray-600 dark:text-softWhite">
-                      Contenuti per futuro prodotto
+                      Stay tuned!
                     </p>
                   </div>
                 )}
