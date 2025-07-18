@@ -16,7 +16,7 @@ _(Tasto destro sulla cartella `frontend` → Open in integrated Terminal)_
 - `npm run dev` → Avvio in modalità sviluppo (hot reload, debug attivo)
 - `npm list` → Visualizza tutti i pacchetti installati
 
-### 🔶 BACKEND GENERICO
+### 🔶 BACKEND PolarAi
 
 _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 
@@ -52,10 +52,6 @@ _(Tasto destro sulla cartella `backend/PolarDrive.TeslaMockApiService` → Open 
   > Simula i dati Tesla e li invia automaticamente alla WebAPI principale per test e sviluppo.
 
 ---
-
-### 🧠 BACKEND PolarAi
-
-_(Tasto destro sulla cartella `backend/PolarDrive.WebApi` → Open in integrated Terminal)_
 
 #### ✅ Ollama
 
