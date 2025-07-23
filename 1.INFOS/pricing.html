@@ -220,6 +220,10 @@
         background: #f8f9fa;
       }
 
+      .white-space-pre {
+        white-space: pre;
+      }
+
       .highlight {
         font-weight: 700;
         color: #27ae60;
@@ -229,7 +233,7 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>🚗 PolarDrive</h1>
+        <h1>PolarDrive</h1>
         <p>Sistema di Pricing</p>
       </div>
 
@@ -240,7 +244,7 @@
           </h2>
 
           <div style="margin-bottom: 20px">
-            <h3 style="color: #2c3e50; margin-bottom: 15px">🚗 Model 3</h3>
+            <h3 style="color: #2c3e50; margin-bottom: 15px">Model 3</h3>
             <div class="vehicle-grid">
               <div
                 class="vehicle-option"
@@ -278,7 +282,7 @@
           </div>
 
           <div style="margin-bottom: 20px">
-            <h3 style="color: #2c3e50; margin-bottom: 15px">🚙 Model Y</h3>
+            <h3 style="color: #2c3e50; margin-bottom: 15px">Model Y</h3>
             <div class="vehicle-grid">
               <div
                 class="vehicle-option"
@@ -708,8 +712,8 @@
           .map(
             (result) => `
                 <tr>
-                    <td><strong>${result.tierName}</strong></td>
-                    <td>${result.descrizione}</td>
+                    <td class="white-space-pre"><strong>${result.tierName}</strong></td>
+                    <td class="white-space-pre">${result.descrizione}</td>
                     <td class="highlight">${result.totalIva}</td>
                     <td class="highlight">${result.total}</td>
                     <td class="highlight">${result.monthlyIva}</td>
