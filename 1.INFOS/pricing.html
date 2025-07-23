@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PolarDrive - Sistema di Pricing</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      .header {
+        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      .header h1 {
+        font-size: 2.5em;
+        margin-bottom: 10px;
+        font-weight: 300;
+      }
+
+      .content {
+        padding: 40px;
+      }
+
+      .vehicle-selector {
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 15px;
+        margin-bottom: 30px;
+      }
+
+      .vehicle-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .vehicle-option {
+        background: white;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+      }
+
+      .vehicle-option:hover {
+        border-color: #3498db;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
+      }
+
+      .vehicle-option.selected {
+        border-color: #3498db;
+        background: #f0f8ff;
+      }
+
+      .vehicle-name {
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 5px;
+      }
+
+      .vehicle-price {
+        color: #27ae60;
+        font-size: 1.2em;
+        font-weight: 700;
+      }
+
+      .tier-section {
+        margin-bottom: 40px;
+      }
+
+      .tier-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 30px;
+        margin-top: 20px;
+      }
+
+      .tier-card {
+        border-radius: 15px;
+        padding: 30px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .tier-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: inherit;
+        opacity: 0.9;
+        z-index: 1;
+      }
+
+      .tier-content {
+        position: relative;
+        z-index: 2;
+      }
+
+      .tier-gold {
+        background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+      }
+
+      .tier-platinum {
+        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
+      }
+
+      .tier-title {
+        font-size: 1.8em;
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .tier-description {
+        margin-bottom: 20px;
+        opacity: 0.9;
+        line-height: 1.5;
+      }
+
+      .pricing-breakdown {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin-top: 20px;
+      }
+
+      .price-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .price-item:last-child {
+        border-bottom: none;
+        font-weight: 700;
+        font-size: 1.2em;
+        margin-top: 10px;
+      }
+
+      .monthly-fee {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 15px;
+        border-radius: 8px;
+        text-align: center;
+        margin-top: 15px;
+      }
+
+      .monthly-fee .amount {
+        font-size: 2em;
+        font-weight: 700;
+        display: block;
+      }
+
+      .results-section {
+        background: #f8f9fa;
+        padding: 30px;
+        border-radius: 15px;
+        margin-top: 30px;
+      }
+
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #e9ecef;
+      }
+
+      .comparison-table th {
+        background: #2c3e50;
+        color: white;
+        font-weight: 600;
+      }
+
+      .comparison-table tr:hover {
+        background: #f8f9fa;
+      }
+
+      .highlight {
+        font-weight: 700;
+        color: #27ae60;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>🚗 PolarDrive</h1>
+        <p>Sistema di Pricing</p>
+      </div>
+
+      <div class="content">
+        <div class="vehicle-selector">
+          <h2 style="color: #2c3e50; margin-bottom: 20px">
+            📋 Seleziona Configurazione Tesla
+          </h2>
+
+          <div style="margin-bottom: 20px">
+            <h3 style="color: #2c3e50; margin-bottom: 15px">🚗 Model 3</h3>
+            <div class="vehicle-grid">
+              <div
+                class="vehicle-option"
+                data-canone="569"
+                data-nome="Model 3 - Trazione posteriore"
+              >
+                <div class="vehicle-name">Trazione posteriore</div>
+                <div class="vehicle-price">€569/mese</div>
+              </div>
+              <div
+                class="vehicle-option selected"
+                data-canone="619"
+                data-nome="Model 3 - Long Range posteriore"
+              >
+                <div class="vehicle-name">Long Range posteriore</div>
+                <div class="vehicle-price">€619/mese</div>
+              </div>
+              <div
+                class="vehicle-option"
+                data-canone="849"
+                data-nome="Model 3 - Long Range integrale"
+              >
+                <div class="vehicle-name">Long Range integrale</div>
+                <div class="vehicle-price">€849/mese</div>
+              </div>
+              <div
+                class="vehicle-option"
+                data-canone="989"
+                data-nome="Model 3 - Performance integrale"
+              >
+                <div class="vehicle-name">Performance integrale</div>
+                <div class="vehicle-price">€989/mese</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 20px">
+            <h3 style="color: #2c3e50; margin-bottom: 15px">🚙 Model Y</h3>
+            <div class="vehicle-grid">
+              <div
+                class="vehicle-option"
+                data-canone="669"
+                data-nome="Model Y - Trazione posteriore"
+              >
+                <div class="vehicle-name">Trazione posteriore</div>
+                <div class="vehicle-price">€669/mese</div>
+              </div>
+              <div
+                class="vehicle-option"
+                data-canone="529"
+                data-nome="Model Y - Long Range posteriore"
+              >
+                <div class="vehicle-name">Long Range posteriore</div>
+                <div class="vehicle-price">€529/mese</div>
+              </div>
+              <div
+                class="vehicle-option"
+                data-canone="779"
+                data-nome="Model Y - Long Range integrale"
+              >
+                <div class="vehicle-name">Long Range integrale</div>
+                <div class="vehicle-price">€779/mese</div>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              margin-top: 30px;
+              padding-top: 20px;
+              border-top: 1px solid #e9ecef;
+            "
+          >
+            <h3 style="color: #2c3e50; margin-bottom: 15px">
+              ⚙️ Parametri Commissione
+            </h3>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+              "
+            >
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >🥇 Commissione Gold (%)</label
+                >
+                <input
+                  type="number"
+                  id="gold-percentage"
+                  value="50"
+                  min="1"
+                  max="100"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="calculateTier('gold')"
+                />
+                <small style="color: #6c757d; margin-top: 5px"
+                  >% del delta fiscale (40% → 100%)</small
+                >
+              </div>
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >💎 Commissione Platinum (%)</label
+                >
+                <input
+                  type="number"
+                  id="platinum-percentage"
+                  value="80"
+                  min="1"
+                  max="100"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="calculateTier('platinum')"
+                />
+                <small style="color: #6c757d; margin-top: 5px"
+                  >% del risparmio totale (0% → 100%)</small
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tier-section">
+          <h2 style="color: #2c3e50; margin-bottom: 20px">
+            💎 Tier di Clienti PolarDrive
+          </h2>
+
+          <div class="tier-cards">
+            <div class="tier-card tier-gold">
+              <div class="tier-content">
+                <div class="tier-title">🥇 GOLD</div>
+                <div class="tier-description">
+                  Cliente nuovo che inizia un leasing completo, ma che può già
+                  ottenere un'auto aziendale con deduzione e detrazione al 40%
+                </div>
+
+                <div class="pricing-breakdown">
+                  <h4 style="margin-bottom: 15px">💰 Calcolo Guadagno</h4>
+                  <div class="price-item">
+                    <span>Da:</span>
+                    <span>40% deducibilità → 100%</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Formula:</span>
+                    <span id="gold-formula-display">50% × Delta completo</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Durata:</span>
+                    <span>48 mesi completi</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Tuo guadagno + IVA:</span>
+                    <span id="gold-total-iva">€ 0</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Risparmio Cliente:</span>
+                    <span id="gold-cliente-total">€ 0</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Tuo guadagno (IVA esclusa):</span>
+                    <span id="gold-total">€ 0</span>
+                  </div>
+                </div>
+
+                <div class="monthly-fee">
+                  <small>Guadagno mensile (+ IVA)</small>
+                  <span class="amount" id="gold-monthly-iva">€ 0</span>
+                  <small style="display: block; margin-top: 5px"
+                    >IVA esclusa: <span id="gold-monthly">€ 0</span></small
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="tier-card tier-platinum">
+              <div class="tier-content">
+                <div class="tier-title">💎 PLATINUM</div>
+                <div class="tier-description">
+                  Cliente nuovo che inizia un leasing completo, che non può
+                  ottenere un'auto aziendale (nessuna deduzione o detrazione
+                  fiscale).
+                </div>
+
+                <div class="pricing-breakdown">
+                  <h4 style="margin-bottom: 15px">💰 Calcolo Guadagno</h4>
+                  <div class="price-item">
+                    <span>Da:</span>
+                    <span>0% deducibilità → 100%</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Formula:</span>
+                    <span id="platinum-formula-display"
+                      >80% × Risparmio totale</span
+                    >
+                  </div>
+                  <div class="price-item">
+                    <span>Durata:</span>
+                    <span>48 mesi completi</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Tuo guadagno + IVA:</span>
+                    <span id="platinum-total-iva">€ 0</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Risparmio Cliente:</span>
+                    <span id="platinum-cliente-total">€ 0</span>
+                  </div>
+                  <div class="price-item">
+                    <span>Tuo guadagno (IVA esclusa):</span>
+                    <span id="platinum-total">€ 0</span>
+                  </div>
+                </div>
+
+                <div class="monthly-fee">
+                  <small>Guadagno mensile (+ IVA)</small>
+                  <span class="amount" id="platinum-monthly-iva">€ 0</span>
+                  <small style="display: block; margin-top: 5px"
+                    >IVA esclusa: <span id="platinum-monthly">€ 0</span></small
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="results-section">
+          <h3 style="color: #2c3e50; margin-bottom: 20px">
+            📊 Confronto Guadagni per Configurazione Selezionata
+          </h3>
+          <table class="comparison-table">
+            <thead>
+              <tr>
+                <th>Tier Cliente</th>
+                <th>Transizione</th>
+                <th>Guadagno DataPolar + IVA</th>
+                <th>Guadagno DataPolar (IVA esclusa)</th>
+                <th>Mensile DataPolar + IVA</th>
+                <th>Mensile DataPolar (IVA esclusa)</th>
+              </tr>
+            </thead>
+            <tbody id="results-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let selectedVehicle = {
+        canone: 619,
+        nome: "Model 3 - Long Range posteriore",
+      };
+
+      // Costanti
+      const ANTICIPO = 6000;
+      const MESI = 48;
+      const IVA_RATE = 0.22;
+      const ALIQUOTA_FISCALE = 0.289; // 28.9%
+
+      // Event listeners per selezione veicolo
+      document.querySelectorAll(".vehicle-option").forEach((option) => {
+        option.addEventListener("click", function () {
+          document
+            .querySelectorAll(".vehicle-option")
+            .forEach((opt) => opt.classList.remove("selected"));
+          this.classList.add("selected");
+
+          selectedVehicle = {
+            canone: parseInt(this.dataset.canone),
+            nome: this.dataset.nome,
+          };
+
+          // Ricalcola automaticamente tutti i tier
+          calculateAllTiers();
+        });
+      });
+
+      function calculateVehicleCosts(canone) {
+        const costoTotaleNoIva = ANTICIPO + canone * MESI;
+        const ivaTotale = costoTotaleNoIva * IVA_RATE;
+        const costoTotaleConIva = costoTotaleNoIva + ivaTotale;
+
+        return {
+          costoTotaleNoIva,
+          ivaTotale,
+          costoTotaleConIva,
+        };
+      }
+
+      function calculateSavings(costoTotaleNoIva, ivaTotale) {
+        // Scenario Startup (100% deducibile)
+        const risparmioFiscaleStartup = costoTotaleNoIva * ALIQUOTA_FISCALE;
+        const risparmioTotaleStartup = risparmioFiscaleStartup + ivaTotale;
+
+        // Scenario Tradizionale (40% deducibile)
+        const risparmioFiscaleTradizionale =
+          costoTotaleNoIva * 0.4 * ALIQUOTA_FISCALE;
+        const risparmioTotaleTradizionale =
+          risparmioFiscaleTradizionale + ivaTotale * 0.4;
+
+        // Delta
+        const deltaRisparmio =
+          risparmioTotaleStartup - risparmioTotaleTradizionale;
+
+        return {
+          risparmioTotaleStartup,
+          risparmioTotaleTradizionale,
+          deltaRisparmio,
+        };
+      }
+
+      function calculateTier(tier) {
+        const costs = calculateVehicleCosts(selectedVehicle.canone);
+        const savings = calculateSavings(
+          costs.costoTotaleNoIva,
+          costs.ivaTotale
+        );
+
+        let guadagnoTotale,
+          guadagnoMensile,
+          risparmioCliente,
+          durata,
+          descrizione,
+          percentage;
+
+        switch (tier) {
+          case "gold":
+            // Percentuale configurabile del delta completo
+            percentage =
+              parseFloat(document.getElementById("gold-percentage").value) /
+              100;
+            guadagnoTotale = savings.deltaRisparmio * percentage;
+            risparmioCliente = savings.deltaRisparmio * (1 - percentage); // il resto va al cliente
+            guadagnoMensile = guadagnoTotale / MESI;
+            durata = MESI;
+            descrizione = "40% → 100%";
+
+            // Aggiorna la formula visualizzata
+            document.getElementById(
+              "gold-formula-display"
+            ).textContent = `${Math.round(percentage * 100)}% × Delta completo`;
+            break;
+
+          case "platinum":
+            // Percentuale configurabile del risparmio totale startup
+            percentage =
+              parseFloat(document.getElementById("platinum-percentage").value) /
+              100;
+            guadagnoTotale = savings.risparmioTotaleStartup * percentage;
+            risparmioCliente =
+              savings.risparmioTotaleStartup * (1 - percentage); // il resto va al cliente
+            guadagnoMensile = guadagnoTotale / MESI;
+            durata = MESI;
+            descrizione = "0% → 100%";
+
+            // Aggiorna la formula visualizzata
+            document.getElementById(
+              "platinum-formula-display"
+            ).textContent = `${Math.round(
+              percentage * 100
+            )}% × Risparmio totale`;
+            break;
+        }
+
+        // CORREZIONE: Calcola correttamente l'IVA
+        // Il guadagnoTotale è il risparmio fiscale del cliente, quindi non ha IVA
+        // Tu fatturi il tuo guadagno + IVA al cliente
+        const guadagnoTotaleConIva = guadagnoTotale * (1 + IVA_RATE);
+        const guadagnoMensileConIva = guadagnoMensile * (1 + IVA_RATE);
+
+        // Il cliente risparmia risparmioCliente (che è già un risparmio fiscale, quindi senza IVA aggiuntiva)
+        // Ma per confronto, mostriamo il valore equivalente
+
+        // Aggiorna UI
+        document.getElementById(`${tier}-total`).textContent = `€ ${Math.round(
+          guadagnoTotale
+        ).toLocaleString("it-IT")}`;
+        document.getElementById(
+          `${tier}-monthly`
+        ).textContent = `€ ${Math.round(guadagnoMensile)}`;
+        document.getElementById(
+          `${tier}-total-iva`
+        ).textContent = `€ ${Math.round(guadagnoTotaleConIva).toLocaleString(
+          "it-IT"
+        )}`;
+        document.getElementById(
+          `${tier}-monthly-iva`
+        ).textContent = `€ ${Math.round(guadagnoMensileConIva)}`;
+        document.getElementById(
+          `${tier}-cliente-total`
+        ).textContent = `€ ${Math.round(risparmioCliente).toLocaleString(
+          "it-IT"
+        )}`;
+
+        // Aggiorna anche la tabella
+        updateResultsTable();
+
+        return {
+          tier,
+          guadagnoTotale,
+          guadagnoMensile,
+          guadagnoTotaleConIva,
+          guadagnoMensileConIva,
+          risparmioCliente,
+          durata,
+          descrizione,
+        };
+      }
+
+      function calculateAllTiers() {
+        calculateTier("gold");
+        calculateTier("platinum");
+        updateResultsTable();
+      }
+
+      function updateResultsTable() {
+        const results = ["gold", "platinum"].map((tier) => {
+          const totalIva = document.getElementById(
+            `${tier}-total-iva`
+          ).textContent;
+          const total = document.getElementById(`${tier}-total`).textContent;
+          const monthlyIva = document.getElementById(
+            `${tier}-monthly-iva`
+          ).textContent;
+          const monthly = document.getElementById(
+            `${tier}-monthly`
+          ).textContent;
+
+          let descrizione, tierName;
+          switch (tier) {
+            case "gold":
+              tierName = "🥇 Gold";
+              descrizione = "40% → 100%";
+              break;
+            case "platinum":
+              tierName = "💎 Platinum";
+              descrizione = "0% → 100%";
+              break;
+          }
+
+          return {
+            tierName,
+            descrizione,
+            totalIva,
+            total,
+            monthlyIva,
+            monthly,
+          };
+        });
+
+        const tbody = document.getElementById("results-body");
+        tbody.innerHTML = results
+          .map(
+            (result) => `
+                <tr>
+                    <td><strong>${result.tierName}</strong></td>
+                    <td>${result.descrizione}</td>
+                    <td class="highlight">${result.totalIva}</td>
+                    <td class="highlight">${result.total}</td>
+                    <td class="highlight">${result.monthlyIva}</td>
+                    <td class="highlight">${result.monthly}</td>
+                </tr>
+            `
+          )
+          .join("");
+      }
+
+      // Calcola automaticamente al caricamento
+      window.onload = function () {
+        calculateAllTiers();
+      };
+    </script>
+  </body>
+</html>
