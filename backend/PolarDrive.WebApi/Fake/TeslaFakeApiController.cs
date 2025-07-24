@@ -67,8 +67,11 @@ public class TeslaFakeApiController : ControllerBase
             {
                 try
                 {
-                    await GenerateReportForVehicle(vehicle.Id, "Manual API Generation");
-                    successCount++;
+                    var reportId = await GenerateReportForVehicleComplete(vehicle.Id, "Manual API Generation");
+                    if (reportId.HasValue)
+                        successCount++;
+                    else
+                        errorCount++;
                 }
                 catch (Exception ex)
                 {
@@ -86,7 +89,7 @@ public class TeslaFakeApiController : ControllerBase
                 message = $"Report generation completed for {activeVehicles.Count} vehicles",
                 timestamp = DateTime.UtcNow,
                 results = new { successCount, errorCount },
-                note = "Reports generated using AI Analysis system"
+                note = "Reports generated with FULL logic (HTML+PDF files)"
             });
         }
         catch (Exception ex)
@@ -101,7 +104,7 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// Forza report per un singolo veicolo
+    /// Forza report per un singolo veicolo - LOGICA COMPLETA
     /// </summary>
     [HttpPost("GenerateVehicleReport/{vehicleId}")]
     public async Task<IActionResult> GenerateVehicleReport(int vehicleId, [FromBody] ReportRequest? request = null)
@@ -110,28 +113,36 @@ public class TeslaFakeApiController : ControllerBase
 
         try
         {
-            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicleId);
+            var vehicle = await _db.ClientVehicles
+                .Include(v => v.ClientCompany)
+                .FirstOrDefaultAsync(v => v.Id == vehicleId);
+
             if (vehicle == null)
             {
                 return NotFound($"Vehicle with ID {vehicleId} not found");
             }
 
-            await _logger.Info(source, $"Report generation triggered for VIN {vehicle.Vin}");
+            await _logger.Info(source, $"COMPLETE report generation triggered for VIN {vehicle.Vin}");
 
             var analysisLevel = request?.AnalysisLevel ?? "Manual API Generation";
-            var reportId = await GenerateReportForVehicle(vehicleId, analysisLevel);
+            var reportId = await GenerateReportForVehicleComplete(vehicleId, analysisLevel);
 
             if (reportId.HasValue)
             {
+                // Verifica se i file sono stati creati
+                var report = await _db.PdfReports.FindAsync(reportId.Value);
+                var filesStatus = GetFilesStatus(report!);
+
                 return Ok(new
                 {
                     success = true,
-                    message = $"Report generated for vehicle {vehicle.Vin}",
+                    message = $"COMPLETE report generated for vehicle {vehicle.Vin}",
                     reportId = reportId.Value,
                     vehicleVin = vehicle.Vin,
                     analysisLevel = analysisLevel,
                     timestamp = DateTime.UtcNow,
-                    note = "Generated using PolarAi Analysis"
+                    filesGenerated = filesStatus,
+                    note = "Generated with FULL ReportGenerationService logic"
                 });
             }
             else
@@ -150,6 +161,49 @@ public class TeslaFakeApiController : ControllerBase
             {
                 success = false,
                 error = ex.Message
+            });
+        }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Forza rigenerazione file per report esistente
+    /// </summary>
+    [HttpPost("RegenerateFiles/{reportId}")]
+    public async Task<IActionResult> RegenerateFiles(int reportId)
+    {
+        const string source = "TeslaFakeApiController.RegenerateFiles";
+
+        try
+        {
+            await _logger.Info(source, $"File regeneration triggered for report {reportId}");
+
+            await ForceRegenerateFilesAsync(reportId);
+
+            var report = await _db.PdfReports
+                .Include(r => r.ClientVehicle)
+                .FirstOrDefaultAsync(r => r.Id == reportId);
+
+            var filesStatus = GetFilesStatus(report!);
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Files regenerated for report {reportId}",
+                reportId = reportId,
+                vehicleVin = report?.ClientVehicle?.Vin,
+                timestamp = DateTime.UtcNow,
+                filesGenerated = filesStatus,
+                note = "Files regenerated with latest data and AI analysis"
+            });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error regenerating files for report {reportId}", ex.ToString());
+            return StatusCode(500, new
+            {
+                success = false,
+                error = ex.Message,
+                reportId = reportId
             });
         }
     }
@@ -174,19 +228,15 @@ public class TeslaFakeApiController : ControllerBase
                         return BadRequest("Invalid vehicle ID");
                     }
 
-                    bool result;
-                    if (_env.IsDevelopment() && _fakeScheduler != null)
-                    {
-                        // Non ha ForceReportAsync, usiamo il metodo diretto
-                        await GenerateReportForVehicle(vehicleId, "Forced via API");
-                        result = true;
-                    }
-                    else
-                    {
-                        return BadRequest("Scheduler not available");
-                    }
+                    var reportId = await GenerateReportForVehicleComplete(vehicleId, "Forced via API");
+                    var result = reportId.HasValue;
 
-                    return Ok(new { success = result, message = result ? "Report forced successfully" : "Report forcing failed" });
+                    return Ok(new
+                    {
+                        success = result,
+                        message = result ? "Complete report forced successfully" : "Report forcing failed",
+                        reportId = reportId
+                    });
 
                 default:
                     return BadRequest($"Unknown action: {request.Action}");
@@ -229,7 +279,9 @@ public class TeslaFakeApiController : ControllerBase
                 {
                     r.Id,
                     r.GeneratedAt,
-                    r.Notes
+                    r.Notes,
+                    r.Status,
+                    FilesExist = GetFilesStatus(r)
                 })
                 .ToListAsync();
 
@@ -282,20 +334,6 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// Helper per determinare stato contrattuale
-    /// </summary>
-    private string GetContractStatus(ClientVehicle vehicle)
-    {
-        return (vehicle.IsActiveFlag, vehicle.IsFetchingDataFlag) switch
-        {
-            (true, true) => "Active Contract - Data Collection Active",
-            (true, false) => "Active Contract - Data Collection Paused",
-            (false, true) => "Contract Terminated - Grace Period Active",
-            (false, false) => "Contract Terminated - Data Collection Stopped"
-        };
-    }
-
-    /// <summary>
     /// Status con info
     /// </summary>
     [HttpGet("ReportStatus")]
@@ -318,8 +356,9 @@ public class TeslaFakeApiController : ControllerBase
             periodStart = r.ReportPeriodStart,
             periodEnd = r.ReportPeriodEnd,
             generatedAt = r.GeneratedAt,
+            status = r.Status,
             notes = r.Notes,
-            pdfExists = CheckPdfExists(r)
+            filesStatus = GetFilesStatus(r)
         });
 
         return Ok(new
@@ -353,7 +392,7 @@ public class TeslaFakeApiController : ControllerBase
             return NotFound("Report not found");
         }
 
-        var pdfPath = PolarDrive.WebApi.Helpers.PdfStorageHelper.GetReportPdfPath(report);
+        var pdfPath = GetFilePath(report, "pdf", "reports");
 
         if (System.IO.File.Exists(pdfPath))
         {
@@ -363,83 +402,386 @@ public class TeslaFakeApiController : ControllerBase
             return File(bytes, "application/pdf", fileName);
         }
 
-        // Fallback: prova con file di testo
-        var textPath = pdfPath.Replace(".pdf", ".txt");
-        if (System.IO.File.Exists(textPath))
+        // Fallback: prova con file HTML (per development)
+        var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
+        if (System.IO.File.Exists(htmlPath))
         {
-            var textContent = await System.IO.File.ReadAllTextAsync(textPath);
-            var fileName = $"PolarDrive_Report_{report.Id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.txt";
+            var htmlContent = await System.IO.File.ReadAllTextAsync(htmlPath);
+            var fileName = $"PolarDrive_Report_{report.Id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.html";
 
-            return File(System.Text.Encoding.UTF8.GetBytes(textContent), "text/plain", fileName);
+            return File(System.Text.Encoding.UTF8.GetBytes(htmlContent), "text/html", fileName);
         }
 
         return NotFound("Report file not found on disk");
     }
 
-    #region Helper Methods
+    #region Helper Methods - LOGICA COMPLETA COME ReportGenerationService
 
     /// <summary>
-    /// Genera report per veicolo (sostituisce il vecchio ReportGeneratorJob)
+    /// ✅ ENHANCED: Genera report completo con TUTTA la logica di ReportGenerationService
     /// </summary>
-    private async Task<int?> GenerateReportForVehicle(int vehicleId, string analysisLevel)
+    private async Task<int?> GenerateReportForVehicleComplete(int vehicleId, string analysisLevel)
     {
-        const string source = "TeslaFakeApiController.GenerateReportForVehicle";
+        const string source = "TeslaFakeApiController.GenerateReportForVehicleComplete";
 
         try
         {
-            var vehicle = await _db.ClientVehicles.FindAsync(vehicleId);
-            if (vehicle == null) return null;
+            var vehicle = await _db.ClientVehicles
+                .Include(v => v.ClientCompany)
+                .FirstOrDefaultAsync(v => v.Id == vehicleId);
 
-            // Determina periodo
-            var firstRecord = await _db.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId)
-                .OrderBy(vd => vd.Timestamp)
-                .Select(vd => vd.Timestamp)
-                .FirstOrDefaultAsync();
-
-            var now = DateTime.UtcNow;
-            var monitoringPeriod = firstRecord != default ? now - firstRecord : TimeSpan.FromHours(24);
-
-            // Genera insights
-            var aiGenerator = new PolarAiReportGenerator(_db);
-            var insights = await aiGenerator.GeneratePolarAiInsightsAsync(vehicleId);
-
-            if (string.IsNullOrWhiteSpace(insights))
+            if (vehicle == null)
             {
-                await _logger.Warning(source, $"No insights generated for vehicle {vehicle.Vin}");
+                await _logger.Warning(source, $"Vehicle {vehicleId} not found");
                 return null;
             }
 
-            // Crea record del report
+            // ✅ GRACE PERIOD WARNING
+            if (!vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag)
+                await _logger.Warning(source, $"⏳ Grace Period generation for {vehicle.Vin}");
+
+            // ✅ CALCOLO PERIODO COME ReportGenerationService
+            var now = DateTime.UtcNow;
+            var reportCount = await _db.PdfReports.CountAsync(r => r.ClientVehicleId == vehicleId);
+
+            // 1) Prendo la fine dell'ultimo report (se esiste)
+            var lastReportEnd = await _db.PdfReports
+                .Where(r => r.ClientVehicleId == vehicleId)
+                .OrderByDescending(r => r.ReportPeriodEnd)
+                .Select(r => (DateTime?)r.ReportPeriodEnd)
+                .FirstOrDefaultAsync();
+
+            DateTime start;
+            DateTime end = now;
+
+            // 2) Logica periodo IDENTICA a ReportGenerationService
+            if (reportCount == 0 && vehicle.FirstActivationAt.HasValue)
+            {
+                // Primo report: dall'attivazione
+                start = vehicle.FirstActivationAt.Value;
+                await _logger.Info(source, $"🔧 First report from activation: {start} to {end}");
+            }
+            else
+            {
+                // Report successivi: dalla fine dell'ultimo report o 30 giorni fa
+                start = lastReportEnd ?? now.AddHours(-720); // 30 giorni default
+            }
+
+            var period = new ReportPeriodInfo
+            {
+                Start = start,
+                End = end,
+                DataHours = (int)(end - start).TotalHours,
+                AnalysisLevel = reportCount == 0 ? "Valutazione Iniziale" : analysisLevel,
+                MonitoringDays = (end - start).TotalDays
+            };
+
+            // ✅ CONTROLLO DATI COME ReportGenerationService
+            var dataCount = await _db.VehiclesData
+                .Where(vd => vd.VehicleId == vehicleId &&
+                             vd.Timestamp >= period.Start &&
+                             vd.Timestamp <= period.End)
+                .CountAsync();
+
+            await _logger.Info(source,
+                $"🧠 Generating {period.AnalysisLevel} for {vehicle.Vin} | " +
+                $"{period.Start:yyyy-MM-dd HH:mm} to {period.End:yyyy-MM-dd HH:mm} | " +
+                $"Report #{reportCount + 1} | DataRecords: {dataCount}");
+
+            // ✅ CREA SEMPRE RECORD REPORT
             var report = new PdfReport
             {
                 ClientVehicleId = vehicleId,
                 ClientCompanyId = vehicle.ClientCompanyId,
-                ReportPeriodStart = now.AddDays(-1),
-                ReportPeriodEnd = now,
+                ReportPeriodStart = period.Start,
+                ReportPeriodEnd = period.End,
                 GeneratedAt = now,
-                Notes = $"[API-{analysisLevel.Replace(" ", "")}] MonitoringDays: {monitoringPeriod.TotalDays:F1}"
+                Notes = $"[API-{period.AnalysisLevel}] DataHours: {period.DataHours}, Monitoring: {period.MonitoringDays:F1}d"
             };
 
+            // ✅ SE NON CI SONO DATI: status NO-DATA e NIENTE FILE
+            if (dataCount == 0)
+            {
+                report.Status = "NO-DATA";
+                report.Notes += " - Nessun dato disponibile per il periodo";
+
+                _db.PdfReports.Add(report);
+                await _db.SaveChangesAsync();
+
+                await _logger.Warning(source,
+                    $"⚠️ Report {report.Id} created but NO FILES generated for {vehicle.Vin} - No data available for period");
+                return report.Id; // ← RITORNA ID ANCHE SENZA FILE
+            }
+
+            // ✅ SE CI SONO DATI: GENERA TUTTO
             _db.PdfReports.Add(report);
             await _db.SaveChangesAsync();
 
-            await _logger.Info(source, $"Report generated for vehicle {vehicle.Vin}: ReportId {report.Id}");
+            // ✅ GENERA INSIGHTS CON PolarAI
+            var aiGen = new PolarAiReportGenerator(_db);
+            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
+
+            if (string.IsNullOrWhiteSpace(insights))
+            {
+                await _logger.Error(source, $"No insights generated for {vehicle.Vin}");
+                throw new InvalidOperationException($"No insights for {vehicle.Vin}");
+            }
+
+            // ✅ GENERA FILE HTML + PDF
+            await GenerateReportFiles(report, insights, period, vehicle);
+
+            await _logger.Info(source,
+                $"✅ Report {report.Id} COMPLETE for {vehicle.Vin} | " +
+                $"Period: {period.DataHours}h | Type: {period.AnalysisLevel} | Files: HTML+PDF");
 
             return report.Id;
         }
         catch (Exception ex)
         {
-            await _logger.Error(source, $"Error generating report for vehicle {vehicleId}", ex.ToString());
+            await _logger.Error(source, $"Error generating complete report for vehicle {vehicleId}", ex.ToString());
             throw;
         }
     }
 
-    private bool CheckPdfExists(PdfReport report)
+    /// <summary>
+    /// ✅ NUOVO: Genera file HTML + PDF (logica da ReportGenerationService)
+    /// </summary>
+    private async Task GenerateReportFiles(PdfReport report, string insights, ReportPeriodInfo period, ClientVehicle vehicle)
     {
-        var pdfPath = PolarDrive.WebApi.Helpers.PdfStorageHelper.GetReportPdfPath(report);
-        var textPath = pdfPath.Replace(".pdf", ".txt");
-        return System.IO.File.Exists(pdfPath) || System.IO.File.Exists(textPath);
+        const string source = "TeslaFakeApiController.GenerateReportFiles";
+
+        try
+        {
+            // ✅ HTML GENERATION
+            var htmlSvc = new HtmlReportService(_db);
+            var htmlOpt = new HtmlReportOptions
+            {
+                ShowDetailedStats = true,
+                ShowRawData = false,
+                ReportType = $"🧠 {period.AnalysisLevel}",
+                AdditionalCss = PolarAiReports.Templates.DefaultCssTemplate.Value
+            };
+            var html = await htmlSvc.GenerateHtmlReportAsync(report, insights, htmlOpt);
+
+            // ✅ SALVA HTML (sempre in dev, opzionale in prod)
+            if (_env.IsDevelopment())
+            {
+                var htmlPath = GetFilePath(report, "html", "dev-reports");
+                await SaveFile(htmlPath, html);
+                await _logger.Info(source, $"HTML saved: {htmlPath}");
+            }
+
+            // ✅ PDF GENERATION
+            var pdfSvc = new PdfGenerationService(_db);
+            var pdfOpt = new PdfConversionOptions
+            {
+                PageFormat = "A4",
+                MarginTop = "2cm",
+                MarginBottom = "2cm",
+                MarginLeft = "1.5cm",
+                MarginRight = "1.5cm",
+                DisplayHeaderFooter = true,
+                HeaderTemplate = $"<div style='font-size:10px;text-align:center;color:#004E92;border-bottom:1px solid #004E92;padding-bottom:5px;'>{vehicle.Vin} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}</div>",
+                FooterTemplate = "<div style='font-size:10px;text-align:center;color:#666;border-top:1px solid #ccc;padding-top:5px;'>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Analytics</div>"
+            };
+            var pdfBytes = await pdfSvc.ConvertHtmlToPdfAsync(html, report, pdfOpt);
+
+            // ✅ SALVA PDF
+            var pdfPath = GetFilePath(report, "pdf", "reports");
+            await SaveFile(pdfPath, pdfBytes);
+            await _logger.Info(source, $"PDF saved: {pdfPath}");
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error generating files for report {report.Id}", ex.ToString());
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Rigenerazione file (da ReportGenerationService)
+    /// </summary>
+    private async Task ForceRegenerateFilesAsync(int reportId)
+    {
+        const string source = "TeslaFakeApiController.ForceRegenerateFilesAsync";
+
+        await _logger.Info(source, $"🔄 Rigenerazione file per report {reportId}");
+
+        // 1) Carica il report e il veicolo associato
+        var report = await _db.PdfReports
+                             .Include(r => r.ClientVehicle!)
+                             .ThenInclude(v => v!.ClientCompany)
+                             .FirstOrDefaultAsync(r => r.Id == reportId)
+                     ?? throw new InvalidOperationException($"Report {reportId} non trovato");
+
+        var vehicle = report.ClientVehicle;
+
+        // 2) Controlla se ci sono dati nel periodo del report
+        var dataCount = await _db.VehiclesData
+            .Where(vd => vd.VehicleId == vehicle!.Id &&
+                         vd.Timestamp >= report.ReportPeriodStart &&
+                         vd.Timestamp <= report.ReportPeriodEnd)
+            .CountAsync();
+
+        await _logger.Info(source,
+            $"🔍 Report {reportId} regeneration check: VIN={vehicle!.Vin}, " +
+            $"Period={report.ReportPeriodStart} to {report.ReportPeriodEnd}, DataCount={dataCount}");
+
+        // ✅ Se non ci sono dati, aggiorna status e NON rigenerare file
+        if (dataCount == 0)
+        {
+            report.Status = "NO-DATA";
+            report.Notes = $"Ultima rigenerazione: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - " +
+                          $"numero rigenerazione #{report.RegenerationCount} - Nessun dato disponibile per il periodo";
+            report.RegenerationCount++;
+
+            // Elimina eventuali file esistenti (cleanup)
+            await DeleteExistingFiles(report);
+
+            await _db.SaveChangesAsync();
+
+            await _logger.Warning(source,
+                $"⚠️ Report {reportId} rigenerazione saltata per {vehicle.Vin} - " +
+                $"Nessun dato disponibile nel periodo specificato");
+            return; // ← ESCI SENZA CREARE NUOVI FILE
+        }
+
+        // ✅ Se ci sono dati, procedi con la rigenerazione normale
+        await _logger.Info(source, $"✅ Report {reportId} ha {dataCount} record di dati - Procedendo con rigenerazione file");
+
+        // 3) Ricalcola gli insights
+        var aiGen = new PolarAiReportGenerator(_db);
+        var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id);
+        if (string.IsNullOrWhiteSpace(insights))
+            throw new InvalidOperationException($"Nessun insight generato per {vehicle.Vin}");
+
+        // 4) Crea un ReportPeriodInfo a partire dal report esistente
+        var period = new ReportPeriodInfo
+        {
+            Start = report.ReportPeriodStart,
+            End = report.ReportPeriodEnd,
+            DataHours = (int)(report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours,
+            AnalysisLevel = $"Rigenerazione #{report.RegenerationCount + 1}",
+            MonitoringDays = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalDays
+        };
+
+        // 5) Elimina i vecchi file prima di rigenerare
+        await DeleteExistingFiles(report);
+
+        // 6) Rigenera i file
+        await GenerateReportFiles(report, insights, period, vehicle);
+
+        // 7) Aggiorna lo status del report
+        report.Status = "COMPLETED"; // o null per far usare la logica file-based
+        report.RegenerationCount++;
+        report.Notes = $"Rigenerato: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - " +
+                      $"#{report.RegenerationCount} - DataRecords: {dataCount}";
+        await _db.SaveChangesAsync();
+
+        await _logger.Info(source,
+            $"✅ File rigenerati con successo per report {reportId} - VIN: {vehicle.Vin}, DataRecords: {dataCount}");
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Elimina file esistenti
+    /// </summary>
+    private async Task DeleteExistingFiles(PdfReport report)
+    {
+        const string source = "TeslaFakeApiController.DeleteExistingFiles";
+
+        try
+        {
+            var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
+            var pdfPath = GetFilePath(report, "pdf", "reports");
+
+            if (System.IO.File.Exists(htmlPath))
+            {
+                System.IO.File.Delete(htmlPath);
+                await _logger.Debug(source, "File HTML eliminato", htmlPath);
+            }
+
+            if (System.IO.File.Exists(pdfPath))
+            {
+                System.IO.File.Delete(pdfPath);
+                await _logger.Debug(source, "File PDF eliminato", pdfPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            await _logger.Warning(source, $"Errore durante eliminazione file esistenti per report {report.Id}", ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Path file (da ReportGenerationService)
+    /// </summary>
+    private static string GetFilePath(PdfReport report, string ext, string folder)
+    {
+        // ✅ USA LA DATA DI GENERAZIONE, NON IL PERIODO DEI DATI
+        var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+
+        return Path.Combine("storage", folder,
+            generationDate.Year.ToString(),
+            generationDate.Month.ToString("D2"),
+            $"PolarDrive_Report_{report.Id}.{ext}");
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Salva file
+    /// </summary>
+    private async Task SaveFile(string path, object content)
+    {
+        var dir = Path.GetDirectoryName(path);
+        if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
+
+        switch (content)
+        {
+            case string txt:
+                await System.IO.File.WriteAllTextAsync(path, txt);
+                break;
+            case byte[] data:
+                await System.IO.File.WriteAllBytesAsync(path, data);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO: Status file esistenti
+    /// </summary>
+    private object GetFilesStatus(PdfReport report)
+    {
+        var pdfPath = GetFilePath(report, "pdf", "reports");
+        var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
+
+        return new
+        {
+            pdf = new
+            {
+                exists = System.IO.File.Exists(pdfPath),
+                path = pdfPath,
+                size = System.IO.File.Exists(pdfPath) ? new FileInfo(pdfPath).Length : 0
+            },
+            html = new
+            {
+                exists = System.IO.File.Exists(htmlPath),
+                path = htmlPath,
+                size = System.IO.File.Exists(htmlPath) ? new FileInfo(htmlPath).Length : 0
+            }
+        };
+    }
+
+    /// <summary>
+    /// Helper per determinare stato contrattuale
+    /// </summary>
+    private string GetContractStatus(ClientVehicle vehicle)
+    {
+        return (vehicle.IsActiveFlag, vehicle.IsFetchingDataFlag) switch
+        {
+            (true, true) => "Active Contract - Data Collection Active",
+            (true, false) => "Active Contract - Data Collection Paused",
+            (false, true) => "Contract Terminated - Grace Period Active",
+            (false, false) => "Contract Terminated - Data Collection Stopped"
+        };
     }
 
     private async Task<bool> CheckAiSystemAvailability()
@@ -485,3 +827,5 @@ public class CustomReportRequest
     public string PeriodStart { get; set; } = string.Empty;
     public string PeriodEnd { get; set; } = string.Empty;
 }
+
+// ✅ NUOVO: Helper classes (da ReportGenerationService)

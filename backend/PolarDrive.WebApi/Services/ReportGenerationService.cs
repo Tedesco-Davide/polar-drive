@@ -67,23 +67,13 @@ namespace PolarDrive.WebApi.Services
                         .Select(r => (DateTime?)r.ReportPeriodEnd)
                         .FirstOrDefaultAsync(stoppingToken);
 
-                    // 2) Scelgo quante ore guardare indietro in base al tipo di scheduler
-                    int thresholdHours = scheduleType switch
-                    {
-                        ScheduleType.Development => DAILY_HOURS_THRESHOLD,
-                        ScheduleType.Daily => DAILY_HOURS_THRESHOLD,
-                        ScheduleType.Weekly => WEEKLY_HOURS_THRESHOLD,
-                        ScheduleType.Monthly => MONTHLY_HOURS_THRESHOLD,
-                        _ => DAILY_HOURS_THRESHOLD
-                    };
-
-                    // 3) Calcolo start/end
-                    var start = lastReportEnd ?? now.AddHours(-thresholdHours);
+                    // 2) SEMPRE 720H - FINESTRA MENSILE UNIFICATA
+                    var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                     var end = now;
 
-                    _logger.LogInformation("🔍 DEBUG: Vehicle {VIN} - Start: {Start}, End: {End}, Now: {Now}", v.Vin, start, end, now);
+                    _logger.LogInformation("🔍 DEBUG: Vehicle {VIN} - Start: {Start}, End: {End}, Now: {Now} [FIXED 720h window]", v.Vin, start, end, now);
 
-                    // 4) Infine genero con questi parametri
+                    // 3) Infine genero con questi parametri
                     var info = GetReportInfo(scheduleType, now);
                     await GenerateReportForVehicle(db, v.Id, info, start, end);
 
@@ -142,8 +132,7 @@ namespace PolarDrive.WebApi.Services
                         .Select(r => (DateTime?)r.ReportPeriodEnd)
                         .FirstOrDefaultAsync(stoppingToken);
 
-                    // Per i retry usa sempre 24h
-                    var start = lastReportEnd ?? now.AddHours(-24);
+                    var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                     var end = now;
 
                     var info = GetReportInfo(ScheduleType.Retry, now);
