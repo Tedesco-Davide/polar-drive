@@ -517,15 +517,58 @@ public static partial class SmartTeslaDataGeneratorService
                 response = new { result = true, reason = "" }
             },
             new {
-                command = "set_scheduled_charging",
+                command = "add_charge_schedule",
                 timestamp = ts.ToString("o"),
-                parameters = new { enable = true, time = 360 },
+                parameters = new {
+                    latitude = 41.9028,
+                    longitude = 12.4964,
+                    time = 420,
+                    days_of_week = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" },
+                    enabled = true
+                },
                 response = new { result = true, reason = "" }
             },
             new {
-                command = "set_scheduled_departure",
+                command = "remove_charge_schedule",
                 timestamp = ts.ToString("o"),
-                parameters = new { enable = true, departure_time = 480, preconditioning_enabled = true, preconditioning_weekdays_only = false, off_peak_charging_enabled = true, off_peak_charging_weekdays_only = false, end_off_peak_time = 360 },
+                parameters = new {
+                    id = 12345,
+                    latitude = 41.9028,
+                    longitude = 12.4964
+                },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "add_precondition_schedule",
+                timestamp = ts.ToString("o"),
+                parameters = new {
+                    latitude = 41.9028,
+                    longitude = 12.4964,
+                    departure_time = 480,
+                    days_of_week = new[] { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday" },
+                    enabled = true,
+                    preconditioning_enabled = true,
+                    preconditioning_weekdays_only = false,
+                    off_peak_charging_enabled = true,
+                    off_peak_charging_weekdays_only = false,
+                    end_off_peak_time = 360
+                },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "remove_precondition_schedule",
+                timestamp = ts.ToString("o"),
+                parameters = new {
+                    id = 67890,
+                    latitude = 41.9028,
+                    longitude = 12.4964
+                },
+                response = new { result = true, reason = "" }
+            },
+            new {
+                command = "clear_pin_to_drive_admin",
+                timestamp = ts.ToString("o"),
+                parameters = (object?)null,
                 response = new { result = true, reason = "" }
             },
             new {

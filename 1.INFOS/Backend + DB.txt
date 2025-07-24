@@ -15,22 +15,6 @@
 
 #################################################################################################################################################################
 
-##### DEPLOY BACKEND (VPS NETCUP)
-
-#################################################################################################################################################################
-
-1) Docker Compose
-2) Gestione semplificata di: API + DB + CLI tools
-3) Nginx reverse proxy + HTTPS
-4) Espone il backend su https://api.datapolar.ai
-5) Usa Certbot per Let's Encrypt SS
-
-#################################################################################################################################################################
-
-🚀 Se vuoi davvero multiutente, stabilità e sicurezza, la soluzione ideale è:
-Sul VPS Netcup metti una mini API in .NET
-L’API inserisce i dati nel DB in modo sicuro
-
 🔧 1. Cifratura lato codice (applicativo C#)
 🔐 È in linea con quanto dichiarato nel dossier: cifratura AES-256 a riposo.
 SQLite con SQLCipher in .NET 10 =>
