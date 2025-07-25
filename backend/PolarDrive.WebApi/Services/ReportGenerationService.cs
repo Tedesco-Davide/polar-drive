@@ -9,9 +9,60 @@ namespace PolarDrive.WebApi.Services
 {
     public interface IReportGenerationService
     {
+        // ✅ METODI ESISTENTI (per scheduler automatico)
         Task<SchedulerResults> ProcessScheduledReportsAsync(ScheduleType scheduleType, CancellationToken stoppingToken = default);
         Task<RetryResults> ProcessRetriesAsync(CancellationToken stoppingToken = default);
         Task ForceRegenerateFilesAsync(int reportId);
+
+        // ✅ NUOVI METODI (per API controller)  
+        Task<ReportGenerationResult> GenerateReportForVehicleAsync(int vehicleId, string analysisLevel = "Manual Generation");
+        Task<ReportGenerationResult> GenerateReportForAllActiveVehiclesAsync();
+        Task<ReportFileStatus> GetReportFileStatusAsync(int reportId);
+    }
+
+    /// <summary>
+    /// Risultato della generazione di un singolo report
+    /// </summary>
+    public class ReportGenerationResult
+    {
+        public bool Success { get; set; }
+        public int? ReportId { get; set; }
+        public string? VehicleVin { get; set; }
+        public string? AnalysisLevel { get; set; }
+        public string? ErrorMessage { get; set; }
+        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public ReportFileStatus? FileStatus { get; set; }
+    }
+
+    /// <summary>
+    /// Status dei file di un report
+    /// </summary>
+    public class ReportFileStatus
+    {
+        public bool PdfExists { get; set; }
+        public bool HtmlExists { get; set; }
+        public string? PdfPath { get; set; }
+        public string? HtmlPath { get; set; }
+        public long PdfSize { get; set; }
+        public long HtmlSize { get; set; }
+    }
+
+    /// <summary>
+    /// Classi di supporto
+    /// </summary>
+    public class ReportPeriodInfo
+    {
+        public DateTime Start { get; set; }
+        public DateTime End { get; set; }
+        public int DataHours { get; set; }
+        public string AnalysisLevel { get; set; } = string.Empty;
+        public double MonitoringDays { get; set; }
+    }
+
+    public class ReportInfo
+    {
+        public string AnalysisType { get; set; } = string.Empty;
+        public int DefaultDataHours { get; set; }
     }
 
     public class ReportGenerationService(IServiceProvider serviceProvider,
@@ -23,6 +74,8 @@ namespace PolarDrive.WebApi.Services
         private readonly IWebHostEnvironment _env = env;
         private readonly Dictionary<int, DateTime> _lastReportAttempts = [];
         private readonly Dictionary<int, int> _retryCount = [];
+
+        #region ✅ METODI ESISTENTI (Scheduler Automatico)
 
         public async Task<SchedulerResults> ProcessScheduledReportsAsync(
             ScheduleType scheduleType,
@@ -232,79 +285,214 @@ namespace PolarDrive.WebApi.Services
                                   reportId, vehicle.Vin, dataCount);
         }
 
-        private void DeleteExistingFiles(PdfReport report)
+        #endregion
+
+        #region ✅ NUOVI METODI (API Controller)
+
+        /// <summary>
+        /// Genera report per un singolo veicolo (usato da API controller)
+        /// </summary>
+        public async Task<ReportGenerationResult> GenerateReportForVehicleAsync(int vehicleId, string analysisLevel = "Manual Generation")
         {
+            const string source = nameof(GenerateReportForVehicleAsync);
+
             try
             {
-                var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
-                var pdfPath = GetFilePath(report, "pdf", "reports");
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-                if (File.Exists(htmlPath))
+                var vehicle = await db.ClientVehicles
+                    .Include(v => v.ClientCompany)
+                    .FirstOrDefaultAsync(v => v.Id == vehicleId);
+
+                if (vehicle == null)
                 {
-                    File.Delete(htmlPath);
-                    _logger.LogDebug("🗑️ Eliminato file HTML esistente: {Path}", htmlPath);
+                    _logger.LogWarning("Vehicle {VehicleId} not found", vehicleId);
+                    return new ReportGenerationResult
+                    {
+                        Success = false,
+                        ErrorMessage = $"Vehicle with ID {vehicleId} not found"
+                    };
                 }
 
-                if (File.Exists(pdfPath))
+                _logger.LogInformation("🚗 API Report generation triggered for VIN {VIN}", vehicle.Vin);
+
+                // ✅ Chiama il metodo privato esistente adattandolo per l'API
+                var reportId = await GenerateReportForVehicleInternal(db, vehicleId, analysisLevel);
+
+                var result = new ReportGenerationResult
                 {
-                    File.Delete(pdfPath);
-                    _logger.LogDebug("🗑️ Eliminato file PDF esistente: {Path}", pdfPath);
+                    Success = reportId.HasValue,
+                    ReportId = reportId,
+                    VehicleVin = vehicle.Vin,
+                    AnalysisLevel = analysisLevel
+                };
+
+                if (result.Success && result.ReportId.HasValue)
+                {
+                    result.FileStatus = await GetReportFileStatusAsync(result.ReportId.Value);
                 }
+                else if (!result.Success)
+                {
+                    result.ErrorMessage = "Report generation failed - check logs for details";
+                }
+
+                return result;
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "⚠️ Errore durante eliminazione file esistenti per report {ReportId}", report.Id);
+                _logger.LogError(ex, "❌ Error generating report for vehicle {VehicleId}", vehicleId);
+                return new ReportGenerationResult
+                {
+                    Success = false,
+                    ErrorMessage = ex.Message
+                };
             }
         }
 
-        private bool ShouldGenerateReports(ScheduleType scheduleType, DateTime now)
+        /// <summary>
+        /// Genera report per tutti i veicoli attivi (usato da API controller)
+        /// </summary>
+        public async Task<ReportGenerationResult> GenerateReportForAllActiveVehiclesAsync()
         {
-            if (scheduleType == ScheduleType.Development)
+            const string source = nameof(GenerateReportForAllActiveVehiclesAsync);
+
+            try
             {
-                return !_lastReportAttempts.Any()
-                    || _lastReportAttempts.Values.All(t => now - t >= TimeSpan.FromMinutes(DEV_INTERVAL_MINUTES));
+                using var scope = _serviceProvider.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
+
+                var activeVehicles = await db.ClientVehicles
+                    .Where(v => v.IsActiveFlag && v.IsFetchingDataFlag)
+                    .ToListAsync();
+
+                if (!activeVehicles.Any())
+                {
+                    _logger.LogInformation("📭 No active vehicles found for report generation");
+                    return new ReportGenerationResult
+                    {
+                        Success = false,
+                        ErrorMessage = "No active vehicles found for report generation"
+                    };
+                }
+
+                _logger.LogInformation("🚗 API Batch report generation triggered for {Count} vehicles", activeVehicles.Count);
+
+                var successCount = 0;
+                var errorCount = 0;
+
+                foreach (var vehicle in activeVehicles)
+                {
+                    try
+                    {
+                        var reportId = await GenerateReportForVehicleInternal(db, vehicle.Id, "Manual API Generation");
+                        if (reportId.HasValue)
+                            successCount++;
+                        else
+                            errorCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        errorCount++;
+                        _logger.LogError(ex, "❌ Error generating report for vehicle {VIN}", vehicle.Vin);
+                    }
+                }
+
+                _logger.LogInformation("✅ API Batch report generation completed: Success={Success}, Errors={Errors}",
+                    successCount, errorCount);
+
+                return new ReportGenerationResult
+                {
+                    Success = true,
+                    ErrorMessage = $"Batch generation completed: {successCount} success, {errorCount} errors"
+                };
             }
-            return true;
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error in batch report generation");
+                return new ReportGenerationResult
+                {
+                    Success = false,
+                    ErrorMessage = ex.Message
+                };
+            }
         }
 
-        private async Task<List<ClientVehicle>> GetVehiclesToProcess(PolarDriveDbContext db, ScheduleType scheduleType)
+        /// <summary>
+        /// Ottieni status dei file di un report
+        /// </summary>
+        public async Task<ReportFileStatus> GetReportFileStatusAsync(int reportId)
         {
-            var query = db.ClientVehicles.Include(v => v.ClientCompany)
-                           .Where(v => v.IsFetchingDataFlag);
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-            if (scheduleType != ScheduleType.Development && scheduleType != ScheduleType.Retry)
+            var report = await db.PdfReports.FindAsync(reportId);
+            if (report == null)
             {
-                var (start, end) = GetDateRangeForSchedule(scheduleType);
-                query = query.Where(v => db.VehiclesData
-                    .Any(d => d.VehicleId == v.Id && d.Timestamp >= start && d.Timestamp <= end));
+                return new ReportFileStatus();
             }
 
-            return await query.ToListAsync();
-        }
+            var pdfPath = GetFilePath(report, "pdf", "reports");
+            var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
 
-        private (DateTime start, DateTime end) GetDateRangeForSchedule(ScheduleType scheduleType)
-        {
-            var now = DateTime.UtcNow;
-            return scheduleType switch
+            return new ReportFileStatus
             {
-                ScheduleType.Daily => (now.AddDays(-1).Date, now.Date.AddSeconds(-1)),
-                ScheduleType.Weekly => (now.AddDays(-7), now),
-                ScheduleType.Monthly => (now.AddMonths(-1), now),
-                _ => (now.AddHours(-24), now)
+                PdfExists = File.Exists(pdfPath),
+                HtmlExists = File.Exists(htmlPath),
+                PdfPath = pdfPath,
+                HtmlPath = htmlPath,
+                PdfSize = File.Exists(pdfPath) ? new FileInfo(pdfPath).Length : 0,
+                HtmlSize = File.Exists(htmlPath) ? new FileInfo(htmlPath).Length : 0
             };
         }
 
-        private ReportInfo GetReportInfo(ScheduleType scheduleType, DateTime now)
+        #endregion
+
+        #region ✅ METODI PRIVATI (Core Logic)
+
+        /// <summary>
+        /// Metodo interno per generazione report che ritorna int? (compatibile con codice esistente)
+        /// Adatta il metodo GenerateReportForVehicle esistente per API
+        /// </summary>
+        private async Task<int?> GenerateReportForVehicleInternal(PolarDriveDbContext db, int vehicleId, string analysisLevel)
         {
-            return scheduleType switch
+            try
             {
-                ScheduleType.Development => new ReportInfo { AnalysisType = "Development Analysis", DefaultDataHours = 0 },
-                ScheduleType.Daily => new ReportInfo { AnalysisType = "Analisi Giornaliera", DefaultDataHours = 24 },
-                ScheduleType.Weekly => new ReportInfo { AnalysisType = "Analisi Settimanale", DefaultDataHours = 168 },
-                ScheduleType.Monthly => new ReportInfo { AnalysisType = "Analisi Mensile", DefaultDataHours = 720 },
-                ScheduleType.Retry => new ReportInfo { AnalysisType = "Retry Analysis", DefaultDataHours = 24 },
-                _ => new ReportInfo { AnalysisType = "Standard Analysis", DefaultDataHours = 24 }
-            };
+                // 1) Prendo la fine dell'ultimo report (se esiste)
+                var lastReportEnd = await db.PdfReports
+                    .Where(r => r.ClientVehicleId == vehicleId)
+                    .OrderByDescending(r => r.ReportPeriodEnd)
+                    .Select(r => (DateTime?)r.ReportPeriodEnd)
+                    .FirstOrDefaultAsync();
+
+                // 2) SEMPRE 720H - FINESTRA MENSILE UNIFICATA
+                var now = DateTime.UtcNow;
+                var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+                var end = now;
+
+                // 3) Crea ReportInfo per compatibilità
+                var info = new ReportInfo
+                {
+                    AnalysisType = analysisLevel,
+                    DefaultDataHours = (int)(end - start).TotalHours
+                };
+
+                // 4) Chiama il metodo esistente
+                await GenerateReportForVehicle(db, vehicleId, info, start, end);
+
+                // 5) Trova l'ultimo report creato per questo veicolo
+                var latestReport = await db.PdfReports
+                    .Where(r => r.ClientVehicleId == vehicleId)
+                    .OrderByDescending(r => r.GeneratedAt)
+                    .FirstOrDefaultAsync();
+
+                return latestReport?.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Error in GenerateReportForVehicleInternal for vehicle {VehicleId}", vehicleId);
+                return null;
+            }
         }
 
         private async Task GenerateReportForVehicle(PolarDriveDbContext db, int vehicleId, ReportInfo info, DateTime start, DateTime end)
@@ -431,6 +619,81 @@ namespace PolarDrive.WebApi.Services
             await SaveFile(pdfPath, pdfBytes);
         }
 
+        private void DeleteExistingFiles(PdfReport report)
+        {
+            try
+            {
+                var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
+                var pdfPath = GetFilePath(report, "pdf", "reports");
+
+                if (File.Exists(htmlPath))
+                {
+                    File.Delete(htmlPath);
+                    _logger.LogDebug("🗑️ Eliminato file HTML esistente: {Path}", htmlPath);
+                }
+
+                if (File.Exists(pdfPath))
+                {
+                    File.Delete(pdfPath);
+                    _logger.LogDebug("🗑️ Eliminato file PDF esistente: {Path}", pdfPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "⚠️ Errore durante eliminazione file esistenti per report {ReportId}", report.Id);
+            }
+        }
+
+        private bool ShouldGenerateReports(ScheduleType scheduleType, DateTime now)
+        {
+            if (scheduleType == ScheduleType.Development)
+            {
+                return !_lastReportAttempts.Any()
+                    || _lastReportAttempts.Values.All(t => now - t >= TimeSpan.FromMinutes(DEV_INTERVAL_MINUTES));
+            }
+            return true;
+        }
+
+        private async Task<List<ClientVehicle>> GetVehiclesToProcess(PolarDriveDbContext db, ScheduleType scheduleType)
+        {
+            var query = db.ClientVehicles.Include(v => v.ClientCompany)
+                           .Where(v => v.IsFetchingDataFlag);
+
+            if (scheduleType != ScheduleType.Development && scheduleType != ScheduleType.Retry)
+            {
+                var (start, end) = GetDateRangeForSchedule(scheduleType);
+                query = query.Where(v => db.VehiclesData
+                    .Any(d => d.VehicleId == v.Id && d.Timestamp >= start && d.Timestamp <= end));
+            }
+
+            return await query.ToListAsync();
+        }
+
+        private (DateTime start, DateTime end) GetDateRangeForSchedule(ScheduleType scheduleType)
+        {
+            var now = DateTime.UtcNow;
+            return scheduleType switch
+            {
+                ScheduleType.Daily => (now.AddDays(-1).Date, now.Date.AddSeconds(-1)),
+                ScheduleType.Weekly => (now.AddDays(-7), now),
+                ScheduleType.Monthly => (now.AddMonths(-1), now),
+                _ => (now.AddHours(-24), now)
+            };
+        }
+
+        private ReportInfo GetReportInfo(ScheduleType scheduleType, DateTime now)
+        {
+            return scheduleType switch
+            {
+                ScheduleType.Development => new ReportInfo { AnalysisType = "Development Analysis", DefaultDataHours = 0 },
+                ScheduleType.Daily => new ReportInfo { AnalysisType = "Analisi Giornaliera", DefaultDataHours = 24 },
+                ScheduleType.Weekly => new ReportInfo { AnalysisType = "Analisi Settimanale", DefaultDataHours = 168 },
+                ScheduleType.Monthly => new ReportInfo { AnalysisType = "Analisi Mensile", DefaultDataHours = 720 },
+                ScheduleType.Retry => new ReportInfo { AnalysisType = "Retry Analysis", DefaultDataHours = 24 },
+                _ => new ReportInfo { AnalysisType = "Standard Analysis", DefaultDataHours = 24 }
+            };
+        }
+
         private static string GetFilePath(PdfReport report, string ext, string folder)
         {
             // ✅ USA LA DATA DI GENERAZIONE, NON IL PERIODO DEI DATI
@@ -457,5 +720,7 @@ namespace PolarDrive.WebApi.Services
                     break;
             }
         }
+
+        #endregion
     }
 }

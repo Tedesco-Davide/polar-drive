@@ -72,7 +72,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             ["insights"] = FormatInsightsForHtml(aiReportContentInsights),
 
             // Logo aziendale (Base64 se specificato)
-            ["logoBase64"] = await GetCompanyLogoBase64Async(report.ClientCompany),
+            ["logoBase64"] = await GetLogoBase64Async(report.ClientCompany),
 
             // Metadati del report
             ["reportType"] = options.ReportType,
@@ -224,15 +224,15 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
-    /// Ottiene il logo aziendale in formato Base64
+    /// Ottiene il logo aziendale DataPolar in formato Base64
     /// </summary>
-    private async Task<string> GetCompanyLogoBase64Async(ClientCompany? company)
+    private async Task<string> GetLogoBase64Async(ClientCompany? company)
     {
         if (company == null) return "";
 
         try
         {
-            var logoPath = Path.Combine("wwwroot", "images", "logos", $"{company.Id}.png");
+            var logoPath = Path.Combine("wwwroot", "logo", $"DataPolar_Lettering.svg");
 
             if (File.Exists(logoPath))
             {
