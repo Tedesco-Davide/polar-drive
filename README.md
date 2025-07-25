@@ -55,12 +55,14 @@ _(Tasto destro sulla cartella `backend/PolarDrive.TeslaMockApiService` → Open 
 
 #### ✅ Ollama
 
+_(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
+
 - `ollama --version` → Mostra la versione del runtime **Ollama**
+
   > Ollama è il **motore AI locale**: scarica, avvia e gestisce modelli LLM direttamente sul tuo PC.
 
-#### 🧪 UTILIZZO CORRETTO IN BACKEND
-
 - `ollama serve` → Avvia **Ollama in modalità server REST**
+
   > Espone l'endpoint `http://localhost:11434/api/generate` per richieste AI programmatiche.  
   > ✔️ È **stateless** e perfettamente integrabile nel backend (`HttpClient`, `POST`, JSON).
 

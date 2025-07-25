@@ -422,7 +422,7 @@ public class PolarAiReportGenerator
         try
         {
             var sb = new StringBuilder();
-            sb.AppendLine("📋 CERTIFICAZIONE DATI DATAPOLAR™:");
+            sb.AppendLine("📋 CERTIFICAZIONE DATI DATAPOLAR:");
 
             // 1️⃣ CALCOLO ORE TOTALI CERTIFICATE
             var totalRecords = await _dbContext.VehiclesData
