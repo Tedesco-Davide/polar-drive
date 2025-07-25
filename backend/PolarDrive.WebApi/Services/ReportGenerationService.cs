@@ -294,8 +294,6 @@ namespace PolarDrive.WebApi.Services
         /// </summary>
         public async Task<ReportGenerationResult> GenerateReportForVehicleAsync(int vehicleId, string analysisLevel = "Manual Generation")
         {
-            const string source = nameof(GenerateReportForVehicleAsync);
-
             try
             {
                 using var scope = _serviceProvider.CreateScope();
@@ -355,8 +353,6 @@ namespace PolarDrive.WebApi.Services
         /// </summary>
         public async Task<ReportGenerationResult> GenerateReportForAllActiveVehiclesAsync()
         {
-            const string source = nameof(GenerateReportForAllActiveVehiclesAsync);
-
             try
             {
                 using var scope = _serviceProvider.CreateScope();
