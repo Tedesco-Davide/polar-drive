@@ -12,13 +12,19 @@ public static class DefaultHtmlTemplate
 </head>
 <body>
     <div class=""report-container"">
-        <!-- Header con logo aziendale -->
+        <!-- ✅ Header con logo aziendale DataPolar -->
         <header class=""report-header header"">
-            {{#if logoBase64}}
             <div class=""company-logo"">
-                <img src=""data:image/png;base64,{{logoBase64}}"" alt=""Logo Aziendale"" class=""logo"" />
+                {{#if logoBase64}}
+                <!-- ✅ SUPPORTO SVG E PNG -->
+                <img src=""data:image/svg+xml;base64,{{logoBase64}}"" alt=""DataPolar Logo"" class=""logo"" 
+                     onerror=""this.src='data:image/png;base64,{{logoBase64}}'"" />
+                {{/if}}
+                {{^logoBase64}}
+                <!-- ✅ FALLBACK TESTUALE SE NESSUN LOGO -->
+                <div class=""logo-fallback"">DataPolar</div>
+                {{/logoBase64}}
             </div>
-            {{/if}}
             <h1 class=""report-title"">PolarDrive™ Report</h1>
             <div class=""report-id"">Report ID: {{reportId}}</div>
         </header>
@@ -44,6 +50,11 @@ public static class DefaultHtmlTemplate
                 </div>
                 {{/if}}
             </div>
+        </section>
+
+        <!-- ✅ CERTIFICAZIONE DATAPOLAR (SEMPRE PRESENTE) -->
+        <section class=""section certification-section"">
+            {{dataPolarCertification}}
         </section>
 
         <!-- Analisi AI -->

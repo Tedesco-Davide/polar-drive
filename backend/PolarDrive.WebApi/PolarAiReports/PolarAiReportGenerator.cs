@@ -203,7 +203,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Costruisce il prompt ottimizzato per analisi mensile unificata
+    /// ✅ AGGIORNATO: Costruisce il prompt ottimizzato con certificazione obbligatoria
     /// </summary>
     private async Task<string> BuildPrompt(List<string> rawJsonList, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
     {
@@ -222,6 +222,11 @@ public class PolarAiReportGenerator
                 **Dataset**: {rawJsonList.Count:N0} record telemetrici mensili  
                 **Strategia**: Analisi mensile consistente con context evolutivo
 
+                ## ⚠️ IMPORTANTE: CERTIFICAZIONE DATAPOLAR NEL PDF
+                **NOTA CRITICA**: La certificazione DataPolar sarà automaticamente inclusa nel PDF finale attraverso il sistema HTML. 
+                Tu concentrati sull'analisi tecnica e comportamentale senza ripetere le statistiche di certificazione.
+                
+                **Le seguenti statistiche sono per il tuo context di analisi:**
                 {stats}
 
                 ## OBIETTIVI ANALISI MENSILE PER LIVELLO
@@ -282,7 +287,7 @@ public class PolarAiReportGenerator
                 ## VINCOLI DI QUALITÀ MENSILE
 
                 **PRECISIONE NUMERICA**: Tutti i valori devono riferirsi al periodo mensile analizzato
-                **CONSISTENZA**: Mantenere coerenza con il livello {analysisLevel}
+                **FOCUS TECNICO**: Concentrati su analisi comportamentale e predittiva (non ripetere statistiche di base)
                 **PROFESSIONALITÀ**: Linguaggio tecnico ma accessibile
                 **ACTIONABILITY**: Ogni insight mensile deve tradursi in azioni concrete
                 **COMPARABILITÀ**: Fornire benchmark e confronti mensili
@@ -300,13 +305,15 @@ public class PolarAiReportGenerator
                 ## STILE OUTPUT
 
                 - **Formato**: Markdown professionale con emoji per sezioni
-                - **Lunghezza**: Proporzioanle al livello {analysisLevel} ma focus mensile
+                - **Lunghezza**: Proporzionale al livello {analysisLevel} ma focus mensile
                 - **Tone**: Consultoriale esperto, focus su performance mensili
                 - **Focus**: Valore business e ottimizzazione basata su dati mensili
+                - **Evita**: Ripetizione delle statistiche di certificazione (già nel PDF)
 
                 ---
-                **GENERA REPORT {analysisLevel.ToUpper()} CON FOCUS MENSILE SECONDO QUESTE SPECIFICHE**
-                **ANALIZZA I {dataHours / 24} GIORNI DI DATI NEL CONTESTO DI {totalMonitoringPeriod.TotalDays:F0} GIORNI TOTALI**";
+                **GENERA REPORT {analysisLevel.ToUpper()} CON FOCUS TECNICO-COMPORTAMENTALE**
+                **ANALIZZA I {dataHours / 24} GIORNI DI DATI NEL CONTESTO DI {totalMonitoringPeriod.TotalDays:F0} GIORNI TOTALI**
+                **LA CERTIFICAZIONE DATAPOLAR È GIÀ INCLUSA NEL PDF - CONCENTRATI SULL'ANALISI**";
     }
 
     /// <summary>
@@ -320,13 +327,13 @@ public class PolarAiReportGenerator
             {
                 model = "deepseek-r1:8b",
                 prompt = prompt,
-                temperature = 0.3,
+                temperature = 0.25,
                 top_p = 0.9,
                 stream = false,
                 options = new
                 {
-                    num_ctx = 20000,
-                    num_predict = 2048
+                    num_ctx = 131072,
+                    num_predict = 3072
                 }
             };
 

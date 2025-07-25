@@ -20,11 +20,35 @@ public static class DefaultCssTemplate
             margin-bottom: 30px;
         }
 
+        /* ✅ STILI LOGO COMBINATO DATAPOLAR */
         .logo {
-            width: 120px;
+            width: 200px; /* ✅ Aumentato per logo combinato */
             height: auto;
             margin-bottom: 12px;
             float: right;
+            max-height: 60px; /* ✅ Limita altezza per mantenere proporzioni */
+        }
+
+        .company-logo {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .logo-fallback {
+            width: 200px; /* ✅ Stessa larghezza del logo combinato */
+            height: 50px;
+            background: linear-gradient(135deg, #004E92 0%, #0066CC 100%);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 16px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         h1 {
@@ -190,40 +214,6 @@ public static class DefaultCssTemplate
             font-weight: normal; /* ✅ Footer normale */
         }
 
-        /* ✅ STILI SPECIFICI PER LA STAMPA */
-        @media print {
-            html, body {
-                font-size: 12px !important;
-            }
-
-            /* ✅ Riduci ulteriormente i grassetti in stampa */
-            h1 { font-weight: 600; }
-            h2 { font-weight: 500; }
-            h3 { font-weight: 500; }
-            strong { font-weight: 500; }
-            th { font-weight: 500; }
-
-            .section {
-                page-break-inside: avoid;
-            }
-
-            .header {
-                page-break-after: avoid;
-            }
-
-            table {
-                page-break-inside: auto;
-            }
-
-            tr {
-                page-break-inside: avoid;
-            }
-
-            .logo {
-                max-width: 100px;
-            }    
-        }
-
         /* Stili specifici per i report con analisi AI */
         .ai-report-badge {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -280,5 +270,192 @@ public static class DefaultCssTemplate
             content: '📈 Evoluzione Dati • ';
             color: #667eea;
             font-weight: 500;
+        }
+
+        /* ✅ STILI CERTIFICAZIONE DATAPOLAR */
+        .certification-section {
+            margin: 20px 0;
+            padding: 0;
+        }
+
+        .certification-datapolar {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border: 2px solid #004E92;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 15px 0;
+            position: relative;
+        }
+
+        .certification-datapolar::before {
+            content: '🏆 DataPolar Certification';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #004E92;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .certification-datapolar h3 {
+            color: #004E92;
+            margin-bottom: 15px;
+            margin-top: 10px;
+            font-size: 1.2em;
+            font-weight: 600;
+            border-bottom: 2px solid #004E92;
+            padding-bottom: 8px;
+        }
+
+        .certification-datapolar h4 {
+            color: #495057;
+            margin: 20px 0 10px 0;
+            font-size: 1.05em;
+            font-weight: 500;
+        }
+
+        .certification-table, .statistics-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+            font-size: 0.95em;
+            background: white;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .certification-table td, .statistics-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: top;
+        }
+
+        .certification-table td:first-child, .statistics-table td:first-child {
+            background: #f8f9fa;
+            font-weight: 500;
+            width: 45%;
+            color: #495057;
+            border-right: 1px solid #dee2e6;
+        }
+
+        .certification-table td:last-child, .statistics-table td:last-child {
+            font-weight: normal;
+            color: #212529;
+        }
+
+        .cert-warning {
+            color: #dc3545;
+            font-weight: 500;
+            padding: 10px;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+
+        .certification-error {
+            color: #721c24;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        /* ✅ STILI SPECIFICI PER LA STAMPA */
+        @media print {
+            html, body {
+                font-size: 12px !important;
+            }
+
+            /* ✅ Riduci ulteriormente i grassetti in stampa */
+            h1 { font-weight: 600; }
+            h2 { font-weight: 500; }
+            h3 { font-weight: 500; }
+            strong { font-weight: 500; }
+            th { font-weight: 500; }
+
+            .section {
+                page-break-inside: avoid;
+            }
+
+            .header {
+                page-break-after: avoid;
+            }
+
+            table {
+                page-break-inside: auto;
+            }
+
+            tr {
+                page-break-inside: avoid;
+            }
+
+            /* ✅ LOGO COMBINATO PER STAMPA PDF */
+            .logo {
+                max-width: 180px;
+                max-height: 50px;
+            }
+            
+            .logo-fallback {
+                width: 180px;
+                height: 45px;
+                background: #004E92 !important;
+            }
+
+            /* ✅ CERTIFICAZIONE PER STAMPA */
+            .certification-datapolar {
+                page-break-inside: avoid;
+                background: #f8f9fa !important;
+                border: 2px solid #004E92 !important;
+            }
+            
+            .certification-datapolar::before {
+                background: #004E92 !important;
+                color: white !important;
+            }
+            
+            .certification-table, .statistics-table {
+                page-break-inside: avoid;
+            }
+        }
+
+        /* ✅ RESPONSIVE PER SCHERMI PICCOLI */
+        @media (max-width: 768px) {
+            /* ✅ LOGO RESPONSIVE */
+            .logo {
+                width: 150px;
+                max-height: 45px;
+                float: none;
+                margin: 0 auto 15px auto;
+                display: block;
+            }
+            
+            .company-logo {
+                justify-content: center;
+            }
+            
+            .logo-fallback {
+                width: 150px;
+                height: 40px;
+                margin: 0 auto 15px auto;
+            }
+
+            /* ✅ CERTIFICAZIONE RESPONSIVE */
+            .certification-table, .statistics-table {
+                font-size: 0.85em;
+            }
+            
+            .certification-table td:first-child, .statistics-table td:first-child {
+                width: 50%;
+            }
+            
+            .certification-datapolar {
+                padding: 15px;
+            }
         }";
 }

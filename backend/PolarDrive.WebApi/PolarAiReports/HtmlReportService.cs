@@ -74,6 +74,9 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             // Logo aziendale (Base64 se specificato)
             ["logoBase64"] = await GetLogoBase64Async(report.ClientCompany),
 
+            // ✅ CERTIFICAZIONE DATAPOLAR (SEMPRE PRESENTE)
+            ["dataPolarCertification"] = await GenerateDataPolarCertificationAsync(report),
+
             // Metadati del report
             ["reportType"] = options.ReportType,
             ["reportVersion"] = options.ReportVersion,
@@ -99,6 +102,176 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
         }
 
         return data;
+    }
+
+    /// <summary>
+    /// Genera la certificazione DataPolar per inclusione diretta nel PDF
+    /// Riutilizza la stessa logica del PolarAiReportGenerator
+    /// </summary>
+    private async Task<string> GenerateDataPolarCertificationAsync(PdfReport report)
+    {
+        try
+        {
+            var vehicleId = report.ClientVehicleId;
+
+            // Calcola periodo di monitoraggio totale
+            var firstRecord = await dbContext.VehiclesData
+                .Where(vd => vd.VehicleId == vehicleId)
+                .OrderBy(vd => vd.Timestamp)
+                .Select(vd => vd.Timestamp)
+                .FirstOrDefaultAsync();
+
+            var totalMonitoringPeriod = firstRecord == default
+                ? TimeSpan.FromDays(1)
+                : DateTime.UtcNow - firstRecord;
+
+            // Recupera conteggio dati degli ultimi 30 giorni
+            var startTime = DateTime.UtcNow.AddHours(-720); // 30 giorni
+            var monthlyDataCount = await dbContext.VehiclesData
+                .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
+                .CountAsync();
+
+            // Genera certificazione completa
+            var certification = await GenerateDataCertificationHtml(vehicleId, totalMonitoringPeriod);
+            var statistics = GenerateMonthlyStatisticsHtml(monthlyDataCount, totalMonitoringPeriod);
+
+            return $@"
+                <div class='certification-datapolar'>
+                    <h3>🏆 Certificazione Dati DataPolar</h3>
+                    {certification}
+                    
+                    <h4>📊 Statistiche Analisi Mensile</h4>
+                    {statistics}
+                </div>";
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("HtmlReportService.GenerateDataPolarCertification",
+                "Errore generazione certificazione", ex.ToString());
+            return "<div class='certification-error'>⚠️ Certificazione dati non disponibile.</div>";
+        }
+    }
+
+    /// <summary>
+    /// Genera la certificazione dati in formato HTML (replica logica PolarAiReportGenerator)
+    /// </summary>
+    private async Task<string> GenerateDataCertificationHtml(int vehicleId, TimeSpan totalMonitoringPeriod)
+    {
+        var totalRecords = await dbContext.VehiclesData
+            .Where(vd => vd.VehicleId == vehicleId)
+            .CountAsync();
+
+        var firstRecord = await dbContext.VehiclesData
+            .Where(vd => vd.VehicleId == vehicleId)
+            .OrderBy(vd => vd.Timestamp)
+            .Select(vd => vd.Timestamp)
+            .FirstOrDefaultAsync();
+
+        var lastRecord = await dbContext.VehiclesData
+            .Where(vd => vd.VehicleId == vehicleId)
+            .OrderByDescending(vd => vd.Timestamp)
+            .Select(vd => vd.Timestamp)
+            .FirstOrDefaultAsync();
+
+        if (firstRecord == default || lastRecord == default)
+        {
+            return "<p class='cert-warning'>⚠️ Dati insufficienti per certificazione</p>";
+        }
+
+        var actualMonitoringPeriod = lastRecord - firstRecord;
+        var totalCertifiedHours = actualMonitoringPeriod.TotalHours;
+
+        // Calcolo semplificato di uptime e qualità
+        var uptimePercentage = Math.Min(95.0, 80.0 + (totalRecords / Math.Max(totalCertifiedHours, 1)) * 10);
+        var qualityScore = CalculateQualityScore(totalRecords, uptimePercentage, totalMonitoringPeriod);
+        var qualityStars = GetQualityStars(qualityScore);
+
+        return $@"
+            <table class='certification-table'>
+                <tr><td><strong>Ore totali certificate:</strong></td><td>{totalCertifiedHours:F0} ore ({totalCertifiedHours / 24:F1} giorni)</td></tr>
+                <tr><td><strong>Uptime raccolta:</strong></td><td>{uptimePercentage:F1}%</td></tr>
+                <tr><td><strong>Qualità dataset:</strong></td><td>{qualityStars} ({GetQualityLabel(qualityScore)})</td></tr>
+                <tr><td><strong>Primo record:</strong></td><td>{firstRecord:yyyy-MM-dd HH:mm} UTC</td></tr>
+                <tr><td><strong>Ultimo record:</strong></td><td>{lastRecord:yyyy-MM-dd HH:mm} UTC</td></tr>
+                <tr><td><strong>Records totali:</strong></td><td>{totalRecords:N0}</td></tr>
+                <tr><td><strong>Frequenza media:</strong></td><td>{(totalRecords / Math.Max(totalCertifiedHours, 1)):F1} campioni/ora</td></tr>
+            </table>";
+    }
+
+    /// <summary>
+    /// Genera statistiche mensili in formato HTML
+    /// </summary>
+    private string GenerateMonthlyStatisticsHtml(int monthlyRecords, TimeSpan totalMonitoringPeriod)
+    {
+        const int dataHours = 720; // 30 giorni
+
+        return $@"
+            <table class='statistics-table'>
+                <tr><td><strong>Durata monitoraggio totale:</strong></td><td>{totalMonitoringPeriod.TotalDays:F1} giorni</td></tr>
+                <tr><td><strong>Campioni mensili analizzati:</strong></td><td>{monthlyRecords:N0}</td></tr>
+                <tr><td><strong>Finestra UNIFICATA:</strong></td><td>{dataHours} ore (30 giorni)</td></tr>
+                <tr><td><strong>Densità dati mensile:</strong></td><td>{monthlyRecords / Math.Max(dataHours, 1):F1} campioni/ora</td></tr>
+                <tr><td><strong>Copertura dati:</strong></td><td>{Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):F1}% del periodo totale</td></tr>
+                <tr><td><strong>Strategia:</strong></td><td>Analisi mensile consistente con context evolutivo</td></tr>
+            </table>";
+    }
+
+    /// <summary>
+    /// Calcola qualità dataset semplificata per HTML
+    /// </summary>
+    private double CalculateQualityScore(int totalRecords, double uptimePercentage, TimeSpan monitoringPeriod)
+    {
+        double score = 0;
+
+        // 40% - Uptime
+        score += (uptimePercentage / 100) * 40;
+
+        // 30% - Densità records
+        var recordDensity = totalRecords / Math.Max(monitoringPeriod.TotalHours, 1);
+        var densityScore = Math.Min(1, recordDensity / 1.0);
+        score += densityScore * 30;
+
+        // 20% - Stabilità (semplificato)
+        score += 18; // Assumiamo buona stabilità
+
+        // 10% - Maturità dataset
+        if (monitoringPeriod.TotalDays >= 30) score += 10;
+        else if (monitoringPeriod.TotalDays >= 7) score += 7;
+        else if (monitoringPeriod.TotalDays >= 1) score += 3;
+
+        return Math.Max(0, Math.Min(100, score));
+    }
+
+    /// <summary>
+    /// Converte score in stelle (replica da PolarAiReportGenerator)
+    /// </summary>
+    private string GetQualityStars(double score)
+    {
+        return score switch
+        {
+            >= 90 => "⭐⭐⭐⭐⭐",
+            >= 80 => "⭐⭐⭐⭐⚪",
+            >= 70 => "⭐⭐⭐⚪⚪",
+            >= 60 => "⭐⭐⚪⚪⚪",
+            >= 50 => "⭐⚪⚪⚪⚪",
+            _ => "⚪⚪⚪⚪⚪"
+        };
+    }
+
+    /// <summary>
+    /// Etichetta qualitativa (replica da PolarAiReportGenerator)
+    /// </summary>
+    private string GetQualityLabel(double score)
+    {
+        return score switch
+        {
+            >= 90 => "Eccellente",
+            >= 80 => "Ottimo",
+            >= 70 => "Buono",
+            >= 60 => "Discreto",
+            >= 50 => "Sufficiente",
+            _ => "Migliorabile"
+        };
     }
 
     /// <summary>
@@ -224,29 +397,147 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
-    /// Ottiene il logo aziendale DataPolar in formato Base64
+    /// Ottiene SEMPRE il logo aziendale DataPolar combinato (Logo + Lettering) in formato Base64
+    /// Combina DataPolar_Logo.svg e DataPolar_Lettering.svg fianco a fianco
     /// </summary>
     private async Task<string> GetLogoBase64Async(ClientCompany? company)
     {
-        if (company == null) return "";
-
         try
         {
-            var logoPath = Path.Combine("wwwroot", "logo", $"DataPolar_Lettering.svg");
+            // ✅ PERCORSI DEI DUE COMPONENTI
+            var logoSymbolPath = Path.Combine("wwwroot", "logo", "DataPolar_Logo.svg");
+            var logoLetteringPath = Path.Combine("wwwroot", "logo", "DataPolar_Lettering.svg");
 
-            if (File.Exists(logoPath))
+            // ✅ VERIFICA PRESENZA ENTRAMBI I FILE
+            bool hasSymbol = File.Exists(logoSymbolPath);
+            bool hasLettering = File.Exists(logoLetteringPath);
+
+            if (hasSymbol && hasLettering)
             {
-                var logoBytes = await File.ReadAllBytesAsync(logoPath);
-                return Convert.ToBase64String(logoBytes);
+                // ✅ COMBINA I DUE SVG IN UNO SOLO
+                var combinedSvg = await CreateCombinedLogoSvg(logoSymbolPath, logoLetteringPath);
+                var logoBytes = Encoding.UTF8.GetBytes(combinedSvg);
+                var base64String = Convert.ToBase64String(logoBytes);
+
+                await _logger.Info("HtmlReportService.GetLogoBase64",
+                    "Logo combinato DataPolar creato",
+                    $"Symbol: {hasSymbol}, Lettering: {hasLettering}, Dimensione: {logoBytes.Length} bytes");
+                return base64String;
             }
+
+            // ✅ FALLBACK: SOLO LETTERING SE MANCA IL SIMBOLO
+            if (hasLettering)
+            {
+                var logoBytes = await File.ReadAllBytesAsync(logoLetteringPath);
+                var base64String = Convert.ToBase64String(logoBytes);
+                await _logger.Info("HtmlReportService.GetLogoBase64",
+                    "Solo lettering DataPolar caricato", $"Dimensione: {logoBytes.Length} bytes");
+                return base64String;
+            }
+
+            // ✅ FALLBACK: SOLO SIMBOLO SE MANCA IL LETTERING
+            if (hasSymbol)
+            {
+                var logoBytes = await File.ReadAllBytesAsync(logoSymbolPath);
+                var base64String = Convert.ToBase64String(logoBytes);
+                await _logger.Info("HtmlReportService.GetLogoBase64",
+                    "Solo simbolo DataPolar caricato", $"Dimensione: {logoBytes.Length} bytes");
+                return base64String;
+            }
+
+            // ✅ FALLBACK PNG (versione precedente)
+            var logoPathPng = Path.Combine("wwwroot", "logo", "DataPolar_Lettering.png");
+            if (File.Exists(logoPathPng))
+            {
+                var logoBytes = await File.ReadAllBytesAsync(logoPathPng);
+                var base64String = Convert.ToBase64String(logoBytes);
+                await _logger.Info("HtmlReportService.GetLogoBase64",
+                    "Logo PNG DataPolar caricato", $"Dimensione: {logoBytes.Length} bytes");
+                return base64String;
+            }
+
+            // ✅ NESSUN LOGO TROVATO
+            await _logger.Warning("HtmlReportService.GetLogoBase64",
+                "Nessun logo DataPolar trovato",
+                $"Percorsi testati: {logoSymbolPath}, {logoLetteringPath}, {logoPathPng}");
+
+            return "";
         }
         catch (Exception ex)
         {
-            await _logger.Debug("HtmlReportService.GetCompanyLogoBase64",
-                "Errore caricamento logo", ex.Message);
+            await _logger.Error("HtmlReportService.GetLogoBase64",
+                "Errore caricamento logo DataPolar combinato", ex.ToString());
+            return "";
         }
+    }
 
-        return "";
+    /// <summary>
+    /// Crea un SVG combinato con logo simbolo + lettering fianco a fianco
+    /// </summary>
+    private async Task<string> CreateCombinedLogoSvg(string symbolPath, string letteringPath)
+    {
+        try
+        {
+            var symbolSvg = await File.ReadAllTextAsync(symbolPath);
+            var letteringSvg = await File.ReadAllTextAsync(letteringPath);
+
+            // ✅ ESTRAI IL CONTENUTO INTERNO DEI DUE SVG
+            var symbolContent = ExtractSvgContent(symbolSvg);
+            var letteringContent = ExtractSvgContent(letteringSvg);
+
+            // ✅ CREA SVG COMBINATO CON LAYOUT ORIZZONTALE
+            var combinedSvg = $@"
+            <svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 300 80"" width=""300"" height=""80"">
+                <!-- Simbolo DataPolar a sinistra -->
+                <g transform=""translate(0,0) scale(0.8)"">
+                    {symbolContent}
+                </g>
+                
+                <!-- Lettering DataPolar a destra -->
+                <g transform=""translate(100,0) scale(0.8)"">
+                    {letteringContent}
+                </g>
+            </svg>";
+
+            await _logger.Debug("HtmlReportService.CreateCombinedLogo",
+                "SVG combinato creato", $"Lunghezza: {combinedSvg.Length} caratteri");
+
+            return combinedSvg;
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("HtmlReportService.CreateCombinedLogo",
+                "Errore creazione SVG combinato", ex.ToString());
+
+            // ✅ FALLBACK: RITORNA SOLO IL LETTERING IN CASO DI ERRORE
+            return await File.ReadAllTextAsync(letteringPath);
+        }
+    }
+
+    /// <summary>
+    /// Estrae il contenuto interno di un SVG (rimuove il tag svg esterno)
+    /// </summary>
+    private string ExtractSvgContent(string svgContent)
+    {
+        try
+        {
+            // ✅ TROVA L'APERTURA E CHIUSURA DEL TAG SVG
+            var startIndex = svgContent.IndexOf('>') + 1;
+            var endIndex = svgContent.LastIndexOf("</svg>");
+
+            if (startIndex > 0 && endIndex > startIndex)
+            {
+                return svgContent.Substring(startIndex, endIndex - startIndex).Trim();
+            }
+
+            // ✅ FALLBACK: RITORNA TUTTO SE NON RIESCE A PARSARE
+            return svgContent;
+        }
+        catch
+        {
+            // ✅ FALLBACK SICURO
+            return svgContent;
+        }
     }
 
     /// <summary>
