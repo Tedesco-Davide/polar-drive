@@ -89,7 +89,7 @@ public class TeslaApiService
                 }
 
                 // Pausa tra veicoli per evitare rate limiting
-                await Task.Delay(TimeSpan.FromSeconds(2));
+                await Task.Delay(TimeSpan.FromSeconds(10));
             }
             catch (Exception ex)
             {
@@ -158,7 +158,7 @@ public class TeslaApiService
 
             // Test di connettività con retry
             using var testClient = new HttpClient();
-            testClient.Timeout = TimeSpan.FromSeconds(5);
+            testClient.Timeout = TimeSpan.FromSeconds(15);
 
             for (int attempt = 1; attempt <= 2; attempt++)
             {
@@ -174,7 +174,7 @@ public class TeslaApiService
                 catch (Exception ex) when (attempt == 1)
                 {
                     await _logger.Debug(source, $"Tesla API availability check attempt {attempt} failed: {ex.Message}");
-                    await Task.Delay(1000); // Attendi 1 secondo prima del retry
+                    await Task.Delay(5000);
                 }
             }
 
@@ -309,7 +309,7 @@ public class TeslaApiService
         try
         {
             var expiredTokens = await _db.ClientTokens
-                .Where(t => t.AccessTokenExpiresAt <= DateTime.UtcNow.AddMinutes(5)) // Refresh 5 minuti prima della scadenza
+                .Where(t => t.AccessTokenExpiresAt <= DateTime.UtcNow.AddMinutes(20)) // Refresh 5 minuti prima della scadenza
                 .ToListAsync();
 
             var refreshedCount = 0;
@@ -335,7 +335,7 @@ public class TeslaApiService
                 }
 
                 // Pausa tra i refresh per evitare rate limiting
-                await Task.Delay(1000);
+                await Task.Delay(5000);
             }
 
             await _logger.Info(source, $"Token refresh completed: {refreshedCount}/{expiredTokens.Count} tokens refreshed");
@@ -412,7 +412,7 @@ public class TeslaApiService
                         return VehicleFetchResult.Skipped;
                     }
                     // Aspetta più tempo per veicoli che erano dormienti
-                    await Task.Delay(10000);
+                    await Task.Delay(20000);
                     break;
 
                 case "online":
@@ -491,7 +491,7 @@ public class TeslaApiService
                 await _logger.Debug(source, $"Wake-up command sent successfully for vehicle ID {vehicleId}");
 
                 // Aspetta un po' che si svegli
-                await Task.Delay(5000);
+                await Task.Delay(15000);
 
                 // ✅ VERIFICA SE SI È EFFETTIVAMENTE SVEGLIATO
                 var vehicles = await GetTeslaVehiclesAsync(accessToken);
