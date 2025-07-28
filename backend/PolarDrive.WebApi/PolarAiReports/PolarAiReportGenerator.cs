@@ -332,8 +332,10 @@ public class PolarAiReportGenerator
                 stream = false,
                 options = new
                 {
-                    num_ctx = 131072,
-                    num_predict = 3072
+                    num_ctx = 32768,        // MAX → 131072, MIO → 20K, MARGINE → 12-17K
+                    num_predict = 3072,     // Perfetto per report completi
+                    repeat_penalty = 1.1,   // Previene ripetizioni
+                    top_k = 40              // Migliora coerenza
                 }
             };
 

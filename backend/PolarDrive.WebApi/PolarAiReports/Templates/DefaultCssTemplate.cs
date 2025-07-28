@@ -396,17 +396,19 @@ public static class DefaultCssTemplate
             }
 
             /* ✅ LOGO COMBINATO PER STAMPA PDF */
-            .logo {
-                max-width: 180px;
-                max-height: 50px;
-            }
-            
-            .logo-fallback {
-                width: 180px;
-                height: 45px;
-                background: #004E92 !important;
+            .company-logo-img {
+                width: 120px;
+                max-height: 40px;
+                margin-bottom: 12px;
+                float: right;
             }
 
+            .logo {
+                width: 200px;
+                height: auto;
+                max-height: 60px;
+            }
+            
             /* ✅ CERTIFICAZIONE PER STAMPA */
             .certification-datapolar {
                 page-break-inside: avoid;

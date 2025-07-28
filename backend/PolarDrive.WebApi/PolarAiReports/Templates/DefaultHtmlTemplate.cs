@@ -17,13 +17,9 @@ public static class DefaultHtmlTemplate
             <div class=""company-logo"">
                 {{#if logoBase64}}
                 <!-- ✅ SUPPORTO SVG E PNG -->
-                <img src=""data:image/svg+xml;base64,{{logoBase64}}"" alt=""DataPolar Logo"" class=""logo"" 
+                <img src=""data:image/svg+xml;base64,{{logoBase64}}"" alt=""DataPolar Logo"" class=""logo company-logo-img"" 
                      onerror=""this.src='data:image/png;base64,{{logoBase64}}'"" />
                 {{/if}}
-                {{^logoBase64}}
-                <!-- ✅ FALLBACK TESTUALE SE NESSUN LOGO -->
-                <div class=""logo-fallback"">DataPolar</div>
-                {{/logoBase64}}
             </div>
             <h1 class=""report-title"">PolarDrive™ Report</h1>
             <div class=""report-id"">Report ID: {{reportId}}</div>

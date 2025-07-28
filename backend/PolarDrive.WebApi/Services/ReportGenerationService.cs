@@ -606,8 +606,62 @@ namespace PolarDrive.WebApi.Services
                 MarginLeft = "1.5cm",
                 MarginRight = "1.5cm",
                 DisplayHeaderFooter = true,
-                HeaderTemplate = $"<div style='font-size:10px;text-align:center;color:#004E92;border-bottom:1px solid #004E92;padding-bottom:5px;'>{vehicle.Vin} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}</div>",
-                FooterTemplate = "<div style='font-size:10px;text-align:center;color:#666;border-top:1px solid #ccc;padding-top:5px;'>Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Analytics</div>"
+                HeaderTemplate = $@"
+                                    <html>
+                                    <head>
+                                        <style>
+                                            body {{
+                                                margin: 0;
+                                                padding: 0;
+                                                width: 100%;
+                                                height: 100%;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                            }}
+                                            .header-content {{
+                                                font-size: 10px;
+                                                color: #004E92;
+                                                text-align: center;
+                                                border-bottom: 1px solid #004E92;
+                                                padding-bottom: 5px;
+                                                width: 100%;
+                                            }}
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <div class='header-content'>{vehicle.Vin} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}</div>
+                                    </body>
+                                    </html>",
+                FooterTemplate = @"
+                                    <html>
+                                    <head>
+                                        <style>
+                                            body {
+                                                margin: 0;
+                                                padding: 0;
+                                                width: 100%;
+                                                height: 100%;
+                                                display: flex;
+                                                align-items: center;
+                                                justify-content: center;
+                                            }
+                                            .footer-content {
+                                                font-size: 10px;
+                                                color: #666;
+                                                text-align: center;
+                                                border-top: 1px solid #ccc;
+                                                padding-top: 5px;
+                                                width: 100%;
+                                            }
+                                        </style>
+                                    </head>
+                                    <body>
+                                        <div class='footer-content'>
+                                            Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Analytics
+                                        </div>
+                                    </body>
+                                    </html>"
             };
             var pdfBytes = await pdfSvc.ConvertHtmlToPdfAsync(html, report, pdfOpt);
 
