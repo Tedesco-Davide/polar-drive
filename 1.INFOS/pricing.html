@@ -255,7 +255,7 @@
                 <div class="vehicle-price">€569/mese</div>
               </div>
               <div
-                class="vehicle-option selected"
+                class="vehicle-option"
                 data-canone="619"
                 data-nome="Model 3 - Long Range posteriore"
               >
@@ -315,10 +315,178 @@
             style="
               margin-top: 30px;
               padding-top: 20px;
-              border-top: 1px solid #e9ecef;
+              border-top: 1px solid #000000;
             "
           >
-            <h3 style="color: #2c3e50; margin-bottom: 15px">
+            <h3 style="color: #2c3e50; margin-bottom: 15px">💰 Prezzi Tesla</h3>
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+                margin-bottom: 30px;
+              "
+            >
+              <!-- Model 3 -->
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >Model 3 - Trazione posteriore</label
+                >
+                <input
+                  type="number"
+                  id="price-m3-rwd"
+                  value="569"
+                  min="1"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="updateVehiclePrices()"
+                />
+                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
+              </div>
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >Model 3 - Long Range posteriore</label
+                >
+                <input
+                  type="number"
+                  id="price-m3-lr-rwd"
+                  value="619"
+                  min="1"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="updateVehiclePrices()"
+                />
+                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
+              </div>
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >Model 3 - Long Range integrale</label
+                >
+                <input
+                  type="number"
+                  id="price-m3-lr-awd"
+                  value="849"
+                  min="1"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="updateVehiclePrices()"
+                />
+                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
+              </div>
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >Model 3 - Performance integrale</label
+                >
+                <input
+                  type="number"
+                  id="price-m3-perf"
+                  value="989"
+                  min="1"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="updateVehiclePrices()"
+                />
+                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
+              </div>
+              <!-- Model Y -->
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >Model Y - Trazione posteriore</label
+                >
+                <input
+                  type="number"
+                  id="price-my-rwd"
+                  value="669"
+                  min="1"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="updateVehiclePrices()"
+                />
+                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
+              </div>
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >Model Y - Long Range posteriore</label
+                >
+                <input
+                  type="number"
+                  id="price-my-lr-rwd"
+                  value="529"
+                  min="1"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="updateVehiclePrices()"
+                />
+                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
+              </div>
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >Model Y - Long Range integrale</label
+                >
+                <input
+                  type="number"
+                  id="price-my-lr-awd"
+                  value="779"
+                  min="1"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="updateVehiclePrices()"
+                />
+                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
+              </div>
+            </div>
+
+            <h3
+              style="
+                color: #2c3e50;
+                margin-bottom: 15px;
+                margin-top: 30px;
+                padding-top: 20px;
+                border-top: 1px solid #000000;
+              "
+            >
               ⚙️ Parametri Commissione
             </h3>
             <div
@@ -505,10 +673,71 @@
     </div>
 
     <script>
-      let selectedVehicle = {
-        canone: 619,
-        nome: "Model 3 - Long Range posteriore",
-      };
+      // Funzione per aggiornare i prezzi dei veicoli
+      function updateVehiclePrices() {
+        // Mappatura degli ID agli elementi DOM
+        const priceMapping = [
+          {
+            inputId: "price-m3-rwd",
+            elementSelector: '[data-nome="Model 3 - Trazione posteriore"]',
+          },
+          {
+            inputId: "price-m3-lr-rwd",
+            elementSelector: '[data-nome="Model 3 - Long Range posteriore"]',
+          },
+          {
+            inputId: "price-m3-lr-awd",
+            elementSelector: '[data-nome="Model 3 - Long Range integrale"]',
+          },
+          {
+            inputId: "price-m3-perf",
+            elementSelector: '[data-nome="Model 3 - Performance integrale"]',
+          },
+          {
+            inputId: "price-my-rwd",
+            elementSelector: '[data-nome="Model Y - Trazione posteriore"]',
+          },
+          {
+            inputId: "price-my-lr-rwd",
+            elementSelector: '[data-nome="Model Y - Long Range posteriore"]',
+          },
+          {
+            inputId: "price-my-lr-awd",
+            elementSelector: '[data-nome="Model Y - Long Range integrale"]',
+          },
+        ];
+
+        // Aggiorna i prezzi nelle card
+        priceMapping.forEach(({ inputId, elementSelector }) => {
+          const newPrice = document.getElementById(inputId).value;
+          const element = document.querySelector(elementSelector);
+
+          if (element) {
+            // Aggiorna l'attributo data-canone
+            element.setAttribute("data-canone", newPrice);
+
+            // Aggiorna il testo del prezzo visualizzato
+            const priceDisplay = element.querySelector(".vehicle-price");
+            if (priceDisplay) {
+              priceDisplay.textContent = `€${newPrice}/mese`;
+            }
+          }
+        });
+
+        // Se il veicolo attualmente selezionato è stato modificato, aggiorna selectedVehicle
+        const currentSelected = document.querySelector(
+          ".vehicle-option.selected"
+        );
+        if (currentSelected) {
+          selectedVehicle = {
+            canone: parseInt(currentSelected.getAttribute("data-canone")),
+            nome: currentSelected.getAttribute("data-nome"),
+          };
+          calculateAllTiers();
+        }
+      }
+
+      let selectedVehicle = null;
 
       // Costanti
       const ANTICIPO = 6000;
@@ -569,6 +798,17 @@
       }
 
       function calculateTier(tier) {
+        // Se non è selezionato nessun veicolo, non calcolare
+        if (!selectedVehicle) {
+          document.getElementById(`${tier}-total`).textContent = `€ 0`;
+          document.getElementById(`${tier}-monthly`).textContent = `€ 0`;
+          document.getElementById(`${tier}-total-iva`).textContent = `€ 0`;
+          document.getElementById(`${tier}-monthly-iva`).textContent = `€ 0`;
+          document.getElementById(`${tier}-cliente-total`).textContent = `€ 0`;
+          updateResultsTable();
+          return;
+        }
+
         const costs = calculateVehicleCosts(selectedVehicle.canone);
         const savings = calculateSavings(
           costs.costoTotaleNoIva,
