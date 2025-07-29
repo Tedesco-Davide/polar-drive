@@ -397,76 +397,39 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
-    /// Ottiene SEMPRE il logo aziendale DataPolar combinato (Logo + Lettering) in formato Base64
-    /// Combina DataPolar_Logo.svg e DataPolar_Lettering.svg fianco a fianco
+    /// Ottiene il logo aziendale DataPolar combinato (Logo + Lettering) in formato Base64
+    /// Utilizza esclusivamente DataPolar_Logo_Lettering.svg
     /// </summary>
     private async Task<string> GetLogoBase64Async(ClientCompany? company)
     {
         try
         {
-            // ✅ PERCORSI DEI DUE COMPONENTI
-            var logoSymbolPath = Path.Combine("wwwroot", "logo", "DataPolar_Logo.svg");
-            var logoLetteringPath = Path.Combine("wwwroot", "logo", "DataPolar_Lettering.svg");
+            // ✅ PERCORSO DEL LOGO COMBINATO
+            var logoPath = Path.Combine("wwwroot", "logo", "DataPolar_Logo_Lettering.svg");
 
-            // ✅ VERIFICA PRESENZA ENTRAMBI I FILE
-            bool hasSymbol = File.Exists(logoSymbolPath);
-            bool hasLettering = File.Exists(logoLetteringPath);
-
-            if (hasSymbol && hasLettering)
+            // ✅ VERIFICA PRESENZA FILE
+            if (!File.Exists(logoPath))
             {
-                // ✅ COMBINA I DUE SVG IN UNO SOLO
-                var combinedSvg = await CreateCombinedLogoSvg(logoSymbolPath, logoLetteringPath);
-                var logoBytes = Encoding.UTF8.GetBytes(combinedSvg);
-                var base64String = Convert.ToBase64String(logoBytes);
-
-                await _logger.Info("HtmlReportService.GetLogoBase64",
-                    "Logo combinato DataPolar creato",
-                    $"Symbol: {hasSymbol}, Lettering: {hasLettering}, Dimensione: {logoBytes.Length} bytes");
-                return base64String;
+                await _logger.Warning("HtmlReportService.GetLogoBase64",
+                    "Logo DataPolar non trovato",
+                    $"Percorso: {logoPath}");
+                return "";
             }
 
-            // ✅ FALLBACK: SOLO LETTERING SE MANCA IL SIMBOLO
-            if (hasLettering)
-            {
-                var logoBytes = await File.ReadAllBytesAsync(logoLetteringPath);
-                var base64String = Convert.ToBase64String(logoBytes);
-                await _logger.Info("HtmlReportService.GetLogoBase64",
-                    "Solo lettering DataPolar caricato", $"Dimensione: {logoBytes.Length} bytes");
-                return base64String;
-            }
+            // ✅ CARICA E CONVERTE IN BASE64
+            var logoBytes = await File.ReadAllBytesAsync(logoPath);
+            var base64String = Convert.ToBase64String(logoBytes);
 
-            // ✅ FALLBACK: SOLO SIMBOLO SE MANCA IL LETTERING
-            if (hasSymbol)
-            {
-                var logoBytes = await File.ReadAllBytesAsync(logoSymbolPath);
-                var base64String = Convert.ToBase64String(logoBytes);
-                await _logger.Info("HtmlReportService.GetLogoBase64",
-                    "Solo simbolo DataPolar caricato", $"Dimensione: {logoBytes.Length} bytes");
-                return base64String;
-            }
+            await _logger.Info("HtmlReportService.GetLogoBase64",
+                "Logo DataPolar caricato con successo",
+                $"Dimensione: {logoBytes.Length} bytes");
 
-            // ✅ FALLBACK PNG (versione precedente)
-            var logoPathPng = Path.Combine("wwwroot", "logo", "DataPolar_Lettering.png");
-            if (File.Exists(logoPathPng))
-            {
-                var logoBytes = await File.ReadAllBytesAsync(logoPathPng);
-                var base64String = Convert.ToBase64String(logoBytes);
-                await _logger.Info("HtmlReportService.GetLogoBase64",
-                    "Logo PNG DataPolar caricato", $"Dimensione: {logoBytes.Length} bytes");
-                return base64String;
-            }
-
-            // ✅ NESSUN LOGO TROVATO
-            await _logger.Warning("HtmlReportService.GetLogoBase64",
-                "Nessun logo DataPolar trovato",
-                $"Percorsi testati: {logoSymbolPath}, {logoLetteringPath}, {logoPathPng}");
-
-            return "";
+            return base64String;
         }
         catch (Exception ex)
         {
             await _logger.Error("HtmlReportService.GetLogoBase64",
-                "Errore caricamento logo DataPolar combinato", ex.ToString());
+                "Errore caricamento logo DataPolar", ex.ToString());
             return "";
         }
     }
