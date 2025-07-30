@@ -201,7 +201,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// <summary>
     /// Genera statistiche mensili in formato HTML
     /// </summary>
-    private string GenerateMonthlyStatisticsHtml(int monthlyRecords, TimeSpan totalMonitoringPeriod)
+    private static string GenerateMonthlyStatisticsHtml(int monthlyRecords, TimeSpan totalMonitoringPeriod)
     {
         const int dataHours = 720; // 30 giorni
 
@@ -219,7 +219,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// <summary>
     /// Calcola qualità dataset semplificata per HTML
     /// </summary>
-    private double CalculateQualityScore(int totalRecords, double uptimePercentage, TimeSpan monitoringPeriod)
+    private static double CalculateQualityScore(int totalRecords, double uptimePercentage, TimeSpan monitoringPeriod)
     {
         double score = 0;
 
@@ -245,7 +245,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// <summary>
     /// Converte score in stelle (replica da PolarAiReportGenerator)
     /// </summary>
-    private string GetQualityStars(double score)
+    private static string GetQualityStars(double score)
     {
         return score switch
         {
@@ -261,7 +261,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// <summary>
     /// Etichetta qualitativa (replica da PolarAiReportGenerator)
     /// </summary>
-    private string GetQualityLabel(double score)
+    private static string GetQualityLabel(double score)
     {
         return score switch
         {
@@ -277,7 +277,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// <summary>
     /// Renderizza il template finale sostituendo tutti i placeholder
     /// </summary>
-    private string RenderTemplate(string template, string styles, Dictionary<string, object> data)
+    private static string RenderTemplate(string template, string styles, Dictionary<string, object> data)
     {
         var html = template;
 
@@ -301,7 +301,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// <summary>
     /// Processa i blocchi condizionali nel template (es. {{#if showCharts}}...{{/if}})
     /// </summary>
-    private string ProcessConditionalBlocks(string html, Dictionary<string, object> data)
+    private static string ProcessConditionalBlocks(string html, Dictionary<string, object> data)
     {
         var patterns = new Dictionary<string, bool>
         {
@@ -349,9 +349,8 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
     /// <summary>
     /// Formatta gli insights AI per HTML (converte markdown base in HTML)
-    /// NOTA: Non include più stili CSS inline - gli stili sono centralizzati in DefaultCssTemplate
     /// </summary>
-    private string FormatInsightsForHtml(string insights)
+    private static string FormatInsightsForHtml(string insights)
     {
         if (string.IsNullOrWhiteSpace(insights))
             return "<p class='insight-empty'>Nessun insight disponibile.</p>";
@@ -431,75 +430,6 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             await _logger.Error("HtmlReportService.GetLogoBase64",
                 "Errore caricamento logo DataPolar", ex.ToString());
             return "";
-        }
-    }
-
-    /// <summary>
-    /// Crea un SVG combinato con logo simbolo + lettering fianco a fianco
-    /// </summary>
-    private async Task<string> CreateCombinedLogoSvg(string symbolPath, string letteringPath)
-    {
-        try
-        {
-            var symbolSvg = await File.ReadAllTextAsync(symbolPath);
-            var letteringSvg = await File.ReadAllTextAsync(letteringPath);
-
-            // ✅ ESTRAI IL CONTENUTO INTERNO DEI DUE SVG
-            var symbolContent = ExtractSvgContent(symbolSvg);
-            var letteringContent = ExtractSvgContent(letteringSvg);
-
-            // ✅ CREA SVG COMBINATO CON LAYOUT ORIZZONTALE
-            var combinedSvg = $@"
-            <svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 300 80"" width=""300"" height=""80"">
-                <!-- Simbolo DataPolar a sinistra -->
-                <g transform=""translate(0,0) scale(0.8)"">
-                    {symbolContent}
-                </g>
-                
-                <!-- Lettering DataPolar a destra -->
-                <g transform=""translate(100,0) scale(0.8)"">
-                    {letteringContent}
-                </g>
-            </svg>";
-
-            await _logger.Debug("HtmlReportService.CreateCombinedLogo",
-                "SVG combinato creato", $"Lunghezza: {combinedSvg.Length} caratteri");
-
-            return combinedSvg;
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("HtmlReportService.CreateCombinedLogo",
-                "Errore creazione SVG combinato", ex.ToString());
-
-            // ✅ FALLBACK: RITORNA SOLO IL LETTERING IN CASO DI ERRORE
-            return await File.ReadAllTextAsync(letteringPath);
-        }
-    }
-
-    /// <summary>
-    /// Estrae il contenuto interno di un SVG (rimuove il tag svg esterno)
-    /// </summary>
-    private string ExtractSvgContent(string svgContent)
-    {
-        try
-        {
-            // ✅ TROVA L'APERTURA E CHIUSURA DEL TAG SVG
-            var startIndex = svgContent.IndexOf('>') + 1;
-            var endIndex = svgContent.LastIndexOf("</svg>");
-
-            if (startIndex > 0 && endIndex > startIndex)
-            {
-                return svgContent.Substring(startIndex, endIndex - startIndex).Trim();
-            }
-
-            // ✅ FALLBACK: RITORNA TUTTO SE NON RIESCE A PARSARE
-            return svgContent;
-        }
-        catch
-        {
-            // ✅ FALLBACK SICURO
-            return svgContent;
         }
     }
 
@@ -588,7 +518,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// Genera HTML di fallback in caso di errore
     /// Utilizza gli stili centralizzati anche per l'errore
     /// </summary>
-    private string GenerateErrorFallbackHtml(PdfReport report, string insights, string errorMessage)
+    private static string GenerateErrorFallbackHtml(PdfReport report, string insights, string errorMessage)
     {
         var styles = DefaultCssTemplate.Value;
 
