@@ -12,8 +12,12 @@ public static class DefaultHtmlTemplate
 </head>
 <body>
     <div class=""report-container"">
-        <!-- ✅ Header con logo aziendale DataPolar -->
+        <!-- ✅ Header con logo aziendale DataPolar allineato -->
         <header class=""report-header header"">
+            <div class=""report-title-container"">
+                <h1 class=""report-title"">PolarDrive™ Report</h1>
+                <div class=""report-id"">Report ID: {{reportId}}</div>
+            </div>
             <div class=""company-logo"">
                 {{#if logoBase64}}
                 <!-- ✅ SUPPORTO SVG E PNG -->
@@ -21,8 +25,6 @@ public static class DefaultHtmlTemplate
                      onerror=""this.src='data:image/png;base64,{{logoBase64}}'"" />
                 {{/if}}
             </div>
-            <h1 class=""report-title"">PolarDrive™ Report</h1>
-            <div class=""report-id"">Report ID: {{reportId}}</div>
         </header>
 
         <!-- Informazioni principali -->

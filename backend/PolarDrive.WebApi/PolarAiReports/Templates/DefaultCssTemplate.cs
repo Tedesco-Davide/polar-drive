@@ -18,22 +18,39 @@ public static class DefaultCssTemplate
             border-bottom: 3px solid #004E92;
             padding-bottom: 20px;
             margin-bottom: 30px;
+            position: relative; /* ✅ Per posizionamento logo */
         }
 
-        /* ✅ STILI LOGO COMBINATO DATAPOLAR */
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .report-title-container {
+            flex: 1;
+        }
+
+        .report-title {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* ✅ STILI LOGO COMBINATO DATAPOLAR - ALLINEATO A DESTRA */
         .logo {
             width: 200px; /* ✅ Aumentato per logo combinato */
             height: auto;
-            margin-bottom: 12px;
-            float: right;
+            margin: 0; /* ✅ Rimosso margin-bottom */
             max-height: 60px; /* ✅ Limita altezza per mantenere proporzioni */
+            flex-shrink: 0; /* ✅ Impedisce al logo di rimpicciolirsi */
         }
 
         .company-logo {
             display: flex;
             justify-content: flex-end;
-            align-items: center;
-            margin-bottom: 15px;
+            align-items: flex-start;
+            margin: 0; /* ✅ Rimosso margin-bottom */
         }
 
         .logo-fallback {
@@ -47,8 +64,9 @@ public static class DefaultCssTemplate
             font-weight: 600;
             font-size: 16px;
             border-radius: 8px;
-            margin-bottom: 12px;
+            margin: 0; /* ✅ Rimosso margin-bottom */
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-shrink: 0;
         }
 
         h1 {
@@ -399,14 +417,15 @@ public static class DefaultCssTemplate
             .company-logo-img {
                 width: 120px;
                 max-height: 40px;
-                margin-bottom: 12px;
-                float: right;
+                margin: 0; /* ✅ Rimosso margin-bottom */
+                flex-shrink: 0;
             }
 
             .logo {
                 width: 200px;
                 height: auto;
                 max-height: 60px;
+                margin: 0; /* ✅ Rimosso margin */
             }
             
             /* ✅ CERTIFICAZIONE PER STAMPA */
@@ -428,23 +447,34 @@ public static class DefaultCssTemplate
 
         /* ✅ RESPONSIVE PER SCHERMI PICCOLI */
         @media (max-width: 768px) {
+            /* ✅ HEADER RESPONSIVE - STACK VERTICALE */
+            .report-header {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .report-title-container {
+                order: 2;
+                text-align: center;
+                width: 100%;
+            }
+
+            .company-logo {
+                order: 1;
+                justify-content: center;
+                margin-bottom: 15px;
+                width: 100%;
+            }
+
             /* ✅ LOGO RESPONSIVE */
             .logo {
                 width: 150px;
                 max-height: 45px;
-                float: none;
-                margin: 0 auto 15px auto;
-                display: block;
-            }
-            
-            .company-logo {
-                justify-content: center;
             }
             
             .logo-fallback {
                 width: 150px;
                 height: 40px;
-                margin: 0 auto 15px auto;
             }
 
             /* ✅ CERTIFICAZIONE RESPONSIVE */
