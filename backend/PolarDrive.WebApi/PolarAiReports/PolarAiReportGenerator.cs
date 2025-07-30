@@ -406,7 +406,6 @@ public class PolarAiReportGenerator
     {
         var sb = new StringBuilder();
 
-        // 🏆 CERTIFICAZIONE DATI DATAPOLAR
         var certification = await GenerateDataCertification(vehicleId, totalMonitoringPeriod);
         sb.AppendLine(certification);
         sb.AppendLine();

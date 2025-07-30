@@ -57,7 +57,6 @@ public static class DefaultHtmlTemplate
 
         <!-- Analisi AI -->
         <section class=""section ai-insights"">
-            <h2 class=""section-title"">Analisi Intelligente del Veicolo</h2>
             <div class=""insights-content"">
                 {{insights}}
             </div>
@@ -66,7 +65,7 @@ public static class DefaultHtmlTemplate
         <!-- Statistiche dettagliate (condizionali) -->
         {{#if showDetailedStats}}
         <section class=""section detailed-stats"">
-            <h2 class=""section-title"">Statistiche Dettagliate</h2>
+            <h2 class=""section-title"">Statistiche Generali</h2>
             <div class=""stats-content"">
                 {{detailedStats}}
             </div>

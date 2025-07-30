@@ -137,9 +137,8 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
             return $@"
                 <div class='certification-datapolar'>
-                    <h3>🏆 Certificazione Dati DataPolar</h3>
+                    <h4 class='certification-datapolar-generic'>📊 Statistiche Dettagliate </h4>
                     {certification}
-                    
                     <h4>📊 Statistiche Analisi Mensile</h4>
                     {statistics}
                 </div>";

@@ -8,17 +8,44 @@ public static class DefaultCssTemplate
         }
 
         body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            line-height: 1.4;
-            font-weight: normal; /* ✅ Assicura font normale di base */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.5;
+            font-weight: 400;
+            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            color: #2d3748;
         }
 
+        .report-container {
+            max-width: 100%;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+            overflow: hidden;
+        }
+
+        /* ✅ HEADER MODERNO CON GRADIENTE */
         .header {
-            border-bottom: 3px solid #004E92;
-            padding-bottom: 20px;
-            margin-bottom: 30px;
-            position: relative; /* ✅ Per posizionamento logo */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            margin: 0;
+            border: none;
+            border-radius: 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 100 100""><defs><pattern id=""grid"" width=""10"" height=""10"" patternUnits=""userSpaceOnUse""><path d=""M 10 0 L 0 0 0 10"" fill=""none"" stroke=""rgba(255,255,255,0.1)"" stroke-width=""0.5""/></pattern></defs><rect width=""100"" height=""100"" fill=""url(%23grid)"" /></svg>');
+            pointer-events: none;
         }
 
         .report-header {
@@ -26,6 +53,8 @@ public static class DefaultCssTemplate
             justify-content: space-between;
             align-items: flex-start;
             width: 100%;
+            position: relative;
+            z-index: 1;
         }
 
         .report-title-container {
@@ -33,30 +62,46 @@ public static class DefaultCssTemplate
         }
 
         .report-title {
-            margin: 0;
+            margin: 0 0 8px 0;
             padding: 0;
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
-        /* ✅ STILI LOGO COMBINATO DATAPOLAR - ALLINEATO A DESTRA */
+        .report-id {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.15);
+            padding: 6px 12px;
+            border-radius: 20px;
+            display: inline-block;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        /* ✅ LOGO MODERNO */
         .logo {
-            width: 200px; /* ✅ Aumentato per logo combinato */
+            width: 200px;
             height: auto;
-            margin: 0; /* ✅ Rimosso margin-bottom */
-            max-height: 60px; /* ✅ Limita altezza per mantenere proporzioni */
-            flex-shrink: 0; /* ✅ Impedisce al logo di rimpicciolirsi */
+            margin: 0;
+            max-height: 60px;
+            flex-shrink: 0;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
         }
 
         .company-logo {
             display: flex;
             justify-content: flex-end;
             align-items: flex-start;
-            margin: 0; /* ✅ Rimosso margin-bottom */
+            margin: 0;
         }
 
         .logo-fallback {
-            width: 200px; /* ✅ Stessa larghezza del logo combinato */
+            width: 200px;
             height: 50px;
-            background: linear-gradient(135deg, #004E92 0%, #0066CC 100%);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
             display: flex;
             align-items: center;
@@ -64,175 +109,118 @@ public static class DefaultCssTemplate
             font-weight: 600;
             font-size: 16px;
             border-radius: 8px;
-            margin: 0; /* ✅ Rimosso margin-bottom */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin: 0;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             flex-shrink: 0;
         }
 
+        /* ✅ TITOLI MODERNI */
         h1 {
-            color: #004E92;
+            color: #2d3748;
             margin-bottom: 15px;
             font-size: 24px;
-            font-weight: 700; /* ✅ Solo titoli principali in grassetto */
+            font-weight: 700;
         }
 
         h2 {
-            color: #004E92;
+            color: #4a5568;
             margin-top: 25px;
             margin-bottom: 15px;
             font-size: 18px;
-            font-weight: 600; /* ✅ Ridotto da bold (700) a 600 */
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 5px;
+            font-weight: 600;
+            border-bottom: 2px solid transparent;
+            background: linear-gradient(90deg, #667eea, #764ba2) left bottom no-repeat;
+            background-size: 60px 2px;
+            padding-bottom: 8px;
         }
 
         h3 {
-            color: #004E92;
+            color: #667eea;
             font-size: 16px;
-            font-weight: 500; /* ✅ Ancora più leggero per h3 */
+            font-weight: 600;
             margin-top: 20px;
             margin-bottom: 10px;
         }
 
         h4 {
-            color: #333;
+            color: #4a5568;
             font-size: 14px;
-            font-weight: 500; /* ✅ Peso normale per h4 */
+            font-weight: 500;
             margin-top: 15px;
             margin-bottom: 8px;
         }
 
+        /* ✅ INFO GRID MODERNIZZATA */
         .report-info {
-            background-color: #f8f9fa;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            padding: 25px;
+            border-radius: 12px;
+            margin: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .report-info::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .info-item {
+            background: white;
             padding: 15px;
-            border-radius: 5px;
-            margin-top: 10px;
-            font-weight: normal; /* ✅ Testo normale per info report */
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            font-weight: normal;
         }
 
-        .report-info div {
-            margin-bottom: 5px;
+        .info-item strong {
+            color: #667eea;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
         }
 
-        /* ✅ GRASSETTO SOLO DOVE NECESSARIO */
-        .report-info strong {
-            font-weight: 600; /* ✅ Ridotto da bold (700) a 600 */
+        .info-item.notes {
+            grid-column: 1 / -1;
         }
 
         .section {
-            margin-bottom: 30px;
+            margin: 25px;
             page-break-inside: avoid;
         }
 
-        /* ✅ GRASSETTO SELETTIVO NEGLI INSIGHTS */
-        .insights-content h1,
-        .insights-content h2,
-        .insights-content h3 {
-            font-weight: 600; /* ✅ Intestazioni insights più leggere */
-        }
-
-        .insights-content strong {
-            font-weight: 600; /* ✅ Strong più leggero */
-            color: #004E92; /* ✅ Usa colore invece di peso eccessivo */
-        }
-
-        .insights-content b {
-            font-weight: 500; /* ✅ Tag <b> ancora più leggero */
-            color: #004E92;
-        }
-
-        .stats-content {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 5px;
-            font-weight: normal; /* ✅ Statistiche in peso normale */
-        }
-
-        .raw-data-content {
-            font-family: 'Courier New', monospace;
-            background-color: #f4f4f4;
-            padding: 15px;
-            border-radius: 5px;
-            font-size: 11px;
-            overflow-x: auto;
-            font-weight: normal; /* ✅ Dati raw normali */
-        }
-
-        /* ✅ TABELLE CON GRASSETTO RIDOTTO */
-        table {
-            width: 100%;
-            max-width: 100%;
-            table-layout: fixed;
-            border-collapse: collapse;
+        .section-title {
+            position: relative;
             margin-bottom: 20px;
-            font-weight: normal; /* ✅ Tabelle normali */
         }
 
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-            font-weight: normal; /* ✅ Celle normali */
+        .section-title::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
         }
 
-        td {
-            overflow: visible;
-            white-space: normal;
-            word-break: break-word;
-        }
-
-        th {
-            background-color: #f2f2f2;
-            font-weight: 600; /* ✅ Header tabelle un po' più pesanti ma non bold */
-            color: #333;
-        }
-
-        /* ✅ PARAGRAFI E TESTO CORPO */
-        p {
-            font-weight: normal;
-            margin-bottom: 10px;
-            line-height: 1.5;
-        }
-
-        /* ✅ LISTE CON PESO NORMALE */
-        ul, ol {
-            font-weight: normal;
-            margin-bottom: 15px;
-            padding-left: 20px;
-        }
-
-        li {
-            font-weight: normal;
-            margin-bottom: 5px;
-        }
-
-        /* ✅ ENFASI CONTROLLATA */
-        .important {
-            font-weight: 600; /* ✅ Solo per elementi veramente importanti */
-            color: #004E92;
-        }
-
-        .emphasis {
-            font-weight: 500; /* ✅ Enfasi leggera */
-            color: #333;
-        }
-
-        /* ✅ OVERRIDE PER MARKDOWN CONVERTITO */
-        .insights-content h1 { font-weight: 600; font-size: 20px; }
-        .insights-content h2 { font-weight: 500; font-size: 18px; }
-        .insights-content h3 { font-weight: 500; font-size: 16px; }
-        .insights-content h4 { font-weight: 400; font-size: 14px; }
-
-        .footer {
-            margin-top: 40px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            text-align: center;
-            color: #666;
-            font-weight: normal; /* ✅ Footer normale */
-        }
-
-        /* Stili specifici per i report con analisi AI */
+        /* ✅ INSIGHTS AI MODERNI */
         .ai-report-badge {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
@@ -242,25 +230,35 @@ public static class DefaultCssTemplate
             font-weight: 500;
             display: inline-block;
             margin: 10px 15px 10px 0;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            backdrop-filter: blur(10px);
         }
         
         .ai-insights {
-            border-left: 5px solid #667eea;
-            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-            padding: 20px;
-            border-radius: 0 12px 12px 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.15);
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
         }
-        
+
         .ai-insights::before {
-            content: '🧠 Analisi PolarAi';
+            content: '🧠 Analisi intelligente PolarAi';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 4px 8px;
-            border-radius: 12px;
-            font-size: 10px;
-            font-weight: 500;
-            margin-left: 10px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 12px 12px 0 0;
+            margin: 0;
+        }
+
+        .insights-content {
+            padding: 60px 20px 20px 20px;
         }
         
         .ai-insights * {
@@ -268,134 +266,299 @@ public static class DefaultCssTemplate
         }
         
         .ai-insights h1, .ai-insights h2, .ai-insights h3, .ai-insights h4 {
-            font-weight: 500 !important;
+            font-weight: 600 !important;
+            color: #4a5568 !important;
         }
         
         .ai-insights strong, .ai-insights b {
-            font-weight: 500 !important;
+            font-weight: 600 !important;
             color: #667eea;
         }
+
+        .ai-insights ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .ai-insights li {
+            position: relative;
+            padding-left: 25px;
+            margin-bottom: 8px;
+        }
+
+        .ai-insights li::before {
+            content: '▶';
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-size: 10px;
+            top: 4px;
+        }
         
+        /* ✅ SEZIONI DATI MODERNE */
         .data-evolution {
-            border: 2px dashed #667eea;
-            padding: 15px;
+            border: 2px dashed rgba(102, 126, 234, 0.3);
+            padding: 20px;
             margin: 20px 0;
-            background: rgba(102, 126, 234, 0.05);
-            border-radius: 8px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border-radius: 12px;
+            position: relative;
         }
         
         .data-evolution::before {
-            content: '📈 Evoluzione Dati • ';
+            content: '📈 Evoluzione Dati';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: white;
             color: #667eea;
-            font-weight: 500;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 6px;
+            border: 2px solid rgba(102, 126, 234, 0.3);
         }
 
-        /* ✅ STILI CERTIFICAZIONE DATAPOLAR */
+        /* ✅ CERTIFICAZIONE DATAPOLAR MODERNA */
         .certification-section {
-            margin: 20px 0;
+            margin: 25px;
             padding: 0;
         }
 
         .certification-datapolar {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-            border: 2px solid #004E92;
-            border-radius: 8px;
-            padding: 20px;
-            margin: 15px 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 0;
+            margin: 0;
             position: relative;
+            overflow: hidden;
         }
 
         .certification-datapolar::before {
-            content: '🏆 DataPolar Certification';
+            content: '🏆 Certificazione Dati DataPolar';
             position: absolute;
-            top: -12px;
-            left: 20px;
-            background: #004E92;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 4px 12px;
-            border-radius: 4px;
-            font-size: 11px;
+            padding: 15px 20px;
+            font-size: 14px;
             font-weight: 600;
+            margin: 0;
+            border-radius: 12px 12px 0 0;
         }
 
-        .certification-datapolar h3 {
-            color: #004E92;
-            margin-bottom: 15px;
-            margin-top: 10px;
-            font-size: 1.2em;
-            font-weight: 600;
-            border-bottom: 2px solid #004E92;
-            padding-bottom: 8px;
+        .certification-datapolar-generic {
+            margin-top: 64px !important;
         }
 
         .certification-datapolar h4 {
-            color: #495057;
-            margin: 20px 0 10px 0;
-            font-size: 1.05em;
-            font-weight: 500;
+            color: #667eea;
+            margin: 0px 20px 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
         }
 
         .certification-table, .statistics-table {
-            width: 100%;
+            width: calc(100% - 40px);
+            margin: 15px 20px 20px 20px;
             border-collapse: collapse;
-            margin: 10px 0;
-            font-size: 0.95em;
             background: white;
-            border-radius: 4px;
+            border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+            border: 1px solid rgba(102, 126, 234, 0.1);
         }
 
         .certification-table td, .statistics-table td {
-            padding: 10px 12px;
-            border-bottom: 1px solid #dee2e6;
+            padding: 12px 16px;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
             vertical-align: top;
         }
 
         .certification-table td:first-child, .statistics-table td:first-child {
-            background: #f8f9fa;
-            font-weight: 500;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
             width: 45%;
-            color: #495057;
-            border-right: 1px solid #dee2e6;
+            color: #667eea;
+            border-right: 1px solid rgba(102, 126, 234, 0.1);
         }
 
         .certification-table td:last-child, .statistics-table td:last-child {
-            font-weight: normal;
-            color: #212529;
+            font-weight: 500;
+            color: #4a5568;
         }
 
         .cert-warning {
-            color: #dc3545;
+            color: #e53e3e;
             font-weight: 500;
-            padding: 10px;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            border-radius: 4px;
-            margin: 10px 0;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, rgba(229, 62, 62, 0.1) 0%, rgba(229, 62, 62, 0.05) 100%);
+            border: 1px solid rgba(229, 62, 62, 0.2);
+            border-radius: 8px;
+            margin: 15px 20px;
         }
 
         .certification-error {
-            color: #721c24;
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            padding: 15px;
-            border-radius: 4px;
+            color: #e53e3e;
+            background: linear-gradient(135deg, rgba(229, 62, 62, 0.1) 0%, rgba(229, 62, 62, 0.05) 100%);
+            border: 1px solid rgba(229, 62, 62, 0.2);
+            padding: 15px 20px;
+            border-radius: 8px;
             font-weight: 500;
+            margin: 15px 20px;
         }
 
-        /* ✅ STILI SPECIFICI PER LA STAMPA */
+        /* ✅ STATISTICHE E TABELLE MODERNE */
+        .stats-content {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.03) 0%, rgba(118, 75, 162, 0.03) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            padding: 20px;
+            border-radius: 12px;
+            font-weight: normal;
+        }
+
+        .detailed-stats {
+            position: relative;
+        }
+
+        .detailed-stats::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 2px;
+        }
+
+        .raw-data-content {
+            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 12px;
+            font-size: 11px;
+            overflow-x: auto;
+            font-weight: normal;
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        /* ✅ TABELLE MODERNE */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-weight: normal;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+
+        th, td {
+            border: none;
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+            padding: 12px 16px;
+            text-align: left;
+            font-weight: normal;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: rgba(102, 126, 234, 0.03);
+        }
+
+        tr:hover {
+            background: rgba(102, 126, 234, 0.08);
+        }
+
+        /* ✅ TESTO E PARAGRAFI */
+        p {
+            font-weight: normal;
+            margin-bottom: 12px;
+            line-height: 1.6;
+            color: #4a5568;
+        }
+
+        ul, ol {
+            font-weight: normal;
+            margin-bottom: 15px;
+            padding-left: 20px;
+        }
+
+        li {
+            font-weight: normal;
+            margin-bottom: 6px;
+            color: #4a5568;
+        }
+
+        /* ✅ ENFASI MODERNA */
+        .important {
+            font-weight: 600;
+            color: #667eea;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .emphasis {
+            font-weight: 500;
+            color: #764ba2;
+        }
+
+        /* ✅ FOOTER MODERNO */
+        .footer {
+            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+            color: white;
+            margin: 0;
+            padding: 25px;
+            text-align: center;
+            border-radius: 0 0 12px 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .footer-content p {
+            margin: 5px 0;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .company-info {
+            font-style: italic;
+            color: rgba(255, 255, 255, 0.7) !important;
+        }
+
+        /* ✅ STILI STAMPA MODERNIZZATI */
         @media print {
             html, body {
                 font-size: 12px !important;
             }
 
-            /* ✅ Riduci ulteriormente i grassetti in stampa */
-            h1 { font-weight: 600; }
-            h2 { font-weight: 500; }
-            h3 { font-weight: 500; }
-            strong { font-weight: 500; }
-            th { font-weight: 500; }
+            body {
+                background: white !important;
+            }
+
+            .report-container {
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
 
             .section {
                 page-break-inside: avoid;
@@ -403,6 +566,16 @@ public static class DefaultCssTemplate
 
             .header {
                 page-break-after: avoid;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
+            }
+
+            .ai-insights::before,
+            .certification-datapolar::before {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+                -webkit-print-color-adjust: exact;
+                color-adjust: exact;
             }
 
             table {
@@ -413,31 +586,15 @@ public static class DefaultCssTemplate
                 page-break-inside: avoid;
             }
 
-            /* ✅ LOGO COMBINATO PER STAMPA PDF */
-            .company-logo-img {
-                width: 120px;
-                max-height: 40px;
-                margin: 0; /* ✅ Rimosso margin-bottom */
-                flex-shrink: 0;
-            }
-
             .logo {
                 width: 200px;
                 height: auto;
                 max-height: 60px;
-                margin: 0; /* ✅ Rimosso margin */
+                margin: 0;
             }
             
-            /* ✅ CERTIFICAZIONE PER STAMPA */
             .certification-datapolar {
                 page-break-inside: avoid;
-                background: #f8f9fa !important;
-                border: 2px solid #004E92 !important;
-            }
-            
-            .certification-datapolar::before {
-                background: #004E92 !important;
-                color: white !important;
             }
             
             .certification-table, .statistics-table {
@@ -445,28 +602,26 @@ public static class DefaultCssTemplate
             }
         }
 
-        /* ✅ RESPONSIVE PER SCHERMI PICCOLI */
+        /* ✅ RESPONSIVE MODERNO */
         @media (max-width: 768px) {
-            /* ✅ HEADER RESPONSIVE - STACK VERTICALE */
             .report-header {
                 flex-direction: column;
                 align-items: center;
+                text-align: center;
             }
 
             .report-title-container {
                 order: 2;
-                text-align: center;
                 width: 100%;
+                margin-top: 15px;
             }
 
             .company-logo {
                 order: 1;
                 justify-content: center;
-                margin-bottom: 15px;
                 width: 100%;
             }
 
-            /* ✅ LOGO RESPONSIVE */
             .logo {
                 width: 150px;
                 max-height: 45px;
@@ -477,17 +632,22 @@ public static class DefaultCssTemplate
                 height: 40px;
             }
 
-            /* ✅ CERTIFICAZIONE RESPONSIVE */
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
             .certification-table, .statistics-table {
                 font-size: 0.85em;
-            }
-            
-            .certification-table td:first-child, .statistics-table td:first-child {
-                width: 50%;
+                width: calc(100% - 20px);
+                margin: 15px 10px;
             }
             
             .certification-datapolar {
-                padding: 15px;
+                margin: 15px 10px;
+            }
+
+            .section {
+                margin: 15px 10px;
             }
         }";
 }
