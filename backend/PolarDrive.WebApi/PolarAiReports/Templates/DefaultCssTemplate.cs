@@ -380,12 +380,13 @@ public static class DefaultCssTemplate
         .certification-table td:first-child, .statistics-table td:first-child {
             background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
             width: 45%;
+            font-weight: 500;
             color: #667eea;
             border-right: 1px solid rgba(102, 126, 234, 0.1);
         }
 
         .certification-table td:last-child, .statistics-table td:last-child {
-            font-weight: 500;
+            font-weight: 400;
             color: #4a5568;
         }
 

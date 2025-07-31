@@ -422,7 +422,7 @@ public class ClientProfileController : ControllerBase
     </div>
 
     <div class='section'>
-        <h2>📊 Statistiche Generali</h2>
+        <h2>📊 Altre Statistiche</h2>
         <div class='stats-grid'>
             <div class='stat-card'>
                 <div class='stat-number'>{data.CompanyInfo.TotalVehicles}</div>

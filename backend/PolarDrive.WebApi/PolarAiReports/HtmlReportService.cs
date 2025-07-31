@@ -79,7 +79,6 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
             // Metadati del report
             ["reportType"] = options.ReportType,
-            ["reportVersion"] = options.ReportVersion,
 
             // Configurazioni
             ["showDetailedStats"] = options.ShowDetailedStats,
@@ -137,7 +136,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
             return $@"
                 <div class='certification-datapolar'>
-                    <h4 class='certification-datapolar-generic'>📊 Statistiche Dettagliate </h4>
+                    <h4 class='certification-datapolar-generic'>📊 Statistiche Generali </h4>
                     {certification}
                     <h4>📊 Statistiche Analisi Mensile</h4>
                     {statistics}
@@ -187,13 +186,13 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
         return $@"
             <table class='certification-table'>
-                <tr><td><strong>Ore totali certificate:</strong></td><td>{totalCertifiedHours:F0} ore ({totalCertifiedHours / 24:F1} giorni)</td></tr>
-                <tr><td><strong>Uptime raccolta:</strong></td><td>{uptimePercentage:F1}%</td></tr>
-                <tr><td><strong>Qualità dataset:</strong></td><td>{qualityStars} ({GetQualityLabel(qualityScore)})</td></tr>
-                <tr><td><strong>Primo record:</strong></td><td>{firstRecord:yyyy-MM-dd HH:mm} UTC</td></tr>
-                <tr><td><strong>Ultimo record:</strong></td><td>{lastRecord:yyyy-MM-dd HH:mm} UTC</td></tr>
-                <tr><td><strong>Records totali:</strong></td><td>{totalRecords:N0}</td></tr>
-                <tr><td><strong>Frequenza media:</strong></td><td>{(totalRecords / Math.Max(totalCertifiedHours, 1)):F1} campioni/ora</td></tr>
+                <tr><td>Ore totali certificate:</td><td>{totalCertifiedHours:F0} ore ({totalCertifiedHours / 24:F1} giorni)</td></tr>
+                <tr><td>Uptime raccolta:</td><td>{uptimePercentage:F1}%</td></tr>
+                <tr><td>Qualità dataset:</td><td>{qualityStars} ({GetQualityLabel(qualityScore)})</td></tr>
+                <tr><td>Primo record:</td><td>{firstRecord:yyyy-MM-dd HH:mm} UTC</td></tr>
+                <tr><td>Ultimo record:</td><td>{lastRecord:yyyy-MM-dd HH:mm} UTC</td></tr>
+                <tr><td>Records totali:</td><td>{totalRecords:N0}</td></tr>
+                <tr><td>Frequenza media:</td><td>{(totalRecords / Math.Max(totalCertifiedHours, 1)):F1} campioni/ora</td></tr>
             </table>";
     }
 
@@ -206,12 +205,12 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
         return $@"
             <table class='statistics-table'>
-                <tr><td><strong>Durata monitoraggio totale:</strong></td><td>{totalMonitoringPeriod.TotalDays:F1} giorni</td></tr>
-                <tr><td><strong>Campioni mensili analizzati:</strong></td><td>{monthlyRecords:N0}</td></tr>
-                <tr><td><strong>Finestra UNIFICATA:</strong></td><td>{dataHours} ore (30 giorni)</td></tr>
-                <tr><td><strong>Densità dati mensile:</strong></td><td>{monthlyRecords / Math.Max(dataHours, 1):F1} campioni/ora</td></tr>
-                <tr><td><strong>Copertura dati:</strong></td><td>{Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):F1}% del periodo totale</td></tr>
-                <tr><td><strong>Strategia:</strong></td><td>Analisi mensile consistente con context evolutivo</td></tr>
+                <tr><td>Durata monitoraggio totale:</td><td>{totalMonitoringPeriod.TotalDays:F1} giorni</td></tr>
+                <tr><td>Campioni mensili analizzati:</td><td>{monthlyRecords:N0}</td></tr>
+                <tr><td>Finestra UNIFICATA:</td><td>{dataHours} ore (30 giorni)</td></tr>
+                <tr><td>Densità dati mensile:</td><td>{monthlyRecords / Math.Max(dataHours, 1):F1} campioni/ora</td></tr>
+                <tr><td>Copertura dati:</td><td>{Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):F1}% del periodo totale</td></tr>
+                <tr><td>Strategia:</td><td>Analisi mensile consistente con context evolutivo</td></tr>
             </table>";
     }
 
@@ -550,7 +549,6 @@ public class HtmlReportOptions
     public string TemplateName { get; set; } = "default";
     public string StyleName { get; set; } = "default";
     public string ReportType { get; set; } = "Standard";
-    public string ReportVersion { get; set; } = "1.0";
     public string DateFormat { get; set; } = "yyyy-MM-dd";
     public string DateTimeFormat { get; set; } = "yyyy-MM-dd HH:mm";
     public string? AdditionalCss { get; set; }
