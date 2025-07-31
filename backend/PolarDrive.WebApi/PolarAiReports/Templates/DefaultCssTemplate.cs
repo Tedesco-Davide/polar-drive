@@ -13,21 +13,30 @@ public static class DefaultCssTemplate
             padding: 20px;
             line-height: 1.5;
             font-weight: 400;
-            background: linear-gradient(135deg, #f8f9ff 0%, #f0f2ff 100%);
+            background: white;
             color: #2d3748;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        * {
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .report-container {
             max-width: 100%;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(102, 126, 234, 0.15);
+            border-radius: 0;
+            box-shadow: none;
             overflow: hidden;
         }
 
-        /* ✅ HEADER CON TABLE LAYOUT - Perfetto per PDF */
+        /* HEADER CON TABLE LAYOUT - Ottimizzato per stampa */
         .header {
-            /* Background con gradiente più scuro per contrasto */
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             padding: 25px 30px;
             margin: 0;
@@ -35,6 +44,11 @@ public static class DefaultCssTemplate
             border-radius: 0;
             position: relative;
             overflow: hidden;
+            page-break-after: avoid;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .header::before {
@@ -84,32 +98,30 @@ public static class DefaultCssTemplate
             padding: 0;
             font-size: 32px;
             font-weight: 700;
-            /* GRADIENTE per il titolo */
-            background: linear-gradient(135deg, #ffffff 0%, #e2e8ff 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #f0f2ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            /* Fallback per browser che non supportano il gradiente */
-            color: white;
+            color: white; /* Fallback per browser che non supportano il gradiente */
         }
 
         .report-id {
             font-size: 14px;
             color: rgba(255, 255, 255, 0.95);
-            background: rgba(255, 255, 255, 0.2);
-            padding: 3px 12px;
+            background: rgba(255, 255, 255, 0.25);
+            padding: 5px 12px;
             border-radius: 20px;
             display: inline-block;
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.4);
         }
 
         .logo {
-            width: 300px;
+            width: 330px;
             height: auto;
+            background: rgba(255, 255, 255, 0.98);
             margin: 0;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 10px;
+            padding: 12px;
             border-radius: 8px;
         }
 
@@ -138,12 +150,13 @@ public static class DefaultCssTemplate
             display: none;
         }
 
-        /* ✅ TITOLI MODERNI */
+        /* TITOLI MODERNI */
         h1 {
             color: #2d3748;
             margin-bottom: 15px;
             font-size: 24px;
             font-weight: 700;
+            page-break-after: avoid;
         }
 
         h2 {
@@ -156,6 +169,9 @@ public static class DefaultCssTemplate
             background: linear-gradient(90deg, #8b9ff2, #9c82c7) left bottom no-repeat;
             background-size: 60px 2px;
             padding-bottom: 8px;
+            page-break-after: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         h3 {
@@ -164,6 +180,7 @@ public static class DefaultCssTemplate
             font-weight: 600;
             margin-top: 20px;
             margin-bottom: 10px;
+            page-break-after: avoid;
         }
 
         h4 {
@@ -172,9 +189,10 @@ public static class DefaultCssTemplate
             font-weight: 500;
             margin-top: 15px;
             margin-bottom: 8px;
+            page-break-after: avoid;
         }
 
-        /* ✅ INFO GRID MODERNIZZATA */
+        /* INFO GRID MODERNIZZATA */
         .report-info {
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.05) 0%, rgba(156, 130, 199, 0.05) 100%);
             border: 1px solid rgba(139, 159, 242, 0.1);
@@ -183,6 +201,9 @@ public static class DefaultCssTemplate
             margin: 25px;
             position: relative;
             overflow: hidden;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .report-info::before {
@@ -193,6 +214,8 @@ public static class DefaultCssTemplate
             right: 0;
             height: 4px;
             background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .info-grid {
@@ -208,6 +231,7 @@ public static class DefaultCssTemplate
             box-shadow: 0 2px 8px rgba(139, 159, 242, 0.1);
             border: 1px solid rgba(139, 159, 242, 0.1);
             font-weight: normal;
+            page-break-inside: avoid;
         }
 
         .info-item strong {
@@ -229,6 +253,7 @@ public static class DefaultCssTemplate
         .section-title {
             position: relative;
             margin-bottom: 20px;
+            page-break-after: avoid;
         }
 
         .section-title::before {
@@ -241,9 +266,11 @@ public static class DefaultCssTemplate
             height: 100%;
             background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
             border-radius: 2px;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
-        /* ✅ INSIGHTS AI MODERNI - Colori più chiari */
+        /* INSIGHTS AI MODERNI */
         .ai-report-badge {
             background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
             color: white;
@@ -255,6 +282,8 @@ public static class DefaultCssTemplate
             margin: 10px 15px 10px 0;
             box-shadow: 0 4px 12px rgba(139, 159, 242, 0.3);
             backdrop-filter: blur(10px);
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
         
         .ai-insights {
@@ -263,6 +292,9 @@ public static class DefaultCssTemplate
             border-radius: 12px;
             position: relative;
             overflow: hidden;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .ai-insights::before {
@@ -271,13 +303,16 @@ public static class DefaultCssTemplate
             top: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
+            background: linear-gradient(135deg, #7a8fef 0%, #8f78c4 100%);
             color: white;
             padding: 12px 20px;
             font-size: 14px;
             font-weight: 600;
             border-radius: 12px 12px 0 0;
             margin: 0;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .insights-content {
@@ -307,6 +342,7 @@ public static class DefaultCssTemplate
             position: relative;
             padding-left: 25px;
             margin-bottom: 8px;
+            page-break-inside: avoid;
         }
 
         .ai-insights li::before {
@@ -318,7 +354,7 @@ public static class DefaultCssTemplate
             top: 4px;
         }
         
-        /* ✅ SEZIONI DATI MODERNE */
+        /* SEZIONI DATI MODERNE */
         .data-evolution {
             border: 2px dashed rgba(139, 159, 242, 0.3);
             padding: 20px;
@@ -326,6 +362,9 @@ public static class DefaultCssTemplate
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.05) 0%, rgba(156, 130, 199, 0.05) 100%);
             border-radius: 12px;
             position: relative;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
         
         .data-evolution::before {
@@ -341,10 +380,11 @@ public static class DefaultCssTemplate
             border: 2px solid rgba(139, 159, 242, 0.3);
         }
 
-        /* ✅ CERTIFICAZIONE DATAPOLAR MODERNA */
+        /* CERTIFICAZIONE DATAPOLAR MODERNA */
         .certification-section {
             margin: 25px;
             padding: 0;
+            page-break-inside: avoid;
         }
 
         .certification-datapolar {
@@ -355,6 +395,9 @@ public static class DefaultCssTemplate
             margin: 0;
             position: relative;
             overflow: hidden;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .certification-datapolar::before {
@@ -363,13 +406,16 @@ public static class DefaultCssTemplate
             top: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
+            background: linear-gradient(135deg, #7a8fef 0%, #8f78c4 100%);
             color: white;
             padding: 15px 20px;
             font-size: 14px;
             font-weight: 600;
             margin: 0;
             border-radius: 12px 12px 0 0;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .certification-datapolar-generic {
@@ -381,6 +427,7 @@ public static class DefaultCssTemplate
             margin: 0px 20px 10px 20px;
             font-size: 14px;
             font-weight: 600;
+            page-break-after: avoid;
         }
 
         .certification-table, .statistics-table {
@@ -392,12 +439,14 @@ public static class DefaultCssTemplate
             overflow: hidden;
             box-shadow: 0 4px 12px rgba(139, 159, 242, 0.1);
             border: 1px solid rgba(139, 159, 242, 0.1);
+            page-break-inside: avoid;
         }
 
         .certification-table td, .statistics-table td {
             padding: 12px 16px;
             border-bottom: 1px solid rgba(139, 159, 242, 0.1);
             vertical-align: top;
+            page-break-inside: avoid;
         }
 
         .certification-table td:first-child, .statistics-table td:first-child {
@@ -406,6 +455,8 @@ public static class DefaultCssTemplate
             font-weight: 500;
             color: #8b9ff2;
             border-right: 1px solid rgba(139, 159, 242, 0.1);
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .certification-table td:last-child, .statistics-table td:last-child {
@@ -421,6 +472,9 @@ public static class DefaultCssTemplate
             border: 1px solid rgba(229, 62, 62, 0.2);
             border-radius: 8px;
             margin: 15px 20px;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .certification-error {
@@ -431,19 +485,26 @@ public static class DefaultCssTemplate
             border-radius: 8px;
             font-weight: 500;
             margin: 15px 20px;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
-        /* ✅ STATISTICHE E TABELLE MODERNE */
+        /* STATISTICHE E TABELLE MODERNE */
         .stats-content {
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.03) 0%, rgba(156, 130, 199, 0.03) 100%);
             border: 1px solid rgba(139, 159, 242, 0.1);
             padding: 20px;
             border-radius: 12px;
             font-weight: normal;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .detailed-stats {
             position: relative;
+            page-break-inside: avoid;
         }
 
         .detailed-stats::before {
@@ -455,6 +516,8 @@ public static class DefaultCssTemplate
             width: 4px;
             background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
             border-radius: 2px;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .raw-data-content {
@@ -467,9 +530,13 @@ public static class DefaultCssTemplate
             overflow-x: auto;
             font-weight: normal;
             border: 1px solid rgba(139, 159, 242, 0.2);
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            print-color-adjust: exact;
         }
 
-        /* ✅ TABELLE MODERNE */
+        /* TABELLE MODERNE */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -477,6 +544,7 @@ public static class DefaultCssTemplate
             font-weight: normal;
             border-radius: 8px;
             overflow: hidden;
+            page-break-inside: auto;
         }
 
         th, td {
@@ -485,49 +553,67 @@ public static class DefaultCssTemplate
             padding: 12px 16px;
             text-align: left;
             font-weight: normal;
+            page-break-inside: avoid;
         }
 
         th {
             background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
             color: white;
             font-weight: 600;
+            page-break-after: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         tr:nth-child(even) {
             background: rgba(139, 159, 242, 0.03);
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         tr:hover {
             background: rgba(139, 159, 242, 0.08);
         }
 
-        /* ✅ TESTO E PARAGRAFI */
+        tr {
+            page-break-inside: avoid;
+        }
+
+        /* TESTO E PARAGRAFI */
         p {
             font-weight: normal;
             margin-bottom: 12px;
             line-height: 1.6;
             color: #4a5568;
+            page-break-inside: avoid;
+            orphans: 3;
+            widows: 3;
         }
 
         ul, ol {
             font-weight: normal;
             margin-bottom: 15px;
             padding-left: 20px;
+            page-break-inside: avoid;
         }
 
         li {
             font-weight: normal;
             margin-bottom: 6px;
             color: #4a5568;
+            page-break-inside: avoid;
         }
 
-        /* ✅ ENFASI MODERNA */
+        /* ENFASI MODERNA */
         .important {
             font-weight: 600;
             color: #8b9ff2;
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.1) 0%, rgba(156, 130, 199, 0.1) 100%);
             padding: 2px 6px;
             border-radius: 4px;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .emphasis {
@@ -535,7 +621,7 @@ public static class DefaultCssTemplate
             color: #9c82c7;
         }
 
-        /* ✅ FOOTER MODERNO */
+        /* FOOTER MODERNO */
         .footer {
             background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
             color: white;
@@ -545,6 +631,10 @@ public static class DefaultCssTemplate
             border-radius: 0 0 12px 12px;
             position: relative;
             overflow: hidden;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+            print-color-adjust: exact;
         }
 
         .footer::before {
@@ -555,6 +645,8 @@ public static class DefaultCssTemplate
             right: 0;
             height: 4px;
             background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
         }
 
         .footer-content p {
@@ -567,108 +659,12 @@ public static class DefaultCssTemplate
             color: rgba(255, 255, 255, 0.7) !important;
         }
 
-        /* ✅ STILI STAMPA OTTIMIZZATI PER PDF */
-        @media print {
-            html, body {
-                font-size: 12px !important;
-            }
-
-            body {
-                background: white !important;
-            }
-
-            .report-container {
-                box-shadow: none !important;
-                border-radius: 0 !important;
-            }
-
-            .section {
-                page-break-inside: avoid;
-            }
-
-            .header {
-                page-break-after: avoid;
-                /* Mantieni il gradiente scuro per contrasto */
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-                color: white !important;
-                -webkit-print-color-adjust: exact;
-                color-adjust: exact;
-            }
-
-            /* Table layout funziona perfettamente nei PDF */
-            .header-table {
-                width: 100% !important;
-                border-collapse: collapse !important;
-            }
-
-            .header-table td {
-                border: none !important;
-                padding: 0 !important;
-                vertical-align: middle !important;
-            }
-
-            .title-cell {
-                width: 65% !important;
-                text-align: left !important;
-                padding-right: 20px !important;
-            }
-
-            .logo-cell {
-                width: 35% !important;
-                text-align: right !important;
-            }
-
-            .report-title {
-                color: white !important;
-                background: linear-gradient(135deg, #ffffff 0%, #f0f2ff 100%) !important;
-                -webkit-background-clip: text !important;
-                -webkit-text-fill-color: transparent !important;
-                background-clip: text !important;
-            }
-
-            .report-id {
-                color: rgba(255, 255, 255, 0.95) !important;
-                background: rgba(255, 255, 255, 0.25) !important;
-                border: 1px solid rgba(255, 255, 255, 0.4) !important;
-            }
-
-            .logo {
-                filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)) brightness(1.1) contrast(1.2) !important;
-                background: rgba(255, 255, 255, 0.98) !important;
-                padding: 12px !important;
-                border: 2px solid rgba(255, 255, 255, 0.5) !important;
-            }
-
-            .ai-insights::before,
-            .certification-datapolar::before {
-                background: linear-gradient(135deg, #7a8fef 0%, #8f78c4 100%) !important;
-                -webkit-print-color-adjust: exact;
-                color-adjust: exact;
-            }
-
-            table {
-                page-break-inside: auto;
-            }
-
-            tr {
-                page-break-inside: avoid;
-            }
-            
-            .certification-datapolar {
-                page-break-inside: avoid;
-            }
-            
-            .certification-table, .statistics-table {
-                page-break-inside: avoid;
-            }
-
-            /* Assicura layout centrato senza clearfix */
-            .header::after {
-                display: none !important;
-            }
+        /* Assicura layout centrato senza clearfix */
+        .header::after {
+            display: none !important;
         }
 
-        /* ✅ RESPONSIVE MODERNO */
+        /* RESPONSIVE MODERNO - Ottimizzato per stampa */
         @media (max-width: 768px) {
             .header {
                 padding: 15px 20px;
@@ -713,5 +709,31 @@ public static class DefaultCssTemplate
             .section {
                 margin: 15px 10px;
             }
+        }
+
+        /* OTTIMIZZAZIONI SPECIFICHE PER STAMPA */
+        .page-break {
+            page-break-before: always;
+        }
+
+        .avoid-break {
+            page-break-inside: avoid;
+        }
+
+        .keep-with-next {
+            page-break-after: avoid;
+        }
+
+        /* Margini ottimizzati per stampa */
+        @page {
+            margin: 2cm 1.5cm;
+            size: A4;
+        }
+
+        /* Assicura che tutti i colori e sfondi vengano stampati */
+        *, *::before, *::after {
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }";
 }
