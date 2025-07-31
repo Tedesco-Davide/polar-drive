@@ -12,18 +12,36 @@ public static class DefaultHtmlTemplate
 </head>
 <body>
     <div class=""report-container"">
-        <!-- ✅ Header con logo aziendale DataPolar allineato -->
-        <header class=""report-header header"">
-            <div class=""report-title-container"">
-                <h1 class=""report-title"">PolarDrive™ Report</h1>
-                <div class=""report-id"">Report ID: {{reportId}}</div>
-            </div>
-            <div class=""company-logo"">
-                {{#if logoBase64}}
-                <!-- ✅ SUPPORTO SVG E PNG -->
-                <img src=""data:image/svg+xml;base64,{{logoBase64}}"" alt=""DataPolar Logo"" class=""logo company-logo-img"" 
-                     onerror=""this.src='data:image/png;base64,{{logoBase64}}'"" />
-                {{/if}}
+        <!-- ✅ Header con TABLE LAYOUT per perfetto allineamento PDF -->
+        <header class=""header"">
+            <table class=""header-table"">
+                <tr>
+                    <td class=""title-cell"">
+                        <h1 class=""report-title"">PolarDrive™</h1>
+                        <div class=""report-id"">Report ID: {{reportId}}</div>
+                    </td>
+                    <td class=""logo-cell"">
+                        {{#if logoBase64}}
+                        <!-- ✅ SUPPORTO SVG E PNG -->
+                        <img src=""data:image/svg+xml;base64,{{logoBase64}}"" alt=""DataPolar Logo"" class=""logo"" 
+                             onerror=""this.src='data:image/png;base64,{{logoBase64}}'"" />
+                        {{/if}}
+                    </td>
+                </tr>
+            </table>
+            
+            <!-- ✅ HEADER FALLBACK per compatibilità (nascosto dal CSS) -->
+            <div class=""report-header"">
+                <div class=""report-title-container"">
+                    <h1 class=""report-title"">PolarDrive™ Report</h1>
+                    <div class=""report-id"">Report ID: {{reportId}}</div>
+                </div>
+                <div class=""company-logo"">
+                    {{#if logoBase64}}
+                    <img src=""data:image/svg+xml;base64,{{logoBase64}}"" alt=""DataPolar Logo"" class=""logo company-logo-img"" 
+                         onerror=""this.src='data:image/png;base64,{{logoBase64}}'"" />
+                    {{/if}}
+                </div>
             </div>
         </header>
 
