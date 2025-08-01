@@ -110,6 +110,7 @@ public static class DefaultCssTemplate
             color: rgba(255, 255, 255, 0.95);
             background: rgba(255, 255, 255, 0.25);
             padding: 5px 12px;
+            margin-bottom: 10px;
             border-radius: 20px;
             display: inline-block;
             backdrop-filter: blur(10px);
