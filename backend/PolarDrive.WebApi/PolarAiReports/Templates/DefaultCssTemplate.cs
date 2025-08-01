@@ -94,7 +94,7 @@ public static class DefaultCssTemplate
         }
 
         .report-title {
-            margin: 0;
+            margin: 0 0 5px 0;
             padding: 0;
             font-size: 32px;
             font-weight: 700;
