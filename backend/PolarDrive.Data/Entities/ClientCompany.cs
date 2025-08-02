@@ -16,14 +16,6 @@ public class ClientCompany
 
     public string? LandlineNumber { get; set; }
 
-    public string? ReferentName { get; set; }
-
-    public string? ReferentMobileNumber { get; set; }
-
-    public string? ReferentEmail { get; set; }
-
-    public string? ReferentPecAddress { get; set; }
-
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
     // Navigation properties

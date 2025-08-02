@@ -9,8 +9,4 @@ public class ClientCompanyDTO
     public string Email { get; set; } = string.Empty;
     public string? PecAddress { get; set; }
     public string? LandlineNumber { get; set; }
-    public string? ReferentName { get; set; }
-    public string? ReferentMobileNumber { get; set; }
-    public string? ReferentEmail { get; set; }
-    public string? ReferentPecAddress { get; set; }
 }

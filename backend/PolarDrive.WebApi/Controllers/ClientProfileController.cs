@@ -125,20 +125,51 @@ public class ClientProfileController : ControllerBase
     {
         // Query SQL per recuperare i dati dalla view
         var sql = @"
-            SELECT * FROM vw_ClientFullProfile 
-            WHERE CompanyId = @companyId 
-            ORDER BY Brand, Model, Vin";
+                    SELECT 
+                        -- Dati azienda (SENZA referente)
+                        c.Id as CompanyId, c.VatNumber, c.Name, c.Address, c.Email, c.PecAddress, c.LandlineNumber,
+                        c.CreatedAt as CompanyCreatedAt,
+                        -- Calcoli statistici azienda
+                        (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as TotalVehicles,
+                        (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsActiveFlag = 1) as ActiveVehicles,
+                        (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsFetchingDataFlag = 1) as FetchingVehicles,
+                        (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND ClientOAuthAuthorized = 1) as AuthorizedVehicles,
+                        (SELECT COUNT(DISTINCT Brand) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as UniqueBrands,
+                        0 as TotalConsentsCompany, 0 as TotalOutagesCompany, 0 as TotalReportsCompany, 0 as TotalSmsEventsCompany,
+                        (julianday('now') - julianday(c.CreatedAt)) as DaysRegistered,
+                        NULL as FirstVehicleActivation, NULL as LastReportGeneratedCompany,
+                        NULL as LandlineNumbers, NULL as MobileNumbers, NULL as AssociatedPhones,
+                        
+                        -- Dati veicolo CON referente
+                        v.Id as VehicleId, v.Vin, v.Brand, v.Model, v.FuelType,
+                        v.IsActiveFlag as VehicleIsActive, v.IsFetchingDataFlag as VehicleIsFetching, 
+                        v.ClientOAuthAuthorized as VehicleIsAuthorized,
+                        v.CreatedAt as VehicleCreatedAt, v.FirstActivationAt as VehicleFirstActivation, 
+                        v.LastDeactivationAt as VehicleLastDeactivation,
+                        
+                        -- ✅ REFERENTI DAL VEICOLO
+                        v.ReferentName, v.ReferentMobileNumber, v.ReferentEmail, v.ReferentPecAddress,
+                        
+                        -- Statistiche veicolo
+                        0 as VehicleConsents, 0 as VehicleOutages, 0 as VehicleReports, 0 as VehicleSmsEvents,
+                        NULL as VehicleLastConsent, NULL as VehicleLastOutage, NULL as VehicleLastReport,
+                        CASE WHEN v.FirstActivationAt IS NOT NULL 
+                            THEN CAST((julianday('now') - julianday(v.FirstActivationAt)) AS INTEGER)
+                            ELSE NULL END as DaysSinceFirstActivation,
+                        0 as VehicleOutageDays
+                        
+                    FROM ClientCompanies c
+                    LEFT JOIN ClientVehicles v ON c.Id = v.ClientCompanyId
+                    WHERE c.Id = @companyId 
+                    ORDER BY v.Brand, v.Model, v.Vin";
 
         var rawData = await _db.Database.SqlQueryRaw<ClientFullProfileViewDto>(sql,
             new Microsoft.Data.Sqlite.SqliteParameter("@companyId", companyId))
             .ToListAsync();
 
-        if (!rawData.Any())
-        {
+        if (rawData.Count == 0)
             return null;
-        }
 
-        // Raggruppa i dati per azienda e veicoli
         var firstRow = rawData.First();
 
         return new ClientProfileData
@@ -152,9 +183,6 @@ public class ClientProfileController : ControllerBase
                 Email = firstRow.Email,
                 PecAddress = firstRow.PecAddress,
                 LandlineNumber = firstRow.LandlineNumber,
-                ReferentName = firstRow.ReferentName,
-                ReferentMobileNumber = firstRow.ReferentMobileNumber,
-                ReferentEmail = firstRow.ReferentEmail,
                 CompanyCreatedAt = firstRow.CompanyCreatedAt,
                 DaysRegistered = firstRow.DaysRegistered,
                 TotalVehicles = firstRow.TotalVehicles,
@@ -193,7 +221,11 @@ public class ClientProfileController : ControllerBase
                 LastOutageStart = r.VehicleLastOutage,
                 LastReportGenerated = r.VehicleLastReport,
                 DaysSinceFirstActivation = r.DaysSinceFirstActivation,
-                VehicleOutageDays = r.VehicleOutageDays
+                VehicleOutageDays = r.VehicleOutageDays,
+                ReferentName = r.ReferentName,
+                ReferentMobileNumber = r.ReferentMobileNumber,
+                ReferentEmail = r.ReferentEmail,
+                ReferentPecAddress = r.ReferentPecAddress
             }).ToList()
         };
     }
@@ -399,22 +431,6 @@ public class ClientProfileController : ControllerBase
                 <div class='info-label'>Data Registrazione</div>
                 <div class='info-value'>{data.CompanyInfo.CompanyCreatedAt:dd/MM/yyyy} ({data.CompanyInfo.DaysRegistered} giorni fa)</div>
             </div>
-        </div>
-
-        <h3>👤 Referente</h3>
-        <div class='info-grid'>
-            <div class='info-item'>
-                <div class='info-label'>Nome Referente</div>
-                <div class='info-value'>{data.CompanyInfo.ReferentName ?? "Non specificato"}</div>
-            </div>
-            <div class='info-item'>
-                <div class='info-label'>Email Referente</div>
-                <div class='info-value'>{data.CompanyInfo.ReferentEmail ?? "Non specificata"}</div>
-            </div>
-            <div class='info-item'>
-                <div class='info-label'>Cellulare Referente</div>
-                <div class='info-value'>{data.CompanyInfo.ReferentMobileNumber ?? "Non specificato"}</div>
-            </div>
             <div class='info-item'>
                 <div class='info-label'>Telefono Fisso</div>
                 <div class='info-value'>{data.CompanyInfo.LandlineNumber ?? "Non specificato"}</div>
@@ -531,6 +547,27 @@ public class ClientProfileController : ControllerBase
         var activationInfo = GenerateActivationInfo(vehicle);
         var statisticsGrid = GenerateVehicleStatistics(vehicle);
 
+        var referentSection = !string.IsNullOrEmpty(vehicle.ReferentName) ? $@"
+        <h4>👤 Referente Veicolo</h4>
+        <div class='info-grid'>
+            <div class='info-item'>
+                <div class='info-label'>Nome Referente</div>
+                <div class='info-value'>{vehicle.ReferentName}</div>
+            </div>
+            <div class='info-item'>
+                <div class='info-label'>Cellulare Referente</div>
+                <div class='info-value'>{vehicle.ReferentMobileNumber ?? "Non specificato"}</div>
+            </div>
+            <div class='info-item'>
+                <div class='info-label'>Email Referente</div>
+                <div class='info-value'>{vehicle.ReferentEmail ?? "Non specificata"}</div>
+            </div>
+            <div class='info-item'>
+                <div class='info-label'>PEC Referente</div>
+                <div class='info-value'>{vehicle.ReferentPecAddress ?? "Non specificata"}</div>
+            </div>
+        </div>" : "";
+
         return $@"
         <div class='vehicle-card'>
             <div class='vehicle-header'>
@@ -550,6 +587,7 @@ public class ClientProfileController : ControllerBase
                 {activationInfo}
             </div>
 
+            {referentSection}
             {statusBadges}
             {statisticsGrid}
         </div>";

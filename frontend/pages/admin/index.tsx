@@ -53,7 +53,20 @@ export default function AdminDashboard() {
       // 🔁 Aziende
       const resCompanies = await fetch(`${API_BASE_URL}/api/clientcompanies`);
       const companies: ClientCompany[] = await resCompanies.json();
-      setClients(companies);
+      const enrichedCompanies = companies.map((company) => {
+        const firstVehicle = data.find(
+          (v) => v.clientCompany?.id === company.id
+        );
+        return {
+          ...company,
+          displayReferentName: firstVehicle?.referentName || "Nessun referente",
+          displayReferentMobile: firstVehicle?.referentMobileNumber || "—",
+          displayReferentEmail: firstVehicle?.referentEmail || "—",
+          displayReferentPec: firstVehicle?.referentPecAddress || "—",
+        };
+      });
+
+      setClients(enrichedCompanies);
 
       // 🔁 Consensi
       const resConsents = await fetch(`${API_BASE_URL}/api/clientconsents`);
@@ -67,9 +80,9 @@ export default function AdminDashboard() {
           companyId: entry.clientCompany?.id ?? 0,
           companyVatNumber: entry.clientCompany?.vatNumber ?? "",
           companyName: entry.clientCompany?.name ?? "",
-          referentName: entry.clientCompany?.referentName ?? "",
-          referentMobile: entry.clientCompany?.referentMobileNumber ?? "",
-          referentEmail: entry.clientCompany?.referentEmail ?? "",
+          referentName: entry.referentName ?? "",
+          referentMobile: entry.referentMobileNumber ?? "",
+          referentEmail: entry.referentEmail ?? "",
           zipFilePath: "",
           uploadDate: entry.firstActivationAt ?? "",
           model: entry.model ?? "",
@@ -103,6 +116,10 @@ export default function AdminDashboard() {
           lastDeactivationAt: entry.lastDeactivationAt ?? null,
           lastFetchingDataAt: entry.lastFetchingDataAt ?? null,
           clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
+          referentName: entry.referentName ?? "",
+          referentMobileNumber: entry.referentMobileNumber ?? "",
+          referentEmail: entry.referentEmail ?? "",
+          referentPecAddress: entry.referentPecAddress ?? "",
         }))
       );
 
@@ -294,7 +311,23 @@ export default function AdminDashboard() {
         }
 
         // ✅ Aggiorna tutti gli stati
-        setClients(clientsData);
+        const enrichedClients = clientsData.map((company) => {
+          const firstVehicle = vehiclesData.find(
+            (v) => v.clientCompany?.id === company.id
+          );
+
+          return {
+            ...company,
+            displayReferentName:
+              firstVehicle?.referentName || "Nessun referente",
+            displayReferentMobile: firstVehicle?.referentMobileNumber || "—",
+            displayReferentEmail: firstVehicle?.referentEmail || "—",
+            displayReferentPec: firstVehicle?.referentPecAddress || "—",
+          };
+        });
+
+        setClients(enrichedClients);
+
         setVehicles(
           vehiclesData.map((entry) => ({
             id: entry.id,
@@ -311,6 +344,10 @@ export default function AdminDashboard() {
             lastDeactivationAt: entry.lastDeactivationAt ?? null,
             lastFetchingDataAt: entry.lastFetchingDataAt ?? null,
             clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
+            referentName: entry.referentName ?? "",
+            referentMobileNumber: entry.referentMobileNumber ?? "",
+            referentEmail: entry.referentEmail ?? "",
+            referentPecAddress: entry.referentPecAddress ?? "",
           }))
         );
         setClientConsents(consentsData);

@@ -27,10 +27,6 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
                 Email = c.Email,
                 PecAddress = c.PecAddress,
                 LandlineNumber = c.LandlineNumber,
-                ReferentName = c.ReferentName,
-                ReferentMobileNumber = c.ReferentMobileNumber,
-                ReferentEmail = c.ReferentEmail,
-                ReferentPecAddress = c.ReferentPecAddress
             }).ToListAsync();
 
         return Ok(items);
@@ -53,10 +49,6 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
             Email = dto.Email,
             PecAddress = dto.PecAddress,
             LandlineNumber = dto.LandlineNumber,
-            ReferentName = dto.ReferentName,
-            ReferentMobileNumber = dto.ReferentMobileNumber,
-            ReferentEmail = dto.ReferentEmail,
-            ReferentPecAddress = dto.ReferentPecAddress,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -89,10 +81,6 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         existing.Address = updated.Address;
         existing.Email = updated.Email;
         existing.PecAddress = updated.PecAddress;
-        existing.ReferentName = updated.ReferentName;
-        existing.ReferentEmail = updated.ReferentEmail;
-        existing.ReferentMobileNumber = updated.ReferentMobileNumber;
-        existing.ReferentPecAddress = updated.ReferentPecAddress;
         existing.LandlineNumber = updated.LandlineNumber;
 
         await db.SaveChangesAsync();

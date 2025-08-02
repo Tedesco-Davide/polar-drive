@@ -32,11 +32,18 @@ public class ClientVehicle
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    public ClientCompany? ClientCompany { get; set; }
-
     public DateTime? LastDataUpdate { get; set; }
 
-    // Navigation properties
+    public string? ReferentName { get; set; }
+
+    public string? ReferentMobileNumber { get; set; }
+
+    public string? ReferentEmail { get; set; }
+
+    public string? ReferentPecAddress { get; set; }
+
+    public ClientCompany? ClientCompany { get; set; }
+
     public virtual ICollection<VehicleData> VehiclesData { get; set; } = [];
 
     public virtual ICollection<PdfReport> PdfReports { get; set; } = [];

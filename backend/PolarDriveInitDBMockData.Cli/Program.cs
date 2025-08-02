@@ -100,16 +100,16 @@ try
     }
     else
     {
-        companies = new[]
-        {
+        companies =
+        [
             new ClientCompany {
                 Name = "Paninoteca Rossi",
                 VatNumber = "00000000001",
-                ReferentName = "Luca Rossi",
-                ReferentEmail = "luca@paninotecarossi.com",
-                ReferentMobileNumber = "3201234567"
+                Address = "Via Roma 123, Milano",
+                Email = "info@paninotecarossi.com",
+                LandlineNumber = "0221234567"
             },
-        };
+        ];
 
         db.ClientCompanies.AddRange(companies);
         await db.SaveChangesAsync();
@@ -144,11 +144,34 @@ try
                 Model = "Model 3",
                 Trim = "Long Range",
                 Color = "Ultra Red",
-                IsActiveFlag = false,              // ← ATTIVO per default
-                IsFetchingDataFlag = true,        // ← FETCHING attivo per default
-                ClientOAuthAuthorized = true,     // ← AUTORIZZATO per default
+                IsActiveFlag = false,
+                IsFetchingDataFlag = true,
+                ClientOAuthAuthorized = true,
                 FirstActivationAt = DateTime.Now,
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.Now,
+                ReferentName = "Luca Rossi",
+                ReferentEmail = "luca@paninotecarossi.com",
+                ReferentMobileNumber = "3201234567",
+                ReferentPecAddress = "luca.pec@paninotecarossi.it"
+            },
+            new ClientVehicle
+            {
+                ClientCompanyId = companies[0].Id,
+                Vin = "99999999999999999",
+                FuelType = "Electric",
+                Brand = "Tesla",
+                Model = "Model 3",
+                Trim = null,
+                Color = null,
+                IsActiveFlag = true,
+                IsFetchingDataFlag = true,
+                ClientOAuthAuthorized = true,
+                FirstActivationAt = DateTime.Now,
+                CreatedAt = DateTime.Now,
+                ReferentName = "Mario Bianchi",
+                ReferentEmail = "mario@paninotecarossi.com",
+                ReferentMobileNumber = "3209876543",
+                ReferentPecAddress = "mario.pec@paninotecarossi.it"
             }
         ];
 

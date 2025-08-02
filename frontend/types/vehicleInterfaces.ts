@@ -15,6 +15,10 @@ export interface ClientVehicle {
   firstActivationAt: string;
   lastDeactivationAt: string | null;
   lastFetchingDataAt: string | null;
+  referentName?: string;
+  referentMobileNumber?: string;
+  referentEmail?: string;
+  referentPecAddress?: string;
 }
 
 export interface VehicleWorkflow {

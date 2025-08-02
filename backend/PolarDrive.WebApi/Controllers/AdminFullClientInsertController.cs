@@ -36,9 +36,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 {
                     Name = request.CompanyName,
                     VatNumber = request.CompanyVatNumber,
-                    ReferentName = request.ReferentName,
-                    ReferentEmail = request.ReferentEmail,
-                    ReferentMobileNumber = request.ReferentMobile,
+
                 };
                 _dbContext.ClientCompanies.Add(company);
                 await _dbContext.SaveChangesAsync();
@@ -75,7 +73,11 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 IsActiveFlag = false,
                 IsFetchingDataFlag = false,
                 ClientOAuthAuthorized = false,
-                FirstActivationAt = request.UploadDate
+                FirstActivationAt = request.UploadDate,
+                ReferentName = request.ReferentName,
+                ReferentEmail = request.ReferentEmail,
+                ReferentMobileNumber = request.ReferentMobile,
+                ReferentPecAddress = null
             };
             _dbContext.ClientVehicles.Add(vehicle);
 

@@ -44,9 +44,10 @@ export default function AdminClientCompaniesTable({
       "address",
       "email",
       "pecAddress",
-      "referentName",
-      "referentEmail",
-      "referentMobileNumber",
+      "displayReferentName",
+      "displayReferentEmail",
+      "displayReferentMobile",
+      "displayReferentPec",
     ]
   );
 
@@ -107,13 +108,25 @@ export default function AdminClientCompaniesTable({
             <th className="p-4">{t("admin.actions")}</th>
             <th className="p-4">{t("admin.clientCompany.vatNumber")}</th>
             <th className="p-4">{t("admin.clientCompany.name")}</th>
-            <th className="p-4">{t("admin.clientCompany.referentName")}</th>
-            <th className="p-4">{t("admin.clientCompany.referentMobile")}</th>
-            <th className="p-4">{t("admin.clientCompany.referentEmail")}</th>
+            <th className="p-4">
+              {t("admin.clientCompany.referentName")}
+              <small className="block text-xs opacity-70">(dal veicolo)</small>
+            </th>
+            <th className="p-4">
+              {t("admin.clientCompany.referentMobile")}
+              <small className="block text-xs opacity-70">(dal veicolo)</small>
+            </th>
+            <th className="p-4">
+              {t("admin.clientCompany.referentEmail")}
+              <small className="block text-xs opacity-70">(dal veicolo)</small>
+            </th>
             <th className="p-4">{t("admin.clientCompany.address")}</th>
             <th className="p-4">{t("admin.clientCompany.email")}</th>
             <th className="p-4">{t("admin.clientCompany.pec")}</th>
-            <th className="p-4">{t("admin.clientCompany.referentPec")}</th>
+            <th className="p-4">
+              {t("admin.clientCompany.referentPec")}
+              <small className="block text-xs opacity-70">(dal veicolo)</small>
+            </th>
             <th className="p-4">{t("admin.clientCompany.landline")}</th>
           </tr>
         </thead>
@@ -134,13 +147,13 @@ export default function AdminClientCompaniesTable({
               </td>
               <td className="p-4">{client.vatNumber}</td>
               <td className="p-4">{client.name}</td>
-              <td className="p-4">{client.referentName}</td>
-              <td className="p-4">{client.referentMobileNumber}</td>
-              <td className="p-4">{client.referentEmail}</td>
+              <td className="p-4">{client.displayReferentName}</td>
+              <td className="p-4">{client.displayReferentMobile}</td>
+              <td className="p-4">{client.displayReferentEmail}</td>
               <td className="p-4">{client.address}</td>
               <td className="p-4">{client.email}</td>
               <td className="p-4">{client.pecAddress}</td>
-              <td className="p-4">{client.referentPecAddress}</td>
+              <td className="p-4">{client.displayReferentPec}</td>
               <td className="p-4">{client.landlineNumber}</td>
             </tr>
           ))}

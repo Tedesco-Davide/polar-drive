@@ -21,9 +21,6 @@ public class CompanyProfileInfo
     public string Email { get; set; } = string.Empty;
     public string? PecAddress { get; set; }
     public string? LandlineNumber { get; set; }
-    public string? ReferentName { get; set; }
-    public string? ReferentMobileNumber { get; set; }
-    public string? ReferentEmail { get; set; }
     public DateTime CompanyCreatedAt { get; set; }
     public int DaysRegistered { get; set; }
     public int TotalVehicles { get; set; }
@@ -67,4 +64,8 @@ public class VehicleProfileInfo
     public DateTime? LastReportGenerated { get; set; }
     public int? DaysSinceFirstActivation { get; set; }
     public int VehicleOutageDays { get; set; }
+    public string? ReferentName { get; set; }
+    public string? ReferentMobileNumber { get; set; }
+    public string? ReferentEmail { get; set; }
+    public string? ReferentPecAddress { get; set; }
 }

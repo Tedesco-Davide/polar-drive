@@ -6,8 +6,8 @@ export interface ClientCompany {
   email: string;
   pecAddress: string;
   landlineNumber: string;
-  referentName: string;
-  referentMobileNumber: string;
-  referentEmail: string;
-  referentPecAddress: string;
+  displayReferentName?: string;
+  displayReferentMobile?: string;
+  displayReferentEmail?: string;
+  displayReferentPec?: string;
 }

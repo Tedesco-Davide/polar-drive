@@ -36,14 +36,15 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             LastDeactivationAt = v.LastDeactivationAt?.ToString("o"),
             LastFetchingDataAt = v.LastFetchingDataAt?.ToString("o"),
             ClientOAuthAuthorized = v.ClientOAuthAuthorized,
+            ReferentName = v.ReferentName,
+            ReferentMobileNumber = v.ReferentMobileNumber,
+            ReferentEmail = v.ReferentEmail,
+            ReferentPecAddress = v.ReferentPecAddress,
             ClientCompany = new ClientCompanyDTO
             {
                 Id = v.ClientCompany!.Id,
                 VatNumber = v.ClientCompany.VatNumber,
                 Name = v.ClientCompany.Name,
-                ReferentName = v.ClientCompany.ReferentName,
-                ReferentMobileNumber = v.ClientCompany.ReferentMobileNumber,
-                ReferentEmail = v.ClientCompany.ReferentEmail
             }
         }).ToList();
 
@@ -79,7 +80,11 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             ClientOAuthAuthorized = false,
             FirstActivationAt = ParseDate(dto.FirstActivationAt),
             LastDeactivationAt = ParseDate(dto.LastDeactivationAt),
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            ReferentName = dto.ReferentName,
+            ReferentMobileNumber = dto.ReferentMobileNumber,
+            ReferentEmail = dto.ReferentEmail,
+            ReferentPecAddress = dto.ReferentPecAddress,
         };
 
         await _logger.Info("ClientVehiclesController.Post", "Vehicle inserted via POST and awaits OAuth authorization.", $"VIN: {dto.Vin}");
@@ -190,6 +195,10 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         vehicle.IsFetchingDataFlag = dto.IsFetching;
         vehicle.FirstActivationAt = ParseDate(dto.FirstActivationAt);
         vehicle.LastDeactivationAt = ParseDate(dto.LastDeactivationAt);
+        vehicle.ReferentName = dto.ReferentName;
+        vehicle.ReferentMobileNumber = dto.ReferentMobileNumber;
+        vehicle.ReferentEmail = dto.ReferentEmail;
+        vehicle.ReferentPecAddress = dto.ReferentPecAddress;
 
         await db.SaveChangesAsync();
 

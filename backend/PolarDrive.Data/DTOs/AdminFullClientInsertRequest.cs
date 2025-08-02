@@ -8,6 +8,7 @@ public class AdminFullClientInsertRequest
     public string ReferentName { get; set; } = string.Empty;
     public string ReferentEmail { get; set; } = string.Empty;
     public string ReferentMobile { get; set; } = string.Empty;
+    public string ReferentPecAddress { get; set; } = string.Empty;
     public string VehicleVIN { get; set; } = string.Empty;
     public string VehicleFuelType { get; set; } = string.Empty;
     public string VehicleBrand { get; set; } = string.Empty;
