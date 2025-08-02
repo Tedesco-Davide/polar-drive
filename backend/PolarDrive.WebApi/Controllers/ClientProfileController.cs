@@ -350,6 +350,9 @@ public class ClientProfileController : ControllerBase
             color: #6c757d;
             border-top: 1px solid #e9ecef;
         }}
+        .company-info {{
+            font-style: italic;
+        }}
         .no-vehicles {{
             text-align: center;
             padding: 40px;
@@ -462,8 +465,8 @@ public class ClientProfileController : ControllerBase
     {GenerateVehiclesSection(data.Vehicles)}
 
     <div class='footer'>
-        <p>Report generato automaticamente da DataPolar • {generationDate}</p>
-        <p>Documento riservato e confidenziale - Proprietà di DataPolar SRLS</p>
+        <p>Report generato da PolarDrive™ • {generationDate}</p>
+        <p class='company-info'>DataPolar - The future of AI</p>
     </div>
 </body>
 </html>";

@@ -17,7 +17,7 @@ import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm"
 import PaginationControls from "@/components/paginationControls";
 import VehicleStatusToggle from "./vehicleStatusToggle";
 import Chip from "./chip";
-import AdminSmsManagementModal from "./AdminSmsManagementModal";
+import AdminSmsManagementModal from "./adminSmsManagementModal";
 
 export default function AdminMainWorkflow({
   workflowData,

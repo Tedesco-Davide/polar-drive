@@ -103,7 +103,7 @@ public static class DefaultHtmlTemplate
         <!-- Footer -->
         <footer class=""report-footer footer"">
             <div class=""footer-content"">
-                <p>Report generato da PolarDrive™ al {{generatedAt}}</p>
+                <p>Report generato da PolarDrive™ • {{generatedAt}}</p>
                 <p class=""company-info"">DataPolar - The future of AI</p>
             </div>
         </footer>
