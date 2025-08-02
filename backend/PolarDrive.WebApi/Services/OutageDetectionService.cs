@@ -265,11 +265,13 @@ public class OutageDetectionService(
 
     private async Task<bool> IsVehicleDownAsync(ClientVehicle vehicle)
     {
-        // Rileggisempre lo stato più recente dal database
+        // RILEGGI sempre lo stato più recente dal database
         var currentVehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicle.Id);
 
         if (currentVehicle == null || !currentVehicle.IsActiveFlag)
         {
+            await _logger.Info("OutageDetectionService",
+                $"Vehicle {vehicle.Vin} - Considered DOWN due to IsActive={currentVehicle?.IsActiveFlag}");
             return true;
         }
 
@@ -284,22 +286,38 @@ public class OutageDetectionService(
             if (currentVehicle.FirstActivationAt.HasValue)
             {
                 var timeSinceActivation = DateTime.Now - currentVehicle.FirstActivationAt.Value;
+
                 if (timeSinceActivation < TimeSpan.FromMinutes(10)) // Grazia di 10 minuti
                 {
                     await _logger.Info("OutageDetectionService",
-                        $"Vehicle {vehicle.Vin} - Recently activated ({timeSinceActivation.TotalMinutes:F1} min ago), allowing grace period");
+                        $"Vehicle {vehicle.Vin} - Grace period active ({timeSinceActivation.TotalMinutes:F1} min since activation)");
                     return false; // Non considerarlo DOWN
                 }
+                else
+                {
+                    await _logger.Warning("OutageDetectionService",
+                        $"Vehicle {vehicle.Vin} - No data received after grace period ({timeSinceActivation.TotalMinutes:F1} min since activation)");
+                }
+            }
+            else
+            {
+                await _logger.Warning("OutageDetectionService",
+                    $"Vehicle {vehicle.Vin} - No activation date and no data ever received");
             }
 
             return true; // Nessun dato mai ricevuto dopo grace period
         }
 
         var timeSinceLastData = DateTime.Now - lastDataReceived.Timestamp;
+        bool isDown = timeSinceLastData > _vehicleInactivityThreshold;
 
-        await _logger.Info("OutageDetectionService", $"Vehicle {vehicle.Vin} - Time since last data: {timeSinceLastData.TotalMinutes:F1} minutes (threshold: {_vehicleInactivityThreshold.TotalMinutes} minutes)");
+        if (isDown)
+        {
+            await _logger.Warning("OutageDetectionService",
+                $"Vehicle {vehicle.Vin} - Data too old: {timeSinceLastData.TotalMinutes:F1} min (threshold: {_vehicleInactivityThreshold.TotalMinutes} min)");
+        }
 
-        return timeSinceLastData > _vehicleInactivityThreshold;
+        return isDown;
     }
 
     private async Task HandleVehicleOutageAsync(ClientVehicle vehicle)
