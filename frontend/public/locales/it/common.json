@@ -195,6 +195,8 @@
   "admin.outagePeriods.outageTypeInfoVehicle": "Per gli outages di tipo Vehicle è obbligatorio specificare sia Partita IVA che VIN del veicolo",
   "admin.outagePeriods.noResultsFound": "Nessun outage corrisponde alla tua ricerca",
   "admin.outagePeriods.noOutages": "Tutti i sistemi operativi - nessun outage registrato",
+  "admin.outagePeriods.tableRefreshSuccess": "Outages refresh completato con successo",
+  "admin.outagePeriods.tableRefreshFail": "Outages refresh fallito",
 
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totali",

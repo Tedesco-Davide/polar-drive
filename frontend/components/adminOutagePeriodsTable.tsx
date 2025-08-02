@@ -302,7 +302,22 @@ export default function AdminOutagePeriodsTable({
       <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
-            <th className="p-4 text-left font-semibold">
+            <th className="p-4">
+              <button
+                onClick={async () => {
+                  try {
+                    await refreshOutagePeriods();
+                    alert(t("admin.outagePeriods.tableRefreshSuccess"));
+                  } catch {
+                    alert(t("admin.outagePeriods.tableRefreshFail"));
+                  }
+                }}
+                className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+              >
+                <span className="uppercase text-xs tracking-widest">
+                  {t("admin.tableRefreshButton")}
+                </span>
+              </button>{" "}
               {t("admin.actions")}
             </th>
             <th className="p-4 text-left font-semibold">

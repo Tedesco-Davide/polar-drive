@@ -195,6 +195,8 @@
   "admin.outagePeriods.outageTypeInfoVehicle": "For Vehicle type outages, it is mandatory to specify both VAT number and vehicle VIN",
   "admin.outagePeriods.noResultsFound": "No outages match your search",
   "admin.outagePeriods.noOutages": "All systems operational - no outages recorded",
+  "admin.outagePeriods.tableRefreshSuccess": "Outages refresh completed successfully",
+  "admin.outagePeriods.tableRefreshFail": "Outages refresh failed",
 
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totals",
