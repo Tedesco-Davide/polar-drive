@@ -83,8 +83,8 @@ export default function VehicleStatusToggle({
     try {
       setLoading(true);
       await axios.patch(`${API_BASE_URL}/api/ClientVehicles/${id}/status`, {
-        isActive: newIsActive,
-        isFetching: newIsFetching,
+        IsActive: newIsActive,
+        IsFetching: newIsFetching,
       });
       onStatusChange(newIsActive, newIsFetching);
       logFrontendEvent(

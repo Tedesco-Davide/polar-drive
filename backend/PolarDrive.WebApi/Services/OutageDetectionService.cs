@@ -52,17 +52,22 @@ public class OutageDetectionService(
     {
         await _logger.Info("OutageDetectionService", "Starting vehicle outage detection");
 
-        // Prendi TUTTI i veicoli che hanno outages ongoing, non solo quelli NotActive
-        var vehiclesToCheck = await _db.ClientVehicles
-            .Where(v => v.IsFetchingDataFlag) // Solo quelli che dovrebbero ricevere dati
+        var outageVehicles = await _db.ClientVehicles
+            .Where(v => v.IsFetchingDataFlag)
             .Include(v => v.ClientCompany)
             .ToListAsync();
 
-        foreach (var vehicle in vehiclesToCheck)
+        await _logger.Info("OutageDetectionService", $"Found {outageVehicles.Count} vehicles to check for outages");
+
+        foreach (var vehicle in outageVehicles)
         {
             try
             {
+                await _logger.Info("OutageDetectionService", $"Checking vehicle {vehicle.Vin} (ID: {vehicle.Id})");
+
                 var isVehicleDown = await IsVehicleDownAsync(vehicle);
+
+                await _logger.Info("OutageDetectionService", $"Vehicle {vehicle.Vin} is down: {isVehicleDown}");
 
                 if (isVehicleDown)
                 {
@@ -90,8 +95,12 @@ public class OutageDetectionService(
             .Include(o => o.ClientVehicle)
             .ToListAsync();
 
+        await _logger.Info("OutageDetectionService", $"Found {ongoingOutages.Count} ongoing outages to check for resolution");
+
         foreach (var outage in ongoingOutages)
         {
+            await _logger.Info("OutageDetectionService", $"Checking outage {outage.Id} ({outage.OutageType} - {outage.OutageBrand})");
+
             try
             {
                 bool shouldResolve = false;
@@ -104,12 +113,13 @@ public class OutageDetectionService(
                 else if (outage.OutageType == "Outage Vehicle" && outage.ClientVehicle != null)
                 {
                     // Rileggi sempre lo stato più recente
-                    var freshVehicle = await _db.ClientVehicles
-                        .FirstOrDefaultAsync(v => v.Id == outage.ClientVehicle.Id);
+                    var freshVehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == outage.ClientVehicle.Id);
 
                     if (freshVehicle != null)
                     {
                         shouldResolve = !await IsVehicleDownAsync(freshVehicle);
+
+                        await _logger.Info("OutageDetectionService", $"Vehicle {freshVehicle.Vin} - Should resolve outage: {shouldResolve}");
                     }
                 }
 
@@ -256,8 +266,7 @@ public class OutageDetectionService(
     private async Task<bool> IsVehicleDownAsync(ClientVehicle vehicle)
     {
         // Rileggisempre lo stato più recente dal database
-        var currentVehicle = await _db.ClientVehicles
-            .FirstOrDefaultAsync(v => v.Id == vehicle.Id);
+        var currentVehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicle.Id);
 
         if (currentVehicle == null || !currentVehicle.IsActiveFlag)
         {
@@ -271,10 +280,25 @@ public class OutageDetectionService(
 
         if (lastDataReceived == null)
         {
-            return true;
+            // Se il veicolo è stato attivato di recente, non considerarlo DOWN
+            if (currentVehicle.FirstActivationAt.HasValue)
+            {
+                var timeSinceActivation = DateTime.Now - currentVehicle.FirstActivationAt.Value;
+                if (timeSinceActivation < TimeSpan.FromMinutes(10)) // Grazia di 10 minuti
+                {
+                    await _logger.Info("OutageDetectionService",
+                        $"Vehicle {vehicle.Vin} - Recently activated ({timeSinceActivation.TotalMinutes:F1} min ago), allowing grace period");
+                    return false; // Non considerarlo DOWN
+                }
+            }
+
+            return true; // Nessun dato mai ricevuto dopo grace period
         }
 
         var timeSinceLastData = DateTime.Now - lastDataReceived.Timestamp;
+
+        await _logger.Info("OutageDetectionService", $"Vehicle {vehicle.Vin} - Time since last data: {timeSinceLastData.TotalMinutes:F1} minutes (threshold: {_vehicleInactivityThreshold.TotalMinutes} minutes)");
+
         return timeSinceLastData > _vehicleInactivityThreshold;
     }
 
