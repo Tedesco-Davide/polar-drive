@@ -52,12 +52,13 @@ public class OutageDetectionService(
     {
         await _logger.Info("OutageDetectionService", "Starting vehicle outage detection");
 
-        var outageVehicles = await _db.ClientVehicles
-            .Where(v => !v.IsActiveFlag && v.IsFetchingDataFlag)
+        // Prendi TUTTI i veicoli che hanno outages ongoing, non solo quelli NotActive
+        var vehiclesToCheck = await _db.ClientVehicles
+            .Where(v => v.IsFetchingDataFlag) // Solo quelli che dovrebbero ricevere dati
             .Include(v => v.ClientCompany)
             .ToListAsync();
 
-        foreach (var vehicle in outageVehicles)
+        foreach (var vehicle in vehiclesToCheck)
         {
             try
             {
@@ -97,12 +98,19 @@ public class OutageDetectionService(
 
                 if (outage.OutageType == "Outage Fleet Api")
                 {
-                    // ✅ Fix: controlla se l'API è tornata online
+                    // Fix: controlla se l'API è tornata online
                     shouldResolve = !await IsFleetApiDownAsync(outage.OutageBrand);
                 }
                 else if (outage.OutageType == "Outage Vehicle" && outage.ClientVehicle != null)
                 {
-                    shouldResolve = !await IsVehicleDownAsync(outage.ClientVehicle);
+                    // Rileggi sempre lo stato più recente
+                    var freshVehicle = await _db.ClientVehicles
+                        .FirstOrDefaultAsync(v => v.Id == outage.ClientVehicle.Id);
+
+                    if (freshVehicle != null)
+                    {
+                        shouldResolve = !await IsVehicleDownAsync(freshVehicle);
+                    }
                 }
 
                 if (shouldResolve)
@@ -247,12 +255,15 @@ public class OutageDetectionService(
 
     private async Task<bool> IsVehicleDownAsync(ClientVehicle vehicle)
     {
-        if (!vehicle.IsActiveFlag)
+        // Rileggisempre lo stato più recente dal database
+        var currentVehicle = await _db.ClientVehicles
+            .FirstOrDefaultAsync(v => v.Id == vehicle.Id);
+
+        if (currentVehicle == null || !currentVehicle.IsActiveFlag)
         {
             return true;
         }
 
-        // Controlla l'ultima volta che abbiamo ricevuto dati
         var lastDataReceived = await _db.VehiclesData
             .Where(vd => vd.VehicleId == vehicle.Id)
             .OrderByDescending(vd => vd.Timestamp)
@@ -260,16 +271,11 @@ public class OutageDetectionService(
 
         if (lastDataReceived == null)
         {
-            return true; // Nessun dato mai ricevuto
+            return true;
         }
 
         var timeSinceLastData = DateTime.Now - lastDataReceived.Timestamp;
-        if (timeSinceLastData > _vehicleInactivityThreshold)
-        {
-            return true; // Troppo tempo senza dati
-        }
-
-        return false; // ✅ Semplificato: se ha dati recenti, è considerato UP
+        return timeSinceLastData > _vehicleInactivityThreshold;
     }
 
     private async Task HandleVehicleOutageAsync(ClientVehicle vehicle)
