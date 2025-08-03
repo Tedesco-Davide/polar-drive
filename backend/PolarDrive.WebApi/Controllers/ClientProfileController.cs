@@ -238,254 +238,393 @@ public class ClientProfileController : ControllerBase
         var generationDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
 
         return $@"
-<!DOCTYPE html>
-<html lang='it'>
-<head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Profilo Cliente - {data.CompanyInfo.Name}</title>
-    <style>
-        body {{
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-            line-height: 1.4;
-        }}
-        .header {{
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            text-align: center;
-        }}
-        .header h1 {{
-            margin: 0;
-            font-size: 2.5em;
-            font-weight: 300;
-        }}
-        .header .subtitle {{
-            margin: 10px 0 0 0;
-            font-size: 1.2em;
-            opacity: 0.9;
-        }}
-        .section {{
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 25px;
-            margin-bottom: 25px;
-            border-left: 5px solid #667eea;
-        }}
-        .section h2 {{
-            color: #667eea;
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 1.8em;
-            font-weight: 600;
-        }}
-        .info-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }}
-        .info-item {{
-            background: white;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #e9ecef;
-        }}
-        .info-label {{
-            font-weight: 600;
-            color: #495057;
-            margin-bottom: 5px;
-        }}
-        .info-value {{
-            color: #212529;
-            font-size: 1.1em;
-        }}
-        .stats-grid {{
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }}
-        .stat-card {{
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border: 1px solid #e9ecef;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }}
-        .stat-number {{
-            font-size: 2.5em;
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 5px;
-        }}
-        .stat-label {{
-            color: #6c757d;
-            font-weight: 500;
-            text-transform: uppercase;
-            font-size: 0.9em;
-        }}
-        .vehicle-card {{
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }}
-        .vehicle-header {{
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #f8f9fa;
-        }}
-        .vehicle-title {{
-            font-size: 1.4em;
-            font-weight: 600;
-            color: #495057;
-        }}
-        .vehicle-vin {{
-            font-family: 'Courier New', monospace;
-            background: #f8f9fa;
-            padding: 5px 10px;
-            border-radius: 4px;
-            margin-left: 15px;
-            font-size: 0.9em;
-        }}
-        .status-badges {{
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-        }}
-        .badge {{
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 0.85em;
-            font-weight: 600;
-            text-transform: uppercase;
-        }}
-        .badge.active {{ background: #d4edda; color: #155724; }}
-        .badge.inactive {{ background: #f8d7da; color: #721c24; }}
-        .badge.fetching {{ background: #d1ecf1; color: #0c5460; }}
-        .badge.authorized {{ background: #fff3cd; color: #856404; }}
-        .footer {{
-            text-align: center;
-            margin-top: 40px;
-            padding: 20px;
-            color: #6c757d;
-            border-top: 1px solid #e9ecef;
-        }}
-        .company-info {{
-            font-style: italic;
-        }}
-        .no-vehicles {{
-            text-align: center;
-            padding: 40px;
-            color: #6c757d;
-            font-style: italic;
-        }}
-        @media print {{
-            body {{ margin: 0; }}
-            .section {{ break-inside: avoid; }}
-            .vehicle-card {{ break-inside: avoid; }}
-        }}
-    </style>
-</head>
-<body>
-    <div class='header'>
-        <h1>Profilo Cliente Completo</h1>
-        <div class='subtitle'>{data.CompanyInfo.Name} • P.IVA: {data.CompanyInfo.VatNumber}</div>
-    </div>
+        <!DOCTYPE html>
+        <html lang='it'>
+            <head>
+                <meta charset='UTF-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <title>Profilo Cliente - {data.CompanyInfo.Name}</title>
+                <style>
+                    body {{
+                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                        margin: 0;
+                        padding: 20px;
+                        color: #333;
+                        line-height: 1.4;
+                    }}
+                    .header {{
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        padding: 30px;
+                        border-radius: 10px;
+                        margin-bottom: 30px;
+                        text-align: center;
+                    }}
+                    .header h1 {{
+                        margin: 0;
+                        font-size: 2.5em;
+                        font-weight: 300;
+                    }}
+                    .header .subtitle {{
+                        margin: 10px 0 0 0;
+                        font-size: 1.2em;
+                        opacity: 0.9;
+                    }}
 
-    <div class='section'>
-        <h2>📋 Informazioni Azienda</h2>
-        <div class='info-grid'>
-            <div class='info-item'>
-                <div class='info-label'>Ragione Sociale</div>
-                <div class='info-value'>{data.CompanyInfo.Name}</div>
-            </div>
-            <div class='info-item'>
-                <div class='info-label'>Partita IVA</div>
-                <div class='info-value'>{data.CompanyInfo.VatNumber}</div>
-            </div>
-            <div class='info-item'>
-                <div class='info-label'>Indirizzo</div>
-                <div class='info-value'>{data.CompanyInfo.Address ?? "Non specificato"}</div>
-            </div>
-            <div class='info-item'>
-                <div class='info-label'>Email</div>
-                <div class='info-value'>{data.CompanyInfo.Email}</div>
-            </div>
-            <div class='info-item'>
-                <div class='info-label'>PEC</div>
-                <div class='info-value'>{data.CompanyInfo.PecAddress ?? "Non specificata"}</div>
-            </div>
-            <div class='info-item'>
-                <div class='info-label'>Data Registrazione</div>
-                <div class='info-value'>{data.CompanyInfo.CompanyCreatedAt:dd/MM/yyyy} ({data.CompanyInfo.DaysRegistered} giorni fa)</div>
-            </div>
-            <div class='info-item'>
-                <div class='info-label'>Telefono Fisso</div>
-                <div class='info-value'>{data.CompanyInfo.LandlineNumber ?? "Non specificato"}</div>
-            </div>
-        </div>
+                    /* ✅ SEZIONI COMPATTE */
+                    .section {{
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        padding: 25px;
+                        margin-bottom: 20px;
+                        border-left: 5px solid #667eea;
+                        break-inside: avoid;
+                        page-break-inside: avoid;
+                    }}
+                    .section h2 {{
+                        color: #667eea;
+                        margin-top: 0;
+                        margin-bottom: 20px;
+                        font-size: 1.8em;
+                        font-weight: 600;
+                    }}
 
-        {GeneratePhoneNumbersSection(data.CompanyInfo)}
-    </div>
+                    /* ✅ GRIGLIE COMPATTE */
+                    .info-grid {{
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                        gap: 15px;
+                        margin-bottom: 15px;
+                    }}
+                    .info-item {{
+                        background: white;
+                        padding: 15px;
+                        border-radius: 6px;
+                        border: 1px solid #e9ecef;
+                        height: auto;
+                        min-height: auto;
+                    }}
+                    .info-label {{
+                        font-weight: 600;
+                        color: #495057;
+                        margin-bottom: 5px;
+                    }}
+                    .info-value {{
+                        color: #212529;
+                        font-size: 1.1em;
+                        word-wrap: break-word;
+                        overflow-wrap: break-word;
+                    }}
 
-    <div class='section'>
-        <h2>📊 Altre Statistiche</h2>
-        <div class='stats-grid'>
-            <div class='stat-card'>
-                <div class='stat-number'>{data.CompanyInfo.TotalVehicles}</div>
-                <div class='stat-label'>Veicoli Totali</div>
-            </div>
-            <div class='stat-card'>
-                <div class='stat-number'>{data.CompanyInfo.ActiveVehicles}</div>
-                <div class='stat-label'>Veicoli Attivi</div>
-            </div>
-            <div class='stat-card'>
-                <div class='stat-number'>{data.CompanyInfo.AuthorizedVehicles}</div>
-                <div class='stat-label'>Autorizzati</div>
-            </div>
-            <div class='stat-card'>
-                <div class='stat-number'>{data.CompanyInfo.UniqueBrands}</div>
-                <div class='stat-label'>Brand Diversi</div>
-            </div>
-            <div class='stat-card'>
-                <div class='stat-number'>{data.CompanyInfo.TotalConsentsCompany}</div>
-                <div class='stat-label'>Consensi Totali</div>
-            </div>
-            <div class='stat-card'>
-                <div class='stat-number'>{data.CompanyInfo.TotalOutagesCompany}</div>
-                <div class='stat-label'>Outages Totali</div>
-            </div>
-            <div class='stat-card'>
-                <div class='stat-number'>{data.CompanyInfo.TotalReportsCompany}</div>
-                <div class='stat-label'>Report Generati</div>
-            </div>
-            <div class='stat-card'>
-                <div class='stat-number'>{data.CompanyInfo.TotalSmsEventsCompany}</div>
-                <div class='stat-label'>Eventi SMS</div>
-            </div>
-        </div>
-    </div>
+                    /* ✅ STATISTICHE COMPATTE */
+                    .stats-grid {{
+                        display: grid;
+                        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                        gap: 15px;
+                        margin: 15px 0;
+                        align-items: start;
+                    }}
+                    .stat-card {{
+                        background: white;
+                        padding: 20px;
+                        border-radius: 8px;
+                        text-align: center;
+                        border: 1px solid #e9ecef;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        height: auto;
+                        min-height: auto;
+                    }}
+                    .stat-number {{
+                        font-size: 2.5em;
+                        font-weight: 700;
+                        color: #667eea;
+                        margin-bottom: 5px;
+                        line-height: 1;
+                    }}
+                    .stat-label {{
+                        color: #6c757d;
+                        font-weight: 500;
+                        text-transform: uppercase;
+                        font-size: 0.9em;
+                        margin: 0;
+                    }}
 
-    {GenerateVehiclesSection(data.Vehicles)}
+                    /* ✅ VEICOLI COMPATTI - ELIMINA SPAZI VUOTI */
+                    .vehicle-card {{
+                        background: white;
+                        border: 1px solid #e9ecef;
+                        border-radius: 8px;
+                        padding: 20px;
+                        margin-bottom: 15px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        height: auto;
+                        min-height: auto;
+                        break-inside: avoid;
+                        page-break-inside: avoid;
+                    }}
+                    .vehicle-header {{
+                        display: flex;
+                        align-items: center;
+                        margin-bottom: 15px;
+                        padding-bottom: 15px;
+                        border-bottom: 2px solid #f8f9fa;
+                        flex-wrap: wrap;
+                        gap: 10px;
+                    }}
+                    .vehicle-title {{
+                        font-size: 1.4em;
+                        font-weight: 600;
+                        color: #495057;
+                    }}
+                    .vehicle-vin {{
+                        font-family: 'Courier New', monospace;
+                        background: #f8f9fa;
+                        padding: 5px 10px;
+                        border-radius: 4px;
+                        font-size: 0.9em;
+                    }}
 
-    <div class='footer'>
-        <p>Report generato da PolarDrive™ • {generationDate}</p>
-        <p class='company-info'>DataPolar - The future of AI</p>
-    </div>
-</body>
-</html>";
+                    /* ✅ BADGE COMPATTI */
+                    .status-badges {{
+                        display: flex;
+                        gap: 10px;
+                        margin: 15px 0;
+                        flex-wrap: wrap;
+                    }}
+                    .badge {{
+                        padding: 6px 12px;
+                        border-radius: 20px;
+                        font-size: 0.85em;
+                        font-weight: 600;
+                        text-transform: uppercase;
+                        white-space: nowrap;
+                    }}
+                    .badge.active {{ background: #d4edda; color: #155724; }}
+                    .badge.inactive {{ background: #f8d7da; color: #721c24; }}
+                    .badge.fetching {{ background: #d1ecf1; color: #0c5460; }}
+                    .badge.authorized {{ background: #fff3cd; color: #856404; }}
+
+                    .footer {{
+                        text-align: center;
+                        margin-top: 30px;
+                        padding: 20px;
+                        color: #6c757d;
+                        border-top: 1px solid #e9ecef;
+                    }}
+                    .company-info {{
+                        font-style: italic;
+                    }}
+                    .no-vehicles {{
+                        text-align: center;
+                        padding: 20px;
+                        color: #6c757d;
+                        font-style: italic;
+                        background: white;
+                        border-radius: 8px;
+                        border: 1px solid #e9ecef;
+                    }}
+
+                    /* ✅ TITOLO VEICOLI SEPARATO */
+                    .vehicles-title {{
+                        color: #667eea;
+                        margin: 30px 0 20px 0;
+                        font-size: 1.8em;
+                        font-weight: 600;
+                        padding: 20px 25px;
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        border-left: 5px solid #667eea;
+                        /* ✅ PERMETTI IL BREAK DOPO IL TITOLO */
+                        break-after: auto;
+                        page-break-after: auto;
+                    }}
+
+                    /* ✅ RIMUOVI break-inside: avoid DALLA CLASSE .section PER I VEICOLI */
+                    .section {{
+                        background: #f8f9fa;
+                        border-radius: 8px;
+                        padding: 25px;
+                        margin-bottom: 20px;
+                        border-left: 5px solid #667eea;
+                        /* ✅ RIMUOVI QUESTE RIGHE CHE CAUSANO PROBLEMI:
+                        break-inside: avoid;
+                        page-break-inside: avoid;
+                        */
+                    }}
+
+                    /* ✅ VEHICLE CARD OTTIMIZZATE */
+                    .vehicle-card {{
+                        background: white;
+                        border: 1px solid #e9ecef;
+                        border-radius: 8px;
+                        padding: 20px;
+                        margin-bottom: 15px;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        height: auto;
+                        min-height: auto;
+                        /* ✅ MANTIENI BREAK SOLO PER LE CARD */
+                        break-inside: avoid;
+                        page-break-inside: avoid;
+                    }}
+
+                    /* ✅ PRINT OTTIMIZZATO */
+                    @media print {{
+                        body {{ margin: 0; padding: 10px; }}
+                        
+                        /* ✅ TITOLO VEICOLI IN STAMPA */
+                        .vehicles-title {{
+                            margin: 20px 0 15px 0;
+                            break-after: auto;
+                            page-break-after: auto;
+                        }}
+                        
+                        /* ✅ SEZIONI NORMALI */
+                        .section {{ 
+                            margin-bottom: 10px;
+                            /* ✅ NON USARE break-inside: avoid */
+                        }}
+                        
+                        /* ✅ VEHICLE CARD */
+                        .vehicle-card {{ 
+                            break-inside: avoid; 
+                            page-break-inside: avoid;
+                            margin-bottom: 10px;
+                        }}
+                        
+                        .stats-grid {{ gap: 8px; }}
+                        .info-grid {{ gap: 8px; }}
+                        
+                        .section:last-child {{ margin-bottom: 0; }}
+                        .vehicle-card:last-child {{ margin-bottom: 0; }}
+                    }}
+
+                    /* ✅ RESPONSIVE */
+                    @media (max-width: 768px) {{
+                        .info-grid {{
+                            grid-template-columns: 1fr;
+                        }}
+                        .stats-grid {{
+                            grid-template-columns: repeat(2, 1fr);
+                        }}
+                        .vehicle-header {{
+                            flex-direction: column;
+                            align-items: flex-start;
+                        }}
+                    }}
+
+                    /* ✅ PRINT OTTIMIZZATO - ELIMINA PAGINE VUOTE */
+                    @media print {{
+                        body {{ margin: 0; padding: 10px; }}
+                        .section {{ 
+                            break-inside: avoid; 
+                            page-break-inside: avoid;
+                            margin-bottom: 10px;
+                        }}
+                        .vehicle-card {{ 
+                            break-inside: avoid; 
+                            page-break-inside: avoid;
+                            margin-bottom: 10px;
+                        }}
+                        .stats-grid {{ gap: 8px; }}
+                        .info-grid {{ gap: 8px; }}
+                        /* ✅ ELIMINA MARGIN FINALE */
+                        .section:last-child {{
+                            margin-bottom: 0;
+                        }}
+                        .vehicle-card:last-child {{
+                            margin-bottom: 0;
+                        }}
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class='header'>
+                    <h1>Profilo Cliente Completo</h1>
+                    <div class='subtitle'>{data.CompanyInfo.Name} • P.IVA: {data.CompanyInfo.VatNumber}</div>
+                </div>
+
+                <div class='section'>
+                    <h2>📋 Informazioni Azienda</h2>
+                    <div class='info-grid'>
+                        <div class='info-item'>
+                            <div class='info-label'>Ragione Sociale</div>
+                            <div class='info-value'>{data.CompanyInfo.Name}</div>
+                        </div>
+                        <div class='info-item'>
+                            <div class='info-label'>Partita IVA</div>
+                            <div class='info-value'>{data.CompanyInfo.VatNumber}</div>
+                        </div>
+                        <div class='info-item'>
+                            <div class='info-label'>Indirizzo</div>
+                            <div class='info-value'>{data.CompanyInfo.Address ?? "Non specificato"}</div>
+                        </div>
+                        <div class='info-item'>
+                            <div class='info-label'>Email</div>
+                            <div class='info-value'>{data.CompanyInfo.Email}</div>
+                        </div>
+                        <div class='info-item'>
+                            <div class='info-label'>PEC</div>
+                            <div class='info-value'>{data.CompanyInfo.PecAddress ?? "Non specificata"}</div>
+                        </div>
+                        <div class='info-item'>
+                            <div class='info-label'>Data Registrazione</div>
+                            <div class='info-value'>{data.CompanyInfo.CompanyCreatedAt:dd/MM/yyyy} ({data.CompanyInfo.DaysRegistered} giorni fa)</div>
+                        </div>
+                        <div class='info-item'>
+                            <div class='info-label'>Telefono Fisso</div>
+                            <div class='info-value'>{data.CompanyInfo.LandlineNumber ?? "Non specificato"}</div>
+                        </div>
+                    </div>
+
+                    {GeneratePhoneNumbersSection(data.CompanyInfo)}
+                </div>
+
+                <div class='section'>
+                    <h2>📊 Altre Statistiche</h2>
+                    <div class='stats-grid'>
+                        <div class='stat-card'>
+                            <div class='stat-number'>{data.CompanyInfo.TotalVehicles}</div>
+                            <div class='stat-label'>Veicoli Totali</div>
+                        </div>
+                        <div class='stat-card'>
+                            <div class='stat-number'>{data.CompanyInfo.ActiveVehicles}</div>
+                            <div class='stat-label'>Veicoli Attivi</div>
+                        </div>
+                        <div class='stat-card'>
+                            <div class='stat-number'>{data.CompanyInfo.AuthorizedVehicles}</div>
+                            <div class='stat-label'>Autorizzati</div>
+                        </div>
+                        <div class='stat-card'>
+                            <div class='stat-number'>{data.CompanyInfo.UniqueBrands}</div>
+                            <div class='stat-label'>Brand Diversi</div>
+                        </div>
+                        <div class='stat-card'>
+                            <div class='stat-number'>{data.CompanyInfo.TotalConsentsCompany}</div>
+                            <div class='stat-label'>Consensi Totali</div>
+                        </div>
+                        <div class='stat-card'>
+                            <div class='stat-number'>{data.CompanyInfo.TotalOutagesCompany}</div>
+                            <div class='stat-label'>Outages Totali</div>
+                        </div>
+                        <div class='stat-card'>
+                            <div class='stat-number'>{data.CompanyInfo.TotalReportsCompany}</div>
+                            <div class='stat-label'>Report Generati</div>
+                        </div>
+                        <div class='stat-card'>
+                            <div class='stat-number'>{data.CompanyInfo.TotalSmsEventsCompany}</div>
+                            <div class='stat-label'>Eventi SMS</div>
+                        </div>
+                    </div>
+                </div>
+
+                {GenerateVehiclesSection(data.Vehicles)}
+
+                <div class='footer'>
+                    <p>Report generato da PolarDrive™ • {generationDate}</p>
+                    <p class='company-info'>DataPolar - The future of AI</p>
+                </div>
+            </body>
+        </html>";
     }
 
     /// <summary>
@@ -514,7 +653,7 @@ public class ClientProfileController : ControllerBase
     }
 
     /// <summary>
-    /// Genera la sezione dei veicoli
+    /// Genera la sezione dei veicoli SENZA WRAPPER SECTION
     /// </summary>
     private string GenerateVehiclesSection(List<VehicleProfileInfo> vehicles)
     {
@@ -529,13 +668,12 @@ public class ClientProfileController : ControllerBase
             </div>";
         }
 
+        // ✅ GENERA DIRETTAMENTE LE CARD SENZA IL DIV SECTION WRAPPER
         var vehiclesHtml = string.Join("", vehicles.Select(GenerateVehicleCard));
 
         return $@"
-        <div class='section'>
-            <h2>🚗 Veicoli Associati ({vehicles.Count})</h2>
-            {vehiclesHtml}
-        </div>";
+            <h2 class='vehicles-title'>🚗 Veicoli Associati ({vehicles.Count})</h2>
+            {vehiclesHtml}";
     }
 
     /// <summary>
@@ -547,6 +685,7 @@ public class ClientProfileController : ControllerBase
         var activationInfo = GenerateActivationInfo(vehicle);
         var statisticsGrid = GenerateVehicleStatistics(vehicle);
 
+        // ✅ Referente solo se presente
         var referentSection = !string.IsNullOrEmpty(vehicle.ReferentName) ? $@"
         <h4>👤 Referente Veicolo</h4>
         <div class='info-grid'>
@@ -554,18 +693,21 @@ public class ClientProfileController : ControllerBase
                 <div class='info-label'>Nome Referente</div>
                 <div class='info-value'>{vehicle.ReferentName}</div>
             </div>
+            {(!string.IsNullOrEmpty(vehicle.ReferentMobileNumber) ? $@"
             <div class='info-item'>
                 <div class='info-label'>Cellulare Referente</div>
-                <div class='info-value'>{vehicle.ReferentMobileNumber ?? "Non specificato"}</div>
-            </div>
+                <div class='info-value'>{vehicle.ReferentMobileNumber}</div>
+            </div>" : "")}
+            {(!string.IsNullOrEmpty(vehicle.ReferentEmail) ? $@"
             <div class='info-item'>
                 <div class='info-label'>Email Referente</div>
-                <div class='info-value'>{vehicle.ReferentEmail ?? "Non specificata"}</div>
-            </div>
+                <div class='info-value'>{vehicle.ReferentEmail}</div>
+            </div>" : "")}
+            {(!string.IsNullOrEmpty(vehicle.ReferentPecAddress) ? $@"
             <div class='info-item'>
                 <div class='info-label'>PEC Referente</div>
-                <div class='info-value'>{vehicle.ReferentPecAddress ?? "Non specificata"}</div>
-            </div>
+                <div class='info-value'>{vehicle.ReferentPecAddress}</div>
+            </div>" : "")}
         </div>" : "";
 
         return $@"
@@ -627,23 +769,23 @@ public class ClientProfileController : ControllerBase
 
         if (vehicle.FirstActivationAt.HasValue)
         {
-            var daysText = vehicle.DaysSinceFirstActivation.HasValue
+            var daysText = vehicle.DaysSinceFirstActivation.HasValue && vehicle.DaysSinceFirstActivation > 0
                 ? $" ({vehicle.DaysSinceFirstActivation} giorni fa)"
                 : "";
             items.Add($@"
-                <div class='info-item'>
-                    <div class='info-label'>Prima Attivazione</div>
-                    <div class='info-value'>{vehicle.FirstActivationAt:dd/MM/yyyy HH:mm}{daysText}</div>
-                </div>");
+            <div class='info-item'>
+                <div class='info-label'>Prima Attivazione</div>
+                <div class='info-value'>{vehicle.FirstActivationAt:dd/MM/yyyy HH:mm}{daysText}</div>
+            </div>");
         }
 
         if (vehicle.LastDeactivationAt.HasValue)
         {
             items.Add($@"
-                <div class='info-item'>
-                    <div class='info-label'>Ultima Disattivazione</div>
-                    <div class='info-value'>{vehicle.LastDeactivationAt:dd/MM/yyyy HH:mm}</div>
-                </div>");
+            <div class='info-item'>
+                <div class='info-label'>Ultima Disattivazione</div>
+                <div class='info-value'>{vehicle.LastDeactivationAt:dd/MM/yyyy HH:mm}</div>
+            </div>");
         }
 
         return string.Join("", items);
@@ -654,6 +796,27 @@ public class ClientProfileController : ControllerBase
     /// </summary>
     private string GenerateVehicleStatistics(VehicleProfileInfo vehicle)
     {
+        // ✅ Mostra solo statistiche non-zero o significative
+        var hasStats = vehicle.TotalConsents > 0 || vehicle.TotalOutages > 0 ||
+                       vehicle.TotalReports > 0 || vehicle.TotalSmsEvents > 0 ||
+                       vehicle.VehicleOutageDays > 0;
+
+        if (!hasStats)
+        {
+            return $@"
+        <h4>📈 Statistiche Veicolo</h4>
+        <div class='info-item'>
+            <div class='info-label'>Stato</div>
+            <div class='info-value'>Nessuna attività registrata</div>
+        </div>";
+        }
+
+        var outageCard = vehicle.VehicleOutageDays > 0 ? $@"
+        <div class='stat-card'>
+            <div class='stat-number'>{vehicle.VehicleOutageDays}</div>
+            <div class='stat-label'>Giorni Outage</div>
+        </div>" : "";
+
         return $@"
         <h4>📈 Statistiche Veicolo</h4>
         <div class='stats-grid'>
@@ -673,11 +836,7 @@ public class ClientProfileController : ControllerBase
                 <div class='stat-number'>{vehicle.TotalSmsEvents}</div>
                 <div class='stat-label'>SMS Eventi</div>
             </div>
-            {(vehicle.VehicleOutageDays > 0 ? $@"
-            <div class='stat-card'>
-                <div class='stat-number'>{vehicle.VehicleOutageDays}</div>
-                <div class='stat-label'>Giorni Outage</div>
-            </div>" : "")}
+            {outageCard}
         </div>
         {GenerateLastActivityInfo(vehicle)}";
     }
