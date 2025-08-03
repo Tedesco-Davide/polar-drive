@@ -11,13 +11,11 @@ export interface ClientCompany {
   displayReferentName?: string;
   displayReferentMobile?: string;
   displayReferentEmail?: string;
-  displayReferentPec?: string;
 
   // ✅ Campi form (temporanei) - usati nel form di edit
   referentName?: string;
   referentMobileNumber?: string;
   referentEmail?: string;
-  referentPecAddress?: string;
 
   // ✅ ID del veicolo corrispondente
   correspondingVehicleId?: number;

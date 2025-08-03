@@ -15,7 +15,6 @@ public class ClientFullProfileViewDto
     public string? ReferentName { get; set; }
     public string? ReferentMobileNumber { get; set; }
     public string? ReferentEmail { get; set; }
-    public string? ReferentPecAddress { get; set; }
     public DateTime CompanyCreatedAt { get; set; }
     public int DaysRegistered { get; set; }
     public int TotalVehicles { get; set; }

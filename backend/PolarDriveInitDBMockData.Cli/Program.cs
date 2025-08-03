@@ -152,7 +152,6 @@ try
                 ReferentName = "Luca Rossi",
                 ReferentEmail = "luca@paninotecarossi.com",
                 ReferentMobileNumber = "3201234567",
-                ReferentPecAddress = "luca.pec@paninotecarossi.it"
             },
             new ClientVehicle
             {
@@ -171,7 +170,6 @@ try
                 ReferentName = "Mario Bianchi",
                 ReferentEmail = "mario@paninotecarossi.com",
                 ReferentMobileNumber = "3209876543",
-                ReferentPecAddress = "mario.pec@paninotecarossi.it"
             }
         ];
 

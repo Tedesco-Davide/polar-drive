@@ -62,7 +62,6 @@ export default function AdminDashboard() {
           displayReferentName: firstVehicle?.referentName || "Nessun referente",
           displayReferentMobile: firstVehicle?.referentMobileNumber || "—",
           displayReferentEmail: firstVehicle?.referentEmail || "—",
-          displayReferentPec: firstVehicle?.referentPecAddress || "—",
         };
       });
 
@@ -119,7 +118,6 @@ export default function AdminDashboard() {
           referentName: entry.referentName ?? "",
           referentMobileNumber: entry.referentMobileNumber ?? "",
           referentEmail: entry.referentEmail ?? "",
-          referentPecAddress: entry.referentPecAddress ?? "",
         }))
       );
 
@@ -325,7 +323,6 @@ export default function AdminDashboard() {
           displayReferentName: vehicle.referentName || "Nessun referente",
           displayReferentMobile: vehicle.referentMobileNumber || "—",
           displayReferentEmail: vehicle.referentEmail || "—",
-          displayReferentPec: vehicle.referentPecAddress || "—",
 
           // ✅ AGGIUNGI l'ID del veicolo per identificarlo univocamente
           correspondingVehicleId: vehicle.id,
@@ -353,7 +350,6 @@ export default function AdminDashboard() {
             referentName: entry.referentName ?? "",
             referentMobileNumber: entry.referentMobileNumber ?? "",
             referentEmail: entry.referentEmail ?? "",
-            referentPecAddress: entry.referentPecAddress ?? "",
           }))
         );
         setClientConsents(consentsData);

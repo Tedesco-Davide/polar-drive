@@ -128,12 +128,11 @@
   "admin.clientCompany.name": "Company Name",
   "admin.clientCompany.address": "Address",
   "admin.clientCompany.email": "Company Email",
-  "admin.clientCompany.pec": "PEC Address",
+  "admin.clientCompany.pec": "Company PEC",
   "admin.clientCompany.landline": "Landline Number",
   "admin.clientCompany.referentName": "Referent Name",
   "admin.clientCompany.referentMobile": "Referent Mobile",
   "admin.clientCompany.referentEmail": "Referent Email",
-  "admin.clientCompany.referentPec": "Referent PEC",
   "admin.clientCompany.editModal": "Editing row for: Companies Table",
 
   "admin.clientVehicle.tableHeader": "Vehicles",

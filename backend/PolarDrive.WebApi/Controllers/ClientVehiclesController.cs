@@ -39,7 +39,6 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             ReferentName = v.ReferentName,
             ReferentMobileNumber = v.ReferentMobileNumber,
             ReferentEmail = v.ReferentEmail,
-            ReferentPecAddress = v.ReferentPecAddress,
             ClientCompany = new ClientCompanyDTO
             {
                 Id = v.ClientCompany!.Id,
@@ -84,7 +83,6 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             ReferentName = dto.ReferentName,
             ReferentMobileNumber = dto.ReferentMobileNumber,
             ReferentEmail = dto.ReferentEmail,
-            ReferentPecAddress = dto.ReferentPecAddress,
         };
 
         await _logger.Info("ClientVehiclesController.Post", "Vehicle inserted via POST and awaits OAuth authorization.", $"VIN: {dto.Vin}");
@@ -198,7 +196,6 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         vehicle.ReferentName = dto.ReferentName;
         vehicle.ReferentMobileNumber = dto.ReferentMobileNumber;
         vehicle.ReferentEmail = dto.ReferentEmail;
-        vehicle.ReferentPecAddress = dto.ReferentPecAddress;
 
         await db.SaveChangesAsync();
 

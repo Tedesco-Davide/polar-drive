@@ -47,7 +47,6 @@ export default function AdminClientCompaniesTable({
       "displayReferentName",
       "displayReferentEmail",
       "displayReferentMobile",
-      "displayReferentPec",
     ]
   );
 
@@ -108,26 +107,13 @@ export default function AdminClientCompaniesTable({
             <th className="p-4">{t("admin.actions")}</th>
             <th className="p-4">{t("admin.clientCompany.vatNumber")}</th>
             <th className="p-4">{t("admin.clientCompany.name")}</th>
-            <th className="p-4">
-              {t("admin.clientCompany.referentName")}
-              <small className="block text-xs opacity-70">(dal veicolo)</small>
-            </th>
-            <th className="p-4">
-              {t("admin.clientCompany.referentMobile")}
-              <small className="block text-xs opacity-70">(dal veicolo)</small>
-            </th>
-            <th className="p-4">
-              {t("admin.clientCompany.referentEmail")}
-              <small className="block text-xs opacity-70">(dal veicolo)</small>
-            </th>
             <th className="p-4">{t("admin.clientCompany.address")}</th>
             <th className="p-4">{t("admin.clientCompany.email")}</th>
             <th className="p-4">{t("admin.clientCompany.pec")}</th>
-            <th className="p-4">
-              {t("admin.clientCompany.referentPec")}
-              <small className="block text-xs opacity-70">(dal veicolo)</small>
-            </th>
             <th className="p-4">{t("admin.clientCompany.landline")}</th>
+            <th className="p-4">{t("admin.clientCompany.referentName")}</th>
+            <th className="p-4">{t("admin.clientCompany.referentMobile")}</th>
+            <th className="p-4">{t("admin.clientCompany.referentEmail")}</th>
           </tr>
         </thead>
         <tbody>
@@ -147,14 +133,13 @@ export default function AdminClientCompaniesTable({
               </td>
               <td className="p-4">{client.vatNumber}</td>
               <td className="p-4">{client.name}</td>
-              <td className="p-4">{client.displayReferentName}</td>
-              <td className="p-4">{client.displayReferentMobile}</td>
-              <td className="p-4">{client.displayReferentEmail}</td>
               <td className="p-4">{client.address}</td>
               <td className="p-4">{client.email}</td>
               <td className="p-4">{client.pecAddress}</td>
-              <td className="p-4">{client.displayReferentPec}</td>
               <td className="p-4">{client.landlineNumber}</td>
+              <td className="p-4">{client.displayReferentName}</td>
+              <td className="p-4">{client.displayReferentMobile}</td>
+              <td className="p-4">{client.displayReferentEmail}</td>
             </tr>
           ))}
         </tbody>

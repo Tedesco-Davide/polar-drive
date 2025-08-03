@@ -128,12 +128,11 @@
   "admin.clientCompany.name": "Nome Azienda",
   "admin.clientCompany.address": "Indirizzo",
   "admin.clientCompany.email": "Email Aziendale",
-  "admin.clientCompany.pec": "PEC",
+  "admin.clientCompany.pec": "PEC Aziendale",
   "admin.clientCompany.landline": "Telefono fisso",
   "admin.clientCompany.referentName": "Nome Referente",
   "admin.clientCompany.referentMobile": "Cell. Referente",
   "admin.clientCompany.referentEmail": "Email Referente",
-  "admin.clientCompany.referentPec": "PEC Referente",
   "admin.clientCompany.editModal": "Modifica riga per: Tabella Aziende",
 
   "admin.clientVehicle.tableHeader": "Veicoli",

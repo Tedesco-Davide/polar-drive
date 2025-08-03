@@ -108,7 +108,6 @@ CompanyStats AS (
         cc.ReferentName,
         cc.ReferentMobileNumber,
         cc.ReferentEmail,
-        cc.ReferentPecAddress,
         cc.CreatedAt AS CompanyCreatedAt,
         
         -- Calcolo giorni di registrazione
@@ -155,7 +154,7 @@ CompanyStats AS (
     LEFT JOIN VehicleStats vs ON cc.Id = vs.ClientCompanyId
     GROUP BY cc.Id, cc.VatNumber, cc.Name, cc.Address, cc.Email, cc.PecAddress, 
              cc.LandlineNumber, cc.ReferentName, cc.ReferentMobileNumber, 
-             cc.ReferentEmail, cc.ReferentPecAddress, cc.CreatedAt
+             cc.ReferentEmail, cc.CreatedAt
 ),
 
 PhoneNumbers AS (

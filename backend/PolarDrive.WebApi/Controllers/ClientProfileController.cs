@@ -148,7 +148,7 @@ public class ClientProfileController : ControllerBase
                         v.LastDeactivationAt as VehicleLastDeactivation,
                         
                         -- ✅ REFERENTI DAL VEICOLO
-                        v.ReferentName, v.ReferentMobileNumber, v.ReferentEmail, v.ReferentPecAddress,
+                        v.ReferentName, v.ReferentMobileNumber, v.ReferentEmail,
                         
                         -- Statistiche veicolo
                         0 as VehicleConsents, 0 as VehicleOutages, 0 as VehicleReports, 0 as VehicleSmsEvents,
@@ -224,8 +224,7 @@ public class ClientProfileController : ControllerBase
                 VehicleOutageDays = r.VehicleOutageDays,
                 ReferentName = r.ReferentName,
                 ReferentMobileNumber = r.ReferentMobileNumber,
-                ReferentEmail = r.ReferentEmail,
-                ReferentPecAddress = r.ReferentPecAddress
+                ReferentEmail = r.ReferentEmail
             }).ToList()
         };
     }
@@ -559,11 +558,11 @@ public class ClientProfileController : ControllerBase
                             <div class='info-value'>{data.CompanyInfo.Address ?? "Non specificato"}</div>
                         </div>
                         <div class='info-item'>
-                            <div class='info-label'>Email</div>
+                            <div class='info-label'>Email Aziendale</div>
                             <div class='info-value'>{data.CompanyInfo.Email}</div>
                         </div>
                         <div class='info-item'>
-                            <div class='info-label'>PEC</div>
+                            <div class='info-label'>PEC Aziendale</div>
                             <div class='info-value'>{data.CompanyInfo.PecAddress ?? "Non specificata"}</div>
                         </div>
                         <div class='info-item'>
@@ -702,11 +701,6 @@ public class ClientProfileController : ControllerBase
             <div class='info-item'>
                 <div class='info-label'>Email Referente</div>
                 <div class='info-value'>{vehicle.ReferentEmail}</div>
-            </div>" : "")}
-            {(!string.IsNullOrEmpty(vehicle.ReferentPecAddress) ? $@"
-            <div class='info-item'>
-                <div class='info-label'>PEC Referente</div>
-                <div class='info-value'>{vehicle.ReferentPecAddress}</div>
             </div>" : "")}
         </div>" : "";
 

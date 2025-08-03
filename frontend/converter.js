@@ -1,6 +1,5 @@
 ﻿// eslint-disable-next-line @typescript-eslint/no-require-imports
 const fs = require("fs");
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 const swaggerSpec = JSON.parse(fs.readFileSync("swagger.json", "utf8"));
 
 const collection = {
@@ -91,7 +90,6 @@ function createSampleBody(path, method) {
       referentName: "Test Manager",
       referentMobileNumber: "+393339876543",
       referentEmail: `manager${Date.now()}@datapolar.com`,
-      referentPecAddress: `manager${Date.now()}@datapolar.pec.it`,
     },
 
     "PUT /api/ClientCompanies/{id}": {

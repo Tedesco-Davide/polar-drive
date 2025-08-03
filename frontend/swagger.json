@@ -7,9 +7,7 @@
   "paths": {
     "/api/AdaptiveProfilingSms/receive-sms": {
       "post": {
-        "tags": [
-          "AdaptiveProfilingSms"
-        ],
+        "tags": ["AdaptiveProfilingSms"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -38,9 +36,7 @@
     },
     "/api/AdaptiveProfilingSms/{vehicleId}/status": {
       "get": {
-        "tags": [
-          "AdaptiveProfilingSms"
-        ],
+        "tags": ["AdaptiveProfilingSms"],
         "parameters": [
           {
             "name": "vehicleId",
@@ -61,9 +57,7 @@
     },
     "/api/AdaptiveProfilingSms/{vehicleId}/history": {
       "get": {
-        "tags": [
-          "AdaptiveProfilingSms"
-        ],
+        "tags": ["AdaptiveProfilingSms"],
         "parameters": [
           {
             "name": "vehicleId",
@@ -100,9 +94,7 @@
     },
     "/api/AdaptiveProfilingSms/statistics": {
       "get": {
-        "tags": [
-          "AdaptiveProfilingSms"
-        ],
+        "tags": ["AdaptiveProfilingSms"],
         "parameters": [
           {
             "name": "fromDate",
@@ -130,9 +122,7 @@
     },
     "/api/AdminFullClientInsert": {
       "post": {
-        "tags": [
-          "AdminFullClientInsert"
-        ],
+        "tags": ["AdminFullClientInsert"],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -235,9 +225,7 @@
     },
     "/api/ClientCompanies": {
       "get": {
-        "tags": [
-          "ClientCompanies"
-        ],
+        "tags": ["ClientCompanies"],
         "responses": {
           "200": {
             "description": "OK",
@@ -271,9 +259,7 @@
         }
       },
       "post": {
-        "tags": [
-          "ClientCompanies"
-        ],
+        "tags": ["ClientCompanies"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -302,9 +288,7 @@
     },
     "/api/ClientCompanies/{id}": {
       "put": {
-        "tags": [
-          "ClientCompanies"
-        ],
+        "tags": ["ClientCompanies"],
         "parameters": [
           {
             "name": "id",
@@ -344,9 +328,7 @@
     },
     "/api/ClientConsents": {
       "get": {
-        "tags": [
-          "ClientConsents"
-        ],
+        "tags": ["ClientConsents"],
         "responses": {
           "200": {
             "description": "OK",
@@ -380,9 +362,7 @@
         }
       },
       "post": {
-        "tags": [
-          "ClientConsents"
-        ],
+        "tags": ["ClientConsents"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -411,9 +391,7 @@
     },
     "/api/ClientConsents/{id}/notes": {
       "patch": {
-        "tags": [
-          "ClientConsents"
-        ],
+        "tags": ["ClientConsents"],
         "parameters": [
           {
             "name": "id",
@@ -428,13 +406,13 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": { }
+              "schema": {}
             },
             "text/json": {
-              "schema": { }
+              "schema": {}
             },
             "application/*+json": {
-              "schema": { }
+              "schema": {}
             }
           }
         },
@@ -447,9 +425,7 @@
     },
     "/api/ClientConsents/{id}/upload-zip": {
       "post": {
-        "tags": [
-          "ClientConsents"
-        ],
+        "tags": ["ClientConsents"],
         "parameters": [
           {
             "name": "id",
@@ -490,9 +466,7 @@
     },
     "/api/ClientConsents/{id}/download": {
       "get": {
-        "tags": [
-          "ClientConsents"
-        ],
+        "tags": ["ClientConsents"],
         "parameters": [
           {
             "name": "id",
@@ -513,9 +487,7 @@
     },
     "/api/ClientConsents/{id}/delete-zip": {
       "delete": {
-        "tags": [
-          "ClientConsents"
-        ],
+        "tags": ["ClientConsents"],
         "parameters": [
           {
             "name": "id",
@@ -536,9 +508,7 @@
     },
     "/api/ClientConsents/resolve-ids": {
       "get": {
-        "tags": [
-          "ClientConsents"
-        ],
+        "tags": ["ClientConsents"],
         "parameters": [
           {
             "name": "vatNumber",
@@ -564,9 +534,7 @@
     },
     "/api/ClientConsents/download-all-by-company": {
       "get": {
-        "tags": [
-          "ClientConsents"
-        ],
+        "tags": ["ClientConsents"],
         "parameters": [
           {
             "name": "vatNumber",
@@ -585,9 +553,7 @@
     },
     "/api/ClientProfile/{companyId}/profile-data": {
       "get": {
-        "tags": [
-          "ClientProfile"
-        ],
+        "tags": ["ClientProfile"],
         "parameters": [
           {
             "name": "companyId",
@@ -625,9 +591,7 @@
     },
     "/api/ClientProfile/{companyId}/generate-profile-pdf": {
       "post": {
-        "tags": [
-          "ClientProfile"
-        ],
+        "tags": ["ClientProfile"],
         "parameters": [
           {
             "name": "companyId",
@@ -648,9 +612,7 @@
     },
     "/api/ClientVehicles": {
       "get": {
-        "tags": [
-          "ClientVehicles"
-        ],
+        "tags": ["ClientVehicles"],
         "responses": {
           "200": {
             "description": "OK",
@@ -684,9 +646,7 @@
         }
       },
       "post": {
-        "tags": [
-          "ClientVehicles"
-        ],
+        "tags": ["ClientVehicles"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -715,9 +675,7 @@
     },
     "/api/ClientVehicles/{id}/status": {
       "patch": {
-        "tags": [
-          "ClientVehicles"
-        ],
+        "tags": ["ClientVehicles"],
         "parameters": [
           {
             "name": "id",
@@ -757,9 +715,7 @@
     },
     "/api/ClientVehicles/{id}": {
       "put": {
-        "tags": [
-          "ClientVehicles"
-        ],
+        "tags": ["ClientVehicles"],
         "parameters": [
           {
             "name": "id",
@@ -799,9 +755,7 @@
     },
     "/api/FileManager": {
       "get": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "responses": {
           "200": {
             "description": "OK",
@@ -837,9 +791,7 @@
     },
     "/api/FileManager/{id}": {
       "get": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "parameters": [
           {
             "name": "id",
@@ -875,9 +827,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "parameters": [
           {
             "name": "id",
@@ -898,9 +848,7 @@
     },
     "/api/FileManager/filemanager-download": {
       "post": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -946,9 +894,7 @@
     },
     "/api/FileManager/{id}/download": {
       "get": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "parameters": [
           {
             "name": "id",
@@ -969,9 +915,7 @@
     },
     "/api/FileManager/{id}/notes": {
       "patch": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "parameters": [
           {
             "name": "id",
@@ -1011,9 +955,7 @@
     },
     "/api/FileManager/available-companies": {
       "get": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "responses": {
           "200": {
             "description": "OK",
@@ -1049,9 +991,7 @@
     },
     "/api/FileManager/available-brands": {
       "get": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "responses": {
           "200": {
             "description": "OK",
@@ -1087,9 +1027,7 @@
     },
     "/api/FileManager/available-vins": {
       "get": {
-        "tags": [
-          "FileManager"
-        ],
+        "tags": ["FileManager"],
         "parameters": [
           {
             "name": "company",
@@ -1134,9 +1072,7 @@
     },
     "/api/Logs": {
       "post": {
-        "tags": [
-          "Logs"
-        ],
+        "tags": ["Logs"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1165,9 +1101,7 @@
     },
     "/api/OutagePeriods": {
       "get": {
-        "tags": [
-          "OutagePeriods"
-        ],
+        "tags": ["OutagePeriods"],
         "responses": {
           "200": {
             "description": "OK",
@@ -1175,19 +1109,19 @@
               "text/plain": {
                 "schema": {
                   "type": "array",
-                  "items": { }
+                  "items": {}
                 }
               },
               "application/json": {
                 "schema": {
                   "type": "array",
-                  "items": { }
+                  "items": {}
                 }
               },
               "text/json": {
                 "schema": {
                   "type": "array",
-                  "items": { }
+                  "items": {}
                 }
               }
             }
@@ -1195,9 +1129,7 @@
         }
       },
       "post": {
-        "tags": [
-          "OutagePeriods"
-        ],
+        "tags": ["OutagePeriods"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1226,9 +1158,7 @@
     },
     "/api/OutagePeriods/{id}/notes": {
       "patch": {
-        "tags": [
-          "OutagePeriods"
-        ],
+        "tags": ["OutagePeriods"],
         "parameters": [
           {
             "name": "id",
@@ -1243,13 +1173,13 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": { }
+              "schema": {}
             },
             "text/json": {
-              "schema": { }
+              "schema": {}
             },
             "application/*+json": {
-              "schema": { }
+              "schema": {}
             }
           }
         },
@@ -1262,9 +1192,7 @@
     },
     "/api/OutagePeriods/{id}/upload-zip": {
       "post": {
-        "tags": [
-          "OutagePeriods"
-        ],
+        "tags": ["OutagePeriods"],
         "parameters": [
           {
             "name": "id",
@@ -1305,9 +1233,7 @@
     },
     "/api/OutagePeriods/{id}/download-zip": {
       "get": {
-        "tags": [
-          "OutagePeriods"
-        ],
+        "tags": ["OutagePeriods"],
         "parameters": [
           {
             "name": "id",
@@ -1328,9 +1254,7 @@
     },
     "/api/OutagePeriods/{id}/delete-zip": {
       "delete": {
-        "tags": [
-          "OutagePeriods"
-        ],
+        "tags": ["OutagePeriods"],
         "parameters": [
           {
             "name": "id",
@@ -1351,9 +1275,7 @@
     },
     "/api/OutagePeriods/{id}/resolve": {
       "patch": {
-        "tags": [
-          "OutagePeriods"
-        ],
+        "tags": ["OutagePeriods"],
         "parameters": [
           {
             "name": "id",
@@ -1374,9 +1296,7 @@
     },
     "/api/OutageSystem/stats": {
       "get": {
-        "tags": [
-          "OutageSystem"
-        ],
+        "tags": ["OutageSystem"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1386,9 +1306,7 @@
     },
     "/api/OutageSystem/stats/period": {
       "get": {
-        "tags": [
-          "OutageSystem"
-        ],
+        "tags": ["OutageSystem"],
         "parameters": [
           {
             "name": "from",
@@ -1416,9 +1334,7 @@
     },
     "/api/OutageSystem/health": {
       "get": {
-        "tags": [
-          "OutageSystem"
-        ],
+        "tags": ["OutageSystem"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1428,9 +1344,7 @@
     },
     "/api/OutageSystem/check": {
       "post": {
-        "tags": [
-          "OutageSystem"
-        ],
+        "tags": ["OutageSystem"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1440,9 +1354,7 @@
     },
     "/api/PdfReports": {
       "get": {
-        "tags": [
-          "PdfReports"
-        ],
+        "tags": ["PdfReports"],
         "responses": {
           "200": {
             "description": "OK",
@@ -1478,9 +1390,7 @@
     },
     "/api/PdfReports/{id}/notes": {
       "patch": {
-        "tags": [
-          "PdfReports"
-        ],
+        "tags": ["PdfReports"],
         "parameters": [
           {
             "name": "id",
@@ -1495,13 +1405,13 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": { }
+              "schema": {}
             },
             "text/json": {
-              "schema": { }
+              "schema": {}
             },
             "application/*+json": {
-              "schema": { }
+              "schema": {}
             }
           }
         },
@@ -1514,9 +1424,7 @@
     },
     "/api/PdfReports/{id}/download": {
       "get": {
-        "tags": [
-          "PdfReports"
-        ],
+        "tags": ["PdfReports"],
         "parameters": [
           {
             "name": "id",
@@ -1537,9 +1445,7 @@
     },
     "/api/PdfReports/{id}/regenerate": {
       "post": {
-        "tags": [
-          "PdfReports"
-        ],
+        "tags": ["PdfReports"],
         "parameters": [
           {
             "name": "id",
@@ -1560,9 +1466,7 @@
     },
     "/api/TeslaFakeApi/GenerateReport": {
       "post": {
-        "tags": [
-          "TeslaFakeApi"
-        ],
+        "tags": ["TeslaFakeApi"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1572,9 +1476,7 @@
     },
     "/api/TeslaFakeApi/GenerateVehicleReport/{vehicleId}": {
       "post": {
-        "tags": [
-          "TeslaFakeApi"
-        ],
+        "tags": ["TeslaFakeApi"],
         "parameters": [
           {
             "name": "vehicleId",
@@ -1614,9 +1516,7 @@
     },
     "/api/TeslaFakeApi/ControlScheduler": {
       "post": {
-        "tags": [
-          "TeslaFakeApi"
-        ],
+        "tags": ["TeslaFakeApi"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1645,9 +1545,7 @@
     },
     "/api/TeslaFakeApi/DataStatus": {
       "get": {
-        "tags": [
-          "TeslaFakeApi"
-        ],
+        "tags": ["TeslaFakeApi"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1657,9 +1555,7 @@
     },
     "/api/TeslaFakeApi/ReportStatus": {
       "get": {
-        "tags": [
-          "TeslaFakeApi"
-        ],
+        "tags": ["TeslaFakeApi"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1669,9 +1565,7 @@
     },
     "/api/TeslaFakeApi/DownloadReport/{reportId}": {
       "get": {
-        "tags": [
-          "TeslaFakeApi"
-        ],
+        "tags": ["TeslaFakeApi"],
         "parameters": [
           {
             "name": "reportId",
@@ -1692,9 +1586,7 @@
     },
     "/api/TeslaFakeDataReceiver/ReceiveVehicleData/{vin}": {
       "post": {
-        "tags": [
-          "TeslaFakeDataReceiver"
-        ],
+        "tags": ["TeslaFakeDataReceiver"],
         "parameters": [
           {
             "name": "vin",
@@ -1708,13 +1600,13 @@
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": { }
+              "schema": {}
             },
             "text/json": {
-              "schema": { }
+              "schema": {}
             },
             "application/*+json": {
-              "schema": { }
+              "schema": {}
             }
           }
         },
@@ -1727,9 +1619,7 @@
     },
     "/api/TeslaFakeDataReceiver/LastData/{vin}": {
       "get": {
-        "tags": [
-          "TeslaFakeDataReceiver"
-        ],
+        "tags": ["TeslaFakeDataReceiver"],
         "parameters": [
           {
             "name": "vin",
@@ -1749,9 +1639,7 @@
     },
     "/api/TeslaFakeDataReceiver/Stats/{vin}": {
       "get": {
-        "tags": [
-          "TeslaFakeDataReceiver"
-        ],
+        "tags": ["TeslaFakeDataReceiver"],
         "parameters": [
           {
             "name": "vin",
@@ -1771,9 +1659,7 @@
     },
     "/api/TeslaFakeDataReceiver/GlobalStats": {
       "get": {
-        "tags": [
-          "TeslaFakeDataReceiver"
-        ],
+        "tags": ["TeslaFakeDataReceiver"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1783,9 +1669,7 @@
     },
     "/api/TwilioSms/webhook": {
       "post": {
-        "tags": [
-          "TwilioSms"
-        ],
+        "tags": ["TwilioSms"],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -1874,9 +1758,7 @@
     },
     "/api/TwilioSms/register-phone": {
       "post": {
-        "tags": [
-          "TwilioSms"
-        ],
+        "tags": ["TwilioSms"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -1905,9 +1787,7 @@
     },
     "/api/TwilioSms/audit-logs": {
       "get": {
-        "tags": [
-          "TwilioSms"
-        ],
+        "tags": ["TwilioSms"],
         "parameters": [
           {
             "name": "fromDate",
@@ -1967,9 +1847,7 @@
     },
     "/api/TwilioSms/phone-mappings": {
       "get": {
-        "tags": [
-          "TwilioSms"
-        ],
+        "tags": ["TwilioSms"],
         "responses": {
           "200": {
             "description": "OK"
@@ -1979,9 +1857,7 @@
     },
     "/api/TwilioSms/phone-mappings/{id}": {
       "delete": {
-        "tags": [
-          "TwilioSms"
-        ],
+        "tags": ["TwilioSms"],
         "parameters": [
           {
             "name": "id",
@@ -2002,9 +1878,7 @@
     },
     "/api/TwilioSms/statistics": {
       "get": {
-        "tags": [
-          "TwilioSms"
-        ],
+        "tags": ["TwilioSms"],
         "parameters": [
           {
             "name": "fromDate",
@@ -2032,9 +1906,7 @@
     },
     "/api/VehicleOAuth/GenerateUrl": {
       "get": {
-        "tags": [
-          "VehicleOAuth"
-        ],
+        "tags": ["VehicleOAuth"],
         "parameters": [
           {
             "name": "brand",
@@ -2060,9 +1932,7 @@
     },
     "/api/VehicleOAuth/OAuthCallback": {
       "get": {
-        "tags": [
-          "VehicleOAuth"
-        ],
+        "tags": ["VehicleOAuth"],
         "parameters": [
           {
             "name": "code",
@@ -2321,10 +2191,6 @@
             "nullable": true
           },
           "referentEmail": {
-            "type": "string",
-            "nullable": true
-          },
-          "referentPecAddress": {
             "type": "string",
             "nullable": true
           }
@@ -2747,10 +2613,7 @@
         "additionalProperties": false
       },
       "RegisterPhoneDTO": {
-        "required": [
-          "phoneNumber",
-          "vehicleId"
-        ],
+        "required": ["phoneNumber", "vehicleId"],
         "type": "object",
         "properties": {
           "phoneNumber": {

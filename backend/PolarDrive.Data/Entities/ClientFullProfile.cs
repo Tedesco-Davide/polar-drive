@@ -67,5 +67,4 @@ public class VehicleProfileInfo
     public string? ReferentName { get; set; }
     public string? ReferentMobileNumber { get; set; }
     public string? ReferentEmail { get; set; }
-    public string? ReferentPecAddress { get; set; }
 }

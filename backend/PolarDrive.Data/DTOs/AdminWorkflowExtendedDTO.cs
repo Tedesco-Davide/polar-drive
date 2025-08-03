@@ -18,6 +18,5 @@ public class AdminWorkflowExtendedDTO
     public string? ReferentName { get; set; }
     public string? ReferentMobileNumber { get; set; }
     public string? ReferentEmail { get; set; }
-    public string? ReferentPecAddress { get; set; }
     public ClientCompanyDTO ClientCompany { get; set; } = new();
 }

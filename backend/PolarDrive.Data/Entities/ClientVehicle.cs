@@ -40,8 +40,6 @@ public class ClientVehicle
 
     public string? ReferentEmail { get; set; }
 
-    public string? ReferentPecAddress { get; set; }
-
     public ClientCompany? ClientCompany { get; set; }
 
     public virtual ICollection<VehicleData> VehiclesData { get; set; } = [];

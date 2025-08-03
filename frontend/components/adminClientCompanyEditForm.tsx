@@ -29,7 +29,6 @@ export default function AdminClientCompanyEditForm({
     referentName: client.displayReferentName ?? "",
     referentMobileNumber: client.displayReferentMobile ?? "",
     referentEmail: client.displayReferentEmail ?? "",
-    referentPecAddress: client.displayReferentPec ?? "",
     // AGGIUNGI anche il correspondingVehicleId
     correspondingVehicleId: client.correspondingVehicleId,
   });
@@ -151,7 +150,6 @@ export default function AdminClientCompanyEditForm({
           referentName: formData.referentName,
           referentMobileNumber: formData.referentMobileNumber,
           referentEmail: formData.referentEmail,
-          referentPecAddress: formData.referentPecAddress,
         };
 
         const updateResponse = await fetch(
@@ -251,17 +249,6 @@ export default function AdminClientCompanyEditForm({
             type="email"
             name="pecAddress"
             value={formData.pecAddress}
-            onChange={handleChange}
-            className="input"
-          />
-        </label>
-        <label className="flex flex-col">
-          <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientCompany.referentPec")}
-          </span>
-          <input
-            name="referentPecAddress"
-            value={formData.referentPecAddress}
             onChange={handleChange}
             className="input"
           />

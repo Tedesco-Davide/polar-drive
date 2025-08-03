@@ -18,7 +18,6 @@ export interface ClientVehicle {
   referentName?: string;
   referentMobileNumber?: string;
   referentEmail?: string;
-  referentPecAddress?: string;
 }
 
 export interface VehicleWorkflow {
