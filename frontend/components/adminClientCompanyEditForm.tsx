@@ -261,7 +261,7 @@ export default function AdminClientCompanyEditForm({
           </span>
           <input
             name="referentPecAddress"
-            value={formData.displayReferentPec}
+            value={formData.referentPecAddress}
             onChange={handleChange}
             className="input"
           />
