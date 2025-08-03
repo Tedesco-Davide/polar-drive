@@ -25,7 +25,13 @@ export default function AdminClientCompanyEditForm({
     email: client.email ?? "",
     pecAddress: client.pecAddress ?? "",
     landlineNumber: client.landlineNumber ?? "",
-    referentPecAddress: client.referentPecAddress ?? "",
+    // MAPPA i display fields ai campi che il form usa
+    referentName: client.displayReferentName ?? "",
+    referentMobileNumber: client.displayReferentMobile ?? "",
+    referentEmail: client.displayReferentEmail ?? "",
+    referentPecAddress: client.displayReferentPec ?? "",
+    // AGGIUNGI anche il correspondingVehicleId
+    correspondingVehicleId: client.correspondingVehicleId,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,15 +55,15 @@ export default function AdminClientCompanyEditForm({
       return;
     }
 
-    // ✅ Nome azienda obbligatorio
-    if (!formData.referentName.trim()) {
+    // ✅ CORRETTO - valida referent*
+    if (!formData.referentName?.trim()) {
       alert(t("admin.validation.referentName"));
       return;
     }
 
     // ✅ Cellulare referente obbligatorio + esattamente 10 cifre
     if (
-      !formData.referentMobileNumber.trim() ||
+      !formData.referentMobileNumber?.trim() ||
       !/^[0-9]{10}$/.test(formData.referentMobileNumber.trim())
     ) {
       alert(t("admin.validation.invalidMobile"));
@@ -66,7 +72,7 @@ export default function AdminClientCompanyEditForm({
 
     // ✅ Email referente obbligatoria + valida
     if (
-      !formData.referentEmail.trim() ||
+      !formData.referentEmail?.trim() ||
       !isEmailValid(formData.referentEmail.trim())
     ) {
       alert(t("admin.validation.invalidReferentEmail"));
@@ -101,37 +107,68 @@ export default function AdminClientCompanyEditForm({
       await logFrontendEvent(
         "AdminClientCompanyEditForm",
         "INFO",
-        "Attempting to update client company",
+        "Attempting to update client company and referent data",
         JSON.stringify(formData)
       );
 
-      const response = await fetch(
+      // 1. SALVA I DATI AZIENDA (senza referenti)
+      const companyData = {
+        id: formData.id,
+        vatNumber: formData.vatNumber,
+        name: formData.name,
+        address: formData.address,
+        email: formData.email,
+        pecAddress: formData.pecAddress,
+        landlineNumber: formData.landlineNumber,
+      };
+
+      const companyResponse = await fetch(
         `${API_BASE_URL}/api/ClientCompanies/${formData.id}`,
         {
           method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(formData),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(companyData),
         }
       );
 
-      if (!response.ok) {
-        const errorMessage = `Failed to update client. Status: ${response.status}`;
-        await logFrontendEvent(
-          "AdminClientCompanyEditForm",
-          "ERROR",
-          errorMessage
+      if (!companyResponse.ok) {
+        throw new Error(
+          `Failed to update company. Status: ${companyResponse.status}`
         );
-        throw new Error(errorMessage);
       }
 
-      await logFrontendEvent(
-        "AdminClientCompanyEditForm",
-        "INFO",
-        "Client company updated successfully",
-        `CompanyId=${formData.id}`
-      );
+      // AGGIORNA IL VEICOLO SPECIFICO
+      if (formData.correspondingVehicleId) {
+        // ✅ Recupera il veicolo corrente
+        const vehicleResponse = await fetch(
+          `${API_BASE_URL}/api/ClientVehicles/${formData.correspondingVehicleId}`
+        );
+        const currentVehicle = await vehicleResponse.json();
+
+        // ✅ Aggiorna solo i dati referente
+        const updatedVehicleData = {
+          ...currentVehicle,
+          referentName: formData.referentName,
+          referentMobileNumber: formData.referentMobileNumber,
+          referentEmail: formData.referentEmail,
+          referentPecAddress: formData.referentPecAddress,
+        };
+
+        const updateResponse = await fetch(
+          `${API_BASE_URL}/api/ClientVehicles/${formData.correspondingVehicleId}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(updatedVehicleData),
+          }
+        );
+
+        if (!updateResponse.ok) {
+          throw new Error(
+            `Failed to update vehicle referent. Status: ${updateResponse.status}`
+          );
+        }
+      }
 
       alert(t("admin.successEditRow"));
       onSave(formData);
@@ -224,7 +261,7 @@ export default function AdminClientCompanyEditForm({
           </span>
           <input
             name="referentPecAddress"
-            value={formData.referentPecAddress}
+            value={formData.displayReferentPec}
             onChange={handleChange}
             className="input"
           />

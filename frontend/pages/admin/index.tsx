@@ -239,7 +239,7 @@ export default function AdminDashboard() {
     if (!FAKE_AUTH) {
       window.location.href = "/api/auth/signin";
     }
-  }, []);
+  }, [FAKE_AUTH]);
 
   useEffect(() => {
     setMounted(true);
@@ -311,22 +311,28 @@ export default function AdminDashboard() {
         }
 
         // ✅ Aggiorna tutti gli stati
-        const enrichedClients = clientsData.map((company) => {
-          const firstVehicle = vehiclesData.find(
-            (v) => v.clientCompany?.id === company.id
-          );
+        const enrichedCompaniesFromVehicles = vehiclesData.map((vehicle) => ({
+          // ✅ Dati azienda dall'oggetto vehicle.clientCompany
+          id: vehicle.clientCompany.id,
+          vatNumber: vehicle.clientCompany.vatNumber,
+          name: vehicle.clientCompany.name,
+          address: vehicle.clientCompany.address,
+          email: vehicle.clientCompany.email,
+          pecAddress: vehicle.clientCompany.pecAddress,
+          landlineNumber: vehicle.clientCompany.landlineNumber,
 
-          return {
-            ...company,
-            displayReferentName:
-              firstVehicle?.referentName || "Nessun referente",
-            displayReferentMobile: firstVehicle?.referentMobileNumber || "—",
-            displayReferentEmail: firstVehicle?.referentEmail || "—",
-            displayReferentPec: firstVehicle?.referentPecAddress || "—",
-          };
-        });
+          // ✅ Dati referente dal veicolo stesso
+          displayReferentName: vehicle.referentName || "Nessun referente",
+          displayReferentMobile: vehicle.referentMobileNumber || "—",
+          displayReferentEmail: vehicle.referentEmail || "—",
+          displayReferentPec: vehicle.referentPecAddress || "—",
 
-        setClients(enrichedClients);
+          // ✅ AGGIUNGI l'ID del veicolo per identificarlo univocamente
+          correspondingVehicleId: vehicle.id,
+          correspondingVehicleVin: vehicle.vin,
+        }));
+
+        setClients(enrichedCompaniesFromVehicles);
 
         setVehicles(
           vehiclesData.map((entry) => ({
