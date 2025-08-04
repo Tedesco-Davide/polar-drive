@@ -114,6 +114,7 @@ export default function AdminClientCompaniesTable({
             <th className="p-4">{t("admin.clientCompany.referentName")}</th>
             <th className="p-4">{t("admin.clientCompany.referentMobile")}</th>
             <th className="p-4">{t("admin.clientCompany.referentEmail")}</th>
+            <th className="p-4">{t("admin.vehicleVIN")}</th>
           </tr>
         </thead>
         <tbody>
@@ -140,6 +141,7 @@ export default function AdminClientCompaniesTable({
               <td className="p-4">{client.displayReferentName}</td>
               <td className="p-4">{client.displayReferentMobile}</td>
               <td className="p-4">{client.displayReferentEmail}</td>
+              <td className="p-4">{client.correspondingVehicleVin}</td>
             </tr>
           ))}
         </tbody>

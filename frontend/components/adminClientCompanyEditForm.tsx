@@ -184,8 +184,6 @@ export default function AdminClientCompanyEditForm({
       console.error(t("admin.genericApiError"), err);
       alert(t("admin.genericApiError"));
     }
-
-    onSave(formData);
   };
 
   return (

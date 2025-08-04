@@ -25,6 +25,12 @@ public static class VehicleConstants
                     FuelType = FuelType.Electric,
                     Trims = ["Long Range"],
                     Colors = ["Ultra Red"]
+                },
+                ["Model Y"] = new VehicleVariant
+                {
+                    FuelType = FuelType.Electric,
+                    Trims = ["Performance"],
+                    Colors = ["Pearl White"]
                 }
             }
         };

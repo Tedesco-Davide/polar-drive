@@ -20,6 +20,11 @@ export const vehicleOptions: VehicleOptionsType = {
         trims: ["Long Range"],
         colors: ["Ultra Red"],
       },
+      "Model Y": {
+        fuelType: FuelType.Electric,
+        trims: ["Performance"],
+        colors: ["Pearl White"],
+      },
     },
   },
 };

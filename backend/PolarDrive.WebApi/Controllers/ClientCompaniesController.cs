@@ -17,19 +17,35 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     {
         await _logger.Info("ClientCompaniesController.Get", "Requested list of client companies.");
 
-        var items = await db.ClientCompanies
-            .Select(c => new ClientCompanyDTO
-            {
-                Id = c.Id,
-                VatNumber = c.VatNumber,
-                Name = c.Name,
-                Address = c.Address,
-                Email = c.Email,
-                PecAddress = c.PecAddress,
-                LandlineNumber = c.LandlineNumber,
-            }).ToListAsync();
+        var companies = await db.ClientCompanies
+            .Include(c => c.ClientVehicles)
+            .ToListAsync();
 
-        return Ok(items);
+        var result = new List<object>();
+
+        foreach (var company in companies)
+        {
+            foreach (var vehicle in company.ClientVehicles)
+            {
+                result.Add(new
+                {
+                    Id = company.Id,
+                    VatNumber = company.VatNumber,
+                    Name = company.Name,
+                    Address = company.Address,
+                    Email = company.Email,
+                    PecAddress = company.PecAddress,
+                    LandlineNumber = company.LandlineNumber,
+                    DisplayReferentName = vehicle.ReferentName ?? "—",
+                    DisplayReferentMobile = vehicle.ReferentMobileNumber ?? "—",
+                    DisplayReferentEmail = vehicle.ReferentEmail ?? "—",
+                    CorrespondingVehicleId = vehicle.Id,
+                    CorrespondingVehicleVin = vehicle.Vin
+                });
+            }
+        }
+
+        return Ok(result);
     }
 
     [HttpPost]

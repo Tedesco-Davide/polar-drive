@@ -17,6 +17,7 @@ export interface ClientCompany {
   referentMobileNumber?: string;
   referentEmail?: string;
 
-  // ✅ ID del veicolo corrispondente
+  // ✅ ID e VIN del veicolo corrispondente
   correspondingVehicleId?: number;
+  correspondingVehicleVin?: string;
 }
