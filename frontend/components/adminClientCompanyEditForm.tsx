@@ -138,15 +138,35 @@ export default function AdminClientCompanyEditForm({
 
       // AGGIORNA IL VEICOLO SPECIFICO
       if (formData.correspondingVehicleId) {
-        // ✅ Recupera il veicolo corrente
+        // Recupera il veicolo corrente
         const vehicleResponse = await fetch(
           `${API_BASE_URL}/api/ClientVehicles/${formData.correspondingVehicleId}`
         );
+
+        if (!vehicleResponse.ok) {
+          throw new Error(
+            `Failed to fetch vehicle. Status: ${vehicleResponse.status}`
+          );
+        }
+
         const currentVehicle = await vehicleResponse.json();
 
-        // ✅ Aggiorna solo i dati referente
+        // Crea il DTO completo con TUTTI i campi richiesti
         const updatedVehicleData = {
-          ...currentVehicle,
+          id: currentVehicle.id,
+          clientCompanyId: currentVehicle.clientCompany.id,
+          vin: currentVehicle.vin,
+          fuelType: currentVehicle.fuelType,
+          brand: currentVehicle.brand,
+          model: currentVehicle.model,
+          trim: currentVehicle.trim || "",
+          color: currentVehicle.color || "",
+          isActive: currentVehicle.isActive,
+          isFetching: currentVehicle.isFetching,
+          firstActivationAt: currentVehicle.firstActivationAt,
+          lastDeactivationAt: currentVehicle.lastDeactivationAt,
+          lastFetchingDataAt: currentVehicle.lastFetchingDataAt,
+          // Solo questi campi vengono aggiornati
           referentName: formData.referentName,
           referentMobileNumber: formData.referentMobileNumber,
           referentEmail: formData.referentEmail,
@@ -163,13 +183,30 @@ export default function AdminClientCompanyEditForm({
 
         if (!updateResponse.ok) {
           throw new Error(
-            `Failed to update vehicle referent. Status: ${updateResponse.status}`
+            `Failed to update vehicle. Status: ${updateResponse.status}`
           );
         }
       }
 
       alert(t("admin.successEditRow"));
-      onSave(formData);
+      const updatedClient: ClientCompany = {
+        ...client, // Mantieni i campi originali
+        // Aggiorna i dati azienda con quelli del form
+        name: formData.name,
+        address: formData.address,
+        email: formData.email,
+        pecAddress: formData.pecAddress,
+        landlineNumber: formData.landlineNumber,
+        // Aggiorna i dati referente con quelli del form
+        displayReferentName: formData.referentName,
+        displayReferentMobile: formData.referentMobileNumber,
+        displayReferentEmail: formData.referentEmail,
+        // Mantieni gli identificatori
+        correspondingVehicleId: formData.correspondingVehicleId,
+        correspondingVehicleVin: client.correspondingVehicleVin,
+      };
+
+      onSave(updatedClient);
       await refreshWorkflowData();
     } catch (err) {
       const errorDetails = err instanceof Error ? err.message : String(err);

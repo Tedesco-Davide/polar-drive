@@ -13,39 +13,38 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     private readonly PolarDriveLogger _logger = new(db);
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<ClientCompanyDTO>>> Get()
+    public async Task<ActionResult<IEnumerable<object>>> Get()
     {
         await _logger.Info("ClientCompaniesController.Get", "Requested list of client companies.");
 
-        var companies = await db.ClientCompanies
-            .Include(c => c.ClientVehicles)
-            .ToListAsync();
-
-        var result = new List<object>();
-
-        foreach (var company in companies)
+        try
         {
-            foreach (var vehicle in company.ClientVehicles)
-            {
-                result.Add(new
-                {
-                    Id = company.Id,
-                    VatNumber = company.VatNumber,
-                    Name = company.Name,
-                    Address = company.Address,
-                    Email = company.Email,
-                    PecAddress = company.PecAddress,
-                    LandlineNumber = company.LandlineNumber,
-                    DisplayReferentName = vehicle.ReferentName ?? "—",
-                    DisplayReferentMobile = vehicle.ReferentMobileNumber ?? "—",
-                    DisplayReferentEmail = vehicle.ReferentEmail ?? "—",
-                    CorrespondingVehicleId = vehicle.Id,
-                    CorrespondingVehicleVin = vehicle.Vin
-                });
-            }
-        }
+            var result = await (from company in db.ClientCompanies
+                                join vehicle in db.ClientVehicles on company.Id equals vehicle.ClientCompanyId
+                                select new
+                                {
+                                    Id = company.Id,
+                                    VatNumber = company.VatNumber,
+                                    Name = company.Name,
+                                    Address = company.Address ?? "",
+                                    Email = company.Email ?? "",
+                                    PecAddress = company.PecAddress ?? "",
+                                    LandlineNumber = company.LandlineNumber ?? "",
+                                    DisplayReferentName = vehicle.ReferentName ?? "—",
+                                    DisplayReferentMobile = vehicle.ReferentMobileNumber ?? "—",
+                                    DisplayReferentEmail = vehicle.ReferentEmail ?? "—",
+                                    CorrespondingVehicleId = vehicle.Id,
+                                    CorrespondingVehicleVin = vehicle.Vin
+                                }).ToListAsync();
 
-        return Ok(result);
+            await _logger.Info("ClientCompaniesController.Get", $"Successfully returned {result.Count} company-vehicle combinations");
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("ClientCompaniesController.Get", "Error retrieving companies with vehicles", ex.ToString());
+            return StatusCode(500, "Internal server error");
+        }
     }
 
     [HttpPost]

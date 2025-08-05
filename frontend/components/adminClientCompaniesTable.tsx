@@ -120,7 +120,7 @@ export default function AdminClientCompaniesTable({
         <tbody>
           {currentPageData.map((client) => (
             <tr
-              key={client.id}
+              key={`${client.id}-${client.correspondingVehicleId}`}
               className="border-b border-gray-300 dark:border-gray-600"
             >
               <td className="p-4 space-x-2">
@@ -173,14 +173,20 @@ export default function AdminClientCompaniesTable({
             onClose={() => setShowEditModal(false)}
             onSave={(updatedClient: ClientCompany) => {
               setClientData((prev) =>
-                prev.map((c) => (c.id === updatedClient.id ? updatedClient : c))
+                prev.map((c) =>
+                  c.id === updatedClient.id &&
+                  c.correspondingVehicleId ===
+                    updatedClient.correspondingVehicleId
+                    ? updatedClient
+                    : c
+                )
               );
               setShowEditModal(false);
               logFrontendEvent(
                 "AdminClientCompaniesTable",
                 "INFO",
                 "Client update saved successfully",
-                `ClientId: ${updatedClient.id}, VAT: ${updatedClient.vatNumber}`
+                `ClientId: ${updatedClient.id}, VehicleId: ${updatedClient.correspondingVehicleId}`
               );
             }}
             refreshWorkflowData={refreshWorkflowData}

@@ -52,25 +52,13 @@ export default function AdminDashboard() {
 
       // 🔁 Aziende
       const resCompanies = await fetch(`${API_BASE_URL}/api/clientcompanies`);
-      const companies: ClientCompany[] = await resCompanies.json();
-      const enrichedCompanies = companies.map((company) => {
-        const firstVehicle = data.find(
-          (v) => v.clientCompany?.id === company.id
-        );
-        return {
-          ...company,
-          displayReferentName: firstVehicle?.referentName || "Nessun referente",
-          displayReferentMobile: firstVehicle?.referentMobileNumber || "—",
-          displayReferentEmail: firstVehicle?.referentEmail || "—",
-        };
-      });
-
-      setClients(enrichedCompanies);
+      const companiesData = await resCompanies.json();
+      setClients(companiesData);
 
       // 🔁 Consensi
       const resConsents = await fetch(`${API_BASE_URL}/api/clientconsents`);
       const consents: ClientConsent[] = await resConsents.json();
-      setClientConsents(consents); // 👈 AGGIORNA la tabella Consensi
+      setClientConsents(consents);
 
       // 🔁 AdminMainWorkflow
       setWorkflowData(
@@ -125,7 +113,7 @@ export default function AdminDashboard() {
         "AdminDashboard",
         "DEBUG",
         "Workflow data aggiornati",
-        `Veicoli: ${data.length}, Aziende: ${companies.length}`
+        `Veicoli: ${data.length}, Aziende: ${companiesData.length}`
       );
     } catch (err) {
       console.error("ERROR:", err);
@@ -252,7 +240,7 @@ export default function AdminDashboard() {
     const fetchAll = async () => {
       try {
         // ✅ Fetch delle API principali (che funzionano)
-        const [clientsRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
+        const [companiesRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
           await Promise.all([
             fetch(`${API_BASE_URL}/api/clientcompanies`),
             fetch(`${API_BASE_URL}/api/clientvehicles`),
@@ -261,7 +249,7 @@ export default function AdminDashboard() {
             fetch(`${API_BASE_URL}/api/pdfreports`),
           ]);
 
-        const clientsData: ClientCompany[] = await clientsRes.json();
+        const companiesData = await companiesRes.json();
         const vehiclesData: ClientVehicleWithCompany[] =
           await vehiclesRes.json();
         const consentsData: ClientConsent[] = await consentsRes.json();
@@ -309,27 +297,7 @@ export default function AdminDashboard() {
         }
 
         // ✅ Aggiorna tutti gli stati
-        const enrichedCompaniesFromVehicles = vehiclesData.map((vehicle) => ({
-          // ✅ Dati azienda dall'oggetto vehicle.clientCompany
-          id: vehicle.clientCompany.id,
-          vatNumber: vehicle.clientCompany.vatNumber,
-          name: vehicle.clientCompany.name,
-          address: vehicle.clientCompany.address,
-          email: vehicle.clientCompany.email,
-          pecAddress: vehicle.clientCompany.pecAddress,
-          landlineNumber: vehicle.clientCompany.landlineNumber,
-
-          // ✅ Dati referente dal veicolo stesso
-          displayReferentName: vehicle.referentName || "Nessun referente",
-          displayReferentMobile: vehicle.referentMobileNumber || "—",
-          displayReferentEmail: vehicle.referentEmail || "—",
-
-          // ✅ AGGIUNGI l'ID del veicolo per identificarlo univocamente
-          correspondingVehicleId: vehicle.id,
-          correspondingVehicleVin: vehicle.vin,
-        }));
-
-        setClients(enrichedCompaniesFromVehicles);
+        setClients(companiesData);
 
         setVehicles(
           vehiclesData.map((entry) => ({
@@ -361,7 +329,7 @@ export default function AdminDashboard() {
           "AdminDashboard",
           "INFO",
           "Dati caricati correttamente da tutte le API",
-          `Clienti: ${clientsData.length}, Veicoli: ${vehiclesData.length}, Consensi: ${consentsData.length}, Outage: ${outagesData.length}, Report: ${reportsData.length}, Jobs: ${schedulerData.length}`
+          `Clienti: ${companiesData.length}, Veicoli: ${vehiclesData.length}, Consensi: ${consentsData.length}, Outage: ${outagesData.length}, Report: ${reportsData.length}, Jobs: ${schedulerData.length}`
         );
       } catch (err) {
         console.error("API fetch error:", err);

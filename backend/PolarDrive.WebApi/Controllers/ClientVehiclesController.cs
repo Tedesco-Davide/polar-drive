@@ -50,6 +50,50 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         return Ok(items);
     }
 
+    [HttpGet("{id}")]
+    public async Task<ActionResult<AdminWorkflowExtendedDTO>> GetById(int id)
+    {
+        await _logger.Info("ClientVehiclesController.GetById", "Requested single client vehicle.", $"VehicleId: {id}");
+
+        var vehicle = await db.ClientVehicles
+            .Include(v => v.ClientCompany)
+            .FirstOrDefaultAsync(v => v.Id == id);
+
+        if (vehicle == null)
+        {
+            await _logger.Warning("ClientVehiclesController.GetById", "Vehicle not found.", $"VehicleId: {id}");
+            return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found!");
+        }
+
+        var result = new AdminWorkflowExtendedDTO
+        {
+            Id = vehicle.Id,
+            Vin = vehicle.Vin,
+            FuelType = vehicle.FuelType,
+            Brand = vehicle.Brand,
+            Model = vehicle.Model,
+            Trim = vehicle.Trim ?? "",
+            Color = vehicle.Color ?? "",
+            IsActive = vehicle.IsActiveFlag,
+            IsFetching = vehicle.IsFetchingDataFlag,
+            FirstActivationAt = vehicle.FirstActivationAt?.ToString("o"),
+            LastDeactivationAt = vehicle.LastDeactivationAt?.ToString("o"),
+            LastFetchingDataAt = vehicle.LastFetchingDataAt?.ToString("o"),
+            ClientOAuthAuthorized = vehicle.ClientOAuthAuthorized,
+            ReferentName = vehicle.ReferentName,
+            ReferentMobileNumber = vehicle.ReferentMobileNumber,
+            ReferentEmail = vehicle.ReferentEmail,
+            ClientCompany = new ClientCompanyDTO
+            {
+                Id = vehicle.ClientCompany!.Id,
+                VatNumber = vehicle.ClientCompany.VatNumber,
+                Name = vehicle.ClientCompany.Name,
+            }
+        };
+
+        return Ok(result);
+    }
+
     [HttpPost]
     public async Task<ActionResult> Post([FromBody] ClientVehicleDTO dto)
     {
