@@ -405,16 +405,6 @@ export default function AdminClientConsents({
               </tr>
             );
           })}
-
-          {currentPageData.length === 0 && (
-            <tr>
-              <td colSpan={5} className="p-8 text-center text-gray-500">
-                {query
-                  ? t("admin.clientConsents.noResultsFound")
-                  : t("admin.clientConsents.noConsents")}
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
 
