@@ -271,7 +271,7 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
           className={`${
             showCreateModal
               ? "bg-red-500 hover:bg-red-600"
-              : "bg-green-500 hover:bg-green-600"
+              : "bg-blue-500 hover:bg-blue-600"
           } text-white px-6 py-2 rounded flex items-center gap-2`}
           onClick={() => {
             setShowCreateModal(!showCreateModal);
