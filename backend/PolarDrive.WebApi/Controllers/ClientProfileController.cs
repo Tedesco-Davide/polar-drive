@@ -123,45 +123,47 @@ public class ClientProfileController : ControllerBase
     /// </summary>
     private async Task<ClientProfileData?> GetClientProfileDataAsync(int companyId)
     {
-        // Query SQL per recuperare i dati dalla view
+        // ✅ Query SQL con COALESCE per gestire NULL values
         var sql = @"
-                    SELECT 
-                        -- Dati azienda (SENZA referente)
-                        c.Id as CompanyId, c.VatNumber, c.Name, c.Address, c.Email, c.PecAddress, c.LandlineNumber,
-                        c.CreatedAt as CompanyCreatedAt,
-                        -- Calcoli statistici azienda
-                        (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as TotalVehicles,
-                        (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsActiveFlag = 1) as ActiveVehicles,
-                        (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsFetchingDataFlag = 1) as FetchingVehicles,
-                        (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND ClientOAuthAuthorized = 1) as AuthorizedVehicles,
-                        (SELECT COUNT(DISTINCT Brand) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as UniqueBrands,
-                        0 as TotalConsentsCompany, 0 as TotalOutagesCompany, 0 as TotalReportsCompany, 0 as TotalSmsEventsCompany,
-                        (julianday('now') - julianday(c.CreatedAt)) as DaysRegistered,
-                        NULL as FirstVehicleActivation, NULL as LastReportGeneratedCompany,
-                        NULL as LandlineNumbers, NULL as MobileNumbers, NULL as AssociatedPhones,
-                        
-                        -- Dati veicolo CON referente
-                        v.Id as VehicleId, v.Vin, v.Brand, v.Model, v.FuelType,
-                        v.IsActiveFlag as VehicleIsActive, v.IsFetchingDataFlag as VehicleIsFetching, 
-                        v.ClientOAuthAuthorized as VehicleIsAuthorized,
-                        v.CreatedAt as VehicleCreatedAt, v.FirstActivationAt as VehicleFirstActivation, 
-                        v.LastDeactivationAt as VehicleLastDeactivation,
-                        
-                        -- ✅ REFERENTI DAL VEICOLO
-                        v.ReferentName, v.ReferentMobileNumber, v.ReferentEmail,
-                        
-                        -- Statistiche veicolo
-                        0 as VehicleConsents, 0 as VehicleOutages, 0 as VehicleReports, 0 as VehicleSmsEvents,
-                        NULL as VehicleLastConsent, NULL as VehicleLastOutage, NULL as VehicleLastReport,
-                        CASE WHEN v.FirstActivationAt IS NOT NULL 
-                            THEN CAST((julianday('now') - julianday(v.FirstActivationAt)) AS INTEGER)
-                            ELSE NULL END as DaysSinceFirstActivation,
-                        0 as VehicleOutageDays
-                        
-                    FROM ClientCompanies c
-                    LEFT JOIN ClientVehicles v ON c.Id = v.ClientCompanyId
-                    WHERE c.Id = @companyId 
-                    ORDER BY v.Brand, v.Model, v.Vin";
+        SELECT 
+            -- Dati azienda (SENZA referente)
+            c.Id as CompanyId, c.VatNumber, c.Name, c.Address, c.Email, c.PecAddress, c.LandlineNumber,
+            c.CreatedAt as CompanyCreatedAt,
+            -- Calcoli statistici azienda
+            (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as TotalVehicles,
+            (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsActiveFlag = 1) as ActiveVehicles,
+            (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsFetchingDataFlag = 1) as FetchingVehicles,
+            (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND ClientOAuthAuthorized = 1) as AuthorizedVehicles,
+            (SELECT COUNT(DISTINCT Brand) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as UniqueBrands,
+            0 as TotalConsentsCompany, 0 as TotalOutagesCompany, 0 as TotalReportsCompany, 0 as TotalSmsEventsCompany,
+            (julianday('now') - julianday(c.CreatedAt)) as DaysRegistered,
+            NULL as FirstVehicleActivation, NULL as LastReportGeneratedCompany,
+            NULL as LandlineNumbers, NULL as MobileNumbers, NULL as AssociatedPhones,
+            
+            -- Dati veicolo CON referente
+            v.Id as VehicleId, v.Vin, v.Brand, v.Model, v.FuelType,
+            -- ✅ COALESCE per evitare NULL su boolean
+            COALESCE(v.IsActiveFlag, 0) as VehicleIsActive, 
+            COALESCE(v.IsFetchingDataFlag, 0) as VehicleIsFetching, 
+            COALESCE(v.ClientOAuthAuthorized, 0) as VehicleIsAuthorized,
+            v.CreatedAt as VehicleCreatedAt, v.FirstActivationAt as VehicleFirstActivation, 
+            v.LastDeactivationAt as VehicleLastDeactivation,
+            
+            -- ✅ REFERENTI DAL VEICOLO
+            v.ReferentName, v.ReferentMobileNumber, v.ReferentEmail,
+            
+            -- Statistiche veicolo
+            0 as VehicleConsents, 0 as VehicleOutages, 0 as VehicleReports, 0 as VehicleSmsEvents,
+            NULL as VehicleLastConsent, NULL as VehicleLastOutage, NULL as VehicleLastReport,
+            CASE WHEN v.FirstActivationAt IS NOT NULL 
+                THEN CAST((julianday('now') - julianday(v.FirstActivationAt)) AS INTEGER)
+                ELSE NULL END as DaysSinceFirstActivation,
+            0 as VehicleOutageDays
+            
+        FROM ClientCompanies c
+        LEFT JOIN ClientVehicles v ON c.Id = v.ClientCompanyId
+        WHERE c.Id = @companyId 
+        ORDER BY v.Brand, v.Model, v.Vin";
 
         var rawData = await _db.Database.SqlQueryRaw<ClientFullProfileViewDto>(sql,
             new Microsoft.Data.Sqlite.SqliteParameter("@companyId", companyId))
