@@ -9,8 +9,25 @@ using Hangfire;
 using Hangfire.MemoryStorage;
 using PolarDrive.Services;
 using PolarDrive.WebApi.Controllers;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// CONFIGURAZIONE MULTIPART/FORM-DATA
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 100_000_000; // 100MB
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+    options.BufferBody = true;
+    options.BufferBodyLengthLimit = 100_000_000;
+});
+
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = 100_000_000; // 100MB
+});
 
 // Add Web API services + Swagger
 builder.Services.AddControllers()
@@ -57,23 +74,23 @@ builder.Services.AddHangfireServer(options => new BackgroundJobServerOptions
     WorkerCount = 1
 });
 
-// ✅ SERVIZI MULTI-BRAND
+// SERVIZI MULTI-BRAND
 builder.Services.AddScoped<TeslaApiService>();
 builder.Services.AddScoped<VehicleApiServiceRegistry>();
 builder.Services.AddScoped<VehicleDataService>();
 
-// ✅ SERVIZIO PER GENERAZIONE REPORT MANUALE
+// SERVIZIO PER GENERAZIONE REPORT MANUALE
 builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
-// ✅ SCHEDULER
+// SCHEDULER
 builder.Services.AddHostedService<PolarDriveScheduler>();
 builder.Services.AddHostedService<FileCleanupService>();
 
-// ✅ SERVIZI OUTAGES
+// SERVIZI OUTAGES
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
 builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 
-// ✅ SERVIZI SMS / TWILIO
+// SERVIZI SMS / TWILIO
 builder.Services.AddScoped<IAdaptiveProfilingService, AdaptiveProfilingService>();
 builder.Services.AddScoped<ITwilioConfigurationService, TwilioService>();
 builder.Services.AddScoped<AdaptiveProfilingSmsController>();
@@ -83,7 +100,18 @@ builder.Services.AddHttpClient();
 
 var app = builder.Build();
 
-// ✅ CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER, OUTAGES E CONSENTS
+// MIDDLEWARE PER MULTIPART (PRIMA di CORS e altri middleware)
+app.Use(async (context, next) =>
+{
+    // Abilita multipart per tutti i Content-Type multipart
+    if (context.Request.ContentType?.Contains("multipart/") == true)
+    {
+        context.Request.EnableBuffering();
+    }
+    await next();
+});
+
+// CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER, OUTAGES E CONSENTS
 var storageBasePath = "storage";
 var reportsPath = Path.Combine(storageBasePath, "reports");
 var fileManagerZipsPath = Path.Combine(storageBasePath, "filemanager-zips");
@@ -183,6 +211,11 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("   - PATCH /api/ClientConsents/{id}/notes - Update consent notes");
             Console.WriteLine("   - GET  /api/ClientConsents/resolve-ids - Resolve company/vehicle IDs");
             Console.WriteLine();
+            Console.WriteLine("✅ Upload Configuration:");
+            Console.WriteLine("   - Multipart/form-data support enabled");
+            Console.WriteLine("   - Max file size: 100MB");
+            Console.WriteLine("   - Buffering enabled for large uploads");
+            Console.WriteLine();
             Console.WriteLine("📝 Report levels based on monitoring time:");
             Console.WriteLine("   - < 5 min: Valutazione Iniziale");
             Console.WriteLine("   - < 15 min: Analisi Rapida");
@@ -213,6 +246,10 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("📦 File Manager:");
             Console.WriteLine("   - PDF ZIP downloads available via /api/FileManager");
             Console.WriteLine("   - Automatic cleanup enabled");
+            Console.WriteLine();
+            Console.WriteLine("✅ Upload Configuration:");
+            Console.WriteLine("   - Production-grade multipart support");
+            Console.WriteLine("   - 100MB upload limit configured");
             Console.WriteLine();
             Console.WriteLine("📁 Storage Directories:");
             Console.WriteLine("   - Reports, FileManager, Outages & Consents ZIPs");

@@ -2,6 +2,7 @@
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Text;
+using System.IO.Compression;
 
 var basePath = AppContext.BaseDirectory;
 var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));
@@ -28,7 +29,7 @@ try
     Console.WriteLine("🧹 Starting full cleanup and comprehensive mock data setup...");
 
     // ───────────────────────────────
-    // 1. ✅ CLEANUP SMART - Solo tabelle che esistono
+    // 1. ✅ CLEANUP SMART - FIX SQL SYNTAX
     // ───────────────────────────────
     try
     {
@@ -52,6 +53,7 @@ try
             try
             {
                 Console.WriteLine($"🗑️ Clearing {tableName}...");
+                // ✅ FIX: Usa ExecuteSqlRaw invece di ExecuteSqlAsync con interpolazione
                 await db.Database.ExecuteSqlAsync($"DELETE FROM {tableName}");
                 Console.WriteLine($"✅ Cleared {tableName}");
             }
@@ -81,7 +83,7 @@ try
     }
 
     // ───────────────────────────────
-    // 2. 🏢 COMPANIES - Multiple companies for comprehensive testing
+    // 2. 🏢 COMPANIES
     // ───────────────────────────────
     Console.WriteLine("🏢 Creating mock companies...");
 
@@ -115,16 +117,15 @@ try
     Console.WriteLine($"✅ Created {companies.Length} mock companies");
 
     // ───────────────────────────────
-    // 3. 🚘 VEHICLES - Multiple vehicles with different states
+    // 3. 🚘 VEHICLES
     // ───────────────────────────────
     Console.WriteLine("🚗 Creating mock vehicles...");
 
     var vehicles = new[]
     {
-        // Vehicle for API tests with TESTVIN123456789
         new ClientVehicle
         {
-            ClientCompanyId = companies[0].Id, // DataPolar Test Company
+            ClientCompanyId = companies[0].Id,
             Vin = "TESTVIN123456789",
             FuelType = "Electric",
             Brand = "Tesla",
@@ -142,7 +143,7 @@ try
         },
         new ClientVehicle
         {
-            ClientCompanyId = companies[1].Id, // Paninoteca Rossi
+            ClientCompanyId = companies[1].Id,
             Vin = "5YJ3000000NEXUS01",
             FuelType = "Electric",
             Brand = "Tesla",
@@ -150,10 +151,10 @@ try
             Trim = "Long Range",
             Color = "Ultra Red",
             IsActiveFlag = false,
-            IsFetchingDataFlag = true,
+            IsFetchingDataFlag = false,
             ClientOAuthAuthorized = true,
-            FirstActivationAt = DateTime.Now,
-            CreatedAt = DateTime.Now,
+            FirstActivationAt = DateTime.Now.AddDays(-5),
+            CreatedAt = DateTime.Now.AddDays(-5),
             ReferentName = "Luca Rossi",
             ReferentEmail = "luca.rossi@paninotecarossi.com",
             ReferentMobileNumber = "+393201234567",
@@ -170,8 +171,8 @@ try
             IsActiveFlag = true,
             IsFetchingDataFlag = true,
             ClientOAuthAuthorized = true,
-            FirstActivationAt = DateTime.Now,
-            CreatedAt = DateTime.Now,
+            FirstActivationAt = DateTime.Now.AddMinutes(-30),
+            CreatedAt = DateTime.Now.AddHours(-1),
             ReferentName = "Mario Bianchi",
             ReferentEmail = "mario.bianchi@paninotecarossi.com",
             ReferentMobileNumber = "+393209876543",
@@ -183,7 +184,7 @@ try
     Console.WriteLine($"✅ Created {vehicles.Length} mock vehicles");
 
     // ───────────────────────────────
-    // 4. 🔐 CLIENT CONSENTS with actual files
+    // 4. 🔐 CLIENT CONSENTS
     // ───────────────────────────────
     Console.WriteLine("🔐 Creating mock consents with files...");
 
@@ -193,11 +194,6 @@ try
     {
         var companyDir = Path.Combine(storageBase, $"company-{company.Id}", "consents-zips");
         Directory.CreateDirectory(companyDir);
-
-        // Create a dummy ZIP file
-        var zipPath = Path.Combine(companyDir, $"consent_{company.Id}.zip");
-        await File.WriteAllBytesAsync(zipPath, Encoding.UTF8.GetBytes("MOCK ZIP CONTENT"));
-        Console.WriteLine($"✅ Created mock ZIP: {zipPath}");
     }
 
     var consents = new[]
@@ -229,11 +225,29 @@ try
     Console.WriteLine($"✅ Created {consents.Length} mock consents with files");
 
     // ───────────────────────────────
-    // 5. 📊 PDF REPORTS with actual files
+    // 4.1. 🔐 CREATE REAL ZIP FILES FOR CONSENTS
+    // ───────────────────────────────
+    Console.WriteLine("🗜️ Creating real ZIP files for consents...");
+
+    foreach (var consent in consents)
+    {
+        if (!string.IsNullOrEmpty(consent.ZipFilePath))
+        {
+            var fullZipPath = Path.Combine(wwwRoot, "storage", consent.ZipFilePath);
+            var zipDir = Path.GetDirectoryName(fullZipPath);
+            Directory.CreateDirectory(zipDir!);
+
+            // ✅ FIX: Chiudi correttamente i ZIP stream
+            await CreateMockConsentZip(fullZipPath, consent.ClientCompanyId, consent.VehicleId);
+            Console.WriteLine($"✅ Created real ZIP: {consent.ZipFilePath}");
+        }
+    }
+
+    // ───────────────────────────────
+    // 5. 📊 PDF REPORTS
     // ───────────────────────────────
     Console.WriteLine("📊 Creating mock PDF reports...");
 
-    // Create reports directories
     var reportsDir = Path.Combine(wwwRoot, "storage", "reports");
     Directory.CreateDirectory(reportsDir);
 
@@ -256,7 +270,7 @@ try
             ClientVehicleId = vehicles[1].Id,
             ReportPeriodStart = DateTime.Now.AddDays(-7),
             ReportPeriodEnd = DateTime.Now,
-            GeneratedAt = null, // Report in processing
+            GeneratedAt = null,
             Status = "Processing",
             Notes = "Monthly report in progress",
             RegenerationCount = 1
@@ -267,8 +281,24 @@ try
     await db.SaveChangesAsync();
     Console.WriteLine($"✅ Created {reports.Length} mock PDF reports");
 
+    // Create actual files for completed reports
+    foreach (var report in reports)
+    {
+        if (report.GeneratedAt.HasValue)
+        {
+            var pdfPath = Path.Combine(wwwRoot, "storage", "reports", $"report_{report.Id}.pdf");
+            await File.WriteAllBytesAsync(pdfPath, GenerateMockPdfBytes($"Report {report.Id}"));
+
+            var htmlPath = Path.Combine(wwwRoot, "storage", "reports", $"report_{report.Id}.html");
+            var htmlContent = GenerateMockReportHtml($"Report {report.Id}", report.ClientCompanyId, report.ClientVehicleId);
+            await File.WriteAllTextAsync(htmlPath, htmlContent);
+
+            Console.WriteLine($"✅ Created files for report {report.Id}: PDF & HTML");
+        }
+    }
+
     // ───────────────────────────────
-    // 6. 📁 ADMIN FILE MANAGER - SOSTITUISCI QUESTA SEZIONE
+    // 6. 📁 ADMIN FILE MANAGER
     // ───────────────────────────────
     Console.WriteLine("📁 Creating mock file manager entries...");
 
@@ -277,54 +307,58 @@ try
 
     var fileEntries = new[]
     {
-    new AdminFileManager
-    {
-        RequestedAt = DateTime.Now.AddDays(-3),
-        StartedAt = DateTime.Now.AddDays(-3).AddMinutes(2),
-        CompletedAt = DateTime.Now.AddDays(-3).AddMinutes(15),
-        PeriodStart = DateTime.Now.AddDays(-30),
-        PeriodEnd = DateTime.Now.AddDays(-1),
-        CompanyList = new List<string> { companies[0].Name },
-        VinList = new List<string> { vehicles[0].Vin },
-        BrandList = new List<string> { "Tesla" },
-        Status = "COMPLETED",
-        TotalPdfCount = 5,
-        IncludedPdfCount = 3,
-        ZipFileSizeMB = 2.5m,
-        ResultZipPath = Path.Combine("admin-exports", "export_1.zip").Replace("\\", "/"),
-        Notes = "Test export for API testing",
-        RequestedBy = "Admin User"
-    },
-    new AdminFileManager
-    {
-        RequestedAt = DateTime.Now.AddHours(-1),
-        StartedAt = DateTime.Now.AddMinutes(-45),
-        CompletedAt = null,
-        PeriodStart = DateTime.Now.AddDays(-7),
-        PeriodEnd = DateTime.Now,
-        CompanyList = new List<string> { companies[1].Name },
-        VinList = new List<string>(),
-        BrandList = new List<string> { "Tesla" },
-        Status = "PROCESSING",
-        TotalPdfCount = 0,
-        IncludedPdfCount = 0,
-        ZipFileSizeMB = 0,
-        ResultZipPath = null,
-        Notes = "Export in progress",
-        RequestedBy = "Test User"
-    }
-};
+        new AdminFileManager
+        {
+            RequestedAt = DateTime.Now.AddDays(-3),
+            StartedAt = DateTime.Now.AddDays(-3).AddMinutes(2),
+            CompletedAt = DateTime.Now.AddDays(-3).AddMinutes(15),
+            PeriodStart = DateTime.Now.AddDays(-30),
+            PeriodEnd = DateTime.Now.AddDays(-1),
+            CompanyList = new List<string> { companies[0].Name },
+            VinList = new List<string> { vehicles[0].Vin },
+            BrandList = new List<string> { "Tesla" },
+            Status = "COMPLETED",
+            TotalPdfCount = 5,
+            IncludedPdfCount = 3,
+            ZipFileSizeMB = 2.5m,
+            ResultZipPath = Path.Combine("admin-exports", "export_1.zip").Replace("\\", "/"),
+            Notes = "Test export for API testing",
+            RequestedBy = "Admin User"
+        },
+        new AdminFileManager
+        {
+            RequestedAt = DateTime.Now.AddHours(-1),
+            StartedAt = DateTime.Now.AddMinutes(-45),
+            CompletedAt = null,
+            PeriodStart = DateTime.Now.AddDays(-7),
+            PeriodEnd = DateTime.Now,
+            CompanyList = new List<string> { companies[1].Name },
+            VinList = new List<string>(),
+            BrandList = new List<string> { "Tesla" },
+            Status = "PROCESSING",
+            TotalPdfCount = 0,
+            IncludedPdfCount = 0,
+            ZipFileSizeMB = 0,
+            ResultZipPath = null,
+            Notes = "Export in progress",
+            RequestedBy = "Test User"
+        }
+    };
 
-    // Create actual file for completed export
-    var adminFilePath = Path.Combine(wwwRoot, "storage", fileEntries[0].ResultZipPath);
-    await File.WriteAllBytesAsync(adminFilePath, Encoding.UTF8.GetBytes("MOCK ADMIN EXPORT CONTENT"));
+    // Create actual files for completed exports
+    foreach (var entry in fileEntries.Where(e => !string.IsNullOrEmpty(e.ResultZipPath)))
+    {
+        var adminFilePath = Path.Combine(wwwRoot, "storage", entry.ResultZipPath!);
+        await File.WriteAllBytesAsync(adminFilePath, Encoding.UTF8.GetBytes("MOCK ADMIN EXPORT CONTENT"));
+        Console.WriteLine($"✅ Created admin file: {entry.ResultZipPath}");
+    }
 
     db.AdminFileManager.AddRange(fileEntries);
     await db.SaveChangesAsync();
     Console.WriteLine($"✅ Created {fileEntries.Length} mock file manager entries");
 
     // ───────────────────────────────
-    // 7. ⚠️ OUTAGE PERIODS - SOSTITUISCI QUESTA SEZIONE
+    // 7. ⚠️ OUTAGE PERIODS
     // ───────────────────────────────
     Console.WriteLine("⚠️ Creating mock outage periods...");
 
@@ -333,44 +367,64 @@ try
 
     var outages = new[]
     {
-    new OutagePeriod
-    {
-        AutoDetected = false,
-        OutageType = "Outage Vehicle",
-        OutageBrand = "Tesla",
-        OutageStart = DateTime.Now.AddHours(-2),
-        OutageEnd = DateTime.Now.AddHours(1),
-        VehicleId = vehicles[0].Id,
-        ClientCompanyId = companies[0].Id,
-        ZipFilePath = Path.Combine("outages-zips", "outage_1.zip").Replace("\\", "/"),
-        Notes = "Scheduled maintenance for testing"
-    },
-    new OutagePeriod
-    {
-        AutoDetected = true,
-        OutageType = "Outage Fleet Api",
-        OutageBrand = "Tesla",
-        OutageStart = DateTime.Now.AddDays(-1),
-        OutageEnd = DateTime.Now.AddHours(-1),
-        VehicleId = null,
-        ClientCompanyId = null,
-        ZipFilePath = null,
-        Notes = "Fleet API outage resolved"
-    }
-};
-
-    // Create outage file for the first outage
-    var outagePath = Path.Combine(wwwRoot, "storage", outages[0].ZipFilePath);
-    await File.WriteAllBytesAsync(outagePath, Encoding.UTF8.GetBytes("MOCK OUTAGE DATA"));
+        new OutagePeriod
+        {
+            AutoDetected = false,
+            OutageType = "Outage Vehicle",
+            OutageBrand = "Tesla",
+            OutageStart = DateTime.Now.AddHours(-2),
+            OutageEnd = DateTime.Now.AddHours(1),
+            VehicleId = vehicles[0].Id,
+            ClientCompanyId = companies[0].Id,
+            ZipFilePath = Path.Combine("outages-zips", "outage_1.zip").Replace("\\", "/"),
+            Notes = "Scheduled maintenance for testing"
+        },
+        new OutagePeriod
+        {
+            AutoDetected = true,
+            OutageType = "Outage Fleet Api",
+            OutageBrand = "Tesla",
+            OutageStart = DateTime.Now.AddDays(-1),
+            OutageEnd = DateTime.Now.AddHours(-1),
+            VehicleId = null,
+            ClientCompanyId = null,
+            ZipFilePath = null,
+            Notes = "Fleet API outage resolved"
+        },
+        new OutagePeriod
+        {
+            AutoDetected = false,
+            OutageType = "Outage Vehicle",
+            OutageBrand = "Tesla",
+            OutageStart = DateTime.Now.AddDays(-1),
+            OutageEnd = DateTime.Now.AddHours(-2),
+            VehicleId = vehicles[1].Id,
+            ClientCompanyId = companies[1].Id,
+            ZipFilePath = Path.Combine("outages-zips", "outage_2.zip").Replace("\\", "/"),
+            Notes = "Test outage for validation"
+        }
+    };
 
     db.OutagePeriods.AddRange(outages);
     await db.SaveChangesAsync();
     Console.WriteLine($"✅ Created {outages.Length} mock outage periods");
 
+    // Create real outage ZIP files
+    Console.WriteLine("🗜️ Creating real outage ZIP files...");
+    foreach (var outage in outages.Where(o => !string.IsNullOrEmpty(o.ZipFilePath)))
+    {
+        var fullZipPath = Path.Combine(wwwRoot, "storage", outage.ZipFilePath!);
+        var zipDir = Path.GetDirectoryName(fullZipPath);
+        Directory.CreateDirectory(zipDir!);
+
+        await CreateMockOutageZip(fullZipPath, outage.Id);
+        Console.WriteLine($"✅ Created real outage ZIP: {outage.ZipFilePath}");
+    }
+
     // ───────────────────────────────
-    // 8. 📱 PHONE MAPPINGS for SMS
+    // 8. 📱 PHONE MAPPINGS, SMS LOGS, ADAPTIVE EVENTS
     // ───────────────────────────────
-    Console.WriteLine("📱 Creating mock phone mappings...");
+    Console.WriteLine("📱 Creating phone mappings, SMS logs, and adaptive events...");
 
     var phoneMappings = new[]
     {
@@ -394,15 +448,6 @@ try
         }
     };
 
-    db.PhoneVehicleMappings.AddRange(phoneMappings);
-    await db.SaveChangesAsync();
-    Console.WriteLine($"✅ Created {phoneMappings.Length} mock phone mappings");
-
-    // ───────────────────────────────
-    // 9. 📲 SMS AUDIT LOGS
-    // ───────────────────────────────
-    Console.WriteLine("📲 Creating mock SMS audit logs...");
-
     var smsLogs = new[]
     {
         new SmsAuditLog
@@ -419,15 +464,6 @@ try
         }
     };
 
-    db.SmsAuditLogs.AddRange(smsLogs);
-    await db.SaveChangesAsync();
-    Console.WriteLine($"✅ Created {smsLogs.Length} mock SMS audit logs");
-
-    // ───────────────────────────────
-    // 10. 🎯 ADAPTIVE PROFILING EVENTS
-    // ───────────────────────────────
-    Console.WriteLine("🎯 Creating mock adaptive profiling events...");
-
     var adaptiveEvents = new[]
     {
         new AdaptiveProfilingSmsEvent
@@ -439,19 +475,24 @@ try
         }
     };
 
+    db.PhoneVehicleMappings.AddRange(phoneMappings);
+    db.SmsAuditLogs.AddRange(smsLogs);
     db.AdaptiveProfilingSmsEvents.AddRange(adaptiveEvents);
     await db.SaveChangesAsync();
-    Console.WriteLine($"✅ Created {adaptiveEvents.Length} mock adaptive profiling events");
+
+    Console.WriteLine($"✅ Created {phoneMappings.Length} phone mappings");
+    Console.WriteLine($"✅ Created {smsLogs.Length} SMS logs");
+    Console.WriteLine($"✅ Created {adaptiveEvents.Length} adaptive events");
 
     // ───────────────────────────────
-    // 11. 🎉 FINAL SUMMARY
+    // 🎉 FINAL SUMMARY
     // ───────────────────────────────
     Console.WriteLine();
     Console.WriteLine("🎉 ===== COMPREHENSIVE MOCK DATA SETUP COMPLETED ===== 🎉");
     Console.WriteLine($"🏢 Companies: {companies.Length} created");
     Console.WriteLine($"🚗 Vehicles: {vehicles.Length} created (including TESTVIN123456789)");
     Console.WriteLine($"🔐 Consents: {consents.Length} created with actual ZIP files");
-    Console.WriteLine($"📊 Reports: {reports.Length} created with actual PDF/HTML files");
+    Console.WriteLine($"📊 Reports: {reports.Length} created");
     Console.WriteLine($"📁 FileManager: {fileEntries.Length} entries with actual files");
     Console.WriteLine($"⚠️ Outages: {outages.Length} created with ZIP files");
     Console.WriteLine($"📱 Phone Mappings: {phoneMappings.Length} created");
@@ -487,4 +528,168 @@ catch (Exception ex)
     {
         Console.WriteLine("⚠️ Could not log error to database");
     }
+}
+
+// ───────────────────────────────
+// ✅ HELPER METHODS - CORRETTI
+// ───────────────────────────────
+
+static byte[] GenerateMockPdfBytes(string title)
+{
+    var pdfContent = $@"%PDF-1.4
+1 0 obj
+<<
+/Type /Catalog
+/Pages 2 0 R
+>>
+endobj
+
+2 0 obj
+<<
+/Type /Pages
+/Kids [3 0 R]
+/Count 1
+>>
+endobj
+
+3 0 obj
+<<
+/Type /Page
+/Parent 2 0 R
+/MediaBox [0 0 612 792]
+/Contents 4 0 R
+>>
+endobj
+
+4 0 obj
+<<
+/Length 44
+>>
+stream
+BT
+/F1 12 Tf
+100 700 Td
+({title}) Tj
+ET
+endstream
+endobj
+
+xref
+0 5
+0000000000 65535 f 
+0000000010 00000 n 
+0000000079 00000 n 
+0000000173 00000 n 
+0000000301 00000 n 
+trailer
+<<
+/Size 5
+/Root 1 0 R
+>>
+startxref
+398
+%%EOF";
+
+    return System.Text.Encoding.ASCII.GetBytes(pdfContent);
+}
+
+static string GenerateMockReportHtml(string title, int companyId, int vehicleId)
+{
+    return $@"<!DOCTYPE html>
+<html>
+<head>
+    <title>{title}</title>
+    <meta charset='utf-8'>
+    <style>
+        body {{ font-family: Arial, sans-serif; margin: 40px; }}
+        .header {{ background: #f0f0f0; padding: 20px; border-radius: 5px; }}
+        .content {{ margin-top: 20px; }}
+    </style>
+</head>
+<body>
+    <div class='header'>
+        <h1>{title}</h1>
+        <p>Company ID: {companyId}</p>
+        <p>Vehicle ID: {vehicleId}</p>
+        <p>Generated: {DateTime.Now:yyyy-MM-dd HH:mm:ss}</p>
+    </div>
+    <div class='content'>
+        <h2>Mock Report Content</h2>
+        <p>This is a mock report generated for testing purposes.</p>
+        <ul>
+            <li>Status: Active</li>
+            <li>Data Points: 1,234</li>
+            <li>Last Update: {DateTime.Now:yyyy-MM-dd}</li>
+        </ul>
+    </div>
+</body>
+</html>";
+}
+
+// ✅ FIX: USING STATEMENTS CORRETTI PER ZIP
+static async Task CreateMockConsentZip(string zipPath, int companyId, int vehicleId)
+{
+    using var fileStream = new FileStream(zipPath, FileMode.Create);
+    using var archive = new ZipArchive(fileStream, ZipArchiveMode.Create);
+
+    // Consent form
+    var consentEntry = archive.CreateEntry("consent_form.pdf");
+    using (var consentStream = consentEntry.Open())
+    {
+        var consentContent = GenerateMockPdfBytes($"Consent Form - Company {companyId} - Vehicle {vehicleId}");
+        await consentStream.WriteAsync(consentContent, 0, consentContent.Length);
+    } // ✅ Stream chiuso automaticamente
+
+    // Metadata
+    var metadataEntry = archive.CreateEntry("metadata.json");
+    using (var metadataStream = metadataEntry.Open())
+    {
+        var metadata = $@"{{
+    ""companyId"": {companyId},
+    ""vehicleId"": {vehicleId},
+    ""createdAt"": ""{DateTime.Now:yyyy-MM-ddTHH:mm:ssZ}"",
+    ""type"": ""consent"",
+    ""version"": ""1.0""
+}}";
+        var metadataBytes = System.Text.Encoding.UTF8.GetBytes(metadata);
+        await metadataStream.WriteAsync(metadataBytes, 0, metadataBytes.Length);
+    } // ✅ Stream chiuso automaticamente
+}
+
+static async Task CreateMockOutageZip(string zipPath, int outageId)
+{
+    using var fileStream = new FileStream(zipPath, FileMode.Create);
+    using var archive = new ZipArchive(fileStream, ZipArchiveMode.Create);
+
+    // Log file
+    var logEntry = archive.CreateEntry("outage_log.txt");
+    using (var logStream = logEntry.Open())
+    {
+        var logContent = $@"OUTAGE LOG - ID: {outageId}
+==========================
+Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}
+Type: Vehicle Outage
+Status: Resolved
+Duration: 2h 15m
+Cause: Scheduled maintenance
+Actions: System restart, data sync
+";
+        var logBytes = System.Text.Encoding.UTF8.GetBytes(logContent);
+        await logStream.WriteAsync(logBytes, 0, logBytes.Length);
+    } // ✅ Stream chiuso automaticamente
+
+    // Diagnostics file
+    var diagEntry = archive.CreateEntry("diagnostics.json");
+    using (var diagStream = diagEntry.Open())
+    {
+        var diagContent = $@"{{
+    ""outageId"": {outageId},
+    ""startTime"": ""{DateTime.Now.AddHours(-2):yyyy-MM-ddTHH:mm:ssZ}"",
+    ""endTime"": ""{DateTime.Now:yyyy-MM-ddTHH:mm:ssZ}"",
+    ""affectedSystems"": [""data_collection"", ""reporting""],
+    ""resolution"": ""maintenance_complete""
+}}";
+        var diagBytes = System.Text.Encoding.UTF8.GetBytes(diagContent);
+        await diagStream.WriteAsync(diagBytes, 0, diagBytes.Length);
+    } // ✅ Stream chiuso automaticamente
 }
