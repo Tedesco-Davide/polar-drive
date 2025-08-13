@@ -509,16 +509,6 @@ export default function AdminOutagePeriodsTable({
               </tr>
             );
           })}
-
-          {currentPageData.length === 0 && (
-            <tr>
-              <td colSpan={8} className="p-8 text-center text-gray-500">
-                {query
-                  ? t("admin.outagePeriods.noResultsFound")
-                  : t("admin.outagePeriods.noOutages")}
-              </td>
-            </tr>
-          )}
         </tbody>
       </table>
 
