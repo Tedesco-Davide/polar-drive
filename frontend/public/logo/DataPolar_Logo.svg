@@ -22,15 +22,6 @@
       <stop offset="100%" style="stop-color:#4FA8C5;stop-opacity:0.2" />
     </linearGradient>
     
-    <!-- Glow per nodi -->
-    <filter id="nodeGlow">
-      <feGaussianBlur stdDeviation="2" result="glow"/>
-      <feMerge>
-        <feMergeNode in="glow"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    
     <!-- Effetto glow per stella -->
     <filter id="starGlow">
       <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
@@ -110,7 +101,7 @@
     <!-- Nodi network esterni -->
     <g>
       <!-- Nodo Nord (principale) -->
-      <circle cx="0" cy="-60" r="8" fill="#1B4965" filter="url(#nodeGlow)"/>
+      <circle cx="0" cy="-60" r="8" fill="#1B4965"/>
       <circle cx="0" cy="-60" r="4" fill="#FFFFFF"/>
       
       <!-- Altri nodi -->
