@@ -308,6 +308,14 @@
                 <div class="vehicle-name">Long Range integrale</div>
                 <div class="vehicle-price">€779/mese</div>
               </div>
+              <div
+                class="vehicle-option"
+                data-canone="1012"
+                data-nome="Model Y - Performance integrale"
+              >
+                <div class="vehicle-name">Long Range integrale</div>
+                <div class="vehicle-price">€1012/mese</div>
+              </div>
             </div>
           </div>
 
@@ -464,6 +472,27 @@
                   type="number"
                   id="price-my-lr-awd"
                   value="779"
+                  min="1"
+                  step="1"
+                  style="
+                    padding: 12px 15px;
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    font-size: 1em;
+                  "
+                  oninput="updateVehiclePrices()"
+                />
+                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
+              </div>
+              <div style="display: flex; flex-direction: column">
+                <label
+                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
+                  >Model Y - Performance integrale</label
+                >
+                <input
+                  type="number"
+                  id="price-my-perf-awd"
+                  value="1012"
                   min="1"
                   step="1"
                   style="
@@ -704,6 +733,10 @@
           {
             inputId: "price-my-lr-awd",
             elementSelector: '[data-nome="Model Y - Long Range integrale"]',
+          },
+          {
+            inputId: "price-my-perf-awd",
+            elementSelector: '[data-nome="Model Y - Performance integrale"]',
           },
         ];
 
