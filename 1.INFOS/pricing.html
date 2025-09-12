@@ -313,7 +313,7 @@
                 data-canone="1012"
                 data-nome="Model Y - Performance integrale"
               >
-                <div class="vehicle-name">Long Range integrale</div>
+                <div class="vehicle-name">Performance integrale</div>
                 <div class="vehicle-price">€1012/mese</div>
               </div>
             </div>
@@ -546,7 +546,7 @@
                   oninput="calculateTier('gold')"
                 />
                 <small style="color: #6c757d; margin-top: 5px"
-                  >% del delta fiscale (40% → 100%)</small
+                  >% del delta fiscale (20% → 100%)</small
                 >
               </div>
               <div style="display: flex; flex-direction: column">
@@ -587,15 +587,15 @@
               <div class="tier-content">
                 <div class="tier-title">🥇 GOLD</div>
                 <div class="tier-description">
-                  Cliente nuovo che inizia un leasing completo, ma che può già
-                  ottenere un'auto aziendale con deduzione e detrazione al 40%
+                    Client nuovo che inizia un leasing completo che può già ottenere 20% deducibilità + 40% detrazione IVA,
+                    e vuole passare al regime startup innovativa
                 </div>
 
                 <div class="pricing-breakdown">
                   <h4 style="margin-bottom: 15px">💰 Calcolo Guadagno</h4>
                   <div class="price-item">
                     <span>Da:</span>
-                    <span>40% deducibilità → 100%</span>
+                    <span>20% deduzione + 40% IVA → 100% + 100% IVA</span>
                   </div>
                   <div class="price-item">
                     <span>Formula:</span>
@@ -642,7 +642,7 @@
                   <h4 style="margin-bottom: 15px">💰 Calcolo Guadagno</h4>
                   <div class="price-item">
                     <span>Da:</span>
-                    <span>0% deducibilità → 100%</span>
+                    <span>0% deduzione + 0% IVA → 100% + 100% IVA</span>
                   </div>
                   <div class="price-item">
                     <span>Formula:</span>
@@ -776,7 +776,7 @@
       const ANTICIPO = 6000;
       const MESI = 48;
       const IVA_RATE = 0.22;
-      const ALIQUOTA_FISCALE = 0.289; // 28.9%
+      const ALIQUOTA_FISCALE = 0.279; // 27.9% (IRES 24% + IRAP 3.9%)
 
       // Event listeners per selezione veicolo
       document.querySelectorAll(".vehicle-option").forEach((option) => {
@@ -809,13 +809,13 @@
       }
 
       function calculateSavings(costoTotaleNoIva, ivaTotale) {
-        // Scenario Startup (100% deducibile)
+        // Scenario Startup (100% deducibile + 100% detrazione IVA per R&S)
         const risparmioFiscaleStartup = costoTotaleNoIva * ALIQUOTA_FISCALE;
         const risparmioTotaleStartup = risparmioFiscaleStartup + ivaTotale;
 
-        // Scenario Tradizionale (40% deducibile)
+        // Scenario Tradizionale (20% deducibile)
         const risparmioFiscaleTradizionale =
-          costoTotaleNoIva * 0.4 * ALIQUOTA_FISCALE;
+          costoTotaleNoIva * 0.2 * ALIQUOTA_FISCALE;
         const risparmioTotaleTradizionale =
           risparmioFiscaleTradizionale + ivaTotale * 0.4;
 
@@ -865,7 +865,7 @@
             risparmioCliente = savings.deltaRisparmio * (1 - percentage); // il resto va al cliente
             guadagnoMensile = guadagnoTotale / MESI;
             durata = MESI;
-            descrizione = "40% → 100%";
+            descrizione = "20% → 100%";
 
             // Aggiorna la formula visualizzata
             document.getElementById(
@@ -962,7 +962,7 @@
           switch (tier) {
             case "gold":
               tierName = "🥇 Gold";
-              descrizione = "40% → 100%";
+              descrizione = "20% → 100%";
               break;
             case "platinum":
               tierName = "💎 Platinum";
