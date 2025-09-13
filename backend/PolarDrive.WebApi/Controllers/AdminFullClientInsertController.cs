@@ -73,7 +73,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 IsActiveFlag = false,
                 IsFetchingDataFlag = false,
                 ClientOAuthAuthorized = false,
-                FirstActivationAt = request.UploadDate,
+                FirstActivationAt = null,
                 ReferentName = request.ReferentName,
                 ReferentEmail = request.ReferentEmail,
                 ReferentMobileNumber = request.ReferentMobile,

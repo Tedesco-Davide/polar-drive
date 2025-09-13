@@ -146,7 +146,6 @@ public class VehicleOAuthController : ControllerBase
                 UpdatedAt = DateTime.UtcNow
             });
 
-            // ✅ AGGIUNGI QUESTE RIGHE:
             vehicle.ClientOAuthAuthorized = true;
             vehicle.IsActiveFlag = true;
             vehicle.IsFetchingDataFlag = true;
