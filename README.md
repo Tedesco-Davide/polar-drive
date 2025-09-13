@@ -27,6 +27,17 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 - `dotnet run --project PolarDriveInitDBMockData.Cli` → Aggiunge dati di mock al DB creato (opzionale)
 - `dotnet run --project PolarDrive.WebApi` → Avvia la WebAPI principale in modalità sviluppo
 
+    > Espone l'endpoint `http://localhost:3000/admin` per Dashboard Backend
+
+- Extra comandi da lancaire nel caso di problemi di connessione al backend
+
+    > dotnet dev-certs https --clean
+
+    > dotnet dev-certs https --trust
+    
+    > dotnet dev-certs https --check
+
+
 #### **📦 PRODUZIONE (Production)**
 
 - `dotnet build --configuration Release` → Build ottimizzata per produzione
