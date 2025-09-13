@@ -3,7 +3,6 @@ namespace PolarDrive.Data.Constants;
 public enum FuelType
 {
     Electric,
-    Combustion
 }
 
 public class VehicleVariant
@@ -23,14 +22,78 @@ public static class VehicleConstants
                 ["Model 3"] = new VehicleVariant
                 {
                     FuelType = FuelType.Electric,
-                    Trims = ["Long Range"],
-                    Colors = ["Ultra Red"]
+                    Trims =
+                        [
+                            "Trazione posteriore",
+                            "Long Range a trazione posteriore",
+                            "Long Range a trazione integrale",
+                            "Performance a trazione integrale"
+                        ],
+                    Colors =
+                        [
+                            "Bianco Perla",
+                            "Blu Oceano",
+                            "Nero Diamante",
+                            "Grigio Stealth",
+                            "Ultra Rosso",
+                            "Argento Mercurio"
+                        ]
                 },
                 ["Model Y"] = new VehicleVariant
                 {
                     FuelType = FuelType.Electric,
-                    Trims = ["Performance"],
-                    Colors = ["Pearl White"]
+                    Trims =
+                        [
+                            "Trazione posteriore",
+                            "Long Range a trazione posteriore",
+                            "Long Range a trazione integrale",
+                            "Performance a trazione integrale"
+                        ],
+                    Colors =
+                        [
+                            "Bianco Perla",
+                            "Blu Oceano",
+                            "Nero Diamante",
+                            "Grigio Stealth",
+                            "Ultra Rosso",
+                            "Argento Mercurio"
+                        ]
+                },
+                ["Model S"] = new VehicleVariant
+                {
+                    FuelType = FuelType.Electric,
+                    Trims =
+                        [
+                            "Trazione integrale",
+                            "Plaid",
+                        ],
+                    Colors =
+                        [
+                            "Bianco Perla",
+                            "Blu Frost",
+                            "Nero Diamante",
+                            "Grigio Stealth",
+                            "Ultra Rosso",
+                            "Argento Lunare"
+                        ]
+                },
+                ["Model X"] = new VehicleVariant
+                {
+                    FuelType = FuelType.Electric,
+                    Trims =
+                        [
+                            "Trazione integrale",
+                            "Plaid",
+                        ],
+                    Colors =
+                        [
+                            "Bianco Perla",
+                            "Blu Frost",
+                            "Nero Diamante",
+                            "Grigio Stealth",
+                            "Ultra Rosso",
+                            "Argento Lunare"
+                        ]
                 }
             }
         };
