@@ -265,7 +265,7 @@ public class OutageDetectionService(
         var ongoingOutages = await _db.OutagePeriods
             .Where(o => o.OutageEnd == null)
             .Include(o => o.ClientVehicle)
-            .ThenInclude(v => v.ClientCompany) // Include anche la company
+            .ThenInclude(v => v!.ClientCompany)
             .ToListAsync();
 
         await _logger.Info("OutageDetectionService", $"Found {ongoingOutages.Count} ongoing outages to check for resolution");
@@ -290,14 +290,14 @@ public class OutageDetectionService(
                 }
                 else if (outage.OutageType == "Outage Vehicle" && outage.ClientVehicle != null)
                 {
-                    // FIX: Rileggi sempre il veicolo con i dati più aggiornati
+                    // Rileggi sempre il veicolo con i dati più aggiornati
                     var freshVehicle = await _db.ClientVehicles
                         .Include(v => v.ClientCompany)
                         .FirstOrDefaultAsync(v => v.Id == outage.ClientVehicle.Id);
 
                     if (freshVehicle != null)
                     {
-                        // FIX: Verifica più accurata dello stato del veicolo
+                        // Verifica più accurata dello stato del veicolo
                         shouldResolve = await IsVehicleBackOnlineAsync(freshVehicle);
 
                         await _logger.Debug("OutageDetectionService", 
