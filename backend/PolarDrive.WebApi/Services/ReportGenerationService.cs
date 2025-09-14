@@ -67,6 +67,47 @@ namespace PolarDrive.WebApi.Services
         public int DefaultDataHours { get; set; }
     }
 
+    // ✅ CLASSI NECESSARIE DAL VECCHIO SISTEMA (per compatibilità)
+    public class PdfConversionOptions
+    {
+        public string PageFormat { get; set; } = "A4";
+        public bool PrintBackground { get; set; } = true;
+        public string MarginTop { get; set; } = "1cm";
+        public string MarginRight { get; set; } = "1cm";
+        public string MarginBottom { get; set; } = "1cm";
+        public string MarginLeft { get; set; } = "1cm";
+        public bool DisplayHeaderFooter { get; set; } = true;
+        public string HeaderTemplate { get; set; } = @"
+            <div style='font-size: 10px; width: 100%; text-align: center; color: #666;'>
+                <span>PolarDrive Report</span>
+            </div>";
+        public string FooterTemplate { get; set; } = @"
+            <div style='
+                display: block;
+                width: 100%;
+                margin: 0;
+                padding: 0;
+                font-size: 10px;
+                color: #666;
+                text-align: center;
+            '>
+                Pagina <span class='pageNumber'></span> di <span class='totalPages'></span>
+            </div>";
+    }
+
+    public class HtmlReportOptions
+    {
+        public string TemplateName { get; set; } = "default";
+        public string StyleName { get; set; } = "default";
+        public string ReportType { get; set; } = "Standard";
+        public string DateFormat { get; set; } = "yyyy-MM-dd";
+        public string DateTimeFormat { get; set; } = "yyyy-MM-dd HH:mm";
+        public string? AdditionalCss { get; set; }
+        public bool ShowDetailedStats { get; set; } = true;
+        public bool ShowCharts { get; set; } = false;
+        public bool ShowRawData { get; set; } = false;
+    }
+
     public class ReportGenerationService(IServiceProvider serviceProvider,
                                   ILogger<ReportGenerationService> logger,
                                   IWebHostEnvironment env) : IReportGenerationService
@@ -257,10 +298,11 @@ namespace PolarDrive.WebApi.Services
             _logger.LogInformation("✅ Report {ReportId} ha {DataCount} record di dati - Procedendo con rigenerazione file",
                                   reportId, dataCount);
 
-            // 2) Ricalcola gli insights
+            // 2) Ricalcola gli insights con NUOVO SISTEMA
             using var scope_ollama = _serviceProvider.CreateScope();
             var ollamaOptions = scope_ollama.ServiceProvider.GetRequiredService<IOptionsSnapshot<OllamaConfig>>();
-            var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
+            var httpClient = scope_ollama.ServiceProvider.GetRequiredService<HttpClient>();
+            var aiGen = new PolarAiReportGenerator(db, ollamaOptions, httpClient);
 
             var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id);
             if (string.IsNullOrWhiteSpace(insights))
@@ -279,7 +321,7 @@ namespace PolarDrive.WebApi.Services
             // 4) Elimina i vecchi file prima di rigenerare
             DeleteExistingFiles(report);
 
-            // 5) Rigenera i file
+            // 5) Rigenera i file con NUOVO SISTEMA
             await GenerateReportFiles(db, report, insights, period, vehicle);
 
             // 6) Aggiorna lo status del report
@@ -566,115 +608,91 @@ namespace PolarDrive.WebApi.Services
             db.PdfReports.Add(report);
             await db.SaveChangesAsync();
 
+            // ✅ USA NUOVO SISTEMA
             using var scope_ollama = _serviceProvider.CreateScope();
             var ollamaOptions = scope_ollama.ServiceProvider.GetRequiredService<IOptionsSnapshot<OllamaConfig>>();
-            var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
+            var httpClient = scope_ollama.ServiceProvider.GetRequiredService<HttpClient>();
+            var aiGen = new PolarAiReportGenerator(db, ollamaOptions, httpClient);
 
             var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
-            // var insights = "TEST_INSIGHTS_NO_AI";
+            
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"No insights for {vehicle.Vin}");
 
             await GenerateReportFiles(db, report, insights, period, vehicle);
 
-            _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type} | Files: HTML+PDF",
+            _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type} | Files: Markdown",
                                    report.Id, vehicle.Vin, period.DataHours, period.AnalysisLevel);
         }
 
         private async Task GenerateReportFiles(PolarDriveDbContext db,
                                                PdfReport report,
-                                               string insights,
+                                               string markdownContent,
                                                ReportPeriodInfo period,
                                                ClientVehicle vehicle)
         {
-            // HTML
-            var htmlSvc = new HtmlReportService(db);
-            var htmlOpt = new HtmlReportOptions
-            {
-                ShowDetailedStats = true,
-                ShowRawData = false,
-                ReportType = $"🧠 {period.AnalysisLevel}",
-                AdditionalCss = PolarAiReports.Templates.DefaultCssTemplate.Value
-            };
-            var html = await htmlSvc.GenerateHtmlReportAsync(report, insights, htmlOpt);
+            // ✅ IL NUOVO SISTEMA GENERA MARKDOWN, NON HTML+PDF
+            // Salva il Markdown direttamente
+            var markdownPath = GetFilePath(report, "md", "reports");
+            await SaveFile(markdownPath, markdownContent);
 
+            // ✅ Se in development, salva anche come HTML per compatibilità
             if (_env.IsDevelopment())
             {
-                var path = GetFilePath(report, "html", "dev-reports");
-                await SaveFile(path, html);
+                var htmlPath = GetFilePath(report, "html", "dev-reports");
+                var simpleHtml = ConvertMarkdownToSimpleHtml(markdownContent, report, vehicle);
+                await SaveFile(htmlPath, simpleHtml);
             }
 
-            // PDF
-            var pdfSvc = new PdfGenerationService(db);
-            var pdfOpt = new PdfConversionOptions
-            {
-                PageFormat = "A4",
-                MarginTop = "2cm",
-                MarginBottom = "2cm",
-                MarginLeft = "1.5cm",
-                MarginRight = "1.5cm",
-                DisplayHeaderFooter = true,
-                HeaderTemplate = $@"
-                                    <html>
-                                    <head>
-                                        <style>
-                                            body {{
-                                                margin: 0;
-                                                padding: 0;
-                                                width: 100%;
-                                                height: 100%;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                            }}
-                                            .header-content {{
-                                                font-size: 10px;
-                                                color: #004E92;
-                                                text-align: center;
-                                                border-bottom: 1px solid #004E92;
-                                                padding-bottom: 5px;
-                                                width: 100%;
-                                            }}
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <div class='header-content'>{vehicle.Vin} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}</div>
-                                    </body>
-                                    </html>",
-                FooterTemplate = @"
-                                    <html>
-                                    <head>
-                                        <style>
-                                            body {
-                                                margin: 0;
-                                                padding: 0;
-                                                width: 100%;
-                                                height: 100%;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                            }
-                                            .footer-content {
-                                                font-size: 10px;
-                                                color: #666;
-                                                text-align: center;
-                                                border-top: 1px solid #ccc;
-                                                padding-top: 5px;
-                                                width: 100%;
-                                            }
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <div class='footer-content'>
-                                            Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Analytics
-                                        </div>
-                                    </body>
-                                    </html>"
-            };
-            var pdfBytes = await pdfSvc.ConvertHtmlToPdfAsync(html, report, pdfOpt);
+            _logger.LogInformation("✅ Files generated: Markdown saved, {DevFiles}",
+                _env.IsDevelopment() ? "HTML dev file saved" : "production mode");
+        }
 
-            var pdfPath = GetFilePath(report, "pdf", "reports");
-            await SaveFile(pdfPath, pdfBytes);
+        /// <summary>
+        /// Converte Markdown in HTML semplice per development
+        /// </summary>
+        private string ConvertMarkdownToSimpleHtml(string markdown, PdfReport report, ClientVehicle vehicle)
+        {
+
+            // Conversione basilare Markdown -> HTML
+            var html = markdown
+                .Replace("# ", "<h1>")
+                .Replace("## ", "<h2>")
+                .Replace("### ", "<h3>")
+                .Replace("- ", "<li>")
+                .Replace("**", "<strong>");
+
+            // Chiudi i tag aperti
+            html = html.Replace("<h1>", "<h1>").Replace("\n", "</h1>\n")
+                .Replace("<h2>", "<h2>").Replace("\n", "</h2>\n")
+                .Replace("<h3>", "<h3>").Replace("\n", "</h3>\n")
+                .Replace("<li>", "<li>").Replace("\n", "</li>\n")
+                .Replace("<strong>", "<strong>").Replace("\n", "</strong>\n");        
+
+            return $@"<!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset='utf-8'>
+                        <title>PolarDrive Report {report.Id}</title>
+                        <style>
+                            body {{ font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }}
+                            h1 {{ color: #2c3e50; }}
+                            h2 {{ color: #34495e; border-bottom: 2px solid #3498db; }}
+                            table {{ border-collapse: collapse; width: 100%; margin: 20px 0; }}
+                            th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+                            th {{ background-color: #f2f2f2; }}
+                        </style>
+                    </head>
+                    <body>
+                        <div style='text-align: center; margin-bottom: 30px;'>
+                            <h1>PolarDrive Report {report.Id}</h1>
+                            <p>VIN: {vehicle.Vin} | Generated: {DateTime.UtcNow:yyyy-MM-dd HH:mm}</p>
+                        </div>
+                        <div>
+                            {html}
+                        </div>
+                    </body>
+                    </html>";
         }
 
         private void DeleteExistingFiles(PdfReport report)
@@ -683,6 +701,7 @@ namespace PolarDrive.WebApi.Services
             {
                 var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
                 var pdfPath = GetFilePath(report, "pdf", "reports");
+                var markdownPath = GetFilePath(report, "md", "reports");
 
                 if (File.Exists(htmlPath))
                 {
@@ -694,6 +713,12 @@ namespace PolarDrive.WebApi.Services
                 {
                     File.Delete(pdfPath);
                     _logger.LogDebug("🗑️ Eliminato file PDF esistente: {Path}", pdfPath);
+                }
+
+                if (File.Exists(markdownPath))
+                {
+                    File.Delete(markdownPath);
+                    _logger.LogDebug("🗑️ Eliminato file Markdown esistente: {Path}", markdownPath);
                 }
             }
             catch (Exception ex)
