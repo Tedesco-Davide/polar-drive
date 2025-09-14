@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using PolarDrive.Data.DbContexts;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
@@ -11,17 +12,14 @@ public class PolarAiReportGenerator
     private readonly PolarDriveDbContext _dbContext;
     private readonly HttpClient _httpClient;
     private readonly PolarDriveLogger _logger;
+    private readonly OllamaConfig _ollamaConfig;
 
-    public PolarAiReportGenerator(PolarDriveDbContext dbContext)
+    public PolarAiReportGenerator(PolarDriveDbContext dbContext, IOptionsSnapshot<OllamaConfig> ollama)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-
         _logger = new PolarDriveLogger(_dbContext);
-
-        _httpClient = new HttpClient
-        {
-            Timeout = Timeout.InfiniteTimeSpan
-        };
+        _ollamaConfig = ollama?.Value ?? throw new ArgumentNullException(nameof(ollama));
+        _httpClient = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
     }
 
     public async Task<string> GeneratePolarAiInsightsAsync(int vehicleId)
@@ -62,7 +60,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// ✅ NUOVO: Calcola il periodo totale di monitoraggio (per context)
+    /// Calcola il periodo totale di monitoraggio (per context)
     /// </summary>
     private async Task<TimeSpan> CalculateMonitoringPeriod(int vehicleId)
     {
@@ -87,7 +85,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// ✅ SEMPLIFICATO: Determina il livello di analisi basato sul periodo TOTALE di monitoraggio
+    /// Determina il livello di analisi basato sul periodo TOTALE di monitoraggio
     /// I dati utilizzati sono sempre gli ultimi 30 giorni, ma il livello cambia in base alla maturità
     /// </summary>
     private string GetAnalysisLevel(TimeSpan totalMonitoringPeriod)
@@ -124,7 +122,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// ✅ SEMPRE MENSILE: Recupera sempre gli ultimi 30 giorni (720 ore)
+    /// Recupera sempre gli ultimi 30 giorni (720 ore)
     /// </summary>
     private async Task<List<string>> GetHistoricalData(int vehicleId, int hours)
     {
@@ -166,8 +164,8 @@ public class PolarAiReportGenerator
 
         // ✅ PROMPT ottimizzato per analisi mensile unificata
         var prompt = await BuildPrompt(rawJsonList, totalMonitoringPeriod, analysisLevel, dataHours, vehicleId);
-        const int maxRetries = 3;
-        const int retryDelaySeconds = 30;
+        var maxRetries = _ollamaConfig.MaxRetries;
+        var retryDelaySeconds = _ollamaConfig.RetryDelaySeconds;
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
@@ -203,7 +201,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Costruisce il prompt ottimizzato con certificazione obbligatoria
+    /// Costruisce il prompt ottimizzato con certificazione obbligatoria
     /// </summary>
     private async Task<string> BuildPrompt(List<string> rawJsonList, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
     {
@@ -317,7 +315,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// Prova a generare con Polar Ai usando prompt
+    /// Genera con Polar Ai usando prompt
     /// </summary>
     private async Task<string?> TryGenerateWithPolarAi(string prompt, string analysisLevel)
     {
@@ -325,17 +323,17 @@ public class PolarAiReportGenerator
         {
             var requestBody = new
             {
-                model = "deepseek-r1:8b",
+                model = _ollamaConfig.Model,
                 prompt = prompt,
-                temperature = 0.25,
-                top_p = 0.9,
+                temperature = _ollamaConfig.Temperature,
+                top_p = _ollamaConfig.TopP,
                 stream = false,
                 options = new
                 {
-                    num_ctx = 32768,        // MAX → 131072, MIO → 20K, MARGINE → 12-17K
-                    num_predict = 3072,     // Perfetto per report completi
-                    repeat_penalty = 1.1,   // Previene ripetizioni
-                    top_k = 40              // Migliora coerenza
+                    num_ctx = _ollamaConfig.ContextWindow,
+                    num_predict = _ollamaConfig.MaxTokens,
+                    repeat_penalty = _ollamaConfig.RepeatPenalty,
+                    top_k = _ollamaConfig.TopK
                 }
             };
 
@@ -346,7 +344,7 @@ public class PolarAiReportGenerator
             );
 
             var response = await _httpClient.PostAsync(
-                "http://127.0.0.1:11434/api/generate",
+                $"{_ollamaConfig.Endpoint}/api/generate",
                 content
             );
 
@@ -362,8 +360,8 @@ public class PolarAiReportGenerator
             using var doc = JsonDocument.Parse(jsonResponse);
 
             var text = doc.RootElement
-                          .GetProperty("response")
-                          .GetString();
+                        .GetProperty("response")
+                        .GetString();
 
             await _logger.Info("PolarAiReportGenerator.TryGenerateWithPolarAi",
                 $"Polar Ai {analysisLevel} completata",
@@ -380,7 +378,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// ✅ AGGIORNATO: Focus specifico per analisi mensile in base al livello
+    /// Focus specifico per analisi mensile in base al livello
     /// </summary>
     private string GetMonthlyFocus(string analysisLevel, TimeSpan totalMonitoringPeriod)
     {

@@ -45,6 +45,22 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+builder.Services.AddOptions<OllamaConfig>()
+    .Bind(builder.Configuration.GetSection("Ollama"))
+    .Validate(cfg =>
+        !string.IsNullOrWhiteSpace(cfg.Endpoint) &&
+        !string.IsNullOrWhiteSpace(cfg.Model) &&
+        cfg.ContextWindow > 0 &&
+        cfg.MaxTokens > 0 &&
+        cfg.Temperature >= 0 &&
+        cfg.TopP > 0 &&
+        cfg.TopK > 0 &&
+        cfg.RepeatPenalty > 0 &&
+        cfg.MaxRetries > 0 &&
+        cfg.RetryDelaySeconds > 0,
+        "Configurazione Ollama non valida")
+    .ValidateOnStart();
+
 // Enable CORS
 builder.Services.AddCors(options =>
 {

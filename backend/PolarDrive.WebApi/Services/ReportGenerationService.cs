@@ -4,6 +4,8 @@ using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Scheduler;
 using static PolarDrive.WebApi.Constants.CommonConstants;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace PolarDrive.WebApi.Services
 {
@@ -256,7 +258,10 @@ namespace PolarDrive.WebApi.Services
                                   reportId, dataCount);
 
             // 2) Ricalcola gli insights
-            var aiGen = new PolarAiReportGenerator(db);
+            using var scope_ollama = _serviceProvider.CreateScope();
+            var ollamaOptions = scope_ollama.ServiceProvider.GetRequiredService<IOptionsSnapshot<OllamaConfig>>();
+            var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
+
             var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id);
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"Nessun insight generato per {vehicle.Vin}");
@@ -561,7 +566,10 @@ namespace PolarDrive.WebApi.Services
             db.PdfReports.Add(report);
             await db.SaveChangesAsync();
 
-            var aiGen = new PolarAiReportGenerator(db);
+            using var scope_ollama = _serviceProvider.CreateScope();
+            var ollamaOptions = scope_ollama.ServiceProvider.GetRequiredService<IOptionsSnapshot<OllamaConfig>>();
+            var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
+
             var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
             // var insights = "TEST_INSIGHTS_NO_AI";
             if (string.IsNullOrWhiteSpace(insights))

@@ -400,16 +400,18 @@ public class TeslaApiService
             switch (teslaVehicle.State.ToLower())
             {
                 case "offline":
-                    await _logger.Info(source, $"Vehicle {vehicle.Vin} ({contractStatus}) is offline, skipping data fetch to save API quota");
-                    return VehicleFetchResult.Skipped;
+                    await _logger.Info(source, $"Vehicle {vehicle.Vin} ({contractStatus}) is offline, OUTAGE PERIOD detected");
+                    await SaveStatusRecord(vehicle.Vin, "OFFLINE", "Vehicle is offline, certified OUTAGE PERIOD");
+                    return VehicleFetchResult.Success;
 
                 case "asleep":
                     await _logger.Info(source, $"Vehicle {vehicle.Vin} ({contractStatus}) is asleep, attempting to wake up");
                     var wakeUpSuccess = await WakeUpVehicleAsync(teslaVehicle.Id, token.AccessToken);
                     if (!wakeUpSuccess)
                     {
-                        await _logger.Warning(source, $"Failed to wake up vehicle {vehicle.Vin} ({contractStatus}), skipping data fetch");
-                        return VehicleFetchResult.Skipped;
+                        await _logger.Warning(source, $"Failed to wake up vehicle {vehicle.Vin} ({contractStatus}), vehicle in sleep mode");
+                        await SaveStatusRecord(vehicle.Vin, "ASLEEP", "Vehicle in sleep mode");
+                        return VehicleFetchResult.Success;
                     }
                     // Aspetta più tempo per veicoli che erano dormienti
                     await Task.Delay(20000);
@@ -436,14 +438,38 @@ public class TeslaApiService
         }
         catch (HttpRequestException httpEx)
         {
-            await _logger.Error(source, $"HTTP error fetching data for vehicle {vehicle.Vin} ({contractStatus})",
-                $"Status: {httpEx.Message}");
-            return VehicleFetchResult.Error;
+            await _logger.Error(source, $"HTTP error fetching data for vehicle {vehicle.Vin} ({contractStatus})", $"Status: {httpEx.Message}");
+            await SaveStatusRecord(vehicle.Vin, "ERROR_HTTP", $"HTTP error: {httpEx.Message}");
+            return VehicleFetchResult.Success;
         }
         catch (Exception ex)
         {
             await _logger.Error(source, $"Error in Tesla API call for vehicle {vehicle.Vin} ({contractStatus})", ex.ToString());
-            return VehicleFetchResult.Error;
+            await SaveStatusRecord(vehicle.Vin, "ERROR_SYSTEM", $"System error: {ex.Message}");
+            return VehicleFetchResult.Success;
+        }
+    }
+
+    private async Task SaveStatusRecord(string vin, string status, string reason)
+    {
+        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+        if (vehicle != null)
+        {
+            var statusJson = JsonSerializer.Serialize(new { 
+                polar_drive_status = status, 
+                reason = reason,
+                timestamp = DateTime.UtcNow
+            });
+            
+            var record = new VehicleData
+            {
+                VehicleId = vehicle.Id,
+                Timestamp = DateTime.UtcNow,
+                RawJson = statusJson
+            };
+            
+            _db.VehiclesData.Add(record);
+            await _db.SaveChangesAsync();
         }
     }
 
