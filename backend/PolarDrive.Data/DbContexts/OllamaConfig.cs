@@ -2,8 +2,8 @@ namespace PolarDrive.Data.DbContexts;
 
 public class OllamaConfig
 {
-    public string Endpoint { get; set; }
-    public string Model { get; set; }
+    public string? Endpoint { get; set; }
+    public string? Model { get; set; }
     public float Temperature { get; set; }
     public float TopP { get; set; }
     public int ContextWindow { get; set; }
