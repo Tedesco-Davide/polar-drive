@@ -7,7 +7,7 @@ using System.IO.Compression;
 var basePath = AppContext.BaseDirectory;
 var wwwRoot = Path.Combine(basePath, "..", "..", "..", "..", "PolarDrive.WebApi", "wwwroot");
 
-var connectionString = "Server=localhost;Database=DataPolarDB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
+var connectionString = "Server=localhost;Database=DataPolar_PolarDrive_DB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
 
 var options = new DbContextOptionsBuilder<PolarDriveDbContext>()
     .UseSqlServer(connectionString)

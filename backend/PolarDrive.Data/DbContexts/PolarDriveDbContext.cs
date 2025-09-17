@@ -51,7 +51,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
                     .HasForeignKey(e => e.VehicleId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction);
             });
 
             modelBuilder.Entity<PdfReport>(entity =>
@@ -64,7 +64,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
                     .HasForeignKey(e => e.ClientVehicleId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction);
 
                 entity.HasIndex(e => new { e.ClientCompanyId, e.ClientVehicleId, e.ReportPeriodStart, e.ReportPeriodEnd })
                     .IsUnique();
@@ -99,7 +99,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
                     .HasForeignKey(e => e.VehicleId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                    .OnDelete(DeleteBehavior.NoAction);
 
                 entity.HasIndex(e => e.OriginalDataId).IsUnique();
             });
@@ -109,7 +109,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
                     .HasForeignKey(e => e.VehicleId)
-                    .OnDelete(DeleteBehavior.SetNull);
+                    .OnDelete(DeleteBehavior.NoAction);
 
                 entity.HasOne(e => e.ClientCompany)
                     .WithMany()

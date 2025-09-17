@@ -23,9 +23,9 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 #### **🚀 SVILUPPO (Development)**
 
 - `dotnet build` → Rebuild completo della soluzione
-- `dotnet run --project PolarDriveInitDB.Cli` → Crea un nuovo DB da zero nella cartella `PolarDriveInitDB.Cli`
-- `dotnet run --project PolarDriveInitDBMockData.Cli` → Aggiunge dati di mock al DB creato (opzionale)
-- `dotnet run --project PolarDrive.WebApi` → Avvia la WebAPI principale in modalità sviluppo
+- `dotnet run --project backend/PolarDriveInitDB.Cli` → Crea un nuovo DB da zero nella cartella `PolarDriveInitDB.Cli`
+- `dotnet run --project backend/PolarDriveInitDBMockData.Cli` → Aggiunge dati di mock al DB creato (opzionale)
+- `dotnet run --project backend/PolarDrive.WebApi` → Avvia la WebAPI principale in modalità sviluppo
 
     > Espone l'endpoint `http://localhost:3000/admin` per Dashboard Backend
 
@@ -41,8 +41,8 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 #### **📦 PRODUZIONE (Production)**
 
 - `dotnet build --configuration Release` → Build ottimizzata per produzione
-- `dotnet run --project PolarDriveInitDB.Cli --configuration Release` → Crea DB (produzione)
-- `dotnet run --project PolarDrive.WebApi --configuration Release` → Avvia WebAPI in produzione
+- `dotnet run --project backend/PolarDriveInitDB.Cli --configuration Release` → Crea DB (produzione)
+- `dotnet run --project backend/PolarDrive.WebApi --configuration Release` → Avvia WebAPI in produzione
 
 ---
 

@@ -74,7 +74,7 @@ builder.Services.AddCors(options =>
 
 // Setup DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=localhost;Database=DataPolarDB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
+    ?? "Server=localhost;Database=DataPolar_PolarDrive_DB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
 
 builder.Services.AddDbContext<PolarDriveDbContext>(options =>
     options.UseSqlServer(connectionString)
@@ -167,8 +167,8 @@ using (var scope = app.Services.CreateScope())
     {
 
         var dbName = app.Environment.IsDevelopment()
-            ? "DataPolarDB_DEV"
-            : "DataPolarDB_PROD";
+            ? "DataPolar_PolarDrive_DB_DEV"
+            : "DataPolar_PolarDrive_DB_PROD";
 
         await logger.Info("Program.Main",
             "PolarDrive Web API is starting...",

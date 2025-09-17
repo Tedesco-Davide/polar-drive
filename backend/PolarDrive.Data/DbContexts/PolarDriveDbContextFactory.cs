@@ -8,7 +8,7 @@ public class PolarDriveDbContextFactory : IDesignTimeDbContextFactory<PolarDrive
     public PolarDriveDbContext CreateDbContext(string[] args)
     {
         // Connection string per SQL Server (Default Instance)
-        var connectionString = "Server=localhost;Database=DataPolarDB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
+        var connectionString = "Server=localhost;Database=DataPolar_PolarDrive_DB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
 
         Console.WriteLine($"[DbFactory] Using SQL Server connection: {connectionString}");
 
