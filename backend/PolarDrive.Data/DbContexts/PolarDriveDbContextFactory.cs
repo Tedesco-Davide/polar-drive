@@ -7,18 +7,16 @@ public class PolarDriveDbContextFactory : IDesignTimeDbContextFactory<PolarDrive
 {
     public PolarDriveDbContext CreateDbContext(string[] args)
     {
-        var dbPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "datapolar.db");
-        dbPath = Path.GetFullPath(dbPath);
+        // Connection string per SQL Server (Default Instance)
+        var connectionString = "Server=localhost;Database=DataPolarDB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
 
-        Console.WriteLine($"[DbFactory] Using DB path: {dbPath}");
+        Console.WriteLine($"[DbFactory] Using SQL Server connection: {connectionString}");
 
         var optionsBuilder = new DbContextOptionsBuilder<PolarDriveDbContext>();
-        optionsBuilder.UseSqlite($"Data Source={dbPath}");
+        optionsBuilder.UseSqlServer(connectionString);
 
         var context = new PolarDriveDbContext(optionsBuilder.Options);
 
-        // ✅ RIMUOVI il logger dal factory per evitare problemi circolari
-        // Il logger sarà inizializzato DOPO che il database è stato creato
         Console.WriteLine($"✅ DbContext factory created successfully");
 
         return context;

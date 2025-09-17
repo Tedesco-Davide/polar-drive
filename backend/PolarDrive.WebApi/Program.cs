@@ -72,18 +72,15 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Configure DB path
-var basePath = AppContext.BaseDirectory;
-var relativePath = Path.Combine("..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db");
-var dbPath = Path.GetFullPath(Path.Combine(basePath, relativePath));
-
 // Setup DbContext
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+    ?? "Server=localhost;Database=DataPolarDB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
+
 builder.Services.AddDbContext<PolarDriveDbContext>(options =>
-    options.UseSqlite($"Data Source={dbPath}")
+    options.UseSqlServer(connectionString)
 );
 
 // Hangfire
-var connectionString = $"Data Source={dbPath}";
 builder.Services.AddHangfire(config => config.UseMemoryStorage());
 builder.Services.AddHangfireServer(options => new BackgroundJobServerOptions
 {
@@ -168,7 +165,14 @@ using (var scope = app.Services.CreateScope())
 
     try
     {
-        await logger.Info("Program.Main", $"PolarDrive Web API is starting...", $"DB Path: {dbPath}");
+
+        var dbName = app.Environment.IsDevelopment()
+            ? "DataPolarDB_DEV"
+            : "DataPolarDB_PROD";
+
+        await logger.Info("Program.Main",
+            "PolarDrive Web API is starting...",
+            $"Database: {dbName}");
 
         // ✅ LOG INFO SUI SERVIZI REGISTRATI
         var vehicleDataService = scope.ServiceProvider.GetRequiredService<VehicleDataService>();

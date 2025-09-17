@@ -136,7 +136,7 @@ public class ClientProfileController : ControllerBase
             (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND ClientOAuthAuthorized = 1) as AuthorizedVehicles,
             (SELECT COUNT(DISTINCT Brand) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as UniqueBrands,
             0 as TotalConsentsCompany, 0 as TotalOutagesCompany, 0 as TotalReportsCompany, 0 as TotalSmsEventsCompany,
-            (julianday('now') - julianday(c.CreatedAt)) as DaysRegistered,
+            DATEDIFF(day, c.CreatedAt, GETDATE()) as DaysRegistered,
             NULL as FirstVehicleActivation, NULL as LastReportGeneratedCompany,
             NULL as LandlineNumbers, NULL as MobileNumbers, NULL as AssociatedPhones,
             
@@ -156,7 +156,7 @@ public class ClientProfileController : ControllerBase
             0 as VehicleConsents, 0 as VehicleOutages, 0 as VehicleReports, 0 as VehicleSmsEvents,
             NULL as VehicleLastConsent, NULL as VehicleLastOutage, NULL as VehicleLastReport,
             CASE WHEN v.FirstActivationAt IS NOT NULL 
-                THEN CAST((julianday('now') - julianday(v.FirstActivationAt)) AS INTEGER)
+                THEN DATEDIFF(day, v.FirstActivationAt, GETDATE())
                 ELSE NULL END as DaysSinceFirstActivation,
             0 as VehicleOutageDays
             
@@ -166,7 +166,7 @@ public class ClientProfileController : ControllerBase
         ORDER BY v.Brand, v.Model, v.Vin";
 
         var rawData = await _db.Database.SqlQueryRaw<ClientFullProfileViewDto>(sql,
-            new Microsoft.Data.Sqlite.SqliteParameter("@companyId", companyId))
+            new Microsoft.Data.SqlClient.SqlParameter("@companyId", companyId))
             .ToListAsync();
 
         if (rawData.Count == 0)

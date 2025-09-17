@@ -40,6 +40,20 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# SQLite temp files
+# SQLite files
+*.db
 *.db-shm
 *.db-wal
+
+# SQL Server files
+*.mdf
+*.ldf
+*.ndf
+
+# .NET
+bin/
+obj/
+*.user
+.vs/
+.vscode/
+**/Migrations/

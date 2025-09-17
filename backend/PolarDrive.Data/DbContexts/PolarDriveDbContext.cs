@@ -135,7 +135,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
             modelBuilder.Entity<PolarDriveLog>(entity =>
             {
                 entity.Property(e => e.Timestamp)
-                    .HasDefaultValueSql("DATETIME('now')");
+                    .HasDefaultValueSql("GETDATE()");
 
                 entity.Property(e => e.Level)
                     .HasConversion<string>()
@@ -148,7 +148,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
                 entity.Property(e => e.RequestedAt)
                     .IsRequired()
-                    .HasDefaultValueSql("DATETIME('now')");
+                    .HasDefaultValueSql("GETDATE()");
 
                 entity.Property(e => e.Status)
                     .IsRequired()
@@ -167,25 +167,25 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasMaxLength(100);
 
                 entity.Property(e => e.ZipFileSizeMB)
-                    .HasColumnType("REAL");
+                    .HasColumnType("FLOAT");
 
                 entity.Property(e => e.CompanyList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("TEXT");
+                    .HasColumnType("NVARCHAR(MAX)");
 
                 entity.Property(e => e.VinList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("TEXT");
+                    .HasColumnType("NVARCHAR(MAX)");
 
                 entity.Property(e => e.BrandList)
                     .HasConversion(
                         v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null),
                         v => JsonSerializer.Deserialize<List<string>>(v, (JsonSerializerOptions?)null) ?? new List<string>())
-                    .HasColumnType("TEXT");
+                    .HasColumnType("NVARCHAR(MAX)");
 
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.RequestedAt);

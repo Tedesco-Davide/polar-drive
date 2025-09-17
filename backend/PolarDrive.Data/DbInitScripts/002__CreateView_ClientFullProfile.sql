@@ -62,8 +62,8 @@ WITH VehicleStats AS (
             SUM(
                 CASE 
                     WHEN op.OutageEnd IS NOT NULL 
-                    THEN CAST((julianday(op.OutageEnd) - julianday(op.OutageStart)) AS INTEGER)
-                    ELSE CAST((julianday('now') - julianday(op.OutageStart)) AS INTEGER)
+                    THEN DATEDIFF(day, op.OutageStart, op.OutageEnd)
+                    ELSE DATEDIFF(day, op.OutageStart, GETDATE())
                 END
             ) AS TotalOutageDays
         FROM OutagePeriods op
@@ -111,7 +111,7 @@ CompanyStats AS (
         cc.CreatedAt AS CompanyCreatedAt,
         
         -- Calcolo giorni di registrazione
-        CAST((julianday('now') - julianday(cc.CreatedAt)) AS INTEGER) AS DaysRegistered,
+        DATEDIFF(day, cc.CreatedAt, GETDATE()) AS DaysRegistered,
         
         -- Statistiche veicoli aggregate
         COUNT(vs.VehicleId) AS TotalVehicles,
@@ -160,23 +160,23 @@ CompanyStats AS (
 PhoneNumbers AS (
     SELECT 
         cs.CompanyId,
-        GROUP_CONCAT(DISTINCT 
+        STRING_AGG(DISTINCT 
             CASE 
                 WHEN cs.LandlineNumber IS NOT NULL AND cs.LandlineNumber != '' 
-                THEN 'Fisso: ' || cs.LandlineNumber 
-            END
+                THEN 'Fisso: ' + cs.LandlineNumber 
+            END, ', '
         ) AS LandlineNumbers,
-        GROUP_CONCAT(DISTINCT 
+        STRING_AGG(DISTINCT 
             CASE 
                 WHEN cs.ReferentMobileNumber IS NOT NULL AND cs.ReferentMobileNumber != '' 
-                THEN 'Mobile Referente: ' || cs.ReferentMobileNumber 
-            END
+                THEN 'Mobile Referente: ' + cs.ReferentMobileNumber 
+            END, ', '
         ) AS MobileNumbers,
-        GROUP_CONCAT(DISTINCT 
+        STRING_AGG(DISTINCT 
             CASE 
                 WHEN pvm.PhoneNumber IS NOT NULL AND pvm.PhoneNumber != '' 
-                THEN 'Mobile Associato: ' || pvm.PhoneNumber 
-            END
+                THEN 'Mobile Associato: ' + pvm.PhoneNumber 
+            END, ', '
         ) AS AssociatedPhones
     FROM CompanyStats cs
     LEFT JOIN VehicleStats vs ON cs.CompanyId = vs.ClientCompanyId
@@ -227,13 +227,13 @@ SELECT
     -- Calcoli aggiuntivi
     CASE 
         WHEN vs.FirstActivationAt IS NOT NULL 
-        THEN CAST((julianday('now') - julianday(vs.FirstActivationAt)) AS INTEGER)
+        THEN DATEDIFF(day, vs.FirstActivationAt, GETDATE())
         ELSE NULL 
     END AS DaysSinceFirstActivation,
     
     CASE 
         WHEN vs.LastDeactivationAt IS NOT NULL 
-        THEN CAST((julianday('now') - julianday(vs.LastDeactivationAt)) AS INTEGER)
+        THEN DATEDIFF(day, vs.LastDeactivationAt, GETDATE())
         ELSE NULL 
     END AS DaysSinceLastDeactivation
 

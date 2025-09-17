@@ -5,11 +5,12 @@ using System.Text;
 using System.IO.Compression;
 
 var basePath = AppContext.BaseDirectory;
-var dbPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDriveInitDB.Cli", "datapolar.db"));
 var wwwRoot = Path.Combine(basePath, "..", "..", "..", "..", "PolarDrive.WebApi", "wwwroot");
 
+var connectionString = "Server=localhost;Database=DataPolarDB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
+
 var options = new DbContextOptionsBuilder<PolarDriveDbContext>()
-    .UseSqlite($"Data Source={dbPath}")
+    .UseSqlServer(connectionString)
     .Options;
 
 using var db = new PolarDriveDbContext(options);
@@ -39,11 +40,12 @@ try
             "OutagePeriods",
             "PdfReports",
             "ClientConsents",
-            "VehicleData",
+            "VehiclesData",
             "AnonymizedVehiclesData",
             "AdaptiveProfilingSmsEvents",
             "SmsAuditLogs",
             "PhoneVehicleMappings",
+            "ClientTokens",
             "ClientVehicles",
             "ClientCompanies"
         };
@@ -53,8 +55,7 @@ try
             try
             {
                 Console.WriteLine($"🗑️ Clearing {tableName}...");
-                // ✅ FIX: Usa ExecuteSqlRaw invece di ExecuteSqlAsync con interpolazione
-                await db.Database.ExecuteSqlAsync($"DELETE FROM {tableName}");
+                await db.Database.ExecuteSqlAsync($"DELETE FROM [{tableName}]");
                 Console.WriteLine($"✅ Cleared {tableName}");
             }
             catch (Exception tableEx)
@@ -63,19 +64,51 @@ try
             }
         }
 
-        // Reset delle sequenze SQLite
+        // Reset delle Identity Columns
         try
         {
-            await db.Database.ExecuteSqlRawAsync("DELETE FROM sqlite_sequence WHERE name IN ('ClientCompanies', 'ClientVehicles', 'ClientConsents', 'OutagePeriods', 'PdfReports', 'AdminFileManager', 'PhoneVehicleMappings', 'SmsAuditLogs', 'AdaptiveProfilingSmsEvents')");
-            Console.WriteLine("✅ Reset sequence counters");
+            var identityTables = new[]
+            {
+                "ClientCompanies",
+                "ClientVehicles",
+                "ClientConsents",
+                "ClientTokens",
+                "OutagePeriods",
+                "PdfReports",
+                "AdminFileManager",
+                "PhoneVehicleMappings",
+                "SmsAuditLogs",
+                "AdaptiveProfilingSmsEvents",
+                "AnonymizedVehiclesData",
+                "VehiclesData",
+                "PolarDriveLogs"  // ← Se ha identity
+            };
+
+            Console.WriteLine("🔄 Resetting Identity counters...");
+
+            foreach (var tableName in identityTables)
+            {
+                try
+                {
+                    await db.Database.ExecuteSqlAsync($"DBCC CHECKIDENT('[{tableName}]', RESEED, 0)");
+                    Console.WriteLine($"✅ Reset identity for {tableName}");
+                }
+                catch (Exception identityEx)
+                {
+                    Console.WriteLine($"⚠️ Identity reset skipped for {tableName}: {identityEx.Message}");
+                    // Non è un errore critico se la tabella non ha identity o non esiste
+                }
+            }
+
+            Console.WriteLine("✅ Identity counters reset completed");
         }
         catch (Exception seqEx)
         {
-            Console.WriteLine($"⚠️ Sequence reset warning: {seqEx.Message}");
+            Console.WriteLine($"⚠️ Identity reset warning: {seqEx.Message}");
         }
 
         Console.WriteLine("✅ Cleanup completed successfully");
-        await logger.Info("PolarDriveInitDBMockData.Cli", "Cleared all available tables");
+        await logger.Info("PolarDriveInitDBMockData.Cli", "Cleared all available tables and reset identity counters");
     }
     catch (Exception cleanupEx)
     {
