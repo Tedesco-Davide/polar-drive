@@ -1,9 +1,9 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using PolarDrive.Data.DbContexts;
 using static PolarDrive.WebApi.Constants.CommonConstants;
+using Microsoft.Extensions.Options;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -24,11 +24,8 @@ public class PolarAiReportGenerator
 
     public async Task<string> GeneratePolarAiInsightsAsync(int vehicleId)
     {
-        // 0) log di avvio
-        await _logger.Info(
-            "PolarAiReportGenerator.GenerateInsights",
-            "Avvio analisi",
-            $"VehicleId: {vehicleId}");
+        var source = "PolarAiReportGenerator.GenerateInsights";
+        await _logger.Info(source, "Avvio analisi AI ottimizzata", $"VehicleId: {vehicleId}");
 
         // ✅ SEMPRE FINESTRA MENSILE - Calcola il periodo di monitoraggio per il context
         var monitoringPeriod = await CalculateMonitoringPeriod(vehicleId);
@@ -37,26 +34,27 @@ public class PolarAiReportGenerator
         // ✅ SEMPRE 720 ORE (30 GIORNI) - Finestra dati unificata
         const int dataHours = MONTHLY_HOURS_THRESHOLD;
 
-        // 1) log del tipo di analisi e finestra unificata
-        await _logger.Info(
-            "PolarAiReportGenerator.GenerateInsights",
-            $"Analisi {analysisLevel}",
-            $"Finestra UNIFICATA: {dataHours}h ({dataHours / 24} giorni) - Period totale: {monitoringPeriod.TotalDays:F1} giorni");
+        await _logger.Info(source, $"Analisi {analysisLevel}",
+            $"Finestra UNIFICATA: {dataHours}h ({dataHours / 24} giorni) - Periodo totale: {monitoringPeriod.TotalDays:F1} giorni");
 
-        // 2) recupero dati mensili
+        // 🚀 Recupero dati
         var historicalData = await GetHistoricalData(vehicleId, dataHours);
 
         if (historicalData.Count == 0)
         {
-            await _logger.Warning(
-                "PolarAiReportGenerator.GenerateInsights",
-                "Nessun dato nel periodo mensile specificato",
-                null);
+            await _logger.Warning(source, "Nessun dato nel periodo mensile specificato", null);
             return "Nessun dato disponibile per l'analisi mensile.";
         }
 
-        // 3) genero e ritorno il report
-        return await GenerateSummary(historicalData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
+        // 🎯 AGGREGAZIONE INTELLIGENTE - Riduzione drastica dei token
+        var aggregator = new IntelligentDataAggregator(_dbContext);
+        var aggregatedData = await aggregator.GenerateAggregatedInsights(historicalData, vehicleId);
+
+        await _logger.Info(source, "Aggregazione completata",
+            $"Da {historicalData.Sum(d => d.Length)} char → {aggregatedData.Length} char");
+
+        // 🧠 GENERAZIONE INSIGHTS AI con dati ottimizzati
+        return await GenerateSummary(aggregatedData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
     }
 
     /// <summary>
@@ -67,14 +65,7 @@ public class PolarAiReportGenerator
         try
         {
             var firstRecord = await GetFirstVehicleRecord(vehicleId);
-
-            if (firstRecord == default)
-            {
-                // Se non ci sono record, considera solo il giorno corrente
-                return TimeSpan.FromDays(1);
-            }
-
-            return DateTime.UtcNow - firstRecord;
+            return firstRecord == default ? TimeSpan.FromDays(1) : DateTime.UtcNow - firstRecord;
         }
         catch (Exception ex)
         {
@@ -93,7 +84,7 @@ public class PolarAiReportGenerator
         return totalMonitoringPeriod.TotalDays switch
         {
             < 1 => "Valutazione Iniziale",
-            < 7 => "Analisi Settimanale",
+            < 7 => "Analisi Settimanale", 
             < 30 => "Deep Dive Mensile",
             < 90 => "Assessment Trimestrale",
             _ => "Analisi Comprensiva"
@@ -131,7 +122,7 @@ public class PolarAiReportGenerator
             var startTime = DateTime.UtcNow.AddHours(-hours);
 
             await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
-                $"Recupero dati MENSILI: {hours}h ({hours / 24} giorni)",
+                $"Recupero dati mensili: {hours}h ({hours / 24} giorni)",
                 $"Da: {startTime:yyyy-MM-dd HH:mm}");
 
             var data = await _dbContext.VehiclesData
@@ -153,33 +144,32 @@ public class PolarAiReportGenerator
         }
     }
 
-    private async Task<string> GenerateSummary(List<string> rawJsonList, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
+    private async Task<string> GenerateSummary(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
     {
-        if (!rawJsonList.Any())
+        if (string.IsNullOrWhiteSpace(aggregatedData))
             return "Nessun dato veicolo disponibile per l'analisi mensile.";
 
         await _logger.Info("PolarAiReportGenerator.GenerateSummary",
             $"Generazione analisi {analysisLevel}",
-            $"Records mensili: {rawJsonList.Count}, Finestra: {dataHours}h");
+            $"Dati aggregati: {aggregatedData.Length} caratteri, Finestra: {dataHours}h");
 
-        // ✅ PROMPT ottimizzato per analisi mensile unificata
-        var prompt = await BuildPrompt(rawJsonList, totalMonitoringPeriod, analysisLevel, dataHours, vehicleId);
+        // ✅ PROMPT ottimizzato per dati aggregati
+        var prompt = BuildOptimizedPrompt(aggregatedData, totalMonitoringPeriod, analysisLevel, dataHours, vehicleId);
         var maxRetries = _ollamaConfig.MaxRetries;
         var retryDelaySeconds = _ollamaConfig.RetryDelaySeconds;
 
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             await _logger.Info("PolarAiReportGenerator.GenerateSummary",
-                $"Tentativo {attempt}/{maxRetries} con Polar Ai",
+                $"Tentativo {attempt}/{maxRetries} con Polar AI",
                 $"Analisi: {analysisLevel}");
 
             var aiResponse = await TryGenerateWithPolarAi(prompt, analysisLevel);
-            //var aiResponse = "TEST_POLAR_AI_NO_ELAB";
 
             if (!string.IsNullOrWhiteSpace(aiResponse))
             {
                 await _logger.Info("PolarAiReportGenerator.GenerateSummary",
-                    $"Polar Ai completata al tentativo {attempt}",
+                    $"Polar AI completata al tentativo {attempt}",
                     $"Risposta: {aiResponse.Length} caratteri");
                 return aiResponse;
             }
@@ -188,134 +178,122 @@ public class PolarAiReportGenerator
             if (attempt < maxRetries)
             {
                 await _logger.Warning("PolarAiReportGenerator.GenerateSummary",
-                    $"Tentativo {attempt} fallito, riprovo tra {retryDelaySeconds}s",
-                    null);
+                    $"Tentativo {attempt} fallito, riprovo tra {retryDelaySeconds}s", null);
                 await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
             }
         }
 
         // ✅ Dopo tutti i tentativi falliti, lancia eccezione
-        var errorMessage = $"Polar Ai non disponibile dopo {maxRetries} tentativi per {analysisLevel}";
+        var errorMessage = $"Polar AI non disponibile dopo {maxRetries} tentativi per {analysisLevel}";
         await _logger.Error("PolarAiReportGenerator.GenerateSummary", errorMessage, null);
         throw new InvalidOperationException(errorMessage);
     }
 
     /// <summary>
-    /// Costruisce il prompt ottimizzato con certificazione obbligatoria
+    /// 🚀 NUOVO PROMPT OTTIMIZZATO per dati aggregati
     /// </summary>
-    private async Task<string> BuildPrompt(List<string> rawJsonList, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
+    private string BuildOptimizedPrompt(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
     {
-        var parsedPrompt = await RawDataPreparserFullMapped.GenerateInsightPrompt(rawJsonList, vehicleId, _dbContext);
-        var stats = await GenerateDataStatistics(rawJsonList, totalMonitoringPeriod, dataHours, vehicleId);
-
         return $@"
-                # POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
+# POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
 
-                **RUOLO**: Senior Data Analyst specializzato in veicoli Tesla con sistema di analisi mensile unificata.
+**RUOLO**: Senior Data Analyst specializzato in veicoli Tesla con sistema di analisi mensile unificata.
 
-                ## PARAMETRI ANALISI MENSILE UNIFICATA
-                **Livello**: {analysisLevel}  
-                **Periodo Totale Monitoraggio**: {totalMonitoringPeriod.TotalDays:F1} giorni  
-                **Finestra Dati Analizzata**: SEMPRE {dataHours} ore (30 giorni)  
-                **Dataset**: {rawJsonList.Count:N0} record telemetrici mensili  
-                **Strategia**: Analisi mensile consistente con context evolutivo
+## PARAMETRI ANALISI MENSILE UNIFICATA
+**Livello**: {analysisLevel}  
+**Periodo Totale Monitoraggio**: {totalMonitoringPeriod.TotalDays:F1} giorni  
+**Finestra Dati Analizzata**: SEMPRE {dataHours} ore (30 giorni)  
+**Dataset**: Dati aggregati e processati da C# per ottimizzazione AI  
+**Strategia**: Analisi mensile consistente con context evolutivo
 
-                ## ⚠️ IMPORTANTE: CERTIFICAZIONE DATAPOLAR NEL PDF
-                **NOTA CRITICA**: La certificazione DataPolar sarà automaticamente inclusa nel PDF finale attraverso il sistema HTML. 
-                Tu concentrati sull'analisi tecnica e comportamentale senza ripetere le statistiche di certificazione.
-                
-                **Le seguenti statistiche sono per il tuo context di analisi:**
-                {stats}
+## ⚠️ IMPORTANTE: CERTIFICAZIONE DATAPOLAR NEL PDF
+**NOTA CRITICA**: La certificazione DataPolar sarà automaticamente inclusa nel PDF finale attraverso il sistema HTML. 
+Tu concentrati sull'analisi tecnica e comportamentale utilizzando i dati aggregati forniti.
 
-                ## OBIETTIVI ANALISI MENSILE PER LIVELLO
-                {GetMonthlyFocus(analysisLevel, totalMonitoringPeriod)}
+## OBIETTIVI ANALISI MENSILE PER LIVELLO
+{GetMonthlyFocus(analysisLevel, totalMonitoringPeriod)}
 
-                ## DATASET TELEMETRICO E ADAPTIVE PROFILING (ULTIMI 30 GIORNI)
-                ⚠️ **IMPORTANTE**: I dati seguenti rappresentano gli ultimi 30 giorni di telemetria e DEVONO essere integrati nel report finale, specialmente le informazioni SMS Adaptive Profiling.
+## 🎯 DATI AGGREGATI TESLA (OTTIMIZZATI PER AI)
+I seguenti dati sono stati pre-processati da algoritmi C# per ridurre la complessità computazionale, 
+mantenendo tutte le informazioni essenziali per un'analisi approfondita:
 
-                ```json
-                {parsedPrompt}
-                ```
+```
+{aggregatedData}
+```
 
-                ## ISTRUZIONI SPECIALI PER ADAPTIVE PROFILING SMS
-                - Se presenti dati ""ADAPTIVE PROFILING SMS"" nel periodo mensile, integrarli nella sezione ""📈 APPRENDIMENTO PROGRESSIVO""
-                - Menzionare sessioni attive, pattern di utilizzo mensili e frequenza delle attivazioni
-                - Includere analisi dei dati raccolti durante le sessioni adaptive del mese
-                - Non ignorare mai le informazioni SMS se presenti nel dataset mensile
+## FORMATO OUTPUT RICHIESTO (ANALISI MENSILE)
 
-                ## FORMATO OUTPUT RICHIESTO (ANALISI MENSILE)
+### 1. 🎯 EXECUTIVE SUMMARY MENSILE
+- **Stato attuale**: Valutazione performance ultimo mese
+- **Evoluzione**: Cambiamenti rispetto al contesto di {totalMonitoringPeriod.TotalDays:F0} giorni totali
+- **KPI mensili**: Batteria, efficienza, utilizzo (con percentuali precise)
+- **Alert mensili**: Anomalie o trend preoccupanti nel periodo
 
-                ### 1. 🎯 EXECUTIVE SUMMARY MENSILE
-                - **Stato attuale**: Valutazione performance ultimo mese
-                - **Evoluzione**: Cambiamenti rispetto al contesto di {totalMonitoringPeriod.TotalDays:F0} giorni totali
-                - **KPI mensili**: Batteria, efficienza, utilizzo (con percentuali precise)
-                - **Alert mensili**: Anomalie o trend preoccupanti nel periodo
+### 2. 📈 APPRENDIMENTO PROGRESSIVO (CONTESTO {analysisLevel.ToUpper()})
+- **Sessioni Adaptive Profiling**: Analisi delle sessioni negli ultimi 30 giorni
+- **Pattern mensili identificati**: Cosa emerge dall'analisi mensile
+- **Correlazioni mensili**: Relazioni scoperte nei 30 giorni
+- **Evoluzione comportamentale**: Come il comportamento è cambiato nel mese
+- **Baseline mensili**: Parametri di riferimento del periodo
 
-                ### 2. 📈 APPRENDIMENTO PROGRESSIVO (CONTESTO {analysisLevel.ToUpper()})
-                - **Sessioni Adaptive Profiling**: Analisi delle sessioni negli ultimi 30 giorni
-                - **Pattern mensili identificati**: Cosa emerge dall'analisi mensile
-                - **Correlazioni mensili**: Relazioni scoperte nei 30 giorni
-                - **Evoluzione comportamentale**: Come il comportamento è cambiato nel mese
-                - **Baseline mensili**: Parametri di riferimento del periodo
+### 3. 🔍 ANALISI COMPORTAMENTALE MENSILE
+- **Cicli mensili**: Pattern identificati nei 30 giorni
+- **Efficienza energetica mensile**: Trend e ottimizzazioni del mese
+- **Modalità di guida mensile**: Stili di utilizzo e impatti
+- **Ricarica intelligente mensile**: Strategie e risultati
 
-                ### 3. 🔍 ANALISI COMPORTAMENTALE MENSILE
-                - **Cicli mensili**: Pattern identificati nei 30 giorni
-                - **Efficienza energetica mensile**: Trend e ottimizzazioni del mese
-                - **Modalità di guida mensile**: Stili di utilizzo e impatti
-                - **Ricarica intelligente mensile**: Strategie e risultati
+### 4. 🔮 INSIGHTS PREDITTIVI (BASE MENSILE)
+- **Previsioni prossimo mese**: Basate sui dati mensili correnti
+- **Trend batteria mensile**: Con proiezioni
+- **Manutenzione predittiva**: Basata su usage mensile
+- **Ottimizzazioni comportamentali**: ROI per il prossimo periodo
 
-                ### 4. 🔮 INSIGHTS PREDITTIVI (BASE MENSILE)
-                - **Previsioni prossimo mese**: Basate sui dati mensili correnti
-                - **Trend batteria mensile**: Con proiezioni
-                - **Manutenzione predittiva**: Basata su usage mensile
-                - **Ottimizzazioni comportamentali**: ROI per il prossimo periodo
+### 5. 🔋 ANALISI BATTERIA & RICARICA (PERFORMANCE MENSILE)
+- **Salute batteria mensile**: Trend e degrado nel periodo
+- **Efficienza ricarica mensile**: Performance degli ultimi 30 giorni
+- **Cicli di vita mensili**: Analisi dei cicli nel periodo
+- **Confronto mensile**: Performance vs standard
 
-                ### 5. 🔋 ANALISI BATTERIA & RICARICA (PERFORMANCE MENSILE)
-                - **Salute batteria mensile**: Trend e degrado nel periodo
-                - **Efficienza ricarica mensile**: Performance degli ultimi 30 giorni
-                - **Cicli di vita mensili**: Analisi dei cicli nel periodo
-                - **Confronto mensile**: Performance vs standard
+### 6. 💡 RACCOMANDAZIONI STRATEGICHE (FOCUS MENSILE)
+- **Immediate**: Basate su pattern mensili identificati
+- **Prossimo mese**: Ottimizzazioni per i prossimi 30 giorni
+- **Trimestrali**: Strategie a medio termine
+- **ROI mensile**: Stima benefici implementazione
 
-                ### 6. 💡 RACCOMANDAZIONI STRATEGICHE (FOCUS MENSILE)
-                - **Immediate**: Basate su pattern mensili identificati
-                - **Prossimo mese**: Ottimizzazioni per i prossimi 30 giorni
-                - **Trimestrali**: Strategie a medio termine
-                - **ROI mensile**: Stima benefici implementazione
+## VINCOLI DI QUALITÀ MENSILE
 
-                ## VINCOLI DI QUALITÀ MENSILE
+**PRECISIONE NUMERICA**: Tutti i valori devono riferirsi al periodo mensile analizzato
+**FOCUS TECNICO**: Concentrati su analisi comportamentale e predittiva utilizzando i dati aggregati
+**PROFESSIONALITÀ**: Linguaggio tecnico ma accessibile
+**ACTIONABILITY**: Ogni insight mensile deve tradursi in azioni concrete
+**COMPARABILITÀ**: Fornire benchmark e confronti mensili
+**COMPLETEZZA**: Analizzare TUTTI i dati aggregati forniti, inclusi SMS Adaptive Profiling
 
-                **PRECISIONE NUMERICA**: Tutti i valori devono riferirsi al periodo mensile analizzato
-                **FOCUS TECNICO**: Concentrati su analisi comportamentale e predittiva (non ripetere statistiche di base)
-                **PROFESSIONALITÀ**: Linguaggio tecnico ma accessibile
-                **ACTIONABILITY**: Ogni insight mensile deve tradursi in azioni concrete
-                **COMPARABILITÀ**: Fornire benchmark e confronti mensili
-                **COMPLETEZZA**: Analizzare TUTTI i dati mensili, inclusi SMS Adaptive Profiling
+## ELEMENTI OBBLIGATORI MENSILI
 
-                ## ELEMENTI OBBLIGATORI MENSILI
+✅ **Metriche quantitative mensili** in ogni sezione  
+✅ **Trend mensili** con direzione e velocità  
+✅ **Confidence level** per previsioni mensili  
+✅ **Impatto economico mensile** stimato  
+✅ **Timeline mensile** per implementazione raccomandazioni
+✅ **Integrazione completa dati aggregati forniti**
 
-                ✅ **Metriche quantitative mensili** in ogni sezione  
-                ✅ **Trend mensili** con direzione e velocità  
-                ✅ **Confidence level** per previsioni mensili  
-                ✅ **Impatto economico mensile** stimato  
-                ✅ **Timeline mensile** per implementazione raccomandazioni
-                ✅ **Integrazione completa dati SMS Adaptive Profiling mensili**
+## STILE OUTPUT
 
-                ## STILE OUTPUT
+- **Formato**: Markdown professionale con emoji per sezioni
+- **Lunghezza**: Proporzionale al livello {analysisLevel} ma focus mensile
+- **Tone**: Consultoriale esperto, focus su performance mensili
+- **Focus**: Valore business e ottimizzazione basata su dati aggregati
+- **Evita**: Ripetizione delle statistiche di certificazione (già nel PDF)
 
-                - **Formato**: Markdown professionale con emoji per sezioni
-                - **Lunghezza**: Proporzionale al livello {analysisLevel} ma focus mensile
-                - **Tone**: Consultoriale esperto, focus su performance mensili
-                - **Focus**: Valore business e ottimizzazione basata su dati mensili
-                - **Evita**: Ripetizione delle statistiche di certificazione (già nel PDF)
-
-                ---
-                **GENERA REPORT {analysisLevel.ToUpper()} CON FOCUS TECNICO-COMPORTAMENTALE**
-                **ANALIZZA I {dataHours / 24} GIORNI DI DATI NEL CONTESTO DI {totalMonitoringPeriod.TotalDays:F0} GIORNI TOTALI**
-                **LA CERTIFICAZIONE DATAPOLAR È GIÀ INCLUSA NEL PDF - CONCENTRATI SULL'ANALISI**";
+---
+**GENERA REPORT {analysisLevel.ToUpper()} CON FOCUS TECNICO-COMPORTAMENTALE**
+**ANALIZZA I DATI AGGREGATI NEL CONTESTO DI {totalMonitoringPeriod.TotalDays:F0} GIORNI TOTALI**
+**LA CERTIFICAZIONE DATAPOLAR È GIÀ INCLUSA NEL PDF - CONCENTRATI SULL'ANALISI**";
     }
 
     /// <summary>
-    /// Genera con Polar Ai usando prompt
+    /// Genera con Polar AI usando prompt ottimizzato
     /// </summary>
     private async Task<string?> TryGenerateWithPolarAi(string prompt, string analysisLevel)
     {
@@ -364,15 +342,33 @@ public class PolarAiReportGenerator
                         .GetString();
 
             await _logger.Info("PolarAiReportGenerator.TryGenerateWithPolarAi",
-                $"Polar Ai {analysisLevel} completata",
+                $"Polar AI {analysisLevel} completata",
                 $"Risposta: {text?.Length ?? 0} caratteri");
 
             return text;
         }
+        catch (HttpRequestException httpEx)
+        {
+            await _logger.Error("PolarAiReportGenerator.TryGenerateWithPolarAi",
+                "Errore connessione HTTP a Ollama", $"Status: {httpEx.Message}");
+            return null;
+        }
+        catch (TaskCanceledException timeoutEx) when (timeoutEx.InnerException is TimeoutException)
+        {
+            await _logger.Error("PolarAiReportGenerator.TryGenerateWithPolarAi",
+                "Timeout connessione Ollama", timeoutEx.Message);
+            return null;
+        }
+        catch (JsonException jsonEx)
+        {
+            await _logger.Error("PolarAiReportGenerator.TryGenerateWithPolarAi",
+                "Errore parsing risposta JSON da Ollama", jsonEx.Message);
+            return null;
+        }
         catch (Exception ex)
         {
             await _logger.Debug("PolarAiReportGenerator.TryGenerateWithPolarAi",
-                "Polar Ai non raggiungibile per analisi", ex.Message);
+                "Polar AI non raggiungibile per analisi", ex.Message);
             return null;
         }
     }
@@ -394,213 +390,6 @@ public class PolarAiReportGenerator
             "Assessment Trimestrale" => $"- Analisi mensile nel contesto trimestrale {contextInfo}\n- Ottimizzazioni mensili con visione a medio termine",
             "Analisi Comprensiva" => $"- Intelligence mensile avanzata nel contesto storico {contextInfo}\n- Ottimizzazione strategica basata su analisi mensile approfondita",
             _ => $"- Analisi mensile generale {contextInfo}"
-        };
-    }
-
-    /// <summary>
-    /// ✅ CERTIFICAZIONE COMPLETA: Genera statistiche certificate con valore aggiunto DataPolar
-    /// </summary>
-    private async Task<string> GenerateDataStatistics(List<string> rawJsonList, TimeSpan totalMonitoringPeriod, int dataHours, int vehicleId)
-    {
-        var sb = new StringBuilder();
-
-        var certification = await GenerateDataCertification(vehicleId, totalMonitoringPeriod);
-        sb.AppendLine(certification);
-        sb.AppendLine();
-
-        // 📊 STATISTICHE ANALISI MENSILE
-        sb.AppendLine("📊 STATISTICHE ANALISI MENSILE:");
-        sb.AppendLine($"• Durata monitoraggio totale: {totalMonitoringPeriod.TotalDays:F1} giorni");
-        sb.AppendLine($"• Campioni mensili analizzati: {rawJsonList.Count:N0}");
-        sb.AppendLine($"• Finestra UNIFICATA: {dataHours} ore (30 giorni)");
-        sb.AppendLine($"• Densità dati mensile: {rawJsonList.Count / Math.Max(dataHours, 1):F1} campioni/ora");
-        sb.AppendLine($"• Copertura dati: {Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):F1}% del periodo totale");
-        sb.AppendLine($"• Strategia: Analisi mensile consistente con context evolutivo");
-
-        return sb.ToString();
-    }
-
-    /// <summary>
-    /// 🏆 CERTIFICAZIONE DATAPOLAR: Genera certificazione completa qualità dati
-    /// </summary>
-    private async Task<string> GenerateDataCertification(int vehicleId, TimeSpan totalMonitoringPeriod)
-    {
-        try
-        {
-            var sb = new StringBuilder();
-            sb.AppendLine("📋 CERTIFICAZIONE DATI DATAPOLAR:");
-
-            // 1️⃣ CALCOLO ORE TOTALI CERTIFICATE
-            var totalRecords = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId)
-                .CountAsync();
-
-            var firstRecord = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId)
-                .OrderBy(vd => vd.Timestamp)
-                .Select(vd => vd.Timestamp)
-                .FirstOrDefaultAsync();
-
-            var lastRecord = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId)
-                .OrderByDescending(vd => vd.Timestamp)
-                .Select(vd => vd.Timestamp)
-                .FirstOrDefaultAsync();
-
-            if (firstRecord == default || lastRecord == default)
-            {
-                sb.AppendLine("• Status: ⚠️ Dati insufficienti per certificazione");
-                return sb.ToString();
-            }
-
-            var actualMonitoringPeriod = lastRecord - firstRecord;
-            var totalCertifiedHours = actualMonitoringPeriod.TotalHours;
-
-            // 2️⃣ CALCOLO UPTIME E GAP ANALYSIS
-            var gaps = await AnalyzeDataGaps(vehicleId, firstRecord, lastRecord);
-            var uptimePercentage = CalculateUptimePercentage(gaps, actualMonitoringPeriod);
-
-            // 3️⃣ QUALITÀ DATASET
-            var qualityScore = CalculateQualityScore(totalRecords, uptimePercentage, gaps.majorGaps, actualMonitoringPeriod);
-            var qualityStars = GetQualityStars(qualityScore);
-
-            // 4️⃣ OUTPUT CERTIFICAZIONE
-            sb.AppendLine($"• Ore totali certificate: {totalCertifiedHours:F0} ore ({totalCertifiedHours / 24:F1} giorni)");
-            sb.AppendLine($"• Uptime raccolta: {uptimePercentage:F1}%");
-            sb.AppendLine($"• Gap maggiori: {gaps.majorGaps} interruzioni > 2h");
-            sb.AppendLine($"• Qualità dataset: {qualityStars} ({GetQualityLabel(qualityScore)})");
-            sb.AppendLine($"• Primo record: {firstRecord:yyyy-MM-dd HH:mm} UTC");
-            sb.AppendLine($"• Ultimo record: {lastRecord:yyyy-MM-dd HH:mm} UTC");
-            sb.AppendLine($"• Records totali: {totalRecords:N0}");
-            sb.AppendLine($"• Frequenza media: {(totalRecords / Math.Max(totalCertifiedHours, 1)):F1} campioni/ora");
-
-            return sb.ToString();
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("PolarAiReportGenerator.GenerateDataCertification",
-                "Errore generazione certificazione", ex.ToString());
-            return "📋 CERTIFICAZIONE DATI: ⚠️ Errore durante la certificazione";
-        }
-    }
-
-    /// <summary>
-    /// 🔍 ANALISI GAP: Identifica interruzioni nella raccolta dati
-    /// </summary>
-    private async Task<(int totalGaps, int majorGaps, TimeSpan totalGapTime)> AnalyzeDataGaps(int vehicleId, DateTime firstRecord, DateTime lastRecord)
-    {
-        try
-        {
-            // Recupera timestamps ordinati per identificare gap
-            var timestamps = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId)
-                .OrderBy(vd => vd.Timestamp)
-                .Select(vd => vd.Timestamp)
-                .ToListAsync();
-
-            if (timestamps.Count < 2)
-                return (0, 0, TimeSpan.Zero);
-
-            int totalGaps = 0;
-            int majorGaps = 0; // > 2 ore
-            TimeSpan totalGapTime = TimeSpan.Zero;
-
-            for (int i = 1; i < timestamps.Count; i++)
-            {
-                var gap = timestamps[i] - timestamps[i - 1];
-
-                // Considera gap se > 30 minuti (normale intervallo telemetria Tesla ~5-15 min)
-                if (gap.TotalMinutes > 30)
-                {
-                    totalGaps++;
-                    totalGapTime = totalGapTime.Add(gap);
-
-                    // Gap maggiore se > 2 ore
-                    if (gap.TotalHours > 2)
-                    {
-                        majorGaps++;
-                    }
-                }
-            }
-
-            return (totalGaps, majorGaps, totalGapTime);
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("PolarAiReportGenerator.AnalyzeDataGaps",
-                "Errore analisi gap", ex.ToString());
-            return (0, 0, TimeSpan.Zero);
-        }
-    }
-
-    /// <summary>
-    /// 📊 CALCOLO UPTIME: Percentuale di copertura temporale effettiva
-    /// </summary>
-    private double CalculateUptimePercentage((int totalGaps, int majorGaps, TimeSpan totalGapTime) gaps, TimeSpan actualMonitoringPeriod)
-    {
-        if (actualMonitoringPeriod.TotalHours <= 0)
-            return 0;
-
-        var activeTime = actualMonitoringPeriod - gaps.totalGapTime;
-        return Math.Max(0, Math.Min(100, (activeTime.TotalHours / actualMonitoringPeriod.TotalHours) * 100));
-    }
-
-    /// <summary>
-    /// ⭐ QUALITY SCORE: Calcola punteggio qualità dataset (0-100)
-    /// </summary>
-    private double CalculateQualityScore(int totalRecords, double uptimePercentage, int majorGaps, TimeSpan monitoringPeriod)
-    {
-        double score = 0;
-
-        // 40% - Uptime (più importante)
-        score += (uptimePercentage / 100) * 40;
-
-        // 30% - Densità records (target: 1+ record/ora)
-        var recordDensity = totalRecords / Math.Max(monitoringPeriod.TotalHours, 1);
-        var densityScore = Math.Min(1, recordDensity / 1.0); // Normalizzato a 1 record/ora
-        score += densityScore * 30;
-
-        // 20% - Stabilità (penalità per gap maggiori)
-        var stabilityPenalty = Math.Min(20, majorGaps * 2); // -2 punti per gap maggiore
-        score += Math.Max(0, 20 - stabilityPenalty);
-
-        // 10% - Maturità dataset (bonus per dataset maturi)
-        if (monitoringPeriod.TotalDays >= 30) score += 10;
-        else if (monitoringPeriod.TotalDays >= 7) score += 7;
-        else if (monitoringPeriod.TotalDays >= 1) score += 3;
-
-        return Math.Max(0, Math.Min(100, score));
-    }
-
-    /// <summary>
-    /// ⭐ QUALITY STARS: Converte score in stelle visuali
-    /// </summary>
-    private string GetQualityStars(double score)
-    {
-        return score switch
-        {
-            >= 90 => "⭐⭐⭐⭐⭐",
-            >= 80 => "⭐⭐⭐⭐⚪",
-            >= 70 => "⭐⭐⭐⚪⚪",
-            >= 60 => "⭐⭐⚪⚪⚪",
-            >= 50 => "⭐⚪⚪⚪⚪",
-            _ => "⚪⚪⚪⚪⚪"
-        };
-    }
-
-    /// <summary>
-    /// 🏷️ QUALITY LABEL: Etichetta qualitativa per il punteggio
-    /// </summary>
-    private string GetQualityLabel(double score)
-    {
-        return score switch
-        {
-            >= 90 => "Eccellente",
-            >= 80 => "Ottimo",
-            >= 70 => "Buono",
-            >= 60 => "Discreto",
-            >= 50 => "Sufficiente",
-            _ => "Migliorabile"
         };
     }
 }
