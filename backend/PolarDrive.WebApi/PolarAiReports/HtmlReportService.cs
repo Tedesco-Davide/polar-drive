@@ -19,6 +19,13 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     /// </summary>
     public async Task<string> GenerateHtmlReportAsync(PdfReport report, string aiReportContentInsights, HtmlReportOptions? options = null)
     {
+        if (report == null)
+            throw new ArgumentNullException(nameof(report));
+        if (string.IsNullOrWhiteSpace(aiReportContentInsights))
+            throw new ArgumentException("AI insights cannot be empty", nameof(aiReportContentInsights));
+        if (report.ClientVehicleId <= 0)
+            throw new ArgumentException("Invalid vehicle ID", nameof(report.ClientVehicleId));
+
         var source = "HtmlReportService.GenerateHtmlReport";
         options ??= new HtmlReportOptions();
 

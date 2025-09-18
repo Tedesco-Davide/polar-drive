@@ -4,7 +4,6 @@ using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Scheduler;
 using static PolarDrive.WebApi.Constants.CommonConstants;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Options;
 
 namespace PolarDrive.WebApi.Services
@@ -572,6 +571,7 @@ namespace PolarDrive.WebApi.Services
 
             var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
             // var insights = "TEST_INSIGHTS_NO_AI";
+
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"No insights for {vehicle.Vin}");
 
