@@ -205,7 +205,7 @@ public class PolarAiReportGenerator
     /// </summary>
     private async Task<string> BuildPrompt(List<string> rawJsonList, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
     {
-        var parsedPrompt = await RawDataPreparser.GenerateInsightPrompt(rawJsonList, vehicleId, _dbContext);
+        var parsedPrompt = await RawDataPreparserFullMapped.GenerateInsightPrompt(rawJsonList, vehicleId, _dbContext);
         var stats = await GenerateDataStatistics(rawJsonList, totalMonitoringPeriod, dataHours, vehicleId);
 
         return $@"

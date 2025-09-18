@@ -7,11 +7,12 @@ using PolarDrive.Data.Entities;
 namespace PolarDrive.WebApi.PolarAiReports;
 
 /// <summary>
-/// RawDataPreparser OTTIMIZZATO - Processa solo i dati ESSENZIALI (35% del dataset originale)
+/// RawDataPreparser Parziale - Processa solo i dati parziali (35% del dataset originale)
 /// Mantiene tutte le promesse commerciali: mobilità elettrificata, efficienza energetica, analytics avanzate
 /// Riduce computazione AI del 65% senza perdere valore business
+/// Ad oggi: non utilizzato
 /// </summary>
-public static class RawDataPreparser
+public static class RawDataPreparserPartial
 {
     public static async Task<string> GenerateInsightPrompt(List<string> rawJsonList, int vehicleId, PolarDriveDbContext dbContext)
     {

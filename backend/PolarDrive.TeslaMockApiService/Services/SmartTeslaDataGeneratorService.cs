@@ -107,6 +107,33 @@ public static partial class SmartTeslaDataGeneratorService
                         }
                 }
             },
+            time_of_use = new
+            {
+                response = new
+                {
+                    periods = new[]
+                    {
+                        new {
+                            fromDayOfWeek = 0,
+                            toDayOfWeek = 6,
+                            fromHour = 22,
+                            fromMinute = 0,
+                            toHour = 6,
+                            toMinute = 0
+                        }
+                    },
+                    seasons = new[]
+                    {
+                        new {
+                            fromDay = 1,
+                            fromMonth = 1,
+                            toDay = 31,
+                            toMonth = 12,
+                            tou_periods = new[] { 0 }
+                        }
+                    }
+                }
+            },
             energy_history = new
             {
                 response = new
@@ -139,7 +166,14 @@ public static partial class SmartTeslaDataGeneratorService
             },
             grid_import_export = new
             {
-                response = new { code = 204, message = "Updated" }
+                response = new
+                {
+                    code = 200,
+                    message = "Success",
+                    import_kwh = _random.Next(100, 500),
+                    export_kwh = _random.Next(200, 800),
+                    net_import_kwh = _random.Next(-300, 200)
+                }
             },
             live_status = new
             {
@@ -1336,13 +1370,46 @@ public static partial class SmartTeslaDataGeneratorService
                     synced = true,
                     config = new
                     {
-                        hostname = "test-telemetry.com",
-                        ca = "-----BEGIN CERTIFICATE-----\\ncert\\n-----END CERTIFICATE-----\\n",
+                        hostname = "fleet-telemetry.datapolar.com",
+                        ca = "-----BEGIN CERTIFICATE-----\nMIIE...MOCK_CA_CERTIFICATE_DATA...==\n-----END CERTIFICATE-----",
                         port = 4443,
                         prefer_typed = true,
+                        delivery_policy = "latest",
                         fields = new
                         {
-                            DriveRail = new { interval_seconds = 1800 },
+                            // Campi di guida e movimento
+                            VehicleSpeed = new
+                            {
+                                interval_seconds = 1,
+                                minimum_delta = 1.0
+                            },
+                            DriveRail = new
+                            {
+                                interval_seconds = 1800
+                            },
+                            Location = new
+                            {
+                                interval_seconds = 10,
+                                minimum_delta = 0.001,
+                                resend_interval_seconds = 300
+                            },
+                            GpsState = new
+                            {
+                                interval_seconds = 30
+                            },
+                            Heading = new
+                            {
+                                interval_seconds = 5,
+                                minimum_delta = 5.0
+                            },
+
+                            // Campi batteria e ricarica
+                            BatteryLevel = new
+                            {
+                                interval_seconds = 30,
+                                minimum_delta = 0.5,
+                                resend_interval_seconds = 1800
+                            },
                             BmsFullchargecomplete = new
                             {
                                 interval_seconds = 1800,
@@ -1351,13 +1418,105 @@ public static partial class SmartTeslaDataGeneratorService
                             ChargerVoltage = new
                             {
                                 interval_seconds = 1,
-                                minimum_delta = 5
+                                minimum_delta = 5.0
+                            },
+                            ChargerCurrent = new
+                            {
+                                interval_seconds = 2,
+                                minimum_delta = 1.0
+                            },
+                            ChargingState = new
+                            {
+                                interval_seconds = 10
+                            },
+
+                            // Campi clima e temperatura
+                            InsideTemp = new
+                            {
+                                interval_seconds = 60,
+                                minimum_delta = 0.5
+                            },
+                            OutsideTemp = new
+                            {
+                                interval_seconds = 120,
+                                minimum_delta = 1.0
+                            },
+                            CabinClimateState = new
+                            {
+                                interval_seconds = 30
+                            },
+
+                            // Campi pneumatici
+                            TpmsPressureFl = new
+                            {
+                                interval_seconds = 300,
+                                minimum_delta = 0.05
+                            },
+                            TpmsPressureFr = new
+                            {
+                                interval_seconds = 300,
+                                minimum_delta = 0.05
+                            },
+                            TpmsPressureRl = new
+                            {
+                                interval_seconds = 300,
+                                minimum_delta = 0.05
+                            },
+                            TpmsPressureRr = new
+                            {
+                                interval_seconds = 300,
+                                minimum_delta = 0.05
+                            },
+
+                            // Campi veicolo
+                            VehicleLocked = new
+                            {
+                                interval_seconds = 60
+                            },
+                            SentryMode = new
+                            {
+                                interval_seconds = 120
+                            },
+                            Odometer = new
+                            {
+                                interval_seconds = 600,
+                                minimum_delta = 0.1
+                            },
+
+                            // Campi energia (per sistemi energetici)
+                            SolarPower = new
+                            {
+                                interval_seconds = 30,
+                                minimum_delta = 50
+                            },
+                            GridPower = new
+                            {
+                                interval_seconds = 15,
+                                minimum_delta = 25
+                            },
+                            BatteryPower = new
+                            {
+                                interval_seconds = 5,
+                                minimum_delta = 10
+                            },
+                            LoadPower = new
+                            {
+                                interval_seconds = 30,
+                                minimum_delta = 20
                             }
                         },
-                        alert_types = new[] { "service" }
+                        alert_types = new[] {
+                            "service",
+                            "error",
+                            "warning",
+                            "connectivity",
+                            "vehicle_state_change",
+                            "charge_state",
+                            "climate_state"
+                        }
                     },
                     limit_reached = false,
-                    key_paired = false
+                    key_paired = true
                 }
             },
 
@@ -1630,7 +1789,12 @@ public static partial class SmartTeslaDataGeneratorService
 
             signed_command = new
             {
-                response = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes("mock_signed_response"))
+                response = new
+                {
+                    result = true,
+                    reason = "",
+                    queued = false
+                }
             },
 
             subscriptions = new

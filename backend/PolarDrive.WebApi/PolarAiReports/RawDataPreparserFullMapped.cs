@@ -1132,6 +1132,93 @@ public static class RawDataPreparserFullMapped
             }
         }
 
+        // Fleet Telemetry Config Get
+        if (content.TryGetProperty("fleet_telemetry_config_get", out var fleetTelemetryConfigGet) &&
+            fleetTelemetryConfigGet.TryGetProperty("response", out var ftConfigResponse))
+        {
+            var synced = GetSafeBooleanValue(ftConfigResponse, "synced");
+            var limitReached = GetSafeBooleanValue(ftConfigResponse, "limit_reached");
+            var keyPaired = GetSafeBooleanValue(ftConfigResponse, "key_paired");
+
+            sb.AppendLine($"  - CONFIGURAZIONE FLEET TELEMETRY:");
+            sb.AppendLine($"    • Sincronizzato: {(synced ? "✅ Sì" : "❌ No")}");
+            sb.AppendLine($"    • Limite raggiunto: {(limitReached ? "⚠️ Sì" : "✅ No")}");
+            sb.AppendLine($"    • Chiave accoppiata: {(keyPaired ? "🔑 Sì" : "❌ No")}");
+
+            if (ftConfigResponse.TryGetProperty("config", out var config))
+            {
+                var hostname = GetSafeStringValue(config, "hostname");
+                var port = GetSafeIntValue(config, "port");
+                var preferTyped = GetSafeBooleanValue(config, "prefer_typed");
+                var deliveryPolicy = GetSafeStringValue(config, "delivery_policy");
+
+                sb.AppendLine($"    • Server: {hostname}:{port}");
+                sb.AppendLine($"    • Politica consegna: {deliveryPolicy}");
+                sb.AppendLine($"    • Dati tipizzati: {(preferTyped ? "Sì" : "No")}");
+
+                if (config.TryGetProperty("fields", out var fields))
+                {
+                    var fieldCount = fields.EnumerateObject().Count();
+                    sb.AppendLine($"    • Campi configurati: {fieldCount}");
+
+                    // Mostra alcuni campi principali
+                    var mainFields = new[] { "VehicleSpeed", "BatteryLevel", "Location", "ChargingState" };
+                    foreach (var fieldName in mainFields)
+                    {
+                        if (fields.TryGetProperty(fieldName, out var field))
+                        {
+                            var intervalSeconds = GetSafeIntValue(field, "interval_seconds");
+                            sb.AppendLine($"      • {fieldName}: ogni {intervalSeconds}s");
+                        }
+                    }
+                }
+
+                if (config.TryGetProperty("alert_types", out var alertTypes) && alertTypes.ValueKind == JsonValueKind.Array)
+                {
+                    var alertTypesStrings = string.Join(", ", alertTypes.EnumerateArray().Select(a => a.GetString()));
+                    sb.AppendLine($"    • Tipi alert: {alertTypesStrings}");
+                }
+            }
+        }
+
+        // Fleet Telemetry Errors 
+        if (content.TryGetProperty("fleet_telemetry_errors", out var fleetTelemetryErrors) &&
+            fleetTelemetryErrors.TryGetProperty("response", out var ftErrorsResponse))
+        {
+            if (ftErrorsResponse.TryGetProperty("fleet_telemetry_errors", out var errors) &&
+                errors.ValueKind == JsonValueKind.Array)
+            {
+                var errorCount = errors.GetArrayLength();
+                sb.AppendLine($"  - ERRORI FLEET TELEMETRY ({errorCount} errori):");
+
+                foreach (var error in errors.EnumerateArray())
+                {
+                    var name = GetSafeStringValue(error, "name");
+                    var errorMsg = GetSafeStringValue(error, "error");
+                    var vin = GetSafeStringValue(error, "vin");
+
+                    sb.AppendLine($"    • Client: {name}");
+                    sb.AppendLine($"      VIN: {vin}");
+                    sb.AppendLine($"      Errore: {errorMsg}");
+                }
+            }
+        }
+
+        // Signed Command
+        if (content.TryGetProperty("signed_command", out var signedCommand) &&
+            signedCommand.TryGetProperty("response", out var signedResponse))
+        {
+            var result = GetSafeBooleanValue(signedResponse, "result");
+            var reason = GetSafeStringValue(signedResponse, "reason");
+            var queued = GetSafeBooleanValue(signedResponse, "queued");
+
+            sb.AppendLine($"  - COMANDO FIRMATO:");
+            sb.AppendLine($"    • Risultato: {(result ? "✅ Successo" : "❌ Errore")}");
+            if (!string.IsNullOrEmpty(reason) && reason != "N/A")
+                sb.AppendLine($"    • Motivo: {reason}");
+            sb.AppendLine($"    • In coda: {(queued ? "Sì" : "No")}");
+        }
+
         // Share Invites
         if (content.TryGetProperty("share_invites", out var shareInvites) &&
             shareInvites.TryGetProperty("response", out var invitesResponse))
@@ -1568,33 +1655,85 @@ public static class RawDataPreparserFullMapped
             }
         }
 
-        // Fleet Telemetry Errors con categorizzazione
+        // Fleet Telemetry Errors con categorizzazione AVANZATA
         if (content.TryGetProperty("fleet_telemetry_errors", out var errors) &&
             errors.ValueKind == JsonValueKind.Array)
         {
             var errorCount = errors.GetArrayLength();
-            sb.AppendLine($"  - DETTAGLI ERRORI TELEMETRIA ({errorCount} errori):");
 
-            foreach (var error in errors.EnumerateArray())
+            if (errorCount == 0)
             {
-                var clientName = GetSafeStringValue(error, "name");
-                var errorMessage = GetSafeStringValue(error, "error");
-                var vin = GetSafeStringValue(error, "vin");
+                sb.AppendLine("  ✅ TELEMETRIA - Sistema funziona correttamente");
+            }
+            else
+            {
+                sb.AppendLine($"  🔴 ERRORI TELEMETRIA RILEVATI: {errorCount} problemi attivi");
 
-                // Categorizzazione dell'errore
-                var errorCategory = errorMessage!.ToLower() switch
+                // Raggruppa errori per tipo
+                var errorsByType = new Dictionary<string, List<(string name, string error, string vin)>>();
+                var errorsByVin = new Dictionary<string, int>();
+
+                foreach (var error in errors.EnumerateArray())
                 {
-                    var msg when msg.Contains("gps") => "🗺️ Errore GPS",
-                    var msg when msg.Contains("connection") => "📡 Errore connessione",
-                    var msg when msg.Contains("timeout") => "⏱️ Timeout",
-                    var msg when msg.Contains("parse") => "🔧 Errore parsing dati",
-                    _ => "❓ Errore generico"
-                };
+                    var clientName = GetSafeStringValue(error, "name");
+                    var errorMessage = GetSafeStringValue(error, "error");
+                    var vin = GetSafeStringValue(error, "vin");
 
-                sb.AppendLine($"    • Client: {clientName} - {errorCategory}");
-                sb.AppendLine($"      VIN: {vin}");
-                sb.AppendLine($"      Dettaglio: {errorMessage}");
-                sb.AppendLine();
+                    // Categorizza l'errore
+                    var errorType = CategorizeFleetTelemetryError(errorMessage!);
+                    if (!errorsByType.ContainsKey(errorType))
+                        errorsByType[errorType] = new List<(string, string, string)>();
+
+                    errorsByType[errorType].Add((clientName!, errorMessage!, vin!));
+
+                    // Conta errori per VIN
+                    if (!errorsByVin.ContainsKey(vin!))
+                        errorsByVin[vin!] = 0;
+                    errorsByVin[vin!]++;
+                }
+
+                // Mostra errori raggruppati per categoria
+                foreach (var category in errorsByType.Keys.OrderBy(k => k))
+                {
+                    var categoryErrors = errorsByType[category];
+                    var severity = GetErrorSeverity(category);
+
+                    sb.AppendLine($"    {category.ToUpper()} {severity} ({categoryErrors.Count} errori):");
+
+                    foreach (var (name, errorMsg, vin) in categoryErrors)
+                    {
+                        sb.AppendLine($"      • Partner: {name}");
+                        sb.AppendLine($"        VIN: {vin}");
+                        sb.AppendLine($"        Errore: {errorMsg}");
+
+                        // Suggerimenti per la risoluzione
+                        var solution = GetErrorSolution(errorMsg);
+                        if (!string.IsNullOrEmpty(solution))
+                        {
+                            sb.AppendLine($"        💡 Soluzione: {solution}");
+                        }
+                    }
+                    sb.AppendLine();
+                }
+
+                // Analisi per VIN
+                if (errorsByVin.Count > 1)
+                {
+                    sb.AppendLine("    ANALISI PER VEICOLO:");
+                    foreach (var (vin, count) in errorsByVin.OrderByDescending(kvp => kvp.Value))
+                    {
+                        var severity = count switch
+                        {
+                            1 => "🟡 Problema isolato",
+                            <= 3 => "🟠 Problemi multipli",
+                            _ => "🔴 Problemi critici"
+                        };
+                        sb.AppendLine($"      • {vin}: {count} errori - {severity}");
+                    }
+                }
+
+                // Raccomandazioni generali
+                GenerateFleetTelemetryRecommendations(sb, errorsByType, errorCount);
             }
         }
 
@@ -1831,5 +1970,84 @@ public static class RawDataPreparserFullMapped
                      && e.ReceivedAt >= fourHoursAgo)
             .OrderByDescending(e => e.ReceivedAt)
             .FirstOrDefaultAsync();
+    }
+
+    private static string CategorizeFleetTelemetryError(string errorMessage)
+    {
+        var lowerError = errorMessage.ToLower();
+        return lowerError switch
+        {
+            var msg when msg.Contains("connection") || msg.Contains("connect") => "Connessione",
+            var msg when msg.Contains("timeout") => "Timeout",
+            var msg when msg.Contains("certificate") || msg.Contains("ssl") || msg.Contains("tls") => "Certificati",
+            var msg when msg.Contains("authentication") || msg.Contains("auth") => "Autenticazione",
+            var msg when msg.Contains("parse") || msg.Contains("format") => "Formato Dati",
+            var msg when msg.Contains("config") => "Configurazione",
+            var msg when msg.Contains("rate") || msg.Contains("limit") => "Rate Limiting",
+            var msg when msg.Contains("key") => "Chiavi",
+            _ => "Generico"
+        };
+    }
+
+    private static string GetErrorSeverity(string category)
+    {
+        return category switch
+        {
+            "Connessione" => "🔴",
+            "Certificati" => "🔴",
+            "Autenticazione" => "🔴",
+            "Timeout" => "🟠",
+            "Rate Limiting" => "🟡",
+            "Configurazione" => "🟠",
+            "Formato Dati" => "🟡",
+            "Chiavi" => "🔴",
+            _ => "🔵"
+        };
+    }
+
+    private static string GetErrorSolution(string errorMessage)
+    {
+        var lowerError = errorMessage.ToLower();
+        return lowerError switch
+        {
+            var msg when msg.Contains("connection refused") => "Verificare connettività di rete e stato server",
+            var msg when msg.Contains("timeout") => "Aumentare timeout o verificare latenza rete",
+            var msg when msg.Contains("certificate") => "Rinnovare certificati SSL/TLS",
+            var msg when msg.Contains("invalid key") => "Verificare e rigenerare chiavi API",
+            var msg when msg.Contains("rate limit") => "Implementare backoff exponential",
+            var msg when msg.Contains("parse error") => "Verificare formato dati inviati",
+            var msg when msg.Contains("config") => "Controllare configurazione telemetria",
+            _ => ""
+        };
+    }
+
+    private static void GenerateFleetTelemetryRecommendations(StringBuilder sb, Dictionary<string, List<(string, string, string)>> errorsByType, int totalErrors)
+    {
+        sb.AppendLine("    RACCOMANDAZIONI:");
+
+        if (errorsByType.ContainsKey("Connessione"))
+        {
+            sb.AppendLine("      🔧 Verificare connettività di rete dei veicoli");
+            sb.AppendLine("      🔧 Controllare stato server telemetria");
+        }
+
+        if (errorsByType.ContainsKey("Certificati"))
+        {
+            sb.AppendLine("      🔧 Rinnovare certificati SSL scaduti");
+            sb.AppendLine("      🔧 Verificare catena di certificazione");
+        }
+
+        if (errorsByType.ContainsKey("Rate Limiting"))
+        {
+            sb.AppendLine("      🔧 Implementare strategia di retry con backoff");
+            sb.AppendLine("      🔧 Ridurre frequenza invio dati");
+        }
+
+        if (totalErrors > 10)
+        {
+            sb.AppendLine("      ⚠️ Alto numero di errori - revisione configurazione necessaria");
+        }
+
+        sb.AppendLine("      📊 Monitorare trend errori per identificare pattern sistematici");
     }
 }
