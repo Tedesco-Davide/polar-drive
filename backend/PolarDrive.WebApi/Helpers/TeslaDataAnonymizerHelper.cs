@@ -142,14 +142,109 @@ public static class TeslaDataAnonymizerHelper
         if (string.IsNullOrEmpty(address))
             return address;
 
-        // Estrae solo città/regione se riconoscibile, altrimenti "Unknown Location"
-        if (address.Contains("Milano") || address.Contains("Milan"))
-            return "Milano, IT";
+        // Top 50 città italiane con nome italiano e inglese
         if (address.Contains("Roma") || address.Contains("Rome"))
             return "Roma, IT";
+        if (address.Contains("Milano") || address.Contains("Milan"))
+            return "Milano, IT";
+        if (address.Contains("Napoli") || address.Contains("Naples"))
+            return "Napoli, IT";
         if (address.Contains("Torino") || address.Contains("Turin"))
             return "Torino, IT";
-        
+        if (address.Contains("Palermo") || address.Contains("Palermo"))
+            return "Palermo, IT";
+        if (address.Contains("Genova") || address.Contains("Genoa"))
+            return "Genova, IT";
+        if (address.Contains("Bologna") || address.Contains("Bologna"))
+            return "Bologna, IT";
+        if (address.Contains("Firenze") || address.Contains("Florence"))
+            return "Firenze, IT";
+        if (address.Contains("Bari") || address.Contains("Bari"))
+            return "Bari, IT";
+        if (address.Contains("Catania") || address.Contains("Catania"))
+            return "Catania, IT";
+        if (address.Contains("Venezia") || address.Contains("Venice"))
+            return "Venezia, IT";
+        if (address.Contains("Verona") || address.Contains("Verona"))
+            return "Verona, IT";
+        if (address.Contains("Messina") || address.Contains("Messina"))
+            return "Messina, IT";
+        if (address.Contains("Padova") || address.Contains("Padua"))
+            return "Padova, IT";
+        if (address.Contains("Trieste") || address.Contains("Trieste"))
+            return "Trieste, IT";
+        if (address.Contains("Taranto") || address.Contains("Taranto"))
+            return "Taranto, IT";
+        if (address.Contains("Brescia") || address.Contains("Brescia"))
+            return "Brescia, IT";
+        if (address.Contains("Parma") || address.Contains("Parma"))
+            return "Parma, IT";
+        if (address.Contains("Prato") || address.Contains("Prato"))
+            return "Prato, IT";
+        if (address.Contains("Modena") || address.Contains("Modena"))
+            return "Modena, IT";
+        if (address.Contains("Reggio Calabria") || address.Contains("Reggio di Calabria"))
+            return "Reggio Calabria, IT";
+        if (address.Contains("Reggio Emilia") || address.Contains("Reggio nell'Emilia"))
+            return "Reggio Emilia, IT";
+        if (address.Contains("Perugia") || address.Contains("Perugia"))
+            return "Perugia, IT";
+        if (address.Contains("Ravenna") || address.Contains("Ravenna"))
+            return "Ravenna, IT";
+        if (address.Contains("Livorno") || address.Contains("Leghorn"))
+            return "Livorno, IT";
+        if (address.Contains("Cagliari") || address.Contains("Cagliari"))
+            return "Cagliari, IT";
+        if (address.Contains("Foggia") || address.Contains("Foggia"))
+            return "Foggia, IT";
+        if (address.Contains("Rimini") || address.Contains("Rimini"))
+            return "Rimini, IT";
+        if (address.Contains("Salerno") || address.Contains("Salerno"))
+            return "Salerno, IT";
+        if (address.Contains("Ferrara") || address.Contains("Ferrara"))
+            return "Ferrara, IT";
+        if (address.Contains("Sassari") || address.Contains("Sassari"))
+            return "Sassari, IT";
+        if (address.Contains("Latina") || address.Contains("Latina"))
+            return "Latina, IT";
+        if (address.Contains("Giugliano") || address.Contains("Giugliano in Campania"))
+            return "Giugliano in Campania, IT";
+        if (address.Contains("Monza") || address.Contains("Monza"))
+            return "Monza, IT";
+        if (address.Contains("Siracusa") || address.Contains("Syracuse"))
+            return "Siracusa, IT";
+        if (address.Contains("Pescara") || address.Contains("Pescara"))
+            return "Pescara, IT";
+        if (address.Contains("Bergamo") || address.Contains("Bergamo"))
+            return "Bergamo, IT";
+        if (address.Contains("Forlì") || address.Contains("Forli"))
+            return "Forlì, IT";
+        if (address.Contains("Trento") || address.Contains("Trento"))
+            return "Trento, IT";
+        if (address.Contains("Vicenza") || address.Contains("Vicenza"))
+            return "Vicenza, IT";
+        if (address.Contains("Terni") || address.Contains("Terni"))
+            return "Terni, IT";
+        if (address.Contains("Bolzano") || address.Contains("Bozen"))
+            return "Bolzano, IT";
+        if (address.Contains("Novara") || address.Contains("Novara"))
+            return "Novara, IT";
+        if (address.Contains("Piacenza") || address.Contains("Piacenza"))
+            return "Piacenza, IT";
+        if (address.Contains("Ancona") || address.Contains("Ancona"))
+            return "Ancona, IT";
+        if (address.Contains("Andria") || address.Contains("Andria"))
+            return "Andria, IT";
+        if (address.Contains("Arezzo") || address.Contains("Arezzo"))
+            return "Arezzo, IT";
+        if (address.Contains("Udine") || address.Contains("Udine"))
+            return "Udine, IT";
+        if (address.Contains("Cesena") || address.Contains("Cesena"))
+            return "Cesena, IT";
+        if (address.Contains("Lecce") || address.Contains("Lecce"))
+            return "Lecce, IT";
+
+        // Fallback per località non riconosciute
         return "Location, IT";
     }
 
