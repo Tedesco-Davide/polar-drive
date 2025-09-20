@@ -496,7 +496,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
                            vd.Timestamp <= report.ReportPeriodEnd)
                 .OrderByDescending(vd => vd.Timestamp)
                 .Take(3)
-                .Select(vd => new { vd.Timestamp, vd.RawJson })
+                .Select(vd => new { vd.Timestamp, vd.RawJsonAnonymized })
                 .ToListAsync();
 
             var sb = new StringBuilder();
@@ -506,7 +506,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             {
                 sb.AppendLine($"<div class='raw-data-entry'>");
                 sb.AppendLine($"<div class='raw-data-timestamp'>[{data.Timestamp:yyyy-MM-dd HH:mm:ss}]</div>");
-                sb.AppendLine($"<div class='raw-data-size'>Dimensione: {data.RawJson?.Length ?? 0} caratteri</div>");
+                sb.AppendLine($"<div class='raw-data-size'>Dimensione: {data.RawJsonAnonymized?.Length ?? 0} caratteri</div>");
                 sb.AppendLine("</div>");
             }
 

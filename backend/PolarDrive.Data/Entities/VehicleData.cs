@@ -13,7 +13,7 @@ public class VehicleData
 
     public DateTime Timestamp { get; set; }
 
-    public string RawJson { get; set; } = string.Empty;
+    public string RawJsonAnonymized { get; set; } = string.Empty;
 
     public ClientVehicle? ClientVehicle { get; set; }
 }

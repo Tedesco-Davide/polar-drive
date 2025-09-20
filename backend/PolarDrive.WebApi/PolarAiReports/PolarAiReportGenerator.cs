@@ -128,7 +128,7 @@ public class PolarAiReportGenerator
             var data = await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
                 .OrderBy(vd => vd.Timestamp)
-                .Select(vd => vd.RawJson)
+                .Select(vd => vd.RawJsonAnonymized)
                 .ToListAsync();
 
             await _logger.Info("PolarAiReportGenerator.GetHistoricalData",

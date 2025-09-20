@@ -465,7 +465,7 @@ public class TeslaApiService
             {
                 VehicleId = vehicle.Id,
                 Timestamp = DateTime.UtcNow,
-                RawJson = statusJson
+                RawJsonAnonymized = statusJson
             };
             
             _db.VehiclesData.Add(record);
@@ -561,7 +561,6 @@ public class TeslaApiService
 
     private async Task SaveVehicleDataAsync(string vin, JsonElement data)
     {
-        // ✅ SALVA DIRETTAMENTE NEL DATABASE (più efficiente che simulare chiamata HTTP)
         const string source = "TeslaApiService.SaveVehicleData";
 
         try
@@ -573,11 +572,15 @@ public class TeslaApiService
                 return;
             }
 
+            // Anonimizza i dati Tesla prima del salvataggio
+            var rawJsonText = data.GetRawText();
+            var anonymizedJson = TeslaDataAnonymizerHelper.AnonymizeVehicleData(rawJsonText);
+
             var vehicleDataRecord = new VehicleData
             {
                 VehicleId = vehicle.Id,
                 Timestamp = DateTime.UtcNow,
-                RawJson = data.GetRawText()
+                RawJsonAnonymized = anonymizedJson // Dati anonimizzati
             };
 
             _db.VehiclesData.Add(vehicleDataRecord);
@@ -586,12 +589,12 @@ public class TeslaApiService
             await _db.SaveChangesAsync();
 
             await _logger.Debug(source, $"Saved vehicle data for VIN {vin}",
-                $"Record ID: {vehicleDataRecord.Id}, Data size: {vehicleDataRecord.RawJson.Length} chars");
+                $"Record ID: {vehicleDataRecord.Id}, Data size: {vehicleDataRecord.RawJsonAnonymized.Length} chars");
         }
         catch (Exception ex)
         {
             await _logger.Error(source, $"Error saving vehicle data for VIN {vin}", ex.ToString());
-            throw; // Re-throw per far sapere al chiamante che il salvataggio è fallito
+            throw;
         }
     }
 

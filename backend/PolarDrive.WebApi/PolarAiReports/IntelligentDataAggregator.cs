@@ -46,30 +46,30 @@ public class IntelligentDataAggregator
         _processingTimes = [];
     }
 
-    public async Task<string> GenerateAggregatedInsights(List<string> rawJsonList, int vehicleId)
+    public async Task<string> GenerateAggregatedInsights(List<string> rawJsonAnonymizedList, int vehicleId)
     {
         var source = "IntelligentDataAggregator.GenerateAggregatedInsights";
         _totalStopwatch.Start();
 
-        await _logger.Info(source, $"Processando {rawJsonList.Count} record per aggregazione COMPLETA", $"VehicleId: {vehicleId}");
-        await LogProcessingStep("Initialize", $"Inizializzato processamento per {rawJsonList.Count} JSON");
+        await _logger.Info(source, $"Processando {rawJsonAnonymizedList.Count} record per aggregazione completa", $"VehicleId: {vehicleId}");
+        await LogProcessingStep("Initialize", $"Inizializzato processamento per {rawJsonAnonymizedList.Count} JSON");
 
         var aggregation = new CompleteTeslaDataAggregation();
         var processedRecords = 0;
 
         // Processa ogni JSON e aggrega tutti i dati
-        foreach (var rawJson in rawJsonList)
+        foreach (var rawJsonAnonymous  in rawJsonAnonymizedList )
         {
             var recordStopwatch = Stopwatch.StartNew();
             try
             {
-                if (string.IsNullOrWhiteSpace(rawJson))
+                if (string.IsNullOrWhiteSpace(rawJsonAnonymous))
                 {
                     await LogProcessingStep("SkipEmpty", "JSON vuoto saltato");
                     continue;
                 }
 
-                var jsonHash = ComputeHash(rawJson);
+                var jsonHash = ComputeHash(rawJsonAnonymous);
                 if (_processedRecords.Contains(jsonHash))
                 {
                     await LogProcessingStep("SkipDuplicate", $"JSON duplicato saltato (hash: {jsonHash[..8]})");
@@ -77,7 +77,7 @@ public class IntelligentDataAggregator
                 }
                 _processedRecords.Add(jsonHash);
 
-                using var doc = JsonDocument.Parse(rawJson);
+                using var doc = JsonDocument.Parse(rawJsonAnonymous);
                 var root = doc.RootElement;
 
                 if (root.TryGetProperty("response", out var response) &&
@@ -145,7 +145,7 @@ public class IntelligentDataAggregator
                 if (processedRecords % 100 == 0)
                 {
                     await LogProcessingStep("Progress",
-                        $"Processati {processedRecords}/{rawJsonList.Count} JSON " +
+                        $"Processati {processedRecords}/{rawJsonAnonymizedList.Count} JSON " +
                         $"(Velocità media: {(processedRecords / _totalStopwatch.Elapsed.TotalSeconds):F1} JSON/sec)");
                 }
             }
@@ -181,7 +181,7 @@ public class IntelligentDataAggregator
         var result = await GenerateCompleteOptimizedPromptDataAsync(aggregation, processedRecords, vehicleId);
 
         // Log riduzione token
-        var totalChars = rawJsonList.Sum(j => j?.Length ?? 0);
+        var totalChars = rawJsonAnonymizedList.Sum(j => j?.Length ?? 0);
         var saved = Math.Max(0, totalChars - (result?.Length ?? 0));
         var reduction = totalChars > 0 ? (saved * 100.0 / totalChars) : 0.0;
 

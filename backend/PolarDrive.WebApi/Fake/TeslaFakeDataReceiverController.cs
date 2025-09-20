@@ -92,10 +92,11 @@ public class TeslaFakeDataReceiverController : ControllerBase
                 return BadRequest($"Invalid vehicle data: {validationResult.ErrorMessage}");
             }
 
-            // Log e salva il JSON grezzo
+            // Anonimizza i dati prima del salvataggio
             var rawJsonText = data.GetRawText();
+            var anonymizedJson = TeslaDataAnonymizerHelper.AnonymizeVehicleData(rawJsonText);
             await _logger.Info(source,
-                $"Received Tesla mock data for VIN: {vin}",
+                $"Received Tesla mock anonymized data for VIN: {vin}",
                 $"Data size: {rawJsonText.Length} chars, Company: {vehicle.ClientCompany?.Name}");
 
             // Controlla limite dati per veicolo (evita spam)
@@ -119,7 +120,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
             {
                 VehicleId = vehicle.Id,
                 Timestamp = DateTime.UtcNow,
-                RawJson = rawJsonText
+                RawJsonAnonymized = anonymizedJson  // ✅ Dati anonimizzati
             };
 
             _db.VehiclesData.Add(vehicleDataRecord);
@@ -289,8 +290,8 @@ public class TeslaFakeDataReceiverController : ControllerBase
                     TotalRecords = g.Count(),
                     FirstRecord = (DateTime?)g.Min(vd => vd.Timestamp),
                     LastRecord = (DateTime?)g.Max(vd => vd.Timestamp),
-                    TotalDataSize = g.Sum(vd => vd.RawJson.Length),
-                    AvgDataSize = g.Average(vd => vd.RawJson.Length)
+                    TotalDataSize = g.Sum(vd => vd.RawJsonAnonymized.Length),
+                    AvgDataSize = g.Average(vd => vd.RawJsonAnonymized.Length)
                 })
                 .FirstOrDefaultAsync();
 
