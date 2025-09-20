@@ -54,7 +54,26 @@ public class PolarAiReportGenerator
             $"Da {historicalData.Sum(d => d.Length)} char → {aggregatedData.Length} char");
 
         // 🧠 GENERAZIONE INSIGHTS AI con dati ottimizzati
-        return await GenerateSummary(aggregatedData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
+        var aiInsights = await GenerateSummary(aggregatedData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
+
+        // 🏆 CERTIFICAZIONE DATAPOLAR - Aggiunta DOPO gli insights AI
+        var certification = new DataPolarCertification(_dbContext);
+        var certificationReport = await certification.GenerateCompleteCertificationReport(vehicleId, monitoringPeriod, dataHours);
+
+        // 🔗 COMBINAZIONE FINALE: AI Insights + Certificazione DataPolar
+        var finalReport = new StringBuilder();
+        finalReport.AppendLine(aiInsights);
+        finalReport.AppendLine();
+        finalReport.AppendLine("---");
+        finalReport.AppendLine();
+        finalReport.AppendLine("# CERTIFICAZIONE DATAPOLAR");
+        finalReport.AppendLine();
+        finalReport.AppendLine(certificationReport);
+
+        await _logger.Info(source, "Report finale generato",
+            $"AI Insights: {aiInsights.Length} char, Certificazione: {certificationReport.Length} char");
+
+        return finalReport.ToString();
     }
 
     /// <summary>
