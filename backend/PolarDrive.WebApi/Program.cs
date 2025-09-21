@@ -129,19 +129,17 @@ var storageBasePath = "storage";
 var reportsPath = Path.Combine(storageBasePath, "reports");
 var fileManagerZipsPath = Path.Combine(storageBasePath, "filemanager-zips");
 var outageZipsPath = Path.Combine(storageBasePath, "outages-zips");
-var consentZipsPath = Path.Combine(storageBasePath, "consents-zips");
 
 // Crea le directory se non esistono
 Directory.CreateDirectory(storageBasePath);
 Directory.CreateDirectory(reportsPath);
 Directory.CreateDirectory(fileManagerZipsPath);
 Directory.CreateDirectory(outageZipsPath);
-Directory.CreateDirectory(consentZipsPath);
+
 Console.WriteLine($"📁 Storage directories created:");
 Console.WriteLine($"   - Reports: {Path.GetFullPath(reportsPath)}");
 Console.WriteLine($"   - FileManager ZIPs: {Path.GetFullPath(fileManagerZipsPath)}");
 Console.WriteLine($"   - Outage ZIPs: {Path.GetFullPath(outageZipsPath)}");
-Console.WriteLine($"   - Consent ZIPs: {Path.GetFullPath(consentZipsPath)}");
 
 // Use Swagger only in development
 if (app.Environment.IsDevelopment())
@@ -247,7 +245,7 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("   - storage/reports/ → PDF reports");
             Console.WriteLine("   - storage/filemanager-zips/ → File manager downloads");
             Console.WriteLine("   - storage/outages-zips/ → Outage documentation");
-            Console.WriteLine("   - storage/consents-zips/ → Client consent files");
+            Console.WriteLine("   - storage/companies/company-{id}/consents-zip/ → Client consent files per company");
             Console.WriteLine("===============================");
         }
         else

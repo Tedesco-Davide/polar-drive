@@ -96,28 +96,31 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
 
             using var zip = new ZipArchive(memoryStream, ZipArchiveMode.Read, leaveOpen: true);
 
-            var companyBasePath = Path.Combine(_env.WebRootPath, "companies", $"company-{company.Id}");
+            // Usa storage invece di wwwroot
+            var storageBasePath = Path.Combine(Directory.GetCurrentDirectory(), "storage");
+            var companiesBasePath = Path.Combine(storageBasePath, "companies"); 
+            var companyBasePath = Path.Combine(companiesBasePath, $"company-{company.Id}");
             Directory.CreateDirectory(companyBasePath);
+
             var consentsDir = Path.Combine(companyBasePath, "consents-zip");
-            var historyDir = Path.Combine(companyBasePath, "history-pdf");
-            var reportsDir = Path.Combine(companyBasePath, "reports-pdf");
             Directory.CreateDirectory(consentsDir);
-            Directory.CreateDirectory(historyDir);
-            Directory.CreateDirectory(reportsDir);
 
             var zipFilename = Path.GetFileNameWithoutExtension(request.ConsentZip.FileName);
             var uniqueName = $"{zipFilename}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
             var zipPath = Path.Combine(consentsDir, uniqueName);
+
             memoryStream.Position = 0;
             await using (var fs = new FileStream(zipPath, FileMode.Create))
             {
                 await memoryStream.CopyToAsync(fs);
             }
 
+            // Calcola l'hash del file ZIP
             string hash;
-            using (var ms = new MemoryStream())
+            memoryStream.Position = 0; // Reset position
+            using (var sha = SHA256.Create())
             {
-                var hashBytes = SHA256.HashData(ms.ToArray());
+                var hashBytes = await sha.ComputeHashAsync(memoryStream);
                 hash = Convert.ToHexStringLower(hashBytes);
             }
 

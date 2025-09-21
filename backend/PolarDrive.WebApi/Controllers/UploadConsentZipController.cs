@@ -16,16 +16,10 @@ public class UploadConsentZipController : ControllerBase
     private readonly PolarDriveDbContext _db;
     private readonly PolarDriveLogger _logger;
 
-    //  usa storage/consents-zips come il ClientConsentsController
-    private readonly string _consentZipStoragePath;
-
     public UploadConsentZipController(PolarDriveDbContext db)
     {
         _db = db;
         _logger = new PolarDriveLogger(db);
-
-        //  usa storage/consents-zips invece di wwwroot
-        _consentZipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "consents-zips");
     }
 
     /// <summary>
@@ -70,8 +64,9 @@ public class UploadConsentZipController : ControllerBase
             return BadRequest("SERVER ERROR → BAD REQUEST: Consent Type not valid!");
         }
 
-        // ✅ Usa il metodo helper aggiornato
-        var (zipFilePath, hash) = await ProcessZipFileAsync(zipFile);
+        // ✅ Ora passa il clientCompanyId al metodo ProcessZipFileAsync
+        var (zipFilePath, hash) = await ProcessZipFileAsync(zipFile, clientCompanyId);
+
         if (zipFilePath == null)
         {
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
@@ -137,10 +132,7 @@ public class UploadConsentZipController : ControllerBase
     /// </summary>
     [HttpPost("{consentId}/upload-zip")]
     [Consumes("multipart/form-data")]
-    public async Task<IActionResult> UploadZipToExistingConsent(
-        int consentId,
-        IFormFile zipFile,
-        [FromQuery] bool replaceExisting = false)
+    public async Task<IActionResult> UploadZipToExistingConsent(int consentId, IFormFile zipFile, [FromQuery] bool replaceExisting = false)
     {
         var consent = await _db.ClientConsents.FirstOrDefaultAsync(c => c.Id == consentId);
         if (consent == null)
@@ -177,8 +169,8 @@ public class UploadConsentZipController : ControllerBase
             }
         }
 
-        // Processa il nuovo file
-        var (zipFilePath, hash) = await ProcessZipFileAsync(zipFile, $"consent_{consentId}_");
+        // ✅ CORREZIONE: Passa prima il companyId, poi il filePrefix
+        var (zipFilePath, hash) = await ProcessZipFileAsync(zipFile, consent.ClientCompanyId, $"consent_{consentId}");
         if (zipFilePath == null)
         {
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
@@ -272,9 +264,9 @@ public class UploadConsentZipController : ControllerBase
     #region Private Methods
 
     /// <summary>
-    ///  ProcessZipFileAsync ora accetta qualsiasi contenuto (allineato agli outages)
+    /// ProcessZipFileAsync ora accetta qualsiasi contenuto (allineato agli outages)
     /// </summary>
-    private async Task<(string? zipFilePath, string hash)> ProcessZipFileAsync(IFormFile zipFile, string? filePrefix = null)
+    private async Task<(string? zipFilePath, string hash)> ProcessZipFileAsync(IFormFile zipFile, int companyId, string? filePrefix = null)
     {
         // ✅ Controlla che sia un file .zip
         if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
@@ -320,19 +312,16 @@ public class UploadConsentZipController : ControllerBase
 
         zipStream.Position = 0;
 
-        // ✅ Crea la directory se non esiste
-        if (!Directory.Exists(_consentZipStoragePath))
-        {
-            Directory.CreateDirectory(_consentZipStoragePath);
-        }
+        // ✅ Usa il percorso specifico della company
+        var companyConsentsPath = GetCompanyConsentsPath(companyId);
 
         // ✅ Genera il nome del file
         var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
         var fileName = string.IsNullOrWhiteSpace(filePrefix)
             ? $"consent_{timestamp}.zip"
-            : $"{filePrefix}{timestamp}.zip";
+            : $"{filePrefix}_{timestamp}.zip"; // Aggiunto underscore per coerenza
 
-        var finalPath = Path.Combine(_consentZipStoragePath, fileName);
+        var finalPath = Path.Combine(companyConsentsPath, fileName);
 
         // ✅ Salva il file
         await using var fileStream = new FileStream(finalPath, FileMode.Create);
@@ -341,6 +330,21 @@ public class UploadConsentZipController : ControllerBase
         await _logger.Info("ProcessZipFileAsync", "ZIP file saved successfully.", finalPath);
 
         return (finalPath, hash);
+    }
+
+    /// <summary>
+    /// Helper method per ottenere il percorso della company
+    /// </summary>
+    private string GetCompanyConsentsPath(int companyId)
+    {
+        var storageBasePath = Path.Combine(Directory.GetCurrentDirectory(), "storage");
+        var companiesBasePath = Path.Combine(storageBasePath, "companies");
+        var companyConsentsPath = Path.Combine(companiesBasePath, $"company-{companyId}", "consents-zip");
+        
+        // Crea la directory se non esiste
+        Directory.CreateDirectory(companyConsentsPath);
+        
+        return companyConsentsPath;
     }
 
     #endregion
