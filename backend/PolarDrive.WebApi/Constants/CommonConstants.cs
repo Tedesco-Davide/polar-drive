@@ -3,6 +3,7 @@ namespace PolarDrive.WebApi.Constants
 {
     public static class CommonConstants
     {
+        public const int SMS_ADPATIVE_HOURS_THRESHOLD = 4;
         public const int DAILY_HOURS_THRESHOLD = 24;
         public const int WEEKLY_HOURS_THRESHOLD = 168;
         public const int MONTHLY_HOURS_THRESHOLD = 720;

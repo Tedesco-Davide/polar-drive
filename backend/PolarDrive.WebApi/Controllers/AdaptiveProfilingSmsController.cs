@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -19,7 +20,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
     }
 
     /// <summary>
-    /// Riceve SMS con comando ADAPTIVE e attiva modalità Adaptive Profiling per 4 ore
+    /// Riceve SMS con comando ADAPTIVE e attiva modalità Adaptive Profiling per n. ore (check parametro in CommonConstants)
     /// </summary>
     [HttpPost("receive-sms")]
     public async Task<ActionResult> ReceiveSms([FromBody] ReceiveSmsDTO dto)
@@ -100,7 +101,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
                     : "Adaptive Profiling deactivated",
                 sessionStartedAt = DateTime.UtcNow,
                 sessionEndTime = parsedCommand == "ADAPTIVE_PROFILING_ON"
-                    ? DateTime.UtcNow.AddHours(4)
+                    ? DateTime.UtcNow.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD)
                     : (DateTime?)null
             });
         }
