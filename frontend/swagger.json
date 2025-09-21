@@ -5,9 +5,9 @@
     "version": "v1"
   },
   "paths": {
-    "/api/AdaptiveProfilingSms/receive-sms": {
+    "/api/SmsAdaptiveProfiling/receive-sms": {
       "post": {
-        "tags": ["AdaptiveProfilingSms"],
+        "tags": ["SmsAdaptiveProfiling"],
         "requestBody": {
           "content": {
             "application/json": {
@@ -34,9 +34,9 @@
         }
       }
     },
-    "/api/AdaptiveProfilingSms/{vehicleId}/status": {
+    "/api/SmsAdaptiveProfiling/{vehicleId}/status": {
       "get": {
-        "tags": ["AdaptiveProfilingSms"],
+        "tags": ["SmsAdaptiveProfiling"],
         "parameters": [
           {
             "name": "vehicleId",
@@ -55,9 +55,9 @@
         }
       }
     },
-    "/api/AdaptiveProfilingSms/{vehicleId}/history": {
+    "/api/SmsAdaptiveProfiling/{vehicleId}/history": {
       "get": {
-        "tags": ["AdaptiveProfilingSms"],
+        "tags": ["SmsAdaptiveProfiling"],
         "parameters": [
           {
             "name": "vehicleId",
@@ -92,9 +92,9 @@
         }
       }
     },
-    "/api/AdaptiveProfilingSms/statistics": {
+    "/api/SmsAdaptiveProfiling/statistics": {
       "get": {
-        "tags": ["AdaptiveProfilingSms"],
+        "tags": ["SmsAdaptiveProfiling"],
         "parameters": [
           {
             "name": "fromDate",

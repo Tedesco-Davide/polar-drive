@@ -2,27 +2,27 @@ using PolarDrive.Data.DTOs;
 
 namespace PolarDrive.WebApi.Services;
 
-public interface ITwilioConfigurationService
+public interface ISmsTwilioConfigurationService
 {
-    TwilioConfigurationDTO GetConfiguration();
+    SmsTwilioConfigurationDTO GetConfiguration();
     bool ValidateSignature(string expectedSignature, string url, Dictionary<string, string> parameters);
     bool IsPhoneNumberAllowed(string phoneNumber);
     Task<bool> IsRateLimitExceeded(string phoneNumber);
 }
 
-public class TwilioService : ITwilioConfigurationService
+public class SmsTwilioService : ISmsTwilioConfigurationService
 {
-    private readonly TwilioConfigurationDTO _config;
+    private readonly SmsTwilioConfigurationDTO _config;
     private readonly Dictionary<string, List<DateTime>> _rateLimitTracker = new();
     private readonly object _rateLimitLock = new();
 
-    public TwilioService(IConfiguration configuration)
+    public SmsTwilioService(IConfiguration configuration)
     {
-        _config = configuration.GetSection("Twilio").Get<TwilioConfigurationDTO>()
+        _config = configuration.GetSection("Twilio").Get<SmsTwilioConfigurationDTO>()
                   ?? throw new InvalidOperationException("Twilio configuration not found");
     }
 
-    public TwilioConfigurationDTO GetConfiguration() => _config;
+    public SmsTwilioConfigurationDTO GetConfiguration() => _config;
 
     public bool ValidateSignature(string expectedSignature, string url, Dictionary<string, string> parameters)
     {

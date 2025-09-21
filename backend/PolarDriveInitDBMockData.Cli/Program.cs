@@ -42,7 +42,7 @@ try
             "ClientConsents",
             "VehiclesData",
             "AnonymizedVehiclesData",
-            "AdaptiveProfilingSmsEvents",
+            "SmsAdaptiveProfilingEvents",
             "SmsAuditLogs",
             "PhoneVehicleMappings",
             "ClientTokens",
@@ -78,7 +78,7 @@ try
                 "AdminFileManager",
                 "PhoneVehicleMappings",
                 "SmsAuditLogs",
-                "AdaptiveProfilingSmsEvents",
+                "SmsAdaptiveProfilingEvents",
                 "AnonymizedVehiclesData",
                 "VehiclesData",
                 "PolarDriveLogs"  // ← Se ha identity
@@ -499,7 +499,7 @@ try
 
     var adaptiveEvents = new[]
     {
-        new AdaptiveProfilingSmsEvent
+        new SmsAdaptiveProfilingEvent
         {
             VehicleId = vehicles[0].Id,
             ReceivedAt = DateTime.Now.AddMinutes(-15),
@@ -510,7 +510,7 @@ try
 
     db.PhoneVehicleMappings.AddRange(phoneMappings);
     db.SmsAuditLogs.AddRange(smsLogs);
-    db.AdaptiveProfilingSmsEvents.AddRange(adaptiveEvents);
+    db.SmsAdaptiveProfilingEvents.AddRange(adaptiveEvents);
     await db.SaveChangesAsync();
 
     Console.WriteLine($"✅ Created {phoneMappings.Length} phone mappings");

@@ -104,9 +104,9 @@ builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
 builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 
 // SERVIZI SMS / TWILIO
-builder.Services.AddScoped<IAdaptiveProfilingService, AdaptiveProfilingService>();
-builder.Services.AddScoped<ITwilioConfigurationService, TwilioService>();
-builder.Services.AddScoped<AdaptiveProfilingSmsController>();
+builder.Services.AddScoped<ISmsAdaptiveProfilingService, SmsAdaptiveProfilingService>();
+builder.Services.AddScoped<ISmsTwilioConfigurationService, SmsTwilioService>();
+builder.Services.AddScoped<SmsAdaptiveProfilingController>();
 
 // Registrazione HttpClientFactory per le chiamate alle API esterne
 builder.Services.AddHttpClient();

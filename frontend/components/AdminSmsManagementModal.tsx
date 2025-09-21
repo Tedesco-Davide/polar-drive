@@ -124,7 +124,7 @@ export default function AdminSmsManagementModal({
   const loadAdaptiveStatus = async () => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/AdaptiveProfilingSms/${vehicleId}/status`
+        `${API_BASE_URL}/api/SmsAdaptiveProfiling/${vehicleId}/status`
       );
       if (response.ok) {
         const status = await response.json();

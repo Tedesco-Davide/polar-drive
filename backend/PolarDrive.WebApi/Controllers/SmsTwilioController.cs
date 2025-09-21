@@ -11,17 +11,17 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TwilioSmsController : ControllerBase
+public class SmsTwilioController : ControllerBase
 {
     private readonly PolarDriveDbContext _db;
-    private readonly ITwilioConfigurationService _twilioConfig;
-    private readonly AdaptiveProfilingSmsController _adaptiveController;
+    private readonly ISmsTwilioConfigurationService _twilioConfig;
+    private readonly SmsAdaptiveProfilingController _adaptiveController;
     private readonly PolarDriveLogger _logger;
 
-    public TwilioSmsController(
+    public SmsTwilioController(
         PolarDriveDbContext db,
-        ITwilioConfigurationService twilioConfig,
-        AdaptiveProfilingSmsController adaptiveController)
+        ISmsTwilioConfigurationService twilioConfig,
+        SmsAdaptiveProfilingController adaptiveController)
     {
         _db = db;
         _twilioConfig = twilioConfig;
@@ -33,7 +33,7 @@ public class TwilioSmsController : ControllerBase
     /// 🎯 WEBHOOK PRINCIPALE - Riceve SMS da Twilio
     /// </summary>
     [HttpPost("webhook")]
-    public async Task<ActionResult> ReceiveTwilioSms([FromForm] TwilioSmsWebhookDTO dto)
+    public async Task<ActionResult> ReceiveTwilioSms([FromForm] SmsTwilioWebhookDTO dto)
     {
         var auditLog = new SmsAuditLog
         {
@@ -164,7 +164,7 @@ public class TwilioSmsController : ControllerBase
     /// 🔧 GESTIONE ASSOCIAZIONI TELEFONO-VEICOLO
     /// </summary>
     [HttpPost("register-phone")]
-    public async Task<ActionResult> RegisterPhoneToVehicle([FromBody] RegisterPhoneDTO dto)
+    public async Task<ActionResult> RegisterPhoneToVehicle([FromBody] SmsRegisterPhoneDTO dto)
     {
         try
         {

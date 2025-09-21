@@ -6,7 +6,7 @@ namespace PolarDrive.Data.DTOs;
 /// <summary>
 /// DTO per webhook Twilio (tutti i campi che Twilio invia)
 /// </summary>
-public class TwilioSmsWebhookDTO
+public class SmsTwilioWebhookDTO
 {
     public string MessageSid { get; set; } = string.Empty;
     public string AccountSid { get; set; } = string.Empty;
@@ -24,7 +24,7 @@ public class TwilioSmsWebhookDTO
 /// <summary>
 /// DTO per registrare numero telefono
 /// </summary>
-public class RegisterPhoneDTO
+public class SmsRegisterPhoneDTO
 {
     [Required]
     [Phone]
@@ -40,7 +40,7 @@ public class RegisterPhoneDTO
 /// <summary>
 /// DTO per configurazione Twilio
 /// </summary>
-public class TwilioConfigurationDTO
+public class SmsTwilioConfigurationDTO
 {
     [Required]
     public string AccountSid { get; set; } = string.Empty;

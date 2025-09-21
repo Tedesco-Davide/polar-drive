@@ -8,12 +8,12 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class AdaptiveProfilingSmsController : ControllerBase
+public class SmsAdaptiveProfilingController : ControllerBase
 {
     private readonly PolarDriveDbContext db;
     private readonly PolarDriveLogger _logger;
 
-    public AdaptiveProfilingSmsController(PolarDriveDbContext db)
+    public SmsAdaptiveProfilingController(PolarDriveDbContext db)
     {
         this.db = db;
         this._logger = new PolarDriveLogger(db);
@@ -34,14 +34,14 @@ public class AdaptiveProfilingSmsController : ControllerBase
 
             if (vehicle == null)
             {
-                await _logger.Warning("AdaptiveProfilingSms.ReceiveSms",
+                await _logger.Warning("SmsAdaptiveProfiling.ReceiveSms",
                     "Vehicle not found.", $"VehicleId: {dto.VehicleId}");
                 return NotFound("Vehicle not found!");
             }
 
             if (!vehicle.IsActiveFlag || !vehicle.IsFetchingDataFlag)
             {
-                await _logger.Warning("AdaptiveProfilingSms.ReceiveSms",
+                await _logger.Warning("SmsAdaptiveProfiling.ReceiveSms",
                     "Vehicle not active or not fetching data.",
                     $"VehicleId: {dto.VehicleId}, Active: {vehicle.IsActiveFlag}, Fetching: {vehicle.IsFetchingDataFlag}");
                 return BadRequest("Vehicle must be active and fetching data for Adaptive Profiling!");
@@ -52,13 +52,13 @@ public class AdaptiveProfilingSmsController : ControllerBase
 
             if (parsedCommand == "INVALID")
             {
-                await _logger.Warning("AdaptiveProfilingSms.ReceiveSms",
+                await _logger.Warning("SmsAdaptiveProfiling.ReceiveSms",
                     "Invalid SMS command format.", $"Message: {dto.MessageContent}");
                 return BadRequest("Invalid SMS format. Use 'ADAPTIVE [description]' to start profiling.");
             }
 
             // Crea evento SMS
-            var smsEvent = new AdaptiveProfilingSmsEvent
+            var smsEvent = new SmsAdaptiveProfilingEvent
             {
                 VehicleId = dto.VehicleId,
                 ReceivedAt = DateTime.UtcNow,
@@ -66,7 +66,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
                 ParsedCommand = parsedCommand
             };
 
-            db.AdaptiveProfilingSmsEvents.Add(smsEvent);
+            db.SmsAdaptiveProfilingEvents.Add(smsEvent);
 
             // Se è un comando ON, verifica che non ci sia già una sessione attiva
             if (parsedCommand == "ADAPTIVE_PROFILING_ON")
@@ -74,7 +74,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
                 var activeSession = await GetActiveAdaptiveProfilingSession(dto.VehicleId);
                 if (activeSession != null)
                 {
-                    await _logger.Info("AdaptiveProfilingSms.ReceiveSms",
+                    await _logger.Info("SmsAdaptiveProfiling.ReceiveSms",
                         "Adaptive Profiling session extended.",
                         $"VehicleId: {dto.VehicleId}, Previous session started at: {activeSession.ReceivedAt}");
 
@@ -87,7 +87,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
                     });
                 }
 
-                await _logger.Info("AdaptiveProfilingSms.ReceiveSms",
+                await _logger.Info("SmsAdaptiveProfiling.ReceiveSms",
                     "New Adaptive Profiling session started.",
                     $"VehicleId: {dto.VehicleId}, VIN: {vehicle.Vin}, Company: {vehicle.ClientCompany?.Name}, Description: {dto.MessageContent}");
             }
@@ -107,7 +107,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
         }
         catch (Exception ex)
         {
-            await _logger.Error("AdaptiveProfilingSms.ReceiveSms",
+            await _logger.Error("SmsAdaptiveProfiling.ReceiveSms",
                 "Error processing SMS command.", $"Error: {ex.Message}, VehicleId: {dto.VehicleId}");
             return StatusCode(500, "Internal server error processing SMS command.");
         }
@@ -155,7 +155,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
         }
         catch (Exception ex)
         {
-            await _logger.Error("AdaptiveProfilingSms.GetStatus",
+            await _logger.Error("SmsAdaptiveProfiling.GetStatus",
                 "Error getting Adaptive Profiling status.", $"Error: {ex.Message}, VehicleId: {vehicleId}");
             return StatusCode(500, "Internal server error.");
         }
@@ -177,7 +177,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
                 return NotFound("Vehicle not found!");
             }
 
-            var query = db.AdaptiveProfilingSmsEvents
+            var query = db.SmsAdaptiveProfilingEvents
                 .Where(e => e.VehicleId == vehicleId);
 
             if (fromDate.HasValue)
@@ -204,7 +204,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
         }
         catch (Exception ex)
         {
-            await _logger.Error("AdaptiveProfilingSms.GetHistory",
+            await _logger.Error("SmsAdaptiveProfiling.GetHistory",
                 "Error getting Adaptive Profiling history.", $"Error: {ex.Message}, VehicleId: {vehicleId}");
             return StatusCode(500, "Internal server error.");
         }
@@ -218,7 +218,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
     {
         try
         {
-            var query = db.AdaptiveProfilingSmsEvents.AsQueryable();
+            var query = db.SmsAdaptiveProfilingEvents.AsQueryable();
 
             if (fromDate.HasValue)
                 query = query.Where(e => e.ReceivedAt >= fromDate.Value);
@@ -257,7 +257,7 @@ public class AdaptiveProfilingSmsController : ControllerBase
         }
         catch (Exception ex)
         {
-            await _logger.Error("AdaptiveProfilingSms.GetStatistics",
+            await _logger.Error("SmsAdaptiveProfiling.GetStatistics",
                 "Error getting Adaptive Profiling statistics.", $"Error: {ex.Message}");
             return StatusCode(500, "Internal server error.");
         }
@@ -266,11 +266,11 @@ public class AdaptiveProfilingSmsController : ControllerBase
     /// <summary>
     /// Metodo helper per verificare se c'è una sessione attiva
     /// </summary>
-    private async Task<AdaptiveProfilingSmsEvent?> GetActiveAdaptiveProfilingSession(int vehicleId)
+    private async Task<SmsAdaptiveProfilingEvent?> GetActiveAdaptiveProfilingSession(int vehicleId)
     {
         var fourHoursAgo = DateTime.UtcNow.AddHours(-4);
 
-        return await db.AdaptiveProfilingSmsEvents
+        return await db.SmsAdaptiveProfilingEvents
             .Where(e => e.VehicleId == vehicleId
                      && e.ParsedCommand == "ADAPTIVE_PROFILING_ON"
                      && e.ReceivedAt >= fourHoursAgo)

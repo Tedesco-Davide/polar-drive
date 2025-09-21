@@ -5,7 +5,7 @@ public class VehicleData
     /// <summary>
     /// Indica se questo dato è stato raccolto durante una sessione di Adaptive Profiling
     /// </summary>
-    public bool IsAdaptiveProfiling { get; set; } = false;
+    public bool IsSmsAdaptiveProfiling { get; set; } = false;
 
     public int Id { get; set; }
 

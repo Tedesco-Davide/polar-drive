@@ -57,8 +57,8 @@ function createSampleBody(path, method) {
   const futureDate = new Date(Date.now() + 3600000).toISOString();
 
   const sampleBodies = {
-    // AdaptiveProfilingSms
-    "POST /api/AdaptiveProfilingSms/receive-sms": {
+    // SmsAdaptiveProfiling
+    "POST /api/SmsAdaptiveProfiling/receive-sms": {
       vehicleId: 1,
       messageContent: "Test SMS message from automated test",
     },

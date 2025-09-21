@@ -867,7 +867,7 @@ public class IntelligentDataAggregator
         {
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
             var adaptiveSessions = await ExecuteWithRetry(() =>
-                _dbContext.AdaptiveProfilingSmsEvents
+                _dbContext.SmsAdaptiveProfilingEvents
                     .Where(e => e.VehicleId == vehicleId && e.ReceivedAt >= thirtyDaysAgo)
                     .OrderByDescending(e => e.ReceivedAt)
                     .ToListAsync());
@@ -911,7 +911,7 @@ public class IntelligentDataAggregator
             // Conteggio dati raccolti durante sessioni adaptive
             aggregation.AdaptiveDataRecordsCount =
                     await ExecuteWithRetry(() => _dbContext.VehiclesData
-                    .Where(d => d.VehicleId == vehicleId && d.IsAdaptiveProfiling)
+                    .Where(d => d.VehicleId == vehicleId && d.IsSmsAdaptiveProfiling)
                     .CountAsync());
 
         }
@@ -921,12 +921,12 @@ public class IntelligentDataAggregator
         }
     }
 
-    private async Task<AdaptiveProfilingSmsEvent?> GetActiveAdaptiveSession(int vehicleId)
+    private async Task<SmsAdaptiveProfilingEvent?> GetActiveAdaptiveSession(int vehicleId)
     {
         var fourHoursAgo = DateTime.UtcNow.AddHours(-4);
 
         return await ExecuteWithRetry(() =>
-            _dbContext.AdaptiveProfilingSmsEvents
+            _dbContext.SmsAdaptiveProfilingEvents
                 .Where(e => e.VehicleId == vehicleId
                         && e.ParsedCommand == "ADAPTIVE_PROFILING_ON"
                         && e.ReceivedAt >= fourHoursAgo)

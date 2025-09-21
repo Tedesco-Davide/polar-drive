@@ -11,7 +11,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<ClientConsent> ClientConsents => Set<ClientConsent>();
     public DbSet<PdfReport> PdfReports => Set<PdfReport>();
     public DbSet<VehicleData> VehiclesData => Set<VehicleData>();
-    public DbSet<AdaptiveProfilingSmsEvent> AdaptiveProfilingSmsEvents => Set<AdaptiveProfilingSmsEvent>();
+    public DbSet<SmsAdaptiveProfilingEvent> SmsAdaptiveProfilingEvents => Set<SmsAdaptiveProfilingEvent>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
@@ -81,7 +81,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<AdaptiveProfilingSmsEvent>(entity =>
+            modelBuilder.Entity<SmsAdaptiveProfilingEvent>(entity =>
             {
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()

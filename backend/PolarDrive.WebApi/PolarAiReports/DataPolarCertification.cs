@@ -146,7 +146,7 @@ public class DataPolarCertification
         var actualRecords = await _dbContext.VehiclesData
             .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
             .OrderBy(vd => vd.Timestamp)
-            .Select(vd => new { vd.Timestamp, vd.IsAdaptiveProfiling, vd.RawJsonAnonymized })
+            .Select(vd => new { vd.Timestamp, vd.IsSmsAdaptiveProfiling, vd.RawJsonAnonymized })
             .ToListAsync();
 
         // Crea un dizionario per lookup rapido
@@ -167,7 +167,7 @@ public class DataPolarCertification
                 if (recordLookup.TryGetValue(expectedTime, out var record))
                 {
                     // Record esistente
-                    var laboratorioMobile = record.IsAdaptiveProfiling ? 
+                    var laboratorioMobile = record.IsSmsAdaptiveProfiling ? 
                         "<span style='background-color: #90EE90; padding: 2px 4px;'>Sì</span>" : "No";
                     
                     var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized) ?

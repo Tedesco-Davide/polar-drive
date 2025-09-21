@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 namespace PolarDrive.Data.Entities;
 
-public class AdaptiveProfilingSmsEvent
+public class SmsAdaptiveProfilingEvent
 {
     public int Id { get; set; }
 

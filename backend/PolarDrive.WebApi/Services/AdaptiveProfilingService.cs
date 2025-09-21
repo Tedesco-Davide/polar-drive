@@ -7,14 +7,14 @@ namespace PolarDrive.WebApi.Services;
 /// <summary>
 /// Servizio per gestire le sessioni di Adaptive Profiling
 /// </summary>
-public interface IAdaptiveProfilingService
+public interface ISmsAdaptiveProfilingService
 {
     Task<bool> IsVehicleInAdaptiveProfilingAsync(int vehicleId);
-    Task<AdaptiveProfilingSmsEvent?> GetActiveSessionAsync(int vehicleId);
+    Task<SmsAdaptiveProfilingEvent?> GetActiveSessionAsync(int vehicleId);
     Task MarkVehicleDataAsAdaptiveAsync(VehicleData vehicleData);
 }
 
-public class AdaptiveProfilingService(PolarDriveDbContext db) : IAdaptiveProfilingService
+public class SmsAdaptiveProfilingService(PolarDriveDbContext db) : ISmsAdaptiveProfilingService
 {
     private readonly PolarDriveLogger _logger = new(db);
 
@@ -30,11 +30,11 @@ public class AdaptiveProfilingService(PolarDriveDbContext db) : IAdaptiveProfili
     /// <summary>
     /// Ottiene la sessione attiva di Adaptive Profiling per un veicolo
     /// </summary>
-    public async Task<AdaptiveProfilingSmsEvent?> GetActiveSessionAsync(int vehicleId)
+    public async Task<SmsAdaptiveProfilingEvent?> GetActiveSessionAsync(int vehicleId)
     {
         var fourHoursAgo = DateTime.UtcNow.AddHours(-4);
 
-        return await db.AdaptiveProfilingSmsEvents
+        return await db.SmsAdaptiveProfilingEvents
             .Where(e => e.VehicleId == vehicleId
                      && e.ParsedCommand == "ADAPTIVE_PROFILING_ON"
                      && e.ReceivedAt >= fourHoursAgo)
@@ -50,7 +50,7 @@ public class AdaptiveProfilingService(PolarDriveDbContext db) : IAdaptiveProfili
         try
         {
             var isInAdaptiveMode = await IsVehicleInAdaptiveProfilingAsync(vehicleData.VehicleId);
-            vehicleData.IsAdaptiveProfiling = isInAdaptiveMode;
+            vehicleData.IsSmsAdaptiveProfiling = isInAdaptiveMode;
 
             if (isInAdaptiveMode)
             {
@@ -66,7 +66,7 @@ public class AdaptiveProfilingService(PolarDriveDbContext db) : IAdaptiveProfili
                 $"Error: {ex.Message}, VehicleId: {vehicleData.VehicleId}");
 
             // In caso di errore, meglio non marcare come adaptive
-            vehicleData.IsAdaptiveProfiling = false;
+            vehicleData.IsSmsAdaptiveProfiling = false;
         }
     }
 
@@ -75,7 +75,7 @@ public class AdaptiveProfilingService(PolarDriveDbContext db) : IAdaptiveProfili
     /// </summary>
     public async Task<AdaptiveProfilingStatsDTO> GetVehicleStatsAsync(int vehicleId, DateTime? fromDate = null, DateTime? toDate = null)
     {
-        var query = db.AdaptiveProfilingSmsEvents
+        var query = db.SmsAdaptiveProfilingEvents
             .Where(e => e.VehicleId == vehicleId && e.ParsedCommand == "ADAPTIVE_PROFILING_ON");
 
         if (fromDate.HasValue)
@@ -93,7 +93,7 @@ public class AdaptiveProfilingService(PolarDriveDbContext db) : IAdaptiveProfili
 
         // Conta i dati raccolti durante le sessioni
         var adaptiveDataCount = await db.VehiclesData
-            .Where(d => d.VehicleId == vehicleId && d.IsAdaptiveProfiling)
+            .Where(d => d.VehicleId == vehicleId && d.IsSmsAdaptiveProfiling)
             .CountAsync();
 
         return new AdaptiveProfilingStatsDTO

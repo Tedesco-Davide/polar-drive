@@ -97,7 +97,7 @@ BEGIN
                 SUM(CASE WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' THEN 1 ELSE 0 END) AS AdaptiveOnEvents,
                 SUM(CASE WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_OFF'' THEN 1 ELSE 0 END) AS AdaptiveOffEvents,
                 MAX(apse.ReceivedAt) AS LastSmsReceived
-            FROM AdaptiveProfilingSmsEvents apse
+            FROM SmsAdaptiveProfilingEvents apse
             GROUP BY apse.VehicleId
         ) sms_stats ON cv.Id = sms_stats.VehicleId
     ),
