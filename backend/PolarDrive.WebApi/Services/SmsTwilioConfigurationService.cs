@@ -1,4 +1,7 @@
 using PolarDrive.Data.DTOs;
+using Twilio;
+using Twilio.Rest.Api.V2010.Account;
+using Twilio.Types;
 
 namespace PolarDrive.WebApi.Services;
 
@@ -8,6 +11,7 @@ public interface ISmsTwilioConfigurationService
     bool ValidateSignature(string expectedSignature, string url, Dictionary<string, string> parameters);
     bool IsPhoneNumberAllowed(string phoneNumber);
     Task<bool> IsRateLimitExceeded(string phoneNumber);
+    Task<bool> SendSmsAsync(string phoneNumber, string message);
 }
 
 public class SmsTwilioService : ISmsTwilioConfigurationService
@@ -87,6 +91,26 @@ public class SmsTwilioService : ISmsTwilioConfigurationService
             // Aggiungi timestamp corrente
             _rateLimitTracker[phoneNumber].Add(now);
             return Task.FromResult(false);
+        }
+    }
+
+    public async Task<bool> SendSmsAsync(string phoneNumber, string message)
+    {
+        try
+        {
+            TwilioClient.Init(_config.AccountSid, _config.AuthToken);
+            
+            var messageResource = await MessageResource.CreateAsync(
+                body: message,
+                from: new PhoneNumber(_config.PhoneNumber),
+                to: new PhoneNumber(phoneNumber)
+            );
+
+            return messageResource.Status != MessageResource.StatusEnum.Failed;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 }

@@ -17,15 +17,18 @@ public class SmsTwilioController : ControllerBase
     private readonly ISmsTwilioConfigurationService _twilioConfig;
     private readonly SmsAdaptiveProfilingController _adaptiveController;
     private readonly PolarDriveLogger _logger;
+    private readonly IConfiguration _configuration;
 
     public SmsTwilioController(
         PolarDriveDbContext db,
         ISmsTwilioConfigurationService twilioConfig,
-        SmsAdaptiveProfilingController adaptiveController)
+        SmsAdaptiveProfilingController adaptiveController,
+        IConfiguration configuration)
     {
         _db = db;
         _twilioConfig = twilioConfig;
         _adaptiveController = adaptiveController;
+         _configuration = configuration;
         _logger = new PolarDriveLogger(db);
     }
 
@@ -443,8 +446,15 @@ public class SmsTwilioController : ControllerBase
 
             if (vehicle?.IsActiveFlag == true)
             {
+            if (!await HasValidConsentAsync(phoneNumber, mapping.VehicleId))
+                {
+                    await SendConsentRequestSms(phoneNumber, mapping.VehicleId);
+                    return null; // Blocca l'esecuzione fino al consenso
+                }
+
                 await _logger.Info("TwilioSms.ResolveVehicle", "Vehicle resolved by phone mapping",
                     $"Phone: {phoneNumber}, VehicleId: {mapping.VehicleId}");
+
                 return mapping.VehicleId;
             }
         }
@@ -460,8 +470,15 @@ public class SmsTwilioController : ControllerBase
 
             if (vehicle != null)
             {
+                if (!await HasValidConsentAsync(phoneNumber, vehicle.Id))
+                {
+                    await SendConsentRequestSms(phoneNumber, vehicle.Id);
+                    return null; // Blocca l'esecuzione fino al consenso
+                }           
+
                 await _logger.Info("TwilioSms.ResolveVehicle", "Vehicle resolved by VIN suffix",
                     $"VIN suffix: {vinLastFour}, VehicleId: {vehicle.Id}");
+
                 return vehicle.Id;
             }
         }
@@ -548,6 +565,72 @@ public class SmsTwilioController : ControllerBase
             cleaned = "+39" + cleaned;
 
         return cleaned;
+    }
+
+    private async Task<bool> HasValidConsentAsync(string phoneNumber, int vehicleId)
+    {
+        var normalizedPhone = NormalizePhoneNumber(phoneNumber);
+        
+        var consent = await _db.SmsGdprConsent
+            .FirstOrDefaultAsync(c => c.PhoneNumber == normalizedPhone
+                                && c.VehicleId == vehicleId
+                                && c.IsActive
+                                && c.ConsentGivenAt.HasValue);
+
+        return consent != null;
+    }
+
+    private async Task SendConsentRequestSms(string phoneNumber, int vehicleId)
+    {
+        var normalizedPhone = NormalizePhoneNumber(phoneNumber);
+
+        // Rate limiting (max 3 tentativi per ora)
+        var oneHourAgo = DateTime.UtcNow.AddHours(-1);
+        var recentAttempts = await _db.SmsGdprConsent
+            .CountAsync(c => c.PhoneNumber == normalizedPhone && c.RequestedAt >= oneHourAgo);
+        
+        if (recentAttempts >= 3)
+        {
+            await _logger.Warning("TwilioSms.SendConsent", "Rate limit exceeded", 
+                $"Phone: {phoneNumber}, Attempts: {recentAttempts}");
+            return; // Blocca silenziosamente
+        }
+
+        var vehicle = await _db.ClientVehicles.FindAsync(vehicleId);
+        var consentToken = SmsGdprConsent.GenerateSecureToken();
+        
+        // Invalida richieste precedenti
+        var existingRequests = await _db.SmsGdprConsent
+            .Where(c => c.PhoneNumber == normalizedPhone 
+                    && c.VehicleId == vehicleId 
+                    && !c.IsActive)
+            .ToListAsync();
+        
+        _db.SmsGdprConsent.RemoveRange(existingRequests);
+
+        // Crea nuova richiesta
+        var pendingConsent = new SmsGdprConsent
+        {
+            PhoneNumber = normalizedPhone,
+            VehicleId = vehicleId,
+            ConsentToken = consentToken,
+            RequestedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddHours(24),
+            IsActive = false,
+            AttemptCount = recentAttempts + 1
+        };
+        
+        _db.SmsGdprConsent.Add(pendingConsent);
+        await _db.SaveChangesAsync();
+
+        // Invia SMS (sostituisci con il tuo URL reale)
+        var baseUrl = _configuration["SmsConsentSettings:BaseUrl"];
+        var consentUrl = $"{baseUrl}/{consentToken}";
+        var message = $"Prima di usare la Tesla {vehicle?.Vin} devi accettare trattamento dati GPS.\n\nAccetta qui: {consentUrl}\n\nLink valido 24h. Poi riprova comando.";
+        await _twilioConfig.SendSmsAsync(phoneNumber, message);
+        
+        await _logger.Info("TwilioSms.SendConsent", "Consent request sent", 
+            $"Phone: {phoneNumber}, VehicleId: {vehicleId}");
     }
 
     private async Task SaveAuditLogAsync(SmsAuditLog auditLog)

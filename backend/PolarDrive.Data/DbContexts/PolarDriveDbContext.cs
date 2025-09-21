@@ -18,6 +18,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
     public DbSet<SmsAuditLog> SmsAuditLogs { get; set; }
+    public DbSet<SmsGdprConsent> SmsGdprConsent { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -177,6 +178,19 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.PeriodEnd);
                 entity.HasIndex(e => new { e.PeriodStart, e.PeriodEnd });
                 entity.HasIndex(e => e.RequestedBy);
+            });
+
+            modelBuilder.Entity<SmsGdprConsent>(entity =>
+            {
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => new { e.PhoneNumber, e.VehicleId });
+                entity.HasIndex(e => e.ConsentToken).IsUnique();
+                entity.HasIndex(e => e.ExpiresAt);
+                entity.HasIndex(e => new { e.PhoneNumber, e.RequestedAt });
             });
         }
         catch (Exception ex)
