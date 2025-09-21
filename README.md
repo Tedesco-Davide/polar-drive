@@ -16,6 +16,11 @@ _(Tasto destro sulla cartella `frontend` → Open in integrated Terminal)_
 - `npm run dev` → Avvio in modalità sviluppo (hot reload, debug attivo)
 - `npm list` → Visualizza tutti i pacchetti installati
 
+#### **📦 PRODUZIONE (Production)**
+
+- `npm run build` → Compila l'applicazione per produzione (ottimizzato, minificato)
+- `npm run start` → Avvio in produzione (dopo build)
+
 ### 🔶 BACKEND PolarAi
 
 _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
