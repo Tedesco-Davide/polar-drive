@@ -17,12 +17,8 @@ backend/**/.vs/
 backend/PolarDriveInitDB.Cli/datapolar.db-shm
 backend/PolarDriveInitDB.Cli/datapolar.db-wal
 
-# Ignora contenuti generati runtime in wwwroot
-backend/PolarDrive.WebApi/wwwroot/companies/
-backend/PolarDrive.WebApi/wwwroot/zips-outages/
-backend/PolarDrive.WebApi/wwwroot/company-1/consents-zip/consent_1.zip
-backend/PolarDrive.WebApi/wwwroot/company-1/consents-zip/consent_2.zip
-backend/PolarDrive.WebApi/wwwroot/company-2/consents-zip/consent_1.zip
-backend/PolarDrive.WebApi/wwwroot/company-2/consents-zip/consent_2.zip
-backend/PolarDrive.WebApi/wwwroot/company-3/consents-zip/consent_1.zip
-backend/PolarDrive.WebApi/wwwroot/company-3/consents-zip/consent_2.zip
+# Ignora tutto il contenuto della cartella storage
+backend/PolarDrive.WebApi/storage/*
+
+# TRANNE il file .gitkeep
+!backend/PolarDrive.WebApi/storage/.gitkeep
