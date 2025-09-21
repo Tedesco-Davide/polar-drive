@@ -452,8 +452,33 @@ public class OutageDetectionService(
 
     private async Task<bool> IsVehicleDownAsync(ClientVehicle vehicle)
     {
-        // RILEGGI sempre lo stato più recente dal database
+        // Rileggi sempre lo stato più recente dal database
         var currentVehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicle.Id);
+
+        // Verifica grace period per veicoli appena attivati
+        if (currentVehicle!.FirstActivationAt.HasValue)
+        {
+            var timeSinceActivation = DateTime.Now - currentVehicle.FirstActivationAt.Value;
+            
+            if (timeSinceActivation < _gracePeriod)
+            {
+                await _logger.Debug("OutageDetectionService",
+                    $"Vehicle {vehicle.Vin} - Grace period active ({timeSinceActivation.TotalMinutes:F1} min since activation)");
+                return false; // Non considerarlo DOWN
+            }
+        }
+        else
+        {
+            // Se FirstActivationAt è null, usa CreatedAt direttamente
+            var timeSinceCreation = DateTime.Now - currentVehicle.CreatedAt;
+            
+            if (timeSinceCreation < _gracePeriod)
+            {
+                await _logger.Debug("OutageDetectionService",
+                    $"Vehicle {vehicle.Vin} - Using CreatedAt for grace period ({timeSinceCreation.TotalMinutes:F1} min since creation)");
+                return false;
+            }
+        }
 
         if (currentVehicle == null || !currentVehicle.IsActiveFlag)
         {
@@ -535,7 +560,6 @@ public class OutageDetectionService(
     // Nuovo metodo specifico per verificare se un veicolo è tornato online
     private async Task<bool> IsVehicleBackOnlineAsync(ClientVehicle vehicle)
     {
-        // Controlla lo stato attuale del veicolo
         if (!vehicle.IsActiveFlag || !vehicle.IsFetchingDataFlag)
         {
             await _logger.Debug("OutageDetectionService",
@@ -543,14 +567,16 @@ public class OutageDetectionService(
             return false;
         }
 
-        // Controlla se ci sono dati recenti - usa un periodo più breve del threshold per "back online"
+        // Calcola la data prima della query
         var recentDataWindow = _env.IsDevelopment() 
-            ? TimeSpan.FromMinutes(5)    // Ultimi 5 minuti in development
-            : TimeSpan.FromHours(2);     // Ultimi 2 ore in produzione (più recente del threshold di 6 ore)
-            
+            ? TimeSpan.FromMinutes(5)
+            : TimeSpan.FromHours(2);
+        
+        var cutoffTime = DateTime.Now.Subtract(recentDataWindow); // Pre-calcolo
+
         var recentData = await _db.VehiclesData
             .Where(vd => vd.VehicleId == vehicle.Id)
-            .Where(vd => vd.Timestamp > DateTime.Now.Subtract(recentDataWindow))
+            .Where(vd => vd.Timestamp > cutoffTime) // ✅ Usa variabile pre-calcolata
             .OrderByDescending(vd => vd.Timestamp)
             .FirstOrDefaultAsync();
 

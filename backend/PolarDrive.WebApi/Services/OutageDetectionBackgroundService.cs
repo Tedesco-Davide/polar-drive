@@ -11,7 +11,7 @@ public class OutageDetectionBackgroundService : BackgroundService
     private readonly ILogger<OutageDetectionBackgroundService> _logger;
 
     // Configurazione timing
-    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(2); // Controlla ogni 2 minuti
+    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1); // Controlla ogni minuto
 
     public OutageDetectionBackgroundService(
         IServiceProvider serviceProvider,
