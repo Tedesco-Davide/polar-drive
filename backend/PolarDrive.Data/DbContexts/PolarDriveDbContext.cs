@@ -18,7 +18,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
     public DbSet<SmsAuditLog> SmsAuditLogs { get; set; }
-    public DbSet<AnonymizedVehicleData> AnonymizedVehiclesData => Set<AnonymizedVehicleData>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,21 +86,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .WithMany()
                     .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<AnonymizedVehicleData>(entity =>
-            {
-                entity.HasOne(e => e.OriginalData)
-                    .WithMany()
-                    .HasForeignKey(e => e.OriginalDataId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                entity.HasOne(e => e.ClientVehicle)
-                    .WithMany()
-                    .HasForeignKey(e => e.VehicleId)
-                    .OnDelete(DeleteBehavior.NoAction);
-
-                entity.HasIndex(e => e.OriginalDataId).IsUnique();
             });
 
             modelBuilder.Entity<OutagePeriod>(entity =>
