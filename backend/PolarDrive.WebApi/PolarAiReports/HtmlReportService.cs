@@ -214,7 +214,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             <table class='statistics-table'>
                 <tr><td>Durata monitoraggio totale:</td><td>{totalMonitoringPeriod.TotalDays:F1} giorni</td></tr>
                 <tr><td>Campioni mensili analizzati:</td><td>{monthlyRecords:N0}</td></tr>
-                <tr><td>Finestra UNIFICATA:</td><td>{dataHours} ore (30 giorni)</td></tr>
+                <tr><td>Finestra unificata:</td><td>{dataHours} ore (30 giorni)</td></tr>
                 <tr><td>Densità dati mensile:</td><td>{monthlyRecords / Math.Max(dataHours, 1):F1} campioni/ora</td></tr>
                 <tr><td>Copertura dati:</td><td>{Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):F1}% del periodo totale</td></tr>
                 <tr><td>Strategia:</td><td>Analisi mensile consistente con context evolutivo</td></tr>

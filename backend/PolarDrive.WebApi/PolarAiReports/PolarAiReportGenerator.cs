@@ -35,7 +35,7 @@ public class PolarAiReportGenerator
         const int dataHours = MONTHLY_HOURS_THRESHOLD;
 
         await _logger.Info(source, $"Analisi {analysisLevel}",
-            $"Finestra UNIFICATA: {dataHours}h ({dataHours / 24} giorni) - Periodo totale: {monitoringPeriod.TotalDays:F1} giorni");
+            $"Finestra unificata: {dataHours}h ({dataHours / 24} giorni) - Periodo totale: {monitoringPeriod.TotalDays:F1} giorni");
 
         // 🚀 Recupero dati
         var historicalData = await GetHistoricalData(vehicleId, dataHours);
@@ -236,9 +236,7 @@ Tu concentrati sull'analisi tecnica e comportamentale utilizzando i dati aggrega
 I seguenti dati sono stati pre-processati da algoritmi C# per ridurre la complessità computazionale, 
 mantenendo tutte le informazioni essenziali per un'analisi approfondita:
 
-```
 {aggregatedData}
-```
 
 ## FORMATO OUTPUT RICHIESTO (ANALISI MENSILE)
 

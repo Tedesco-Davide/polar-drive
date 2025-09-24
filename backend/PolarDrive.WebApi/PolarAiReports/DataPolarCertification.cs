@@ -119,7 +119,7 @@ public class DataPolarCertification
         sb.AppendLine("📊 STATISTICHE ANALISI MENSILE:");
         sb.AppendLine($"• Durata monitoraggio totale: {totalMonitoringPeriod.TotalDays:F1} giorni");
         sb.AppendLine($"• Campioni mensili analizzati: {monthlyRecords:N0}");
-        sb.AppendLine($"• Finestra UNIFICATA: {dataHours} ore (30 giorni)");
+        sb.AppendLine($"• Finestra unificata: {dataHours} ore (30 giorni)");
         sb.AppendLine($"• Densità dati mensile: {monthlyRecords / Math.Max(dataHours, 1):F1} campioni/ora");
         sb.AppendLine($"• Copertura dati: {Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):F1}% del periodo totale");
         sb.AppendLine($"• Strategia: Analisi mensile consistente con context evolutivo");

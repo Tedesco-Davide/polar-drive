@@ -105,6 +105,14 @@ public class OutageDetectionService(
 
     private async Task<bool> IsVehicleInSleepMode(ClientVehicle vehicle)
     {
+        // In development, assumiamo sempre che il veicolo sia sveglio, dato che stiamo usando un sistema di push fake
+        if (_env.IsDevelopment())
+        {
+            await _logger.Debug("OutageDetectionService",
+                $"Vehicle {vehicle.Vin} - Development mode: assuming vehicle is awake");
+            return false;
+        }
+
         // Prima ottieni il Vehicle ID dal VIN
         var vehicleId = await GetVehicleIdFromVin(vehicle.Vin);
         if (string.IsNullOrEmpty(vehicleId))
@@ -531,30 +539,27 @@ public class OutageDetectionService(
         var timeSinceLastData = DateTime.Now - lastDataReceived.Timestamp;
         bool isDataTooOld = timeSinceLastData > _vehicleInactivityThreshold;
 
-        if (isDataTooOld)
-        {
-            // Prima di dichiarare outage, controlla se è in sleep mode
-            bool isInSleepMode = await IsVehicleInSleepMode(vehicle);
-            
-            if (isInSleepMode)
-            {
-                await _logger.Debug("OutageDetectionService",
-                    $"Vehicle {vehicle.Vin} - Data old but vehicle in sleep mode, not considered DOWN");
-                return false; // Non è un outage se è solo dormendo
-            }
-            else
-            {
-                await _logger.Warning("OutageDetectionService",
-                    $"Vehicle {vehicle.Vin} - Data too old AND not sleeping: {timeSinceLastData.TotalMinutes:F1} min (threshold: {_vehicleInactivityThreshold.TotalMinutes} min)");
-                return true; // Vero outage
-            }
-        }
-        else
+        // Se i dati sono freschi, tutto ok
+        if (!isDataTooOld)
         {
             await _logger.Debug("OutageDetectionService",
-                $"Vehicle {vehicle.Vin} - Data is fresh: {timeSinceLastData.TotalMinutes:F1} min ago");
+                $"Vehicle {vehicle.Vin} - Data is fresh: {(int)timeSinceLastData.TotalMinutes} min ago");
             return false;
         }
+
+        // Dati vecchi: verifica se è in sleep mode
+        bool isInSleepMode = await IsVehicleInSleepMode(vehicle);
+
+        if (isInSleepMode)
+        {
+            await _logger.Debug("OutageDetectionService",
+                $"Vehicle {vehicle.Vin} - Data old but vehicle in sleep mode, not considered DOWN");
+            return false; // Non è un outage se è solo dormendo
+        }
+
+        // Dati vecchi E non in sleep mode = vero outage
+        await _logger.Warning("OutageDetectionService",
+            $"Vehicle {vehicle.Vin} - Data too old AND not sleeping: {(int)timeSinceLastData.TotalMinutes} min (threshold: {(int)_vehicleInactivityThreshold.TotalMinutes} min)");        return true;
     }
 
     // Nuovo metodo specifico per verificare se un veicolo è tornato online
@@ -584,7 +589,7 @@ public class OutageDetectionService(
         {
             var dataAge = DateTime.Now - recentData.Timestamp;
             await _logger.Info("OutageDetectionService",
-                $"Vehicle {vehicle.Vin} - Found recent data from {dataAge.TotalMinutes:F1} minutes ago - BACK ONLINE");
+                $"Vehicle {vehicle.Vin} - Found recent data from {(int)dataAge.TotalMinutes} minutes ago - BACK ONLINE");
             return true;
         }
 
