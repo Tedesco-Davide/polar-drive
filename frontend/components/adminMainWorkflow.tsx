@@ -500,7 +500,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "INFO",
         "Client profile PDF generation triggered",
-        `CompanyId: ${companyId}, VAT: ${vatNumber}`
+        `ClientCompanyId: ${companyId}, VAT: ${vatNumber}`
       );
 
       // Conferma dall'utente
@@ -515,7 +515,7 @@ export default function AdminMainWorkflow({
           "AdminMainWorkflow",
           "INFO",
           "Client profile generation cancelled by user",
-          `CompanyId: ${companyId}`
+          `ClientCompanyId: ${companyId}`
         );
         return;
       }
@@ -593,7 +593,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "INFO",
         "Client profile PDF downloaded successfully",
-        `CompanyId: ${companyId}, File size: ${blob.size} bytes`
+        `ClientCompanyId: ${companyId}, File size: ${blob.size} bytes`
       );
 
       alert(t("admin.mainWorkflow.alerts.clientProfileGenerated"));
@@ -605,7 +605,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "ERROR",
         "Failed to generate client profile PDF",
-        `CompanyId: ${companyId}, Error: ${errorMessage}`
+        `ClientCompanyId: ${companyId}, Error: ${errorMessage}`
       );
 
       // Messaggi di errore più specifici

@@ -105,7 +105,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
 
         if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
         {
-            await _logger.Warning("ClientVehiclesController.Post", "Client company not found.", $"CompanyId: {dto.ClientCompanyId}");
+            await _logger.Warning("ClientVehiclesController.Post", "Client company not found.", $"ClientCompanyId: {dto.ClientCompanyId}");
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
         }
 
@@ -223,7 +223,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
 
         if (!await db.ClientCompanies.AnyAsync(c => c.Id == dto.ClientCompanyId))
         {
-            await _logger.Warning("ClientVehiclesController.Put", "Associated company not found.", $"CompanyId: {dto.ClientCompanyId}");
+            await _logger.Warning("ClientVehiclesController.Put", "Associated company not found.", $"ClientCompanyId: {dto.ClientCompanyId}");
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
         }
 

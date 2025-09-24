@@ -23,8 +23,8 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             throw new ArgumentNullException(nameof(report));
         if (string.IsNullOrWhiteSpace(aiReportContentInsights))
             throw new ArgumentException("AI insights cannot be empty", nameof(aiReportContentInsights));
-        if (report.ClientVehicleId <= 0)
-            throw new ArgumentException("Invalid vehicle ID", nameof(report.ClientVehicleId));
+        if (report.VehicleId <= 0)
+            throw new ArgumentException("Invalid vehicle ID", nameof(report.VehicleId));
 
         var source = "HtmlReportService.GenerateHtmlReport";
         options ??= new HtmlReportOptions();
@@ -118,7 +118,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     {
         try
         {
-            var vehicleId = report.ClientVehicleId;
+            var vehicleId = report.VehicleId;
 
             // Calcola periodo di monitoraggio totale
             var firstRecord = await dbContext.VehiclesData
@@ -446,13 +446,13 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
         try
         {
             var dataCount = await dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                .Where(vd => vd.VehicleId == report.VehicleId &&
                            vd.Timestamp >= report.ReportPeriodStart &&
                            vd.Timestamp <= report.ReportPeriodEnd)
                 .CountAsync();
 
             var firstRecord = await dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                .Where(vd => vd.VehicleId == report.VehicleId &&
                            vd.Timestamp >= report.ReportPeriodStart &&
                            vd.Timestamp <= report.ReportPeriodEnd)
                 .OrderBy(vd => vd.Timestamp)
@@ -460,7 +460,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
                 .FirstOrDefaultAsync();
 
             var lastRecord = await dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                .Where(vd => vd.VehicleId == report.VehicleId &&
                            vd.Timestamp >= report.ReportPeriodStart &&
                            vd.Timestamp <= report.ReportPeriodEnd)
                 .OrderByDescending(vd => vd.Timestamp)
@@ -491,7 +491,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
         try
         {
             var recentData = await dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+                .Where(vd => vd.VehicleId == report.VehicleId &&
                            vd.Timestamp >= report.ReportPeriodStart &&
                            vd.Timestamp <= report.ReportPeriodEnd)
                 .OrderByDescending(vd => vd.Timestamp)

@@ -1,4 +1,5 @@
 ﻿using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.Helpers;
 
 Console.WriteLine("🚀 Starting PolarDrive DB initialization...");
 
@@ -6,11 +7,21 @@ using var db = new PolarDriveDbContextFactory().CreateDbContext(args);
 
 try
 {
-    Console.WriteLine("📋 Step 1: Deleting existing database...");
-
-    // 1. Delete / Create DB (DEV only)
-    await db.Database.EnsureDeletedAsync();
-    Console.WriteLine("✅ Database deleted successfully");
+    Console.WriteLine("📋 Step 1: Checking existing database...");
+    
+    var dbExists = await DatabaseHelper.DatabaseExistsAsync(db);
+    if (dbExists)
+    {
+        var activeConnections = await DatabaseHelper.GetActiveConnectionsCountAsync(db);
+        Console.WriteLine($"ℹ️ Found existing database with {activeConnections} active connection(s)");
+        
+        Console.WriteLine("🗑️ Force deleting existing database...");
+        await DatabaseHelper.ForceDeleteDatabaseAsync(db);
+    }
+    else
+    {
+        Console.WriteLine("ℹ️ No existing database found");
+    }
 
     Console.WriteLine("📋 Step 2: Creating new database...");
     await db.Database.EnsureCreatedAsync();
@@ -37,7 +48,7 @@ catch (Exception ex)
     // ✅ Solo prova a loggare se il database esiste
     try
     {
-        if (await db.Database.CanConnectAsync())
+        if (await DatabaseHelper.DatabaseExistsAsync(db))
         {
             var logger = new PolarDriveLogger(db);
             await logger.Error(

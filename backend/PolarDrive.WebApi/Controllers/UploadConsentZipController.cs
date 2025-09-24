@@ -75,7 +75,7 @@ public class UploadConsentZipController : ControllerBase
         var company = await _db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == clientCompanyId && c.VatNumber == companyVatNumber);
         if (company == null)
         {
-            await _logger.Warning("UploadConsentZipController", "Company not found or VAT mismatch.", $"CompanyId: {clientCompanyId}, VAT: {companyVatNumber}");
+            await _logger.Warning("UploadConsentZipController", "Company not found or VAT mismatch.", $"ClientCompanyId: {clientCompanyId}, VAT: {companyVatNumber}");
             return NotFound("SERVER ERROR → NOT FOUND: Company not found or invalid VAT number!");
         }
 

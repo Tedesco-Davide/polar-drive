@@ -191,7 +191,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
         // Statistiche sui report
         var reportStats = await db.PdfReports
-            .Join(db.ClientVehicles, r => r.ClientVehicleId, cv => cv.Id, (r, cv) => new { r, cv.Brand })
+            .Join(db.ClientVehicles, r => r.VehicleId, cv => cv.Id, (r, cv) => new { r, cv.Brand })
             .GroupBy(x => x.Brand)
             .Select(g => new { Brand = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.Brand, x => x.Count);

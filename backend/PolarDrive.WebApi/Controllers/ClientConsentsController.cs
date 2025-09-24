@@ -340,11 +340,11 @@ public class ClientConsentsController : ControllerBase
 
         if (vehicle.ClientCompanyId != company.Id)
         {
-            await _logger.Warning("ClientConsentsController.ResolveIds", "Vehicle not associated to this company.", $"CompanyId: {company.Id}, VehicleId: {vehicle.Id}");
+            await _logger.Warning("ClientConsentsController.ResolveIds", "Vehicle not associated to this company.", $"ClientCompanyId: {company.Id}, VehicleId: {vehicle.Id}");
             return BadRequest("This vehicle does not belong to the company");
         }
 
-        await _logger.Info("ClientConsentsController.ResolveIds", "Company and vehicle IDs resolved successfully.", $"CompanyId: {company.Id}, VehicleId: {vehicle.Id}");
+        await _logger.Info("ClientConsentsController.ResolveIds", "Company and vehicle IDs resolved successfully.", $"ClientCompanyId: {company.Id}, VehicleId: {vehicle.Id}");
 
         return Ok(new
         {
@@ -492,7 +492,7 @@ public class ClientConsentsController : ControllerBase
             if (!allConsents.Any())
             {
                 await _logger.Info("ClientConsentsController.DownloadAllConsentsByCompany",
-                    "No consents found for company", $"CompanyId: {company.Id}");
+                    "No consents found for company", $"ClientCompanyId: {company.Id}");
                 return Ok(new
                 {
                     success = true,
@@ -508,7 +508,7 @@ public class ClientConsentsController : ControllerBase
             {
                 await _logger.Info("ClientConsentsController.DownloadAllConsentsByCompany",
                     "No consents with ZIP files found for company",
-                    $"CompanyId: {company.Id}, TotalConsents: {allConsents.Count}");
+                    $"ClientCompanyId: {company.Id}, TotalConsents: {allConsents.Count}");
                 return Ok(new
                 {
                     success = true,
@@ -580,7 +580,7 @@ public class ClientConsentsController : ControllerBase
                 {
                     await _logger.Warning("ClientConsentsController.DownloadAllConsentsByCompany",
                         "No valid consent files could be processed",
-                        $"CompanyId: {company.Id}, TotalAttempted: {consentsWithZip.Count}");
+                        $"ClientCompanyId: {company.Id}, TotalAttempted: {consentsWithZip.Count}");
 
                     return Ok(new
                     {

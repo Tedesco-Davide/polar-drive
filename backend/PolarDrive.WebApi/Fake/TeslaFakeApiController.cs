@@ -264,7 +264,7 @@ public class TeslaFakeApiController : ControllerBase
                 .FirstOrDefaultAsync();
 
             var reports = await _db.PdfReports
-                .Where(r => r.ClientVehicleId == vehicle.Id)
+                .Where(r => r.VehicleId == vehicle.Id)
                 .OrderByDescending(r => r.GeneratedAt)
                 .Take(3)
                 .Select(r => new

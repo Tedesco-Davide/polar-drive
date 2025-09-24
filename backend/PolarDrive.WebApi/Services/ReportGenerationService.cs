@@ -116,7 +116,7 @@ namespace PolarDrive.WebApi.Services
                 {
                     // 1) Prendo la fine dell'ultimo report (se esiste)
                     var lastReportEnd = await db.PdfReports
-                        .Where(r => r.ClientVehicleId == v.Id)
+                        .Where(r => r.VehicleId == v.Id)
                         .OrderByDescending(r => r.ReportPeriodEnd)
                         .Select(r => (DateTime?)r.ReportPeriodEnd)
                         .FirstOrDefaultAsync(stoppingToken);
@@ -181,7 +181,7 @@ namespace PolarDrive.WebApi.Services
                     _logger.LogInformation("🔄 Retry {Count}/{Max} for {VIN}", _retryCount[id], MAX_RETRIES, veh.Vin);
 
                     var lastReportEnd = await db.PdfReports
-                        .Where(r => r.ClientVehicleId == id)
+                        .Where(r => r.VehicleId == id)
                         .OrderByDescending(r => r.ReportPeriodEnd)
                         .Select(r => (DateTime?)r.ReportPeriodEnd)
                         .FirstOrDefaultAsync(stoppingToken);
@@ -460,7 +460,7 @@ namespace PolarDrive.WebApi.Services
             {
                 // 1) Prendo la fine dell'ultimo report (se esiste)
                 var lastReportEnd = await db.PdfReports
-                    .Where(r => r.ClientVehicleId == vehicleId)
+                    .Where(r => r.VehicleId == vehicleId)
                     .OrderByDescending(r => r.ReportPeriodEnd)
                     .Select(r => (DateTime?)r.ReportPeriodEnd)
                     .FirstOrDefaultAsync();
@@ -482,7 +482,7 @@ namespace PolarDrive.WebApi.Services
 
                 // 5) Trova l'ultimo report creato per questo veicolo
                 var latestReport = await db.PdfReports
-                    .Where(r => r.ClientVehicleId == vehicleId)
+                    .Where(r => r.VehicleId == vehicleId)
                     .OrderByDescending(r => r.GeneratedAt)
                     .FirstOrDefaultAsync();
 
@@ -505,7 +505,7 @@ namespace PolarDrive.WebApi.Services
             if (!vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag)
                 _logger.LogWarning("⏳ Grace Period for {VIN}", vehicle.Vin);
 
-            var reportCount = await db.PdfReports.CountAsync(r => r.ClientVehicleId == vehicleId);
+            var reportCount = await db.PdfReports.CountAsync(r => r.VehicleId == vehicleId);
 
             // Per il primo report, usa la data di attivazione
             if (reportCount == 0 && vehicle.FirstActivationAt.HasValue)
@@ -539,7 +539,7 @@ namespace PolarDrive.WebApi.Services
             // Crea sempre il record del report per tracking
             var report = new PdfReport
             {
-                ClientVehicleId = vehicleId,
+                VehicleId = vehicleId,
                 ClientCompanyId = vehicle.ClientCompanyId,
                 ReportPeriodStart = period.Start,
                 ReportPeriodEnd = period.End,

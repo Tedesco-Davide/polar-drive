@@ -36,7 +36,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.Vin).IsUnique();
 
                 entity.HasOne(e => e.ClientCompany)
-                    .WithMany()
+                    .WithMany(cc => cc.ClientVehicles)
                     .HasForeignKey(e => e.ClientCompanyId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
@@ -57,16 +57,16 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
             modelBuilder.Entity<PdfReport>(entity =>
             {
                 entity.HasOne(e => e.ClientCompany)
-                    .WithMany()
+                    .WithMany(cc => cc.PdfReports)
                     .HasForeignKey(e => e.ClientCompanyId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
-                    .HasForeignKey(e => e.ClientVehicleId)
+                    .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.NoAction);
 
-                entity.HasIndex(e => new { e.ClientCompanyId, e.ClientVehicleId, e.ReportPeriodStart, e.ReportPeriodEnd })
+                entity.HasIndex(e => new { e.ClientCompanyId, e.VehicleId, e.ReportPeriodStart, e.ReportPeriodEnd })
                     .IsUnique();
 
                 entity.Property(e => e.GeneratedAt)
@@ -76,7 +76,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
             modelBuilder.Entity<VehicleData>(entity =>
             {
                 entity.HasOne(e => e.ClientVehicle)
-                    .WithMany()
+                    .WithMany(cv => cv.VehiclesData)
                     .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
@@ -192,6 +192,30 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.ExpiresAt);
                 entity.HasIndex(e => new { e.PhoneNumber, e.RequestedAt });
             });
+
+            modelBuilder.Entity<PhoneVehicleMapping>(entity =>
+            {
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasIndex(e => new { e.PhoneNumber, e.VehicleId });
+                entity.HasIndex(e => e.IsActive);
+            });
+
+            modelBuilder.Entity<SmsAuditLog>(entity =>
+            {
+                entity.HasOne(e => e.ResolvedVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleIdResolved)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasIndex(e => e.MessageSid).IsUnique();
+                entity.HasIndex(e => e.FromPhoneNumber);
+                entity.HasIndex(e => e.ReceivedAt);
+                entity.HasIndex(e => e.ProcessingStatus);
+            });           
         }
         catch (Exception ex)
         {

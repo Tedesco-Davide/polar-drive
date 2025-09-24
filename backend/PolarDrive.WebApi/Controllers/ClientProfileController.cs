@@ -29,7 +29,7 @@ public class ClientProfileController : ControllerBase
         try
         {
             await _logger.Info("ClientProfileController.GetClientProfileData",
-                "Requested client profile data", $"CompanyId: {companyId}");
+                "Requested client profile data", $"ClientCompanyId: {companyId}");
 
             var company = await _db.ClientCompanies.FindAsync(companyId);
             if (company == null)
@@ -62,7 +62,7 @@ public class ClientProfileController : ControllerBase
         try
         {
             await _logger.Info("ClientProfileController.GenerateClientProfilePdf",
-                "Starting client profile PDF generation", $"CompanyId: {companyId}");
+                "Starting client profile PDF generation", $"ClientCompanyId: {companyId}");
 
             // Verifica che l'azienda esista
             var company = await _db.ClientCompanies.FindAsync(companyId);
@@ -90,7 +90,7 @@ public class ClientProfileController : ControllerBase
 
             await _logger.Info("ClientProfileController.GenerateClientProfilePdf",
                 "Client profile PDF generated successfully",
-                $"CompanyId: {companyId}, FileName: {fileName}, Size: {pdfBytes.Length} bytes");
+                $"ClientCompanyId: {companyId}, FileName: {fileName}, Size: {pdfBytes.Length} bytes");
 
             // Determina il content type e estensione del file in base al contenuto
             var contentType = "application/pdf";
@@ -127,7 +127,7 @@ public class ClientProfileController : ControllerBase
         var sql = @"
         SELECT 
             -- Dati azienda (SENZA referente)
-            c.Id as CompanyId, c.VatNumber, c.Name, c.Address, c.Email, c.PecAddress, c.LandlineNumber,
+            c.Id as ClientCompanyId, c.VatNumber, c.Name, c.Address, c.Email, c.PecAddress, c.LandlineNumber,
             c.CreatedAt as CompanyCreatedAt,
             -- Calcoli statistici azienda
             (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as TotalVehicles,
@@ -178,7 +178,7 @@ public class ClientProfileController : ControllerBase
         {
             CompanyInfo = new CompanyProfileInfo
             {
-                Id = firstRow.CompanyId,
+                Id = firstRow.ClientCompanyId,
                 VatNumber = firstRow.VatNumber,
                 Name = firstRow.Name,
                 Address = firstRow.Address,

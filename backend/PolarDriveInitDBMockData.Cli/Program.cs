@@ -289,7 +289,7 @@ try
         new PdfReport
         {
             ClientCompanyId = companies[0].Id,
-            ClientVehicleId = vehicles[0].Id,
+            VehicleId = vehicles[0].Id,
             ReportPeriodStart = DateTime.Now.AddDays(-30),
             ReportPeriodEnd = DateTime.Now.AddDays(-1),
             GeneratedAt = DateTime.Now.AddDays(-2),
@@ -300,7 +300,7 @@ try
         new PdfReport
         {
             ClientCompanyId = companies[1].Id,
-            ClientVehicleId = vehicles[1].Id,
+            VehicleId = vehicles[1].Id,
             ReportPeriodStart = DateTime.Now.AddDays(-7),
             ReportPeriodEnd = DateTime.Now,
             GeneratedAt = null,
@@ -323,7 +323,7 @@ try
             await File.WriteAllBytesAsync(pdfPath, GenerateMockPdfBytes($"Report {report.Id}"));
 
             var htmlPath = Path.Combine(wwwRoot, "storage", "reports", $"report_{report.Id}.html");
-            var htmlContent = GenerateMockReportHtml($"Report {report.Id}", report.ClientCompanyId, report.ClientVehicleId);
+            var htmlContent = GenerateMockReportHtml($"Report {report.Id}", report.ClientCompanyId, report.VehicleId);
             await File.WriteAllTextAsync(htmlPath, htmlContent);
 
             Console.WriteLine($"✅ Created files for report {report.Id}: PDF & HTML");

@@ -70,7 +70,7 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         db.ClientCompanies.Add(entity);
         await db.SaveChangesAsync();
 
-        await _logger.Info("ClientCompaniesController.Post", "New client company inserted successfully.", $"CompanyId: {entity.Id}, VAT: {entity.VatNumber}");
+        await _logger.Info("ClientCompaniesController.Post", "New client company inserted successfully.", $"ClientCompanyId: {entity.Id}, VAT: {entity.VatNumber}");
 
         return CreatedAtAction(nameof(Get), new { id = entity.Id }, entity.Id);
     }
@@ -87,7 +87,7 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         var existing = await db.ClientCompanies.FindAsync(id);
         if (existing == null)
         {
-            await _logger.Warning("ClientCompaniesController.Put", "Attempt to update a non-existing company.", $"CompanyId: {id}");
+            await _logger.Warning("ClientCompaniesController.Put", "Attempt to update a non-existing company.", $"ClientCompanyId: {id}");
             return NotFound();
         }
 
@@ -100,7 +100,7 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
 
         await db.SaveChangesAsync();
 
-        await _logger.Info("ClientCompaniesController.Put", "Client company updated successfully.", $"CompanyId: {id}");
+        await _logger.Info("ClientCompaniesController.Put", "Client company updated successfully.", $"ClientCompanyId: {id}");
 
         return Ok();
     }

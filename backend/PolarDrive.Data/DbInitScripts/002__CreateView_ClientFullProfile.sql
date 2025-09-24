@@ -77,17 +77,17 @@ BEGIN
             GROUP BY op.VehicleId
         ) outage_stats ON cv.Id = outage_stats.VehicleId
         
-        -- Statistiche report
+        -- ✅ AGGIORNATO: Statistiche report - cambiato da ClientVehicleId a VehicleId
         LEFT JOIN (
             SELECT 
-                pr.ClientVehicleId,
+                pr.VehicleId,  -- ← ERA: pr.ClientVehicleId
                 COUNT(*) AS TotalReports,
                 SUM(CASE WHEN pr.GeneratedAt IS NOT NULL THEN 1 ELSE 0 END) AS GeneratedReports,
                 SUM(pr.RegenerationCount) AS TotalRegenerations,
                 MAX(pr.GeneratedAt) AS LastReportGenerated
             FROM PdfReports pr
-            GROUP BY pr.ClientVehicleId
-        ) report_stats ON cv.Id = report_stats.ClientVehicleId
+            GROUP BY pr.VehicleId  -- ← ERA: pr.ClientVehicleId
+        ) report_stats ON cv.Id = report_stats.VehicleId  -- ← ERA: report_stats.ClientVehicleId
         
         -- Statistiche SMS
         LEFT JOIN (
@@ -104,7 +104,7 @@ BEGIN
 
     CompanyStats AS (
         SELECT 
-            cc.Id AS CompanyId,
+            cc.Id AS ClientCompanyId,
             cc.VatNumber,
             cc.Name,
             cc.Address,
@@ -211,5 +211,38 @@ BEGIN
         END AS DaysSinceLastDeactivation
 
     FROM CompanyStats cs
-    LEFT JOIN VehicleStats vs ON cs.CompanyId = vs.ClientCompanyId')
+    LEFT JOIN VehicleStats vs ON cs.ClientCompanyId = vs.ClientCompanyId')
+END
+
+-- ===============================================
+-- INDICI AGGIUNTIVI PER PERFORMANCE
+-- ===============================================
+
+-- SQL Server: Controlla se l'indice esiste prima di crearlo
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_outage_active_vehicle' AND object_id = OBJECT_ID('OutagePeriods'))
+BEGIN
+    CREATE INDEX idx_outage_active_vehicle 
+    ON OutagePeriods (VehicleId, OutageEnd)
+    WHERE OutageType = 'Outage Vehicle';
+END
+
+-- Indice per migliorare le performance dei report
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_pdfreports_vehicle_period' AND object_id = OBJECT_ID('PdfReports'))
+BEGIN
+    CREATE INDEX idx_pdfreports_vehicle_period 
+    ON PdfReports (VehicleId, ReportPeriodStart, ReportPeriodEnd);
+END
+
+-- Indice per migliorare le performance dei consensi
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_clientconsents_vehicle_date' AND object_id = OBJECT_ID('ClientConsents'))
+BEGIN
+    CREATE INDEX idx_clientconsents_vehicle_date 
+    ON ClientConsents (VehicleId, UploadDate);
+END
+
+-- Indice per migliorare le performance degli SMS
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_smsevents_vehicle_date' AND object_id = OBJECT_ID('SmsAdaptiveProfilingEvents'))
+BEGIN
+    CREATE INDEX idx_smsevents_vehicle_date 
+    ON SmsAdaptiveProfilingEvents (VehicleId, ReceivedAt);
 END

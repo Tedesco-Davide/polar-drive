@@ -194,7 +194,7 @@ public class PdfReportsController : ControllerBase
     private async Task<int> CountDataRecordsForReport(Data.Entities.PdfReport report)
     {
         return await db.VehiclesData
-            .Where(vd => vd.VehicleId == report.ClientVehicleId &&
+            .Where(vd => vd.VehicleId == report.VehicleId &&
                          vd.Timestamp >= report.ReportPeriodStart &&
                          vd.Timestamp <= report.ReportPeriodEnd)
             .CountAsync();
@@ -309,7 +309,7 @@ public class PdfReportsController : ControllerBase
                 });
             }
 
-            var vehicleId = report.ClientVehicleId;
+            var vehicleId = report.VehicleId;
             var vehicle = await db.ClientVehicles
                 .Include(v => v.ClientCompany)
                 .FirstOrDefaultAsync(v => v.Id == vehicleId);
@@ -371,7 +371,7 @@ public class PdfReportsController : ControllerBase
         }
 
         // 3. Controlla se il veicolo esiste ancora
-        var vehicleExists = await db.ClientVehicles.AnyAsync(v => v.Id == report.ClientVehicleId);
+        var vehicleExists = await db.ClientVehicles.AnyAsync(v => v.Id == report.VehicleId);
         if (!vehicleExists)
         {
             return (false, "Il veicolo associato al report non esiste più", "VEHICLE_DELETED");

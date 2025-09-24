@@ -81,8 +81,8 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             _dbContext.ClientVehicles.Add(vehicle);
 
             await _dbContext.SaveChangesAsync();
-            await _logger.Info("AdminFullClientInsertController.Post", "New vehicle registered.", $"VIN: {vehicle.Vin}, CompanyId: {company.Id}");
-            await _logger.Info("AdminFullClientInsertController.Post", "New client setup pending OAuth", $"VIN: {vehicle.Vin}, CompanyId: {company.Id}");
+            await _logger.Info("AdminFullClientInsertController.Post", "New vehicle registered.", $"VIN: {vehicle.Vin}, ClientCompanyId: {company.Id}");
+            await _logger.Info("AdminFullClientInsertController.Post", "New client setup pending OAuth", $"VIN: {vehicle.Vin}, ClientCompanyId: {company.Id}");
 
             if (request.ConsentZip == null || !request.ConsentZip.FileName.EndsWith(".zip"))
             {

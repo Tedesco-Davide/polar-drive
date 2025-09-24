@@ -78,7 +78,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
             var company = await db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == clientCompanyId && c.VatNumber == companyVatNumber);
             if (company == null)
             {
-                await _logger.Warning("UploadOutageZipController", "Company not found or VAT mismatch.", $"CompanyId: {clientCompanyId}, VAT: {companyVatNumber}");
+                await _logger.Warning("UploadOutageZipController", "Company not found or VAT mismatch.", $"ClientCompanyId: {clientCompanyId}, VAT: {companyVatNumber}");
                 return NotFound("SERVER ERROR → NOT FOUND: Company not found or VAT mismatch!");
             }
 

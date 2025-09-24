@@ -5,7 +5,7 @@ namespace PolarDrive.Data.Entities;
 /// </summary>
 public class ClientFullProfileViewDto
 {
-    public int CompanyId { get; set; }
+    public int ClientCompanyId { get; set; }
     public string VatNumber { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Address { get; set; }

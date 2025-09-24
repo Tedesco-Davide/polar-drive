@@ -200,7 +200,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
                                  vd.Timestamp >= DateTime.UtcNow.AddHours(-1));
 
             // Info sui report
-            var reports = await _db.PdfReports.CountAsync(r => r.ClientVehicleId == vehicle.Id);
+            var reports = await _db.PdfReports.CountAsync(r => r.VehicleId == vehicle.Id);
             var monitoringDuration = await GetMonitoringDuration(vehicle.Id);
 
             return Ok(new
@@ -511,7 +511,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     /// </summary>
     private async Task<object> GetReportStats(int vehicleId)
     {
-        var totalReports = await _db.PdfReports.CountAsync(r => r.ClientVehicleId == vehicleId);
+        var totalReports = await _db.PdfReports.CountAsync(r => r.VehicleId == vehicleId);
 
         return new
         {

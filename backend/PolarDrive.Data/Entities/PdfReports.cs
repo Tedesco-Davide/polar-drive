@@ -6,7 +6,7 @@ public class PdfReport
 
     public int ClientCompanyId { get; set; }
 
-    public int ClientVehicleId { get; set; }
+    public int VehicleId { get; set; }
 
     public DateTime ReportPeriodStart { get; set; }
 
