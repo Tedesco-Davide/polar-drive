@@ -209,7 +209,7 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// 🚀 NUOVO PROMPT OTTIMIZZATO per dati aggregati
+    /// Promp per dati aggregati
     /// </summary>
     private string BuildOptimizedPrompt(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
     {

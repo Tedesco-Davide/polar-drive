@@ -556,8 +556,8 @@ public class HtmlReportOptions
     public string TemplateName { get; set; } = "default";
     public string StyleName { get; set; } = "default";
     public string ReportType { get; set; } = "Standard";
-    public string DateFormat { get; set; } = "yyyy-MM-dd";
-    public string DateTimeFormat { get; set; } = "yyyy-MM-dd HH:mm";
+public string DateFormat { get; set; } = "dd/MM/yyyy";
+public string DateTimeFormat { get; set; } = "dd/MM/yyyy HH:mm";
     public string? AdditionalCss { get; set; }
     public bool ShowDetailedStats { get; set; } = true;
     public bool ShowCharts { get; set; } = false;

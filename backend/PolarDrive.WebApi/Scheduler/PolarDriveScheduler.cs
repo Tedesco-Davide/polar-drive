@@ -70,8 +70,11 @@ namespace PolarDrive.WebApi.Scheduler
                     var results = await schedulerService.ProcessScheduledReportsAsync(ScheduleType.Monthly, stoppingToken);
                     LogResults("MONTHLY", results);
                 },
-                GetInitialDelayForFirstOfMonth(new TimeSpan(5, 0, 0)),
-                TimeSpan.FromDays(30),
+                GetInitialDelayForFirstOfMonth(new TimeSpan(
+                    PROD_MONTHLY_EXECUTION_HOUR,
+                    PROD_MONTHLY_EXECUTION_MINUTE,
+                    PROD_MONTHLY_EXECUTION_SECOND)),
+                TimeSpan.FromDays(PROD_MONTHLY_REPEAT_DAYS),
                 stoppingToken);
 
             var retryTask = ScheduleRecurring(
@@ -87,7 +90,7 @@ namespace PolarDrive.WebApi.Scheduler
                     }
                 },
                 TimeSpan.Zero,
-                TimeSpan.FromHours(1),
+                TimeSpan.FromHours(PROD_RETRY_REPEAT_HOURS),
                 stoppingToken);
 
             await Task.WhenAll(monthlyTask, retryTask);
