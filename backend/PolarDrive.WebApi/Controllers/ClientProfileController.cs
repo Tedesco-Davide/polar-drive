@@ -1,4 +1,6 @@
+using System.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
@@ -123,112 +125,121 @@ public class ClientProfileController : ControllerBase
     /// </summary>
     private async Task<ClientProfileData?> GetClientProfileDataAsync(int companyId)
     {
-        // ✅ Query SQL con COALESCE per gestire NULL values
-        var sql = @"
-        SELECT 
-            -- Dati azienda (SENZA referente)
-            c.Id as ClientCompanyId, c.VatNumber, c.Name, c.Address, c.Email, c.PecAddress, c.LandlineNumber,
-            c.CreatedAt as CompanyCreatedAt,
-            -- Calcoli statistici azienda
-            (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as TotalVehicles,
-            (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsActiveFlag = 1) as ActiveVehicles,
-            (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsFetchingDataFlag = 1) as FetchingVehicles,
-            (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND ClientOAuthAuthorized = 1) as AuthorizedVehicles,
-            (SELECT COUNT(DISTINCT Brand) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as UniqueBrands,
-            0 as TotalConsentsCompany, 0 as TotalOutagesCompany, 0 as TotalReportsCompany, 0 as TotalSmsEventsCompany,
-            DATEDIFF(day, c.CreatedAt, GETDATE()) as DaysRegistered,
-            NULL as FirstVehicleActivation, NULL as LastReportGeneratedCompany,
-            NULL as LandlineNumbers, NULL as MobileNumbers, NULL as AssociatedPhones,
-            
-            -- Dati veicolo CON referente
-            v.Id as VehicleId, v.Vin, v.Brand, v.Model, v.FuelType,
-            -- ✅ COALESCE per evitare NULL su boolean
-            COALESCE(v.IsActiveFlag, 0) as VehicleIsActive, 
-            COALESCE(v.IsFetchingDataFlag, 0) as VehicleIsFetching, 
-            COALESCE(v.ClientOAuthAuthorized, 0) as VehicleIsAuthorized,
-            v.CreatedAt as VehicleCreatedAt, v.FirstActivationAt as VehicleFirstActivation, 
-            v.LastDeactivationAt as VehicleLastDeactivation,
-            
-            -- ✅ REFERENTI DAL VEICOLO
-            v.ReferentName, v.ReferentMobileNumber, v.ReferentEmail,
-            
-            -- Statistiche veicolo
-            0 as VehicleConsents, 0 as VehicleOutages, 0 as VehicleReports, 0 as VehicleSmsEvents,
-            NULL as VehicleLastConsent, NULL as VehicleLastOutage, NULL as VehicleLastReport,
-            CASE WHEN v.FirstActivationAt IS NOT NULL 
-                THEN DATEDIFF(day, v.FirstActivationAt, GETDATE())
-                ELSE NULL END as DaysSinceFirstActivation,
-            0 as VehicleOutageDays
-            
-        FROM ClientCompanies c
-        LEFT JOIN ClientVehicles v ON c.Id = v.ClientCompanyId
-        WHERE c.Id = @companyId 
-        ORDER BY v.Brand, v.Model, v.Vin";
+        var previousTimeout = _db.Database.GetCommandTimeout();
+        _db.Database.SetCommandTimeout(120); // 2 minuti
 
-        var rawData = await _db.Database.SqlQueryRaw<ClientFullProfileViewDto>(sql,
-            new Microsoft.Data.SqlClient.SqlParameter("@companyId", companyId))
-            .ToListAsync();
-
-        if (rawData.Count == 0)
-            return null;
-
-        var firstRow = rawData.First();
-
-        return new ClientProfileData
+        try
         {
-            CompanyInfo = new CompanyProfileInfo
+            var sql = @"
+            SELECT 
+                -- Dati azienda (SENZA referente)
+                c.Id as ClientCompanyId, c.VatNumber, c.Name, c.Address, c.Email, c.PecAddress, c.LandlineNumber,
+                c.CreatedAt as CompanyCreatedAt,
+                -- Calcoli statistici azienda
+                (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as TotalVehicles,
+                (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsActiveFlag = 1) as ActiveVehicles,
+                (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsFetchingDataFlag = 1) as FetchingVehicles,
+                (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND ClientOAuthAuthorized = 1) as AuthorizedVehicles,
+                (SELECT COUNT(DISTINCT Brand) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as UniqueBrands,
+                0 as TotalConsentsCompany, 0 as TotalOutagesCompany, 0 as TotalReportsCompany, 0 as TotalSmsEventsCompany,
+                DATEDIFF(day, c.CreatedAt, GETDATE()) as DaysRegistered,
+                NULL as FirstVehicleActivation, NULL as LastReportGeneratedCompany,
+                NULL as LandlineNumbers, NULL as MobileNumbers, NULL as AssociatedPhones,
+                
+                -- Dati veicolo CON referente
+                v.Id as VehicleId, v.Vin, v.Brand, v.Model, v.FuelType,
+                CAST(ISNULL(v.IsActiveFlag, 0) AS BIT) as VehicleIsActive, 
+                CAST(ISNULL(v.IsFetchingDataFlag, 0) AS BIT) as VehicleIsFetching, 
+                CAST(ISNULL(v.ClientOAuthAuthorized, 0) AS BIT) as VehicleIsAuthorized,
+                v.CreatedAt as VehicleCreatedAt, v.FirstActivationAt as VehicleFirstActivation, 
+                v.LastDeactivationAt as VehicleLastDeactivation,
+                
+                -- Referenti dal veicolo
+                v.ReferentName, v.ReferentMobileNumber, v.ReferentEmail,
+                
+                -- Statistiche veicolo
+                0 as VehicleConsents, 0 as VehicleOutages, 0 as VehicleReports, 0 as VehicleSmsEvents,
+                NULL as VehicleLastConsent, NULL as VehicleLastOutage, NULL as VehicleLastReport,
+                CASE WHEN v.FirstActivationAt IS NOT NULL 
+                    THEN DATEDIFF(day, v.FirstActivationAt, GETDATE())
+                    ELSE NULL END as DaysSinceFirstActivation,
+                0 as VehicleOutageDays
+                
+            FROM ClientCompanies c
+            LEFT JOIN ClientVehicles v ON c.Id = v.ClientCompanyId
+            WHERE c.Id = @companyId 
+            ORDER BY v.Brand, v.Model, v.Vin";
+
+            var companyParam = new SqlParameter("@companyId", SqlDbType.Int) { Value = companyId };
+            var rawData = await _db.Database.SqlQueryRaw<ClientFullProfileViewDto>(sql, companyParam)
+                .ToListAsync();
+
+            if (rawData.Count == 0)
+                return null;
+
+            var firstRow = rawData.First();
+
+            return new ClientProfileData
             {
-                Id = firstRow.ClientCompanyId,
-                VatNumber = firstRow.VatNumber,
-                Name = firstRow.Name,
-                Address = firstRow.Address,
-                Email = firstRow.Email,
-                PecAddress = firstRow.PecAddress,
-                LandlineNumber = firstRow.LandlineNumber,
-                CompanyCreatedAt = firstRow.CompanyCreatedAt,
-                DaysRegistered = firstRow.DaysRegistered,
-                TotalVehicles = firstRow.TotalVehicles,
-                ActiveVehicles = firstRow.ActiveVehicles,
-                FetchingVehicles = firstRow.FetchingVehicles,
-                AuthorizedVehicles = firstRow.AuthorizedVehicles,
-                UniqueBrands = firstRow.UniqueBrands,
-                TotalConsentsCompany = firstRow.TotalConsentsCompany,
-                TotalOutagesCompany = firstRow.TotalOutagesCompany,
-                TotalReportsCompany = firstRow.TotalReportsCompany,
-                TotalSmsEventsCompany = firstRow.TotalSmsEventsCompany,
-                FirstVehicleActivation = firstRow.FirstVehicleActivation,
-                LastReportGeneratedCompany = firstRow.LastReportGeneratedCompany,
-                LandlineNumbers = firstRow.LandlineNumbers,
-                MobileNumbers = firstRow.MobileNumbers,
-                AssociatedPhones = firstRow.AssociatedPhones
-            },
-            Vehicles = rawData.Where(r => r.VehicleId.HasValue).Select(r => new VehicleProfileInfo
-            {
-                Id = r.VehicleId!.Value,
-                Vin = r.Vin ?? "",
-                Brand = r.Brand ?? "",
-                Model = r.Model ?? "",
-                FuelType = r.FuelType ?? "",
-                IsActive = r.VehicleIsActive,
-                IsFetching = r.VehicleIsFetching,
-                IsAuthorized = r.VehicleIsAuthorized,
-                VehicleCreatedAt = r.VehicleCreatedAt,
-                FirstActivationAt = r.VehicleFirstActivation,
-                LastDeactivationAt = r.VehicleLastDeactivation,
-                TotalConsents = r.VehicleConsents,
-                TotalOutages = r.VehicleOutages,
-                TotalReports = r.VehicleReports,
-                TotalSmsEvents = r.VehicleSmsEvents,
-                LastConsentDate = r.VehicleLastConsent,
-                LastOutageStart = r.VehicleLastOutage,
-                LastReportGenerated = r.VehicleLastReport,
-                DaysSinceFirstActivation = r.DaysSinceFirstActivation,
-                VehicleOutageDays = r.VehicleOutageDays,
-                ReferentName = r.ReferentName,
-                ReferentMobileNumber = r.ReferentMobileNumber,
-                ReferentEmail = r.ReferentEmail
-            }).ToList()
-        };
+                CompanyInfo = new CompanyProfileInfo
+                {
+                    Id = firstRow.ClientCompanyId,
+                    VatNumber = firstRow.VatNumber,
+                    Name = firstRow.Name,
+                    Address = firstRow.Address,
+                    Email = firstRow.Email,
+                    PecAddress = firstRow.PecAddress,
+                    LandlineNumber = firstRow.LandlineNumber,
+                    CompanyCreatedAt = firstRow.CompanyCreatedAt,
+                    DaysRegistered = firstRow.DaysRegistered,
+                    TotalVehicles = firstRow.TotalVehicles,
+                    ActiveVehicles = firstRow.ActiveVehicles,
+                    FetchingVehicles = firstRow.FetchingVehicles,
+                    AuthorizedVehicles = firstRow.AuthorizedVehicles,
+                    UniqueBrands = firstRow.UniqueBrands,
+                    TotalConsentsCompany = firstRow.TotalConsentsCompany,
+                    TotalOutagesCompany = firstRow.TotalOutagesCompany,
+                    TotalReportsCompany = firstRow.TotalReportsCompany,
+                    TotalSmsEventsCompany = firstRow.TotalSmsEventsCompany,
+                    FirstVehicleActivation = firstRow.FirstVehicleActivation,
+                    LastReportGeneratedCompany = firstRow.LastReportGeneratedCompany,
+                    LandlineNumbers = firstRow.LandlineNumbers,
+                    MobileNumbers = firstRow.MobileNumbers,
+                    AssociatedPhones = firstRow.AssociatedPhones
+                },
+                Vehicles = [.. rawData.Where(r => r.VehicleId.HasValue).Select(r => new VehicleProfileInfo
+                {
+                    Id = r.VehicleId!.Value,
+                    Vin = r.Vin ?? "",
+                    Brand = r.Brand ?? "",
+                    Model = r.Model ?? "",
+                    FuelType = r.FuelType ?? "",
+                    IsActive = r.VehicleIsActive,
+                    IsFetching = r.VehicleIsFetching,
+                    IsAuthorized = r.VehicleIsAuthorized,
+                    VehicleCreatedAt = r.VehicleCreatedAt,
+                    FirstActivationAt = r.VehicleFirstActivation,
+                    LastDeactivationAt = r.VehicleLastDeactivation,
+                    TotalConsents = r.VehicleConsents,
+                    TotalOutages = r.VehicleOutages,
+                    TotalReports = r.VehicleReports,
+                    TotalSmsEvents = r.VehicleSmsEvents,
+                    LastConsentDate = r.VehicleLastConsent,
+                    LastOutageStart = r.VehicleLastOutage,
+                    LastReportGenerated = r.VehicleLastReport,
+                    DaysSinceFirstActivation = r.DaysSinceFirstActivation,
+                    VehicleOutageDays = r.VehicleOutageDays,
+                    ReferentName = r.ReferentName,
+                    ReferentMobileNumber = r.ReferentMobileNumber,
+                    ReferentEmail = r.ReferentEmail
+                })]
+            };
+        }    
+        finally
+        {
+            // Ripristina il timeout originale
+            _db.Database.SetCommandTimeout(previousTimeout);
+        }
     }
 
     /// <summary>
