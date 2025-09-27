@@ -77,17 +77,16 @@ BEGIN
             GROUP BY op.VehicleId
         ) outage_stats ON cv.Id = outage_stats.VehicleId
         
-        -- ✅ AGGIORNATO: Statistiche report - cambiato da ClientVehicleId a VehicleId
         LEFT JOIN (
             SELECT 
-                pr.VehicleId,  -- ← ERA: pr.ClientVehicleId
+                pr.VehicleId,
                 COUNT(*) AS TotalReports,
                 SUM(CASE WHEN pr.GeneratedAt IS NOT NULL THEN 1 ELSE 0 END) AS GeneratedReports,
                 SUM(pr.RegenerationCount) AS TotalRegenerations,
                 MAX(pr.GeneratedAt) AS LastReportGenerated
             FROM PdfReports pr
-            GROUP BY pr.VehicleId  -- ← ERA: pr.ClientVehicleId
-        ) report_stats ON cv.Id = report_stats.VehicleId  -- ← ERA: report_stats.ClientVehicleId
+            GROUP BY pr.VehicleId
+        ) report_stats ON cv.Id = report_stats.VehicleId
         
         -- Statistiche SMS
         LEFT JOIN (
