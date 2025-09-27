@@ -89,12 +89,15 @@ public class VehicleStateManager
                 {
                     foreach (var (vin, state) in states)
                     {
-                        // ✅ FIX: Assicurati che il VIN sia impostato
+                        // Assicurati che il VIN sia impostato
                         if (string.IsNullOrEmpty(state.Vin))
                         {
                             state.Vin = vin;
                             _logger.LogWarning("Fixed null VIN for vehicle {Vin}", vin);
                         }
+
+                        // Aggiorna il timestamp ai dati caricati dal file
+                        state.LastUpdate = DateTime.Now;
 
                         _vehicles.TryAdd(vin, state);
                     }
@@ -103,7 +106,6 @@ public class VehicleStateManager
                         states.Count, _stateFilePath);
                 }
             }
-            // ... resto del codice
         }
         catch (Exception ex)
         {

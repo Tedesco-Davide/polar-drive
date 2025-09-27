@@ -536,14 +536,14 @@ public class OutageDetectionService(
             return true; // Nessun dato mai ricevuto dopo grace period
         }
 
-        var timeSinceLastData = DateTime.Now - lastDataReceived.Timestamp;
+        var timeSinceLastData = DateTime.Now - lastDataReceived.Timestamp.ToLocalTime();
         bool isDataTooOld = timeSinceLastData > _vehicleInactivityThreshold;
 
         // Se i dati sono freschi, tutto ok
         if (!isDataTooOld)
         {
             await _logger.Debug("OutageDetectionService",
-                $"Vehicle {vehicle.Vin} - Data is fresh: {(int)timeSinceLastData.TotalMinutes} min ago");
+                $"Vehicle {vehicle.Vin} - Data is fresh since: {(int)timeSinceLastData.TotalMinutes} min ago");
             return false;
         }
 
@@ -581,7 +581,7 @@ public class OutageDetectionService(
 
         var recentData = await _db.VehiclesData
             .Where(vd => vd.VehicleId == vehicle.Id)
-            .Where(vd => vd.Timestamp > cutoffTime) // ✅ Usa variabile pre-calcolata
+            .Where(vd => vd.Timestamp > cutoffTime)
             .OrderByDescending(vd => vd.Timestamp)
             .FirstOrDefaultAsync();
 

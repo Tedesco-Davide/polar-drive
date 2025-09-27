@@ -4,19 +4,19 @@
     "VehicleId": 99999,
     "DisplayName": "Model 3 Mock",
     "Color": "Midnight Silver Metallic",
-    "BatteryLevel": 85,
+    "BatteryLevel": 33,
     "IsCharging": false,
     "ChargingState": "Complete",
     "ChargeRate": 0,
     "ChargeEnergyAdded": 2401.50,
-    "Latitude": 41.93828249557875489917,
-    "Longitude": 12.68874243575841552321,
+    "Latitude": 41.93315506461205298917,
+    "Longitude": 12.70552859920098246921,
     "IsMoving": false,
-    "Heading": 348,
+    "Heading": 283,
     "Speed": null,
-    "Odometer": 35085,
+    "Odometer": 35401,
     "InsideTemp": 22.0,
-    "OutsideTemp": -2.19934541889414376,
+    "OutsideTemp": -4.21763284796828816,
     "IsClimateOn": true,
     "DriverTempSetting": 21,
     "PassengerTempSetting": 21,
@@ -40,6 +40,6 @@
     "SolarPower": 3500,
     "EnergyLeft": 18020.89,
     "TotalPackEnergy": 39343,
-    "LastUpdate": "2025-07-01T16:04:06.0680362Z"
+    "LastUpdate": "2025-09-27T21:47:34.210342+02:00"
   }
 }

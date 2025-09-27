@@ -172,7 +172,7 @@ public class TeslaDataPusherService : BackgroundService
         }
 
         // Aggiorna timestamp
-        state.LastUpdate = DateTime.UtcNow;
+        state.LastUpdate = DateTime.Now;
 
         return Task.CompletedTask;
     }
