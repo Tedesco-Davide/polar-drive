@@ -878,7 +878,7 @@ public class ClientProfileController : ControllerBase
             var tempHtmlPath = await SaveTemporaryHtmlAsync(htmlContent);
 
             // 2. Prepara path di output temporaneo
-            var tempPdfPath = Path.Combine(Path.GetTempPath(), $"ClientProfile_{DateTime.UtcNow.Ticks}.pdf");
+            var tempPdfPath = Path.Combine(Path.GetTempPath(), $"ClientProfile_{DateTime.Now.Ticks}.pdf");
 
             // 3. Controlla disponibilità Node.js
             if (!IsNodeJsAvailable())
@@ -934,7 +934,7 @@ public class ClientProfileController : ControllerBase
 
                 // ✅ SALVA NELLA DIRECTORY DEL PROGETTO (come PdfGenerationService)
                 var projectDirectory = FindProjectDirectory();
-                var scriptPath = Path.Combine(projectDirectory, $"temp_client_profile_script_{DateTime.UtcNow.Ticks}_attempt{attempt}.js");
+                var scriptPath = Path.Combine(projectDirectory, $"temp_client_profile_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
                 await System.IO.File.WriteAllTextAsync(scriptPath, puppeteerScript);
 
                 var process = new System.Diagnostics.Process
@@ -1211,7 +1211,7 @@ public class ClientProfileController : ControllerBase
     private async Task<string> SaveTemporaryHtmlAsync(string htmlContent)
     {
         var tempDir = Path.GetTempPath();
-        var htmlPath = Path.Combine(tempDir, $"ClientProfile_{DateTime.UtcNow.Ticks}.html");
+        var htmlPath = Path.Combine(tempDir, $"ClientProfile_{DateTime.Now.Ticks}.html");
         await System.IO.File.WriteAllTextAsync(htmlPath, htmlContent);
         return htmlPath;
     }
@@ -1331,7 +1331,7 @@ public class ClientProfileController : ControllerBase
     /// </summary>
     private static string GenerateProfileFileName(CompanyProfileInfo company)
     {
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         var sanitizedCompanyName = System.Text.RegularExpressions.Regex.Replace(
             company.Name, @"[^a-zA-Z0-9]", "_");
 

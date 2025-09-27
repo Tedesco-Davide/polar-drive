@@ -39,7 +39,7 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
         var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
         // Rimuovi job più vecchi di 30 giorni
-        var cutoffDate = DateTime.UtcNow.AddDays(-30);
+        var cutoffDate = DateTime.Now.AddDays(-30);
 
         var oldJobs = await db.AdminFileManager
             .Where(j => j.RequestedAt < cutoffDate && j.Status == "COMPLETED")
@@ -84,7 +84,7 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
         var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
         // ✅ Rimuovi outage più vecchi di 60 giorni (retention più lunga per gli outages)
-        var outagesCutoffDate = DateTime.UtcNow.AddDays(-60);
+        var outagesCutoffDate = DateTime.Now.AddDays(-60);
 
         var oldOutages = await db.OutagePeriods
             .Where(o => o.CreatedAt < outagesCutoffDate && !string.IsNullOrEmpty(o.ZipFilePath))

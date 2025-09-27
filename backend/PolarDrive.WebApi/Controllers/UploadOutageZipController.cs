@@ -160,7 +160,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
             {
                 OutageType = sanitizedOutageType,
                 OutageBrand = sanitizedOutageBrand,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAt = DateTime.Now,
                 OutageStart = parsedStart,
                 OutageEnd = parsedEnd,
                 AutoDetected = autoDetected,
@@ -340,7 +340,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
         }
 
         // ✅ Genera il nome del file
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         var fileName = string.IsNullOrWhiteSpace(filePrefix)
             ? $"outage_{timestamp}.zip"
             : $"{filePrefix}{timestamp}.zip";

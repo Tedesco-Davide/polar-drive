@@ -76,8 +76,6 @@ export default function AdminClientVehicleEditForm({
       return;
     }
 
-    if (name === "firstActivationAt") return;
-
     setFormData((prev) => ({
       ...prev,
       [name]: value,
@@ -109,17 +107,6 @@ export default function AdminClientVehicleEditForm({
     if (!formData.model.trim()) {
       alert(t("admin.clientVehicle.validation.modelRequired"));
       return;
-    }
-
-    if (formData.firstActivationAt) {
-      const parsedDate = parseISO(formData.firstActivationAt);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      if (!isValid(parsedDate) || isAfter(parsedDate, today)) {
-        alert("Data prima attivazione non valida o nel futuro");
-        return;
-      }
     }
 
     try {

@@ -20,7 +20,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
         _logger.LogInformation("🚗 VehicleDataService: Starting data fetch for all brands");
 
         var result = new VehicleDataFetchResult();
-        var startTime = DateTime.UtcNow;
+        var startTime = DateTime.Now;
 
         try
         {
@@ -52,7 +52,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
             result.TotalVehiclesSuccess = brandResults.Sum(br => br.VehiclesSuccess);
             result.TotalVehiclesError = brandResults.Sum(br => br.VehiclesError);
             result.TotalVehiclesSkipped = brandResults.Sum(br => br.VehiclesSkipped);
-            result.Duration = DateTime.UtcNow - startTime;
+            result.Duration = DateTime.Now - startTime;
             result.OverallSuccess = result.FailedBrands == 0;
 
             _logger.LogInformation("✅ VehicleDataService: Completed data fetch for all brands - Success: {Success}/{Total}, Duration: {Duration}ms",
@@ -64,7 +64,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
         {
             result.OverallSuccess = false;
             result.ErrorMessage = ex.Message;
-            result.Duration = DateTime.UtcNow - startTime;
+            result.Duration = DateTime.Now - startTime;
 
             _logger.LogError(ex, "❌ VehicleDataService: Error during multi-brand data fetch");
             return result;
@@ -181,7 +181,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
         // Statistiche sui dati recenti
         var recentDataStats = await db.VehiclesData
-            .Where(vd => vd.Timestamp >= DateTime.UtcNow.AddHours(-24))
+            .Where(vd => vd.Timestamp >= DateTime.Now.AddHours(-24))
             .Join(db.ClientVehicles, vd => vd.VehicleId, cv => cv.Id, (vd, cv) => new { vd, cv.Brand })
             .GroupBy(x => x.Brand)
             .Select(g => new { Brand = g.Key, Count = g.Count() })
@@ -221,7 +221,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
             return new ServiceHealthReport
             {
-                CheckTime = DateTime.UtcNow,
+                CheckTime = DateTime.Now,
                 ServiceHealthStatus = healthStatus,
                 TotalServices = aggregatedStats.TotalServices,
                 HealthyServices = aggregatedStats.HealthyServices,
@@ -235,7 +235,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
             _logger.LogError(ex, "❌ VehicleDataService: Error checking services health");
             return new ServiceHealthReport
             {
-                CheckTime = DateTime.UtcNow,
+                CheckTime = DateTime.Now,
                 ServiceHealthStatus = new Dictionary<string, bool>(),
                 OverallHealthy = false,
                 ErrorMessage = ex.Message
@@ -251,7 +251,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
         var result = new BrandFetchResult
         {
             BrandName = service.BrandName,
-            StartTime = DateTime.UtcNow
+            StartTime = DateTime.Now
         };
 
         try
@@ -293,7 +293,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
         }
         finally
         {
-            result.EndTime = DateTime.UtcNow;
+            result.EndTime = DateTime.Now;
             result.Duration = result.EndTime - result.StartTime;
         }
 

@@ -26,10 +26,10 @@ public class SystemStatusController : ControllerBase
 
         var status = new
         {
-            timestamp = DateTime.UtcNow,
+            timestamp = DateTime.Now,
             service_name = "Tesla Mock API Service",
             version = "1.0.0",
-            uptime = DateTime.UtcNow.Subtract(System.Diagnostics.Process.GetCurrentProcess().StartTime),
+            uptime = DateTime.Now.Subtract(System.Diagnostics.Process.GetCurrentProcess().StartTime),
             total_vehicles = allVehicles.Count,
             vehicles_summary = allVehicles.Values.Select(v => new
             {
@@ -70,7 +70,7 @@ public class SystemStatusController : ControllerBase
         return Ok(new
         {
             vehicle_info = vehicle,
-            last_updated_ago = DateTime.UtcNow.Subtract(vehicle.LastUpdate),
+            last_updated_ago = DateTime.Now.Subtract(vehicle.LastUpdate),
             simulated_data = SmartTeslaDataGeneratorService.GenerateCompleteVehicleData(vehicle)
         });
     }
@@ -137,7 +137,7 @@ public class SystemStatusController : ControllerBase
             vehicle.IsLocked = true;
             vehicle.SentryMode = false;
             vehicle.RemoteStart = false;
-            vehicle.LastUpdate = DateTime.UtcNow;
+            vehicle.LastUpdate = DateTime.Now;
 
             _vehicleStateManager.AddOrUpdateVehicle(vin, vehicle);
             resetCount++;
@@ -213,7 +213,7 @@ public class SystemStatusController : ControllerBase
                 throw new ArgumentException($"Unknown event type: {request.EventType}");
         }
 
-        vehicle.LastUpdate = DateTime.UtcNow;
+        vehicle.LastUpdate = DateTime.Now;
     }
 
     #endregion

@@ -39,7 +39,7 @@ namespace PolarDrive.WebApi.Controllers
             }
 
             // SICUREZZA: Verifica scadenza
-            if (consent.ExpiresAt.HasValue && consent.ExpiresAt < DateTime.UtcNow)
+            if (consent.ExpiresAt.HasValue && consent.ExpiresAt < DateTime.Now)
             {
                 return BadRequest("Link scaduto. Richiedi un nuovo consenso.");
             }
@@ -67,13 +67,13 @@ namespace PolarDrive.WebApi.Controllers
             }
 
             // SICUREZZA: Verifica scadenza
-            if (consent.ExpiresAt.HasValue && consent.ExpiresAt < DateTime.UtcNow)
+            if (consent.ExpiresAt.HasValue && consent.ExpiresAt < DateTime.Now)
             {
                 return BadRequest("Link scaduto. Richiedi un nuovo consenso.");
             }
 
             // Attiva consenso con audit trail completo
-            consent.ConsentGivenAt = DateTime.UtcNow;
+            consent.ConsentGivenAt = DateTime.Now;
             consent.IsActive = true;
             consent.IpAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
             consent.UserAgent = Request.Headers["User-Agent"];
@@ -91,7 +91,7 @@ namespace PolarDrive.WebApi.Controllers
         public async Task<IActionResult> CleanupExpiredConsents()
         {
             var expired = await _db.SmsGdprConsent
-                .Where(c => c.ExpiresAt < DateTime.UtcNow && !c.IsActive)
+                .Where(c => c.ExpiresAt < DateTime.Now && !c.IsActive)
                 .ToListAsync();
 
             _db.SmsGdprConsent.RemoveRange(expired);
@@ -204,7 +204,7 @@ namespace PolarDrive.WebApi.Controllers
     
     <div class='info'>
         <strong>Ora puoi ripetere il comando SMS per attivare l'Adaptive Profiling.</strong><br><br>
-        Timestamp: " + DateTime.UtcNow.ToString("dd/MM/yyyy HH:mm:ss") + @" UTC<br>
+        Timestamp: " + DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + @" UTC<br>
         IP: " + Request.HttpContext.Connection.RemoteIpAddress?.ToString() + @"
     </div>
 

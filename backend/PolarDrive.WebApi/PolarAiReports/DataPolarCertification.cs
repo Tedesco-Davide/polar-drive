@@ -111,7 +111,7 @@ public class DataPolarCertification
     {
         var sb = new StringBuilder();
         
-        var startTime = DateTime.UtcNow.AddHours(-dataHours);
+        var startTime = DateTime.Now.AddHours(-dataHours);
         var monthlyRecords = await _dbContext.VehiclesData
             .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
             .CountAsync();
@@ -140,7 +140,7 @@ public class DataPolarCertification
         sb.AppendLine("| Timestamp (UTC) | Laboratorio Mobile | Dati Operativi |");
         sb.AppendLine("|----------------|-------------------|----------------|");
 
-        var startTime = DateTime.UtcNow.AddHours(-dataHours);
+        var startTime = DateTime.Now.AddHours(-dataHours);
         
         // Recupera tutti i record del periodo
         var actualRecords = await _dbContext.VehiclesData

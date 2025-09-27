@@ -106,7 +106,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             Directory.CreateDirectory(consentsDir);
 
             var zipFilename = Path.GetFileNameWithoutExtension(request.ConsentZip.FileName);
-            var uniqueName = $"{zipFilename}_{DateTime.UtcNow:yyyyMMdd_HHmmss}.zip";
+            var uniqueName = $"{zipFilename}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
             var zipPath = Path.Combine(consentsDir, uniqueName);
 
             memoryStream.Position = 0;
@@ -138,7 +138,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 ClientCompanyId = company.Id,
                 VehicleId = vehicle.Id,
                 ConsentType = "Consent Activation",
-                UploadDate = request.UploadDate,
+                UploadDate = DateTime.Now,
                 ZipFilePath = zipPath,
                 ConsentHash = hash,
                 Notes = ""

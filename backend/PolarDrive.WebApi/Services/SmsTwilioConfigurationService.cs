@@ -75,7 +75,7 @@ public class SmsTwilioService : ISmsTwilioConfigurationService
     {
         lock (_rateLimitLock)
         {
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             var oneMinuteAgo = now.AddMinutes(-1);
 
             if (!_rateLimitTracker.ContainsKey(phoneNumber))

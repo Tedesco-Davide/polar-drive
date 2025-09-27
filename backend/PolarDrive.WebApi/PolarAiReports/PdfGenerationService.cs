@@ -66,7 +66,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     private async Task<string> SaveTemporaryHtmlAsync(string htmlContent, int reportId)
     {
         var tempDir = Path.GetTempPath();
-        var htmlPath = Path.Combine(tempDir, $"PolarDrive_Report_{reportId}_{DateTime.UtcNow.Ticks}.html");
+        var htmlPath = Path.Combine(tempDir, $"PolarDrive_Report_{reportId}_{DateTime.Now.Ticks}.html");
 
         await File.WriteAllTextAsync(htmlPath, htmlContent);
 
@@ -81,7 +81,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     /// </summary>
     private string GetOutputPdfPath(PdfReport report)
     {
-        var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+        var generationDate = report.GeneratedAt ?? DateTime.Now;
 
         var outputDir = Path.Combine("storage", "reports",
             generationDate.Year.ToString(),
@@ -132,7 +132,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
 
                 // ✅ SALVA LO SCRIPT NELLA DIRECTORY DEL PROGETTO, NON IN TEMP
                 var projectDirectory = FindProjectDirectory();
-                var scriptPath = Path.Combine(projectDirectory, $"temp_puppeteer_script_{DateTime.UtcNow.Ticks}_attempt{attempt}.js");
+                var scriptPath = Path.Combine(projectDirectory, $"temp_puppeteer_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
                 await File.WriteAllTextAsync(scriptPath, puppeteerScript);
 
                 var process = new Process
@@ -473,7 +473,7 @@ try {{
                 <html><body>
                     <h1>Errore Report {report.Id}</h1>
                     <p>Impossibile generare il report. Vedere i log per dettagli.</p>
-                    <p>Timestamp: {DateTime.UtcNow:yyyy-MM-dd HH:mm}</p>
+                    <p>Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm}</p>
                 </body></html>";
 
             return System.Text.Encoding.UTF8.GetBytes(emergencyHtml);

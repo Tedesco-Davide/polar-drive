@@ -148,7 +148,7 @@ public class TeslaApiService
         {
             // Controlla se abbiamo almeno un token valido
             var hasValidTokens = await _db.ClientTokens
-                .AnyAsync(t => t.AccessTokenExpiresAt > DateTime.UtcNow);
+                .AnyAsync(t => t.AccessTokenExpiresAt > DateTime.Now);
 
             if (!hasValidTokens)
             {
@@ -219,7 +219,7 @@ public class TeslaApiService
                     cv.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase)));
 
             var recentDataRecords = await _db.VehiclesData
-                .CountAsync(vd => vd.Timestamp >= DateTime.UtcNow.AddHours(-24) &&
+                .CountAsync(vd => vd.Timestamp >= DateTime.Now.AddHours(-24) &&
                                  _db.ClientVehicles.Any(cv => cv.Id == vd.VehicleId &&
                                     cv.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase)));
 
@@ -273,7 +273,7 @@ public class TeslaApiService
     {
         try
         {
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             var validTokens = await _db.ClientTokens
                 .CountAsync(t => t.AccessTokenExpiresAt > now);
@@ -309,7 +309,7 @@ public class TeslaApiService
         try
         {
             var expiredTokens = await _db.ClientTokens
-                .Where(t => t.AccessTokenExpiresAt <= DateTime.UtcNow.AddMinutes(20)) // Refresh 5 minuti prima della scadenza
+                .Where(t => t.AccessTokenExpiresAt <= DateTime.Now.AddMinutes(20)) // Refresh 5 minuti prima della scadenza
                 .ToListAsync();
 
             var refreshedCount = 0;
@@ -371,7 +371,7 @@ public class TeslaApiService
         }
 
         // Controlla se il token è scaduto
-        if (token.AccessTokenExpiresAt <= DateTime.UtcNow)
+        if (token.AccessTokenExpiresAt <= DateTime.Now)
         {
             await _logger.Info(source, $"Token expired for vehicle {vehicle.Vin} ({contractStatus}), attempting refresh");
             var refreshed = await RefreshTokenAsync(token);
@@ -458,13 +458,13 @@ public class TeslaApiService
             var statusJson = JsonSerializer.Serialize(new { 
                 polar_drive_status = status, 
                 reason = reason,
-                timestamp = DateTime.UtcNow
+                timestamp = DateTime.Now
             });
             
             var record = new VehicleData
             {
                 VehicleId = vehicle.Id,
-                Timestamp = DateTime.UtcNow,
+                Timestamp = DateTime.Now,
                 RawJsonAnonymized = statusJson
             };
             
@@ -579,12 +579,12 @@ public class TeslaApiService
             var vehicleDataRecord = new VehicleData
             {
                 VehicleId = vehicle.Id,
-                Timestamp = DateTime.UtcNow,
+                Timestamp = DateTime.Now,
                 RawJsonAnonymized = anonymizedJson // Dati anonimizzati
             };
 
             _db.VehiclesData.Add(vehicleDataRecord);
-            vehicle.LastDataUpdate = DateTime.UtcNow;
+            vehicle.LastDataUpdate = DateTime.Now;
 
             await _db.SaveChangesAsync();
 
@@ -605,8 +605,8 @@ public class TeslaApiService
             var newToken = await Controllers.VehicleOAuthController.TeslaOAuthService.RefreshAccessToken(token.RefreshToken, _env);
 
             token.AccessToken = newToken;
-            token.AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8);
-            token.UpdatedAt = DateTime.UtcNow;
+            token.AccessTokenExpiresAt = DateTime.Now.AddHours(8);
+            token.UpdatedAt = DateTime.Now;
 
             await _db.SaveChangesAsync();
             return true;

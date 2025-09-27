@@ -94,7 +94,7 @@ public class ClientConsentsController : ControllerBase
             {
                 ClientCompanyId = request.ClientCompanyId,
                 VehicleId = request.VehicleId,
-                UploadDate = request.UploadDate,
+                UploadDate = DateTime.Now,
                 ConsentType = request.ConsentType,
                 Notes = request.Notes ?? "Manually inserted",
                 ConsentHash = "", // Verrà aggiornato quando si carica il ZIP
@@ -415,7 +415,7 @@ public class ClientConsentsController : ControllerBase
         }
 
         // ✅ Genera il nome del file
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         var fileName = string.IsNullOrWhiteSpace(filePrefix)
             ? $"consent_{timestamp}.zip"
             : $"{filePrefix}_{timestamp}.zip"; // Aggiunto underscore per coerenza
@@ -646,7 +646,7 @@ public class ClientConsentsController : ControllerBase
     /// </summary>
     private static string GenerateArchiveFileName(ClientCompany company)
     {
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         var sanitizedCompanyName = System.Text.RegularExpressions.Regex.Replace(
             company.Name, @"[^a-zA-Z0-9]", "_");
 

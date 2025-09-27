@@ -27,10 +27,10 @@ public class TeslaHealthController : ControllerBase
         var healthResponse = new 
         { 
             status = "healthy",
-            timestamp = DateTime.UtcNow,
+            timestamp = DateTime.Now,
             service = "Tesla Fleet API Mock",
             version = "1.0.0",
-            uptime = DateTime.UtcNow.Subtract(System.Diagnostics.Process.GetCurrentProcess().StartTime),
+            uptime = DateTime.Now.Subtract(System.Diagnostics.Process.GetCurrentProcess().StartTime),
             message = "Tesla Mock API Service is running correctly"
         };
 
@@ -48,7 +48,7 @@ public class TeslaHealthController : ControllerBase
         return Ok(new 
         { 
             status = "pong",
-            timestamp = DateTime.UtcNow
+            timestamp = DateTime.Now
         });
     }
 }

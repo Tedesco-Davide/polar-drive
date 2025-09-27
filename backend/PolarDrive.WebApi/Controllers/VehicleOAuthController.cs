@@ -141,15 +141,15 @@ public class VehicleOAuthController : ControllerBase
                 VehicleId = vehicle.Id,
                 AccessToken = tokens.AccessToken,
                 RefreshToken = tokens.RefreshToken,
-                AccessTokenExpiresAt = DateTime.UtcNow.AddHours(8),
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                AccessTokenExpiresAt = DateTime.Now.AddHours(8),
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
             });
 
             vehicle.ClientOAuthAuthorized = true;
             vehicle.IsActiveFlag = true;
             vehicle.IsFetchingDataFlag = true;
-            vehicle.FirstActivationAt = DateTime.UtcNow;
+            vehicle.FirstActivationAt = DateTime.Now;
 
             await _db.SaveChangesAsync();
 

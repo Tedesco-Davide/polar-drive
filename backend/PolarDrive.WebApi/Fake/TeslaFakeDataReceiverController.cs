@@ -102,7 +102,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
             // Controlla limite dati per veicolo (evita spam)
             var recentDataCount = await _db.VehiclesData
                 .CountAsync(vd => vd.VehicleId == vehicle.Id &&
-                                 vd.Timestamp >= DateTime.UtcNow.AddMinutes(-5));
+                                 vd.Timestamp >= DateTime.Now.AddMinutes(-5));
 
             if (recentDataCount >= 50) // Max 50 record ogni 5 minuti in dev
             {
@@ -119,14 +119,14 @@ public class TeslaFakeDataReceiverController : ControllerBase
             var vehicleDataRecord = new VehicleData
             {
                 VehicleId = vehicle.Id,
-                Timestamp = DateTime.UtcNow,
+                Timestamp = DateTime.Now,
                 RawJsonAnonymized = anonymizedJson  // ✅ Dati anonimizzati
             };
 
             _db.VehiclesData.Add(vehicleDataRecord);
 
             // Aggiorna il timestamp di ultimo aggiornamento
-            vehicle.LastDataUpdate = DateTime.UtcNow;
+            vehicle.LastDataUpdate = DateTime.Now;
 
             await _db.SaveChangesAsync();
 
@@ -197,7 +197,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
             var totalRecords = await _db.VehiclesData.CountAsync(vd => vd.VehicleId == vehicle.Id);
             var recentRecords = await _db.VehiclesData
                 .CountAsync(vd => vd.VehicleId == vehicle.Id &&
-                                 vd.Timestamp >= DateTime.UtcNow.AddHours(-1));
+                                 vd.Timestamp >= DateTime.Now.AddHours(-1));
 
             // Info sui report
             var reports = await _db.PdfReports.CountAsync(r => r.VehicleId == vehicle.Id);
@@ -301,7 +301,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
             var reportStats = await GetReportStats(vehicle.Id);
 
             var monitoringDuration = stats?.FirstRecord.HasValue == true
-                ? DateTime.UtcNow - stats.FirstRecord.Value
+                ? DateTime.Now - stats.FirstRecord.Value
                 : TimeSpan.Zero;
 
             return Ok(new
@@ -363,14 +363,14 @@ public class TeslaFakeDataReceiverController : ControllerBase
 
             var totalDataRecords = await _db.VehiclesData.CountAsync();
             var recentDataRecords = await _db.VehiclesData
-                .CountAsync(vd => vd.Timestamp >= DateTime.UtcNow.AddHours(-1));
+                .CountAsync(vd => vd.Timestamp >= DateTime.Now.AddHours(-1));
 
             var reports = await _db.PdfReports.CountAsync();
             var serviceStatus = await CheckDevelopmentServices();
 
             return Ok(new
             {
-                timestamp = DateTime.UtcNow,
+                timestamp = DateTime.Now,
                 environment = _env.EnvironmentName,
                 vehicles = new
                 {
@@ -437,7 +437,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
             .Where(vd => vd.VehicleId == vehicleId)
             .MinAsync(vd => (DateTime?)vd.Timestamp);
 
-        return firstRecord.HasValue ? DateTime.UtcNow - firstRecord.Value : TimeSpan.Zero;
+        return firstRecord.HasValue ? DateTime.Now - firstRecord.Value : TimeSpan.Zero;
     }
 
     /// <summary>
@@ -482,7 +482,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     private async Task<object> GetHourlyDataDistribution(int vehicleId)
     {
         var last24Hours = await _db.VehiclesData
-            .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= DateTime.UtcNow.AddHours(-24))
+            .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= DateTime.Now.AddHours(-24))
             .GroupBy(vd => vd.Timestamp.Hour)
             .Select(g => new { Hour = g.Key, Count = g.Count() })
             .OrderBy(x => x.Hour)
@@ -496,7 +496,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
     /// </summary>
     private async Task<object> GetRecentDataStats(int vehicleId)
     {
-        var now = DateTime.UtcNow;
+        var now = DateTime.Now;
         return new
         {
             Last5Minutes = await _db.VehiclesData.CountAsync(vd => vd.VehicleId == vehicleId && vd.Timestamp >= now.AddMinutes(-5)),

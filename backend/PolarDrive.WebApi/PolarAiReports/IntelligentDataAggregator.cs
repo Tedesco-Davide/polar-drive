@@ -865,7 +865,7 @@ public class IntelligentDataAggregator
     {
         try
         {
-            var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
+            var thirtyDaysAgo = DateTime.Now.AddDays(-30);
             var adaptiveSessions = await ExecuteWithRetry(() =>
                 _dbContext.SmsAdaptiveProfilingEvents
                     .Where(e => e.VehicleId == vehicleId && e.ReceivedAt >= thirtyDaysAgo)
@@ -894,7 +894,7 @@ public class IntelligentDataAggregator
                 }
 
                 // Frequenza di utilizzo
-                var totalDays = Math.Max(1, (DateTime.UtcNow - adaptiveSessions.Min(e => e.ReceivedAt)).TotalDays);
+                var totalDays = Math.Max(1, (DateTime.Now - adaptiveSessions.Min(e => e.ReceivedAt)).TotalDays);
                 var frequency = aggregation.AdaptiveSessionsCount / totalDays;
 
                 aggregation.AdaptiveFrequencyAnalysis = frequency switch
@@ -923,7 +923,7 @@ public class IntelligentDataAggregator
 
     private async Task<SmsAdaptiveProfilingEvent?> GetActiveAdaptiveSession(int vehicleId)
     {
-        var fourHoursAgo = DateTime.UtcNow.AddHours(-4);
+        var fourHoursAgo = DateTime.Now.AddHours(-4);
 
         return await ExecuteWithRetry(() =>
             _dbContext.SmsAdaptiveProfilingEvents
@@ -1415,7 +1415,7 @@ public class IntelligentDataAggregator
         public ErrorType Type { get; set; }
         public string Message { get; set; } = "";
         public string Details { get; set; } = "";
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; set; } = DateTime.Now;
     }
 
     private async Task LogProcessingStep(string step, string details)
@@ -1628,7 +1628,7 @@ public class IntelligentDataAggregator
             Type = ClassifyException(ex),
             Message = ex.Message,
             Details = $"Context: {context}, Operation: {operation}",
-            Timestamp = DateTime.UtcNow
+            Timestamp = DateTime.Now
         };
 
         _processingErrors.Add(error);

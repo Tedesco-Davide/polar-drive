@@ -455,7 +455,7 @@ public class OutagePeriodsController : ControllerBase
         }
 
         // ✅ Genera il nome del file
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         var fileName = string.IsNullOrWhiteSpace(filePrefix)
             ? $"outage_{timestamp}.zip"
             : $"{filePrefix}{timestamp}.zip";

@@ -345,7 +345,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
 
     private static string GetReportPdfPath(PdfReport report)
     {
-        var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+        var generationDate = report.GeneratedAt ?? DateTime.Now;
         var basePath = Directory.GetCurrentDirectory();
 
         return Path.Combine(basePath, "storage", "reports",

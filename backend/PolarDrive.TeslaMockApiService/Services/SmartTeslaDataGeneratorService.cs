@@ -666,14 +666,14 @@ public static partial class SmartTeslaDataGeneratorService
                     type = "share_dest_content_raw",
                     value = "Piazza del Colosseo, Roma, Italia",
                     locale = "it-IT",
-                    timestamp_ms = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    timestamp_ms = DateTimeOffset.Now.ToUnixTimeMilliseconds()
                 },
                 response = new { result = true, reason = "" }
             },
             new {
                 command = "share",
                 timestamp = ts.ToString("o"),
-                parameters = new { type = "share_ext_content_raw", locale = "en-US", timestamp_ms = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() },
+                parameters = new { type = "share_ext_content_raw", locale = "en-US", timestamp_ms = DateTimeOffset.Now.ToUnixTimeMilliseconds() },
                 response = new { result = true, reason = "" }
             },
             new {
@@ -1927,7 +1927,7 @@ public static partial class SmartTeslaDataGeneratorService
 
     public static string GenerateRawVehicleJson(VehicleSimulationState state)
     {
-        var ts = DateTime.UtcNow;
+        var ts = DateTime.Now;
 
         var json = new
         {
@@ -1949,13 +1949,13 @@ public static partial class SmartTeslaDataGeneratorService
 
     public static object GenerateCompleteVehicleData(VehicleSimulationState state)
     {
-        var ts = DateTime.UtcNow;
+        var ts = DateTime.Now;
         return GenerateVehicleEndpoints(state, ts);
     }
 
     public static object GenerateCommandResponse(string commandName, object? parameters)
     {
-        var ts = DateTime.UtcNow;
+        var ts = DateTime.Now;
 
         return new
         {
@@ -2021,7 +2021,7 @@ public static partial class SmartTeslaDataGeneratorService
 
     public static object GenerateNearbyChargingSites(VehicleSimulationState state)
     {
-        var ts = DateTime.UtcNow;
+        var ts = DateTime.Now;
         var timestampMs = new DateTimeOffset(ts).ToUnixTimeMilliseconds();
 
         return new

@@ -181,7 +181,7 @@ public class TeslaFakeApiController : ControllerBase
                 message = $"Files regenerated for report {reportId}",
                 reportId = reportId,
                 vehicleVin = report?.ClientVehicle?.Vin,
-                timestamp = DateTime.UtcNow,
+                timestamp = DateTime.Now,
                 filesGenerated = filesStatus,
                 note = "Files regenerated via ReportGenerationService"
             });
@@ -283,7 +283,7 @@ public class TeslaFakeApiController : ControllerBase
                 .Select(vd => vd.Timestamp)
                 .FirstOrDefaultAsync();
 
-            var monitoringDays = firstDataRecord != default ? (DateTime.UtcNow - firstDataRecord).TotalDays : 0;
+            var monitoringDays = firstDataRecord != default ? (DateTime.Now - firstDataRecord).TotalDays : 0;
             var contractStatus = GetContractStatus(vehicle);
 
             result.Add(new
@@ -311,7 +311,7 @@ public class TeslaFakeApiController : ControllerBase
 
         return Ok(new
         {
-            timestamp = DateTime.UtcNow,
+            timestamp = DateTime.Now,
             environment = "Development",
             vehicles = result,
             summary = new
@@ -356,7 +356,7 @@ public class TeslaFakeApiController : ControllerBase
 
         return Ok(new
         {
-            timestamp = DateTime.UtcNow,
+            timestamp = DateTime.Now,
             environment = "Development",
             recentReports = result,
             totalReports = await _db.PdfReports.CountAsync(),
@@ -455,7 +455,7 @@ public class TeslaFakeApiController : ControllerBase
     /// </summary>
     private static string GetFilePath(PdfReport report, string ext, string folder)
     {
-        var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+        var generationDate = report.GeneratedAt ?? DateTime.Now;
 
         return Path.Combine("storage", folder,
             generationDate.Year.ToString(),

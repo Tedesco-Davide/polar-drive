@@ -32,7 +32,7 @@ public class SmsAdaptiveProfilingService(PolarDriveDbContext db) : ISmsAdaptiveP
     /// </summary>
     public async Task<SmsAdaptiveProfilingEvent?> GetActiveSessionAsync(int vehicleId)
     {
-        var fourHoursAgo = DateTime.UtcNow.AddHours(-4);
+        var fourHoursAgo = DateTime.Now.AddHours(-4);
 
         return await db.SmsAdaptiveProfilingEvents
             .Where(e => e.VehicleId == vehicleId

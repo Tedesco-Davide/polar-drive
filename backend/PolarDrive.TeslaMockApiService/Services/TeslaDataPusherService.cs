@@ -203,7 +203,7 @@ public class TeslaDataPusherService : BackgroundService
             IsLocked = _random.Next(1, 3) == 1, // 50% probabilità
             SentryMode = _random.Next(1, 5) == 1, // 20% probabilità
             Odometer = _random.Next(5000, 50000),
-            LastUpdate = DateTime.UtcNow
+            LastUpdate = DateTime.Now
         };
     }
 

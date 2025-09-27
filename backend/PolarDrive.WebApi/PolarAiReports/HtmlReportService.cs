@@ -74,7 +74,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             ["vehicleVin"] = report.ClientVehicle?.Vin ?? "N/A",
             ["periodStart"] = report.ReportPeriodStart.ToString(options.DateFormat),
             ["periodEnd"] = report.ReportPeriodEnd.ToString(options.DateFormat),
-            ["generatedAt"] = DateTime.UtcNow.ToString(options.DateTimeFormat),
+            ["generatedAt"] = DateTime.Now.ToString(options.DateTimeFormat),
             ["notes"] = report.Notes ?? "N/A",
             ["insights"] = FormatInsightsForHtml(aiReportContentInsights),
 
@@ -129,10 +129,10 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
             var totalMonitoringPeriod = firstRecord == default
                 ? TimeSpan.FromDays(1)
-                : DateTime.UtcNow - firstRecord;
+                : DateTime.Now - firstRecord;
 
             // Recupera conteggio dati degli ultimi 30 giorni
-            var startTime = DateTime.UtcNow.AddHours(-720); // 30 giorni
+            var startTime = DateTime.Now.AddHours(-720); // 30 giorni
             var monthlyDataCount = await dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
                 .CountAsync();

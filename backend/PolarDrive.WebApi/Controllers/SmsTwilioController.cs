@@ -44,7 +44,7 @@ public class SmsTwilioController : ControllerBase
             FromPhoneNumber = dto.From,
             ToPhoneNumber = dto.To,
             MessageBody = dto.Body,
-            ReceivedAt = DateTime.UtcNow,
+            ReceivedAt = DateTime.Now,
             ProcessingStatus = "PROCESSING"
         };
 
@@ -192,7 +192,7 @@ public class SmsTwilioController : ControllerBase
             {
                 // Aggiorna mappatura esistente
                 existingMapping.VehicleId = dto.VehicleId;
-                existingMapping.UpdatedAt = DateTime.UtcNow;
+                existingMapping.UpdatedAt = DateTime.Now;
                 existingMapping.IsActive = true;
                 existingMapping.Notes = dto.Notes;
 
@@ -206,8 +206,8 @@ public class SmsTwilioController : ControllerBase
                 {
                     PhoneNumber = normalizedPhone,
                     VehicleId = dto.VehicleId,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.Now,
+                    UpdatedAt = DateTime.Now,
                     IsActive = true,
                     Notes = dto.Notes
                 };
@@ -585,7 +585,7 @@ public class SmsTwilioController : ControllerBase
         var normalizedPhone = NormalizePhoneNumber(phoneNumber);
 
         // Rate limiting (max 3 tentativi per ora)
-        var oneHourAgo = DateTime.UtcNow.AddHours(-1);
+        var oneHourAgo = DateTime.Now.AddHours(-1);
         var recentAttempts = await _db.SmsGdprConsent
             .CountAsync(c => c.PhoneNumber == normalizedPhone && c.RequestedAt >= oneHourAgo);
         
@@ -614,8 +614,8 @@ public class SmsTwilioController : ControllerBase
             PhoneNumber = normalizedPhone,
             VehicleId = vehicleId,
             ConsentToken = consentToken,
-            RequestedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddHours(24),
+            RequestedAt = DateTime.Now,
+            ExpiresAt = DateTime.Now.AddHours(24),
             IsActive = false,
             AttemptCount = recentAttempts + 1
         };

@@ -306,7 +306,7 @@ public class VehiclesController(VehicleStateManager vehicleStateManager, ILogger
         }
 
         // Aggiorna il timestamp
-        state.LastUpdate = DateTime.UtcNow;
+        state.LastUpdate = DateTime.Now;
     }
 
     #endregion

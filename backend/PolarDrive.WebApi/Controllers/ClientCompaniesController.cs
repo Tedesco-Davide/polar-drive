@@ -64,7 +64,7 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
             Email = dto.Email,
             PecAddress = dto.PecAddress,
             LandlineNumber = dto.LandlineNumber,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.Now
         };
 
         db.ClientCompanies.Add(entity);

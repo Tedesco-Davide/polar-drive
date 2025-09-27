@@ -100,13 +100,13 @@ public class PdfReportsController : ControllerBase
     private async Task<bool> ShouldReportHaveFiles(Data.Entities.PdfReport report)
     {
         // Se il report è stato generato, dovrebbe avere file
-        if (report.GeneratedAt.HasValue && report.GeneratedAt < DateTime.UtcNow.AddMinutes(-5))
+        if (report.GeneratedAt.HasValue && report.GeneratedAt < DateTime.Now.AddMinutes(-5))
         {
             return true;
         }
 
         // Se il report è vecchio ma non ha GeneratedAt, controlla i dati
-        var reportAge = DateTime.UtcNow - report.CreatedAt;
+        var reportAge = DateTime.Now - report.CreatedAt;
         if (reportAge.TotalMinutes > 30)
         {
             var dataCount = await CountDataRecordsForReport(report);
@@ -322,7 +322,7 @@ public class PdfReportsController : ControllerBase
 
             report.RegenerationCount++;
             report.Status = "PROCESSING";
-            report.Notes = $"Ultima rigenerazione: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount}";
+            report.Notes = $"Ultima rigenerazione: {DateTime.Now:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount}";
             await db.SaveChangesAsync();
 
             BackgroundJob.Enqueue(() => ProcessReportRegenerationAsync(report.Id));
@@ -421,7 +421,7 @@ public class PdfReportsController : ControllerBase
                 if (updatedReport != null)
                 {
                     updatedReport.Status = "COMPLETED";
-                    updatedReport.GeneratedAt = DateTime.UtcNow;
+                    updatedReport.GeneratedAt = DateTime.Now;
                     await db.SaveChangesAsync();
                 }
 
@@ -445,7 +445,7 @@ public class PdfReportsController : ControllerBase
     private string GetReportFilePath(Data.Entities.PdfReport report, string extension)
     {
         var folder = extension == "html" && _env.IsDevelopment() ? "dev-reports" : "reports";
-        var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+        var generationDate = report.GeneratedAt ?? DateTime.Now;
 
         var storageDir = Path.Combine("storage", folder,
             generationDate.Year.ToString(),

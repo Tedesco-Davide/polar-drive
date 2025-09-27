@@ -13,7 +13,7 @@ public class FakeOAuthController : ControllerBase
     )
     {
         // Genera un fake code per il mock
-        var fakeCode = "FAKECODE_" + DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        var fakeCode = "FAKECODE_" + DateTimeOffset.Now.ToUnixTimeSeconds();
         var redirectUrl = $"{redirect_uri}?code={fakeCode}&state={state}";
 
         return Redirect(redirectUrl);
@@ -48,12 +48,12 @@ public class FakeOAuthController : ControllerBase
         // Simula la risposta Tesla OAuth
         var tokenResponse = new
         {
-            access_token = "TESLA_ACCESS_TOKEN_" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            refresh_token = "TESLA_REFRESH_TOKEN_" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
-            id_token = "TESLA_ID_TOKEN_" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            access_token = "TESLA_ACCESS_TOKEN_" + DateTimeOffset.Now.ToUnixTimeSeconds(),
+            refresh_token = "TESLA_REFRESH_TOKEN_" + DateTimeOffset.Now.ToUnixTimeSeconds(),
+            id_token = "TESLA_ID_TOKEN_" + DateTimeOffset.Now.ToUnixTimeSeconds(),
             expires_in = 28800, // 8 ore
             token_type = "Bearer",
-            created_at = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            created_at = DateTimeOffset.Now.ToUnixTimeSeconds()
         };
 
         return Ok(tokenResponse);
@@ -69,11 +69,11 @@ public class FakeOAuthController : ControllerBase
         // Simula il refresh del token
         var tokenResponse = new
         {
-            access_token = "TESLA_REFRESHED_ACCESS_TOKEN_" + DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            access_token = "TESLA_REFRESHED_ACCESS_TOKEN_" + DateTimeOffset.Now.ToUnixTimeSeconds(),
             refresh_token = request.RefreshToken, // Mantieni lo stesso refresh token
             expires_in = 28800, // 8 ore
             token_type = "Bearer",
-            created_at = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+            created_at = DateTimeOffset.Now.ToUnixTimeSeconds()
         };
 
         return Ok(tokenResponse);

@@ -103,8 +103,8 @@ public class UploadConsentZipController : ControllerBase
         {
             ClientCompanyId = clientCompanyId,
             VehicleId = vehicleId,
-            UploadDate = parsedDate,
-            ZipFilePath = zipFilePath, // ✅ Ora usa il path completo
+            UploadDate = DateTime.Now,
+            ZipFilePath = zipFilePath,
             ConsentHash = hash,
             ConsentType = consentType,
             Notes = ""
@@ -316,7 +316,7 @@ public class UploadConsentZipController : ControllerBase
         var companyConsentsPath = GetCompanyConsentsPath(companyId);
 
         // ✅ Genera il nome del file
-        var timestamp = DateTime.UtcNow.ToString("yyyyMMdd_HHmmss");
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
         var fileName = string.IsNullOrWhiteSpace(filePrefix)
             ? $"consent_{timestamp}.zip"
             : $"{filePrefix}_{timestamp}.zip"; // Aggiunto underscore per coerenza

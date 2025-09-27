@@ -123,7 +123,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             ClientOAuthAuthorized = false,
             FirstActivationAt = ParseDate(dto.FirstActivationAt),
             LastDeactivationAt = ParseDate(dto.LastDeactivationAt),
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.Now,
             ReferentName = dto.ReferentName,
             ReferentMobileNumber = dto.ReferentMobileNumber,
             ReferentEmail = dto.ReferentEmail,
@@ -188,10 +188,10 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         }
 
         if (wasActive && !dto.IsActive)
-            vehicle.LastDeactivationAt = DateTime.UtcNow;
+            vehicle.LastDeactivationAt = DateTime.Now;
 
         if (wasFetching != dto.IsFetching)
-            vehicle.LastFetchingDataAt = DateTime.UtcNow;
+            vehicle.LastFetchingDataAt = DateTime.Now;
 
         await db.SaveChangesAsync();
 

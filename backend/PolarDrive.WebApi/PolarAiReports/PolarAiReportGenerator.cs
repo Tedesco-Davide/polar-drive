@@ -84,7 +84,7 @@ public class PolarAiReportGenerator
         try
         {
             var firstRecord = await GetFirstVehicleRecord(vehicleId);
-            return firstRecord == default ? TimeSpan.FromDays(1) : DateTime.UtcNow - firstRecord;
+            return firstRecord == default ? TimeSpan.FromDays(1) : DateTime.Now - firstRecord;
         }
         catch (Exception ex)
         {
@@ -138,7 +138,7 @@ public class PolarAiReportGenerator
     {
         try
         {
-            var startTime = DateTime.UtcNow.AddHours(-hours);
+            var startTime = DateTime.Now.AddHours(-hours);
 
             await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
                 $"Recupero dati mensili: {hours}h ({hours / 24} giorni)",

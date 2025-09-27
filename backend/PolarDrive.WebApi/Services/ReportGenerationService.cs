@@ -31,7 +31,7 @@ namespace PolarDrive.WebApi.Services
         public string? VehicleVin { get; set; }
         public string? AnalysisLevel { get; set; }
         public string? ErrorMessage { get; set; }
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+        public DateTime Timestamp { get; set; } = DateTime.Now;
         public ReportFileStatus? FileStatus { get; set; }
     }
 
@@ -83,7 +83,7 @@ namespace PolarDrive.WebApi.Services
             CancellationToken stoppingToken = default)
         {
             var results = new SchedulerResults();
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
 
             if (!ShouldGenerateReports(scheduleType, now))
             {
@@ -153,7 +153,7 @@ namespace PolarDrive.WebApi.Services
         public async Task<RetryResults> ProcessRetriesAsync(CancellationToken stoppingToken = default)
         {
             var results = new RetryResults();
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             var threshold = _env.IsDevelopment()
                 ? TimeSpan.FromMinutes(DEV_RETRY_MINUTES)
                 : TimeSpan.FromHours(PROD_RETRY_HOURS);
@@ -240,7 +240,7 @@ namespace PolarDrive.WebApi.Services
             if (dataCount == 0)
             {
                 report.Status = "NO-DATA";
-                report.Notes = $"Ultima rigenerazione: {DateTime.UtcNow:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount} - Nessun dato disponibile per il periodo";
+                report.Notes = $"Ultima rigenerazione: {DateTime.Now:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount} - Nessun dato disponibile per il periodo";
 
                 // Elimina eventuali file esistenti (cleanup)
                 DeleteExistingFiles(report);
@@ -466,7 +466,7 @@ namespace PolarDrive.WebApi.Services
                     .FirstOrDefaultAsync();
 
                 // 2) SEMPRE 720H - FINESTRA MENSILE UNIFICATA
-                var now = DateTime.UtcNow;
+                var now = DateTime.Now;
                 var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                 var end = now;
 
@@ -511,7 +511,7 @@ namespace PolarDrive.WebApi.Services
             if (reportCount == 0 && vehicle.FirstActivationAt.HasValue)
             {
                 start = vehicle.FirstActivationAt.Value;  // ✅ Dall'attivazione!
-                end = DateTime.UtcNow;
+                end = DateTime.Now;
 
                 _logger.LogInformation("🔧 First report from activation: {ActivationDate} to {Now}",
                                        start, end);
@@ -543,7 +543,7 @@ namespace PolarDrive.WebApi.Services
                 ClientCompanyId = vehicle.ClientCompanyId,
                 ReportPeriodStart = period.Start,
                 ReportPeriodEnd = period.End,
-                GeneratedAt = DateTime.UtcNow,
+                GeneratedAt = DateTime.Now,
                 Notes = $"[{period.AnalysisLevel}] DataHours: {period.DataHours}, Monitoring: {period.MonitoringDays:F1}d"
             };
 
@@ -638,7 +638,7 @@ namespace PolarDrive.WebApi.Services
                                         </style>
                                     </head>
                                     <body>
-                                        <div class='header-content'>{vehicle.Vin} - {DateTime.UtcNow:yyyy-MM-dd HH:mm}</div>
+                                        <div class='header-content'>{vehicle.Vin} - {DateTime.Now:yyyy-MM-dd HH:mm}</div>
                                     </body>
                                     </html>",
                 FooterTemplate = @"
@@ -729,7 +729,7 @@ namespace PolarDrive.WebApi.Services
 
         private (DateTime start, DateTime end) GetDateRangeForSchedule(ScheduleType scheduleType)
         {
-            var now = DateTime.UtcNow;
+            var now = DateTime.Now;
             return scheduleType switch
             {
                 ScheduleType.Daily => (now.AddDays(-1).Date, now.Date.AddSeconds(-1)),
@@ -755,7 +755,7 @@ namespace PolarDrive.WebApi.Services
         private static string GetFilePath(PdfReport report, string ext, string folder)
         {
             // ✅ USA LA DATA DI GENERAZIONE, NON IL PERIODO DEI DATI
-            var generationDate = report.GeneratedAt ?? DateTime.UtcNow;
+            var generationDate = report.GeneratedAt ?? DateTime.Now;
 
             return Path.Combine("storage", folder,
                 generationDate.Year.ToString(),

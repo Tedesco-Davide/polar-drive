@@ -61,7 +61,7 @@ public class SmsAdaptiveProfilingController : ControllerBase
             var smsEvent = new SmsAdaptiveProfilingEvent
             {
                 VehicleId = dto.VehicleId,
-                ReceivedAt = DateTime.UtcNow,
+                ReceivedAt = DateTime.Now,
                 MessageContent = dto.MessageContent,
                 ParsedCommand = parsedCommand
             };
@@ -83,7 +83,7 @@ public class SmsAdaptiveProfilingController : ControllerBase
                     {
                         message = "Adaptive Profiling session extended for 4 more hours",
                         sessionStartedAt = activeSession.ReceivedAt,
-                        newEndTime = DateTime.UtcNow.AddHours(4)
+                        newEndTime = DateTime.Now.AddHours(4)
                     });
                 }
 
@@ -99,9 +99,9 @@ public class SmsAdaptiveProfilingController : ControllerBase
                 message = parsedCommand == "ADAPTIVE_PROFILING_ON"
                     ? "Adaptive Profiling activated for 4 hours"
                     : "Adaptive Profiling deactivated",
-                sessionStartedAt = DateTime.UtcNow,
+                sessionStartedAt = DateTime.Now,
                 sessionEndTime = parsedCommand == "ADAPTIVE_PROFILING_ON"
-                    ? DateTime.UtcNow.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD)
+                    ? DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD)
                     : (DateTime?)null
             });
         }
@@ -132,7 +132,7 @@ public class SmsAdaptiveProfilingController : ControllerBase
             if (activeSession != null)
             {
                 var endTime = activeSession.ReceivedAt.AddHours(4);
-                var remainingMinutes = (int)(endTime - DateTime.UtcNow).TotalMinutes;
+                var remainingMinutes = (int)(endTime - DateTime.Now).TotalMinutes;
 
                 return Ok(new
                 {
@@ -268,7 +268,7 @@ public class SmsAdaptiveProfilingController : ControllerBase
     /// </summary>
     private async Task<SmsAdaptiveProfilingEvent?> GetActiveAdaptiveProfilingSession(int vehicleId)
     {
-        var fourHoursAgo = DateTime.UtcNow.AddHours(-4);
+        var fourHoursAgo = DateTime.Now.AddHours(-4);
 
         return await db.SmsAdaptiveProfilingEvents
             .Where(e => e.VehicleId == vehicleId
