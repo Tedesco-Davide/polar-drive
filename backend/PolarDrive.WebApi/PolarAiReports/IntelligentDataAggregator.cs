@@ -58,7 +58,7 @@ public class IntelligentDataAggregator
         var processedRecords = 0;
 
         // Processa ogni JSON e aggrega tutti i dati
-        foreach (var rawJsonAnonymous  in rawJsonAnonymizedList )
+        foreach (var rawJsonAnonymous in rawJsonAnonymizedList)
         {
             var recordStopwatch = Stopwatch.StartNew();
             try
@@ -611,6 +611,9 @@ public class IntelligentDataAggregator
         var speed = GetSafeIntValue(driveState, "speed");
         var shiftState = GetSafeStringValue(driveState, "shift_state");
         var normalizedSpeed = DataNormalizer.NormalizeSpeed(speed);
+
+        if (latitude != 0) latitude = AnonymizeDecimal(latitude, precision: 1);
+        if (longitude != 0) longitude = AnonymizeDecimal(longitude, precision: 1);
 
         // NORMALIZZAZIONE APPLICATA
         if (speed > 0)
@@ -1367,14 +1370,11 @@ public class IntelligentDataAggregator
         // Normalizzazione coordinate (formato consistente)
         public static (decimal lat, decimal lon) NormalizeCoordinates(decimal latitude, decimal longitude)
         {
-            // Arrotonda a 6 decimali (precisione ~11cm)
-            var lat = Math.Round(latitude, 6);
-            var lon = Math.Round(longitude, 6);
-
-            // Verifica range validi
-            lat = Math.Max(-90, Math.Min(90, lat));
-            lon = Math.Max(-180, Math.Min(180, lon));
-
+            // Anonimizza prima di normalizzare
+            latitude = Math.Round(latitude, 1);
+            longitude = Math.Round(longitude, 1);
+            var lat = Math.Round(latitude, 1);
+            var lon = Math.Round(longitude, 1);
             return (lat, lon);
         }
 
@@ -1658,6 +1658,13 @@ public class IntelligentDataAggregator
             OutOfMemoryException or StackOverflowException => ErrorType.SystemError,
             _ => ErrorType.UnknownError
         };
+    }
+    
+    private static decimal AnonymizeDecimal(decimal value, int precision = 1)
+    {
+        // Arrotonda a 1 decimale invece di mascherare
+        // 40.8518 → 40.9 (città visibile, indirizzo no)
+        return Math.Round(value, precision);
     }
 
     #endregion

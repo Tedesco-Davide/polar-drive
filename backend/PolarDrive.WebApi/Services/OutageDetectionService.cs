@@ -5,6 +5,7 @@ using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.Services;
 using System.Text.Json;
 using System.Net;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.Services;
 
@@ -17,16 +18,12 @@ public class OutageDetectionService(
     private readonly PolarDriveLogger _logger = new PolarDriveLogger(db);
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly IWebHostEnvironment _env = env;
-
-    // Environment-aware thresholds ragionevoli
     private TimeSpan _vehicleInactivityThreshold => _env.IsDevelopment()
-        ? TimeSpan.FromMinutes(10)    // DEVELOPMENT => fetch ogni minuto | threshold 10 minuti
-        : TimeSpan.FromHours(6);      // PRODUCTION  => fetch ogni ora | threshold 6 ore
-
+        ? TimeSpan.FromMinutes(DEV_GRACE_PERIOD_INACTIVITY_TRESHOLD_MINUTES)
+        : TimeSpan.FromHours(PROD_GRACE_PERIOD_INACTIVITY_TRESHOLD_HOURS);
     private TimeSpan _gracePeriod => _env.IsDevelopment() 
-        ? TimeSpan.FromMinutes(5)     // DEVELOPMENT => grace di 5 minuti
-        : TimeSpan.FromHours(2);      // PRODUCTION  => grace di 2 ore
-
+        ? TimeSpan.FromMinutes(DEV_GRACE_PERIOD_MINUTES)
+        : TimeSpan.FromHours(PROD_GRACE_PERIOD_HOURS);
     private readonly TimeSpan _fleetApiTimeout = TimeSpan.FromSeconds(60);
 
     private readonly int _maxRetries = 3;

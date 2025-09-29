@@ -58,7 +58,7 @@ public class PolarAiReportGenerator
 
         // 🏆 CERTIFICAZIONE DATAPOLAR - Aggiunta DOPO gli insights AI
         var certification = new DataPolarCertification(_dbContext);
-        var certificationReport = await certification.GenerateCompleteCertificationReport(vehicleId, monitoringPeriod, dataHours);
+        var certificationReport = await certification.GenerateCompleteCertificationHtmlAsync(vehicleId, monitoringPeriod);
 
         // 🔗 COMBINAZIONE FINALE: AI Insights + Certificazione DataPolar
         var finalReport = new StringBuilder();

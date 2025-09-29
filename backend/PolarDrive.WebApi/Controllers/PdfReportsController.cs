@@ -393,7 +393,7 @@ public class PdfReportsController : ControllerBase
         return (true, "", "");
     }
 
-    private async Task ProcessReportRegenerationAsync(int reportId)
+    public async Task ProcessReportRegenerationAsync(int reportId)
     {
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
