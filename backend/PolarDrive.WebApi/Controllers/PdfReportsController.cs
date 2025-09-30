@@ -129,7 +129,15 @@ public class PdfReportsController : ControllerBase
     {
         var (htmlPath, pdfPath) = GetReportFilePaths(report);
         var fileInfo = GetFileInfo(htmlPath, pdfPath);
-        var dataCount = await CountDataRecordsForReport(report);
+        
+        // ✅ Record nel periodo del report (per validazione status)
+        var dataCountInPeriod = await CountDataRecordsForReport(report);
+        
+        // ✅ Record totali storici (per mostrare nella lista)
+        var totalHistoricalRecords = await db.VehiclesData
+            .Where(vd => vd.VehicleId == report.VehicleId)
+            .CountAsync();
+        
         var monitoringDuration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
 
         return new PdfReportDTO
@@ -146,15 +154,15 @@ public class PdfReportsController : ControllerBase
             Notes = report.Notes,
             HasPdfFile = fileInfo.PdfExists,
             HasHtmlFile = fileInfo.HtmlExists,
-            DataRecordsCount = dataCount,
+            DataRecordsCount = totalHistoricalRecords,
             PdfFileSize = fileInfo.PdfSize,
             HtmlFileSize = fileInfo.HtmlSize,
             MonitoringDurationHours = Math.Max(0, Math.Floor(monitoringDuration)),
             IsRegenerated = report.RegenerationCount > 0,
             RegenerationCount = report.RegenerationCount,
             LastRegenerated = report.GeneratedAt?.ToString("o"),
-            ReportType = DetermineReportType(report, dataCount),
-            Status = await DetermineReportStatusAsync(report, fileInfo.PdfExists, fileInfo.HtmlExists, dataCount),
+            ReportType = DetermineReportType(report, dataCountInPeriod),
+            Status = await DetermineReportStatusAsync(report, fileInfo.PdfExists, fileInfo.HtmlExists, dataCountInPeriod),
         };
     }
 

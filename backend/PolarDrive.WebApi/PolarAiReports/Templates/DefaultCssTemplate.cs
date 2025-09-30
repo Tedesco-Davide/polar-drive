@@ -488,6 +488,43 @@ public static class DefaultCssTemplate
             width: 20px; height: 20px; flex: 0 0 20px;
         }
 
+        .detailed-log-table td:nth-child(2) {
+            border-right: 1px solid rgba(139, 159, 242, 0.1);
+        }
+
+        .detailed-log-badge-success-profiling, 
+        .detailed-log-badge-default-profiling,
+        .detailed-log-badge-success-dataValidated,
+        .detailed-log-badge-warning-dataValidated {
+            text-align: center;
+            display: inline-block;
+            padding: 0px 5px;
+            border-radius: 3px;
+        }
+
+        .detailed-log-badge-success-profiling, 
+        .detailed-log-badge-default-profiling {
+            width: 20px;
+        }
+
+        .detailed-log-badge-success-dataValidated,
+        .detailed-log-badge-warning-dataValidated {
+            width: 135px;
+        }
+
+        .detailed-log-badge-default-profiling,
+        .detailed-log-badge-success-dataValidated {
+            background: #f5f5f5;
+        }
+
+        .detailed-log-badge-success-profiling {
+            background: #4a9a59;
+        }
+
+        .detailed-log-badge-warning-dataValidated {
+            background: #fff080;
+        }
+
         .cert-warning {
             color: #e53e3e;
             font-weight: 500;
@@ -514,7 +551,12 @@ public static class DefaultCssTemplate
             color-adjust: exact;
         }
 
-        /* STATISTICHE E TABELLE MODERNE */
+        /* Sezione Altre Statistiche */
+
+        .other-stats-table td:first-child {
+            border-right: 1px solid rgba(139, 159, 242, 0.1);
+        }
+
         .stats-content {
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.03) 0%, rgba(156, 130, 199, 0.03) 100%);
             border: 1px solid rgba(139, 159, 242, 0.1);

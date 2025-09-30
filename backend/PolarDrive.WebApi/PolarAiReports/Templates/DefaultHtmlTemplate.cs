@@ -50,20 +50,20 @@ public static class DefaultHtmlTemplate
                     <section class=""section report-info"">
                         <div class=""info-grid"">
                             <div class=""info-item"">
-                                <strong>Azienda:</strong> {{companyName}} ({{vatNumber}})
+                                <strong>Azienda</strong> {{companyName}} ({{vatNumber}})
                             </div>
                             <div class=""info-item"">
-                                <strong>Veicolo:</strong> {{vehicleModel}} - {{vehicleVin}}
+                                <strong>Veicolo</strong> {{vehicleModel}} - {{vehicleVin}}
                             </div>
                             <div class=""info-item"">
-                                <strong>Periodo:</strong> {{periodStart}} → {{periodEnd}}
+                                <strong>Periodo</strong> {{periodStart}} → {{periodEnd}}
                             </div>
                             <div class=""info-item"">
-                                <strong>Generato:</strong> {{generatedAt}}
+                                <strong>Generato</strong> {{generatedAt}}
                             </div>
                             {{#if notes}}
                             <div class=""info-item notes"">
-                                <strong>Note:</strong> {{notes}}
+                                <strong>Note</strong> {{notes}}
                             </div>
                             {{/if}}
                         </div>

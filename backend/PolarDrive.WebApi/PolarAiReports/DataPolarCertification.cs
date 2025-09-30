@@ -23,29 +23,38 @@ public class DataPolarCertification
     /// Genera il blocco HTML completo della certificazione DataPolar
     /// Include: certificazione generale + statistiche mensili + tabella dettagliata
     /// </summary>
-    public async Task<string> GenerateCompleteCertificationHtmlAsync(int vehicleId, TimeSpan totalMonitoringPeriod)
+    public async Task<string> GenerateCompleteCertificationHtmlAsync(int vehicleId, TimeSpan totalMonitoringPeriod, DateTime firstRecord, DateTime lastRecord, int totalRecords)
     {
         try
         {
-            var certification = await GenerateDataCertificationHtmlAsync(vehicleId, totalMonitoringPeriod);
+            // Genera certificazione usando i dati già forniti
+            var certification = GenerateDataCertificationHtml(
+                totalRecords, 
+                firstRecord, 
+                lastRecord, 
+                totalMonitoringPeriod);
 
+            // Conta solo i record degli ultimi 30 giorni
             var startTime = DateTime.Now.AddHours(-720); // 30 giorni
             var monthlyDataCount = await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
                 .CountAsync();
 
+            // Genera le statistiche mensili
             var statistics = GenerateMonthlyStatisticsHtml(monthlyDataCount, totalMonitoringPeriod);
+            
+            // Genera la tabella dettagliata delle ultime 720 ore
             var detailedTable = await GenerateDetailedLogTableAsync(vehicleId, 720);
 
             return $@"
                 <div class='certification-datapolar'>
-                    <h4 class='certification-datapolar-generic'>📊 Statistiche Generali</h4>
+                    <h4 class='certification-datapolar-generic'>📊 Statistiche Generali (Lifetime)</h4>
                     {certification}
                     
                     <h4>📊 Statistiche Analisi Mensile</h4>
                     {statistics}
                     
-                    <h4>📋 Tabella Dettagliata Log Timestamp Certificati (Finestra massima di 720 ore)</h4>
+                    <h4>📋 Tabella Dettagliata Log Timestamp Certificati - Ultime 720 ore (30 giorni)</h4>
                     {detailedTable}
                 </div>";
         }
@@ -58,47 +67,35 @@ public class DataPolarCertification
     }
 
     /// <summary>
-    /// 📊 Genera certificazione dati generale in formato HTML
+    /// 📊 Genera certificazione dati generale in formato HTML usando dati già calcolati
     /// </summary>
-    private async Task<string> GenerateDataCertificationHtmlAsync(int vehicleId, TimeSpan totalMonitoringPeriod)
+    public string GenerateDataCertificationHtml(
+        int totalRecords,
+        DateTime firstRecord,
+        DateTime lastRecord,
+        TimeSpan totalMonitoringPeriod)
     {
-        var totalRecords = await _dbContext.VehiclesData
-            .Where(vd => vd.VehicleId == vehicleId)
-            .CountAsync();
-
-        var firstRecord = await _dbContext.VehiclesData
-            .Where(vd => vd.VehicleId == vehicleId)
-            .OrderBy(vd => vd.Timestamp)
-            .Select(vd => vd.Timestamp)
-            .FirstOrDefaultAsync();
-
-        var lastRecord = await _dbContext.VehiclesData
-            .Where(vd => vd.VehicleId == vehicleId)
-            .OrderByDescending(vd => vd.Timestamp)
-            .Select(vd => vd.Timestamp)
-            .FirstOrDefaultAsync();
-
-        if (firstRecord == default || lastRecord == default)
+        if (firstRecord == default || lastRecord == default || totalRecords == 0)
         {
             return "<p class='cert-warning'>⚠️ Dati insufficienti per certificazione</p>";
         }
 
         var actualMonitoringPeriod = lastRecord - firstRecord;
-        var totalCertifiedHours = actualMonitoringPeriod.TotalHours;
+        var totalCertifiedHours = Math.Max(actualMonitoringPeriod.TotalHours, 1); // Evita divisione per zero
 
-        var uptimePercentage = Math.Min(95.0, 80.0 + (totalRecords / Math.Max(totalCertifiedHours, 1)) * 10);
+        var uptimePercentage = Math.Min(95.0, 80.0 + (totalRecords / totalCertifiedHours) * 10);
         var qualityScore = CalculateQualityScore(totalRecords, uptimePercentage, totalMonitoringPeriod);
         var qualityStars = GetQualityStars(qualityScore);
 
         return $@"
             <table class='certification-table'>
-                <tr><td>Ore totali certificate:</td><td>{totalCertifiedHours:F0} ore ({totalCertifiedHours / 24:F1} giorni)</td></tr>
-                <tr><td>Uptime raccolta:</td><td>{uptimePercentage:F1}%</td></tr>
-                <tr><td>Qualità dataset:</td><td>{qualityStars} ({GetQualityLabel(qualityScore)})</td></tr>
-                <tr><td>Primo record:</td><td>{firstRecord:yyyy-MM-dd HH:mm} UTC</td></tr>
-                <tr><td>Ultimo record:</td><td>{lastRecord:yyyy-MM-dd HH:mm} UTC</td></tr>
-                <tr><td>Records totali:</td><td>{totalRecords:N0}</td></tr>
-                <tr><td>Frequenza media:</td><td>{(totalRecords / Math.Max(totalCertifiedHours, 1)):F1} campioni/ora</td></tr>
+                <tr><td>Ore totali certificate</td><td>{totalCertifiedHours:F0} ore ({totalCertifiedHours / 24:0} giorni)</td></tr>
+                <tr><td>Uptime raccolta</td><td>{uptimePercentage:0}%</td></tr>
+                <tr><td>Qualità dataset</td><td>{qualityStars} ({GetQualityLabel(qualityScore)})</td></tr>
+                <tr><td>Primo record</td><td>{firstRecord:yyyy-MM-dd HH:mm}</td></tr>
+                <tr><td>Ultimo record</td><td>{lastRecord:yyyy-MM-dd HH:mm}</td></tr>
+                <tr><td>Records totali (lifetime)</td><td>{totalRecords:N0}</td></tr>
+                <tr><td>Frequenza media</td><td>{(totalRecords / totalCertifiedHours):0} campioni/ora</td></tr>
             </table>";
     }
 
@@ -111,12 +108,12 @@ public class DataPolarCertification
 
         return $@"
             <table class='statistics-table'>
-                <tr><td>Durata monitoraggio totale:</td><td>{totalMonitoringPeriod.TotalDays:F1} giorni</td></tr>
-                <tr><td>Campioni mensili analizzati:</td><td>{monthlyRecords:N0}</td></tr>
-                <tr><td>Finestra unificata:</td><td>{dataHours} ore (30 giorni)</td></tr>
-                <tr><td>Densità dati mensile:</td><td>{monthlyRecords / Math.Max(dataHours, 1):F1} campioni/ora</td></tr>
-                <tr><td>Copertura dati:</td><td>{Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):F1}% del periodo totale</td></tr>
-                <tr><td>Strategia:</td><td>Analisi mensile consistente con context evolutivo</td></tr>
+                <tr><td>Durata monitoraggio totale</td><td>{totalMonitoringPeriod.TotalDays:0} giorni</td></tr>
+                <tr><td>Campioni mensili analizzati</td><td>{monthlyRecords:N0}</td></tr>
+                <tr><td>Finestra unificata</td><td>{dataHours} ore (30 giorni)</td></tr>
+                <tr><td>Densità dati mensile</td><td>{monthlyRecords / Math.Max(dataHours, 1):0} campioni/ora</td></tr>
+                <tr><td>Copertura dati</td><td>{Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):0}% del periodo totale</td></tr>
+                <tr><td>Strategia</td><td>Analisi mensile consistente con context evolutivo</td></tr>
             </table>";
     }
 
@@ -190,12 +187,12 @@ public class DataPolarCertification
             if (recordLookup.TryGetValue(currentTime, out var record))
             {
                 var adaptiveProfiling = record.IsSmsAdaptiveProfiling ?
-                    "<span class='badge-success'>Sì</span>" :
-                    "<span class='badge-default'>No</span>";
+                    "<span class='detailed-log-badge-success-profiling'>Sì</span>" :
+                    "<span class='detailed-log-badge-default-profiling'>No</span>";
 
                 var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized) ?
-                    "<span class='badge-info'>Dati operativi raccolti</span>" :
-                    "<span class='badge-warning'>Dati operativi da validare</span>";
+                    "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>" :
+                    "<span class='detailed-log-badge-warning-dataValidated'>Dati operativi da validare</span>";
 
                 sb.AppendLine($"<tr class='record-present'>");
                 sb.AppendLine($"<td>{record.Timestamp:yyyy-MM-dd HH:mm}</td>");
@@ -220,7 +217,7 @@ public class DataPolarCertification
 
         sb.AppendLine("<div class='detailed-log-table-footer'>");
         sb.AppendLine($"  <div><span class='icon'>🕒</span> Periodo monitorato: {startTime:yyyy-MM-dd HH:mm} → {now:yyyy-MM-dd HH:mm}</div>");
-        sb.AppendLine($"  <div><span class='icon'>⏱️</span> Ore totali: {actualHoursToShow} ore ({actualHoursToShow / 24.0:F1} giorni)</div>");
+        sb.AppendLine($"  <div><span class='icon'>⏱️</span> Ore totali: {actualHoursToShow} ore ({actualHoursToShow / 24.0:0} giorni)</div>");
         sb.AppendLine($"  <div><span class='icon'>📑</span> N. record certificati: {actualRecords.Count} su {totalExpectedRecords}</div>");
         sb.AppendLine($" <div><span class='icon'>📊</span> Percentuale completezza: {(actualRecords.Count / (double)totalExpectedRecords * 100):0}%</div>");
 

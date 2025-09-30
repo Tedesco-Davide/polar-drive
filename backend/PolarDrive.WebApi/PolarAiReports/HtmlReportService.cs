@@ -131,21 +131,34 @@ public class HtmlReportService
         {
             var vehicleId = report.VehicleId;
 
-            // Calcola periodo di monitoraggio totale
-            var firstRecord = await _dbContext.VehiclesData
+            // ✅ Query unica ottimizzata: prende tutto in una volta sola
+            var timeRange = await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId)
-                .OrderBy(vd => vd.Timestamp)
-                .Select(vd => vd.Timestamp)
+                .GroupBy(vd => vd.VehicleId)
+                .Select(g => new
+                {
+                    FirstRecord = g.Min(vd => vd.Timestamp),
+                    LastRecord = g.Max(vd => vd.Timestamp),
+                    TotalCount = g.Count()
+                })
                 .FirstOrDefaultAsync();
 
-            var totalMonitoringPeriod = firstRecord == default
-                ? TimeSpan.FromDays(1)
-                : DateTime.Now - firstRecord;
+            // Se non ci sono dati, restituisci un messaggio
+            if (timeRange == null || timeRange.TotalCount == 0)
+            {
+                return "<div class='certification-warning'>⚠️ Nessun dato disponibile per la certificazione</div>";
+            }
 
-            // 🏆 CERTIFICAZIONE DATAPOLAR - Aggiunta come prima sezione del PDF
+            // Calcola periodo di monitoraggio totale (dal primo record ever fino ad ora)
+            var totalMonitoringPeriod = DateTime.Now - timeRange.FirstRecord;
+
+            // 🏆 CERTIFICAZIONE DATAPOLAR - Passa tutti i dati già calcolati
             return await _certification.GenerateCompleteCertificationHtmlAsync(
                 vehicleId,
-                totalMonitoringPeriod
+                totalMonitoringPeriod,
+                timeRange.FirstRecord,   // ✅ Dati già disponibili
+                timeRange.LastRecord,    // ✅ Dati già disponibili
+                timeRange.TotalCount     // ✅ Dati già disponibili
             );
         }
         catch (Exception ex)
@@ -342,13 +355,13 @@ public class HtmlReportService
                 .FirstOrDefaultAsync();
 
             return $@"
-                <table class='stats-table'>
+                <table class='other-stats-table'>
                     <tr><th>Metrica</th><th>Valore</th></tr>
                     <tr><td>Record analizzati</td><td>{dataCount}</td></tr>
                     <tr><td>Primo record</td><td>{firstRecord:yyyy-MM-dd HH:mm}</td></tr>
                     <tr><td>Ultimo record</td><td>{lastRecord:yyyy-MM-dd HH:mm}</td></tr>
-                    <tr><td>Durata monitoraggio</td><td>{(lastRecord - firstRecord).TotalHours:F1} ore</td></tr>
-                    <tr><td>Frequenza campionamento</td><td>{(dataCount > 0 ? (lastRecord - firstRecord).TotalMinutes / dataCount : 0):F1} min/campione</td></tr>
+                    <tr><td>Durata monitoraggio</td><td>{(lastRecord - firstRecord).TotalHours:0} ore</td></tr>
+                    <tr><td>Frequenza campionamento</td><td>{(dataCount > 0 ? (lastRecord - firstRecord).TotalMinutes / dataCount : 0):0} min/campione</td></tr>
                 </table>";
         }
         catch
