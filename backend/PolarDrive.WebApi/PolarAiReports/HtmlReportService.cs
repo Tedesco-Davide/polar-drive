@@ -28,8 +28,8 @@ public class HtmlReportService
     /// Genera un report HTML completo pronto per visualizzazione o conversione PDF
     /// </summary>
     public async Task<string> GenerateHtmlReportAsync(
-        PdfReport report, 
-        string aiReportContentInsights, 
+        PdfReport report,
+        string aiReportContentInsights,
         HtmlReportOptions? options = null)
     {
         if (report == null)
@@ -142,9 +142,9 @@ public class HtmlReportService
                 ? TimeSpan.FromDays(1)
                 : DateTime.Now - firstRecord;
 
-            // ✅ DELEGA COMPLETA al servizio di certificazione
+            // 🏆 CERTIFICAZIONE DATAPOLAR - Aggiunta come prima sezione del PDF
             return await _certification.GenerateCompleteCertificationHtmlAsync(
-                vehicleId, 
+                vehicleId,
                 totalMonitoringPeriod
             );
         }
@@ -238,21 +238,21 @@ public class HtmlReportService
         var html = insights;
 
         // Headers
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^### (.+)$", 
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^### (.+)$",
             "<h4 class='insight-h4'>$1</h4>", System.Text.RegularExpressions.RegexOptions.Multiline);
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$", 
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$",
             "<h3 class='insight-h3'>$1</h3>", System.Text.RegularExpressions.RegexOptions.Multiline);
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$", 
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$",
             "<h2 class='insight-h2'>$1</h2>", System.Text.RegularExpressions.RegexOptions.Multiline);
 
         // Formattazione testo
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*", 
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*",
             "<span class='emphasis'>$1</span>");
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"__(.+?)__", 
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"__(.+?)__",
             "<span class='important'>$1</span>");
 
         // Liste
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^- (.+)$", 
+        html = System.Text.RegularExpressions.Regex.Replace(html, @"^- (.+)$",
             "<li class='insight-li'>$1</li>", System.Text.RegularExpressions.RegexOptions.Multiline);
 
         if (html.Contains("<li class='insight-li'>"))

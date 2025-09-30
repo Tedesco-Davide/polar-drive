@@ -431,7 +431,7 @@ public static class DefaultCssTemplate
             page-break-after: avoid;
         }
 
-        .certification-table, .statistics-table {
+        .certification-table, .statistics-table, .detailed-log-table {
             width: calc(100% - 40px);
             margin: 15px 20px 20px 20px;
             border-collapse: collapse;
@@ -443,14 +443,14 @@ public static class DefaultCssTemplate
             page-break-inside: avoid;
         }
 
-        .certification-table td, .statistics-table td {
+        .certification-table td, .statistics-table td, .detailed-log-table td {
             padding: 12px 16px;
             border-bottom: 1px solid rgba(139, 159, 242, 0.1);
             vertical-align: top;
             page-break-inside: avoid;
         }
 
-        .certification-table td:first-child, .statistics-table td:first-child {
+        .certification-table td:first-child, .statistics-table td:first-child, .detailed-log-table td:first-child {
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.05) 0%, rgba(156, 130, 199, 0.05) 100%);
             width: 45%;
             font-weight: 500;
@@ -460,9 +460,32 @@ public static class DefaultCssTemplate
             color-adjust: exact;
         }
 
-        .certification-table td:last-child, .statistics-table td:last-child {
+        .certification-table td:last-child, .statistics-table td:last-child, .detailed-log-table td:last-child {
             font-weight: 400;
             color: #4a5568;
+        }
+
+        .detailed-log-table-footer {
+            width: calc(100% - 40px);
+            margin: 25px 20px 10px 20px;
+            padding: 15px 20px 5px 20px;
+            border-radius: 12px;
+            color: #768094;
+            font-size: 14px;
+            line-height: 1.6;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .detailed-log-table-footer .row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+    
+        .detailed-log-table-footer .row:last-child { margin-bottom: 0; }
+        .detailed-log-table-footer .ico {
+            width: 20px; height: 20px; flex: 0 0 20px;
         }
 
         .cert-warning {
@@ -697,7 +720,7 @@ public static class DefaultCssTemplate
                 grid-template-columns: 1fr;
             }
 
-            .certification-table, .statistics-table {
+            .certification-table, .statistics-table, .detailed-log-table {
                 font-size: 0.85em;
                 width: calc(100% - 20px);
                 margin: 15px 10px;

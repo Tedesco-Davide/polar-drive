@@ -56,24 +56,14 @@ public class PolarAiReportGenerator
         // 🧠 GENERAZIONE INSIGHTS AI con dati ottimizzati
         var aiInsights = await GenerateSummary(aggregatedData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
 
-        // 🏆 CERTIFICAZIONE DATAPOLAR - Aggiunta DOPO gli insights AI
-        var certification = new DataPolarCertification(_dbContext);
-        var certificationReport = await certification.GenerateCompleteCertificationHtmlAsync(vehicleId, monitoringPeriod);
+        // 🔗 ATTACH FINALE
+        var aiInsightsSection = new StringBuilder();
+        aiInsightsSection.AppendLine(aiInsights);
 
-        // 🔗 COMBINAZIONE FINALE: AI Insights + Certificazione DataPolar
-        var finalReport = new StringBuilder();
-        finalReport.AppendLine(aiInsights);
-        finalReport.AppendLine();
-        finalReport.AppendLine("---");
-        finalReport.AppendLine();
-        finalReport.AppendLine("# CERTIFICAZIONE DATAPOLAR");
-        finalReport.AppendLine();
-        finalReport.AppendLine(certificationReport);
+        await _logger.Info(source, "Sezione Insights stampata nel PDF",
+            $"AI Insights Section: {aiInsights.Length}");
 
-        await _logger.Info(source, "Report finale generato",
-            $"AI Insights: {aiInsights.Length} char, Certificazione: {certificationReport.Length} char");
-
-        return finalReport.ToString();
+        return aiInsightsSection.ToString();
     }
 
     /// <summary>
@@ -103,7 +93,7 @@ public class PolarAiReportGenerator
         return totalMonitoringPeriod.TotalDays switch
         {
             < 1 => "Valutazione Iniziale",
-            < 7 => "Analisi Settimanale", 
+            < 7 => "Analisi Settimanale",
             < 30 => "Deep Dive Mensile",
             < 90 => "Assessment Trimestrale",
             _ => "Analisi Comprensiva"

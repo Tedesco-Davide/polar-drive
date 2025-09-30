@@ -28,7 +28,7 @@ public class DataPolarCertification
         try
         {
             var certification = await GenerateDataCertificationHtmlAsync(vehicleId, totalMonitoringPeriod);
-            
+
             var startTime = DateTime.Now.AddHours(-720); // 30 giorni
             var monthlyDataCount = await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
@@ -45,7 +45,7 @@ public class DataPolarCertification
                     <h4>📊 Statistiche Analisi Mensile</h4>
                     {statistics}
                     
-                    <h4>📋 Tabella Dettagliata Log Timestamp Certificati (720 ORE)</h4>
+                    <h4>📋 Tabella Dettagliata Log Timestamp Certificati (Finestra massima di 720 ore)</h4>
                     {detailedTable}
                 </div>";
         }
@@ -127,7 +127,7 @@ public class DataPolarCertification
     private async Task<string> GenerateDetailedLogTableAsync(int vehicleId, int dataHours)
     {
         var sb = new StringBuilder();
-        
+
         // Trova il primo record effettivo del veicolo
         var firstRecordTime = await _dbContext.VehiclesData
             .Where(vd => vd.VehicleId == vehicleId)
@@ -144,23 +144,23 @@ public class DataPolarCertification
         // Calcola il periodo effettivo da mostrare
         var now = DateTime.Now;
         var maxStartTime = now.AddHours(-dataHours); // 30 giorni fa massimo
-        
+
         // Usa il più recente tra il primo record e 30 giorni fa
         var effectiveStartTime = firstRecordTime > maxStartTime ? firstRecordTime : maxStartTime;
-        
+
         // Arrotonda all'ora precedente per avere timestamp puliti
         var startTime = new DateTime(
-            effectiveStartTime.Year, 
-            effectiveStartTime.Month, 
-            effectiveStartTime.Day, 
-            effectiveStartTime.Hour, 
+            effectiveStartTime.Year,
+            effectiveStartTime.Month,
+            effectiveStartTime.Day,
+            effectiveStartTime.Hour,
             0, 0
         );
-        
+
         // Calcola ore effettive da mostrare
         var actualHoursToShow = (int)Math.Ceiling((now - startTime).TotalHours);
         var totalExpectedRecords = actualHoursToShow;
-        
+
         // Recupera i record effettivi
         var actualRecords = await _dbContext.VehiclesData
             .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
@@ -173,8 +173,7 @@ public class DataPolarCertification
             .ToDictionary(g => g.Key, g => g.First());
 
         // Genera tabella
-        sb.AppendLine("<div class='detailed-log-table'>");
-        sb.AppendLine("<table class='log-table'>");
+        sb.AppendLine("<table class='detailed-log-table'>");
         sb.AppendLine("<thead>");
         sb.AppendLine("<tr>");
         sb.AppendLine("<th>Timestamp (UTC)</th>");
@@ -190,10 +189,10 @@ public class DataPolarCertification
         {
             if (recordLookup.TryGetValue(currentTime, out var record))
             {
-                var adaptiveProfiling = record.IsSmsAdaptiveProfiling ? 
-                    "<span class='badge-success'>Sì</span>" : 
+                var adaptiveProfiling = record.IsSmsAdaptiveProfiling ?
+                    "<span class='badge-success'>Sì</span>" :
                     "<span class='badge-default'>No</span>";
-                
+
                 var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized) ?
                     "<span class='badge-info'>Dati operativi raccolti</span>" :
                     "<span class='badge-warning'>Dati operativi da validare</span>";
@@ -212,18 +211,19 @@ public class DataPolarCertification
                 sb.AppendLine($"<td><span class='badge-warning'>Dati operativi da validare</span></td>");
                 sb.AppendLine("</tr>");
             }
-            
+
             currentTime = currentTime.AddHours(1);
         }
 
         sb.AppendLine("</tbody>");
         sb.AppendLine("</table>");
-        sb.AppendLine($"<div class='table-footer'>");
-        sb.AppendLine($"<strong>PERIODO MONITORATO: {startTime:yyyy-MM-dd HH:mm} → {now:yyyy-MM-dd HH:mm}</strong>");
-        sb.AppendLine($"<strong>ORE TOTALI: {actualHoursToShow} ore ({actualHoursToShow / 24.0:F1} giorni)</strong>");
-        sb.AppendLine($"<strong>RECORD CERTIFICATI: {actualRecords.Count}/{totalExpectedRecords}</strong>");
-        sb.AppendLine($"<strong>PERCENTUALE COMPLETEZZA: {(actualRecords.Count / (double)totalExpectedRecords * 100):F1}%</strong>");
-        sb.AppendLine("</div>");
+
+        sb.AppendLine("<div class='detailed-log-table-footer'>");
+        sb.AppendLine($"  <div><span class='icon'>🕒</span> Periodo monitorato: {startTime:yyyy-MM-dd HH:mm} → {now:yyyy-MM-dd HH:mm}</div>");
+        sb.AppendLine($"  <div><span class='icon'>⏱️</span> Ore totali: {actualHoursToShow} ore ({actualHoursToShow / 24.0:F1} giorni)</div>");
+        sb.AppendLine($"  <div><span class='icon'>📑</span> N. record certificati: {actualRecords.Count} su {totalExpectedRecords}</div>");
+        sb.AppendLine($" <div><span class='icon'>📊</span> Percentuale completezza: {(actualRecords.Count / (double)totalExpectedRecords * 100):0}%</div>");
+
         sb.AppendLine("</div>");
 
         return sb.ToString();
