@@ -94,29 +94,13 @@ public class HtmlReportService
             // Logo aziendale
             ["logoBase64"] = await GetLogoBase64Async(report.ClientCompany),
 
-            // ✅ CERTIFICAZIONE DATAPOLAR (delegata al servizio dedicato)
+            // Certificazione DataPolar
             ["dataPolarCertification"] = await GenerateDataPolarCertificationBlockAsync(report),
 
             // Metadati
             ["reportType"] = options.ReportType,
-            ["showDetailedStats"] = options.ShowDetailedStats,
             ["showCharts"] = options.ShowCharts,
-            ["showRawData"] = options.ShowRawData
         };
-
-        // Aggiungi statistiche dettagliate se richieste
-        if (options.ShowDetailedStats)
-        {
-            var stats = await GenerateDetailedStatsAsync(report);
-            data["detailedStats"] = stats;
-        }
-
-        // Aggiungi dati grezzi se richiesti
-        if (options.ShowRawData)
-        {
-            var rawData = await GetFormattedRawDataAsync(report);
-            data["rawDataSummary"] = rawData;
-        }
 
         return data;
     }
@@ -156,9 +140,10 @@ public class HtmlReportService
             return await _certification.GenerateCompleteCertificationHtmlAsync(
                 vehicleId,
                 totalMonitoringPeriod,
-                timeRange.FirstRecord,   // ✅ Dati già disponibili
-                timeRange.LastRecord,    // ✅ Dati già disponibili
-                timeRange.TotalCount     // ✅ Dati già disponibili
+                timeRange.FirstRecord,
+                timeRange.LastRecord,
+                timeRange.TotalCount,
+                report
             );
         }
         catch (Exception ex)
@@ -200,9 +185,7 @@ public class HtmlReportService
     {
         var patterns = new Dictionary<string, bool>
         {
-            ["showDetailedStats"] = data.ContainsKey("detailedStats"),
             ["showCharts"] = (bool?)data.GetValueOrDefault("showCharts") ?? false,
-            ["showRawData"] = data.ContainsKey("rawDataSummary"),
             ["logoBase64"] = !string.IsNullOrEmpty(data.GetValueOrDefault("logoBase64")?.ToString()),
             ["notes"] = !string.IsNullOrEmpty(data.GetValueOrDefault("notes")?.ToString()) &&
                        data.GetValueOrDefault("notes")?.ToString() != "N/A"
@@ -326,51 +309,6 @@ public class HtmlReportService
     }
 
     /// <summary>
-    /// Genera statistiche dettagliate
-    /// </summary>
-    private async Task<string> GenerateDetailedStatsAsync(PdfReport report)
-    {
-        try
-        {
-            var dataCount = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.VehicleId &&
-                           vd.Timestamp >= report.ReportPeriodStart &&
-                           vd.Timestamp <= report.ReportPeriodEnd)
-                .CountAsync();
-
-            var firstRecord = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.VehicleId &&
-                           vd.Timestamp >= report.ReportPeriodStart &&
-                           vd.Timestamp <= report.ReportPeriodEnd)
-                .OrderBy(vd => vd.Timestamp)
-                .Select(vd => vd.Timestamp)
-                .FirstOrDefaultAsync();
-
-            var lastRecord = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.VehicleId &&
-                           vd.Timestamp >= report.ReportPeriodStart &&
-                           vd.Timestamp <= report.ReportPeriodEnd)
-                .OrderByDescending(vd => vd.Timestamp)
-                .Select(vd => vd.Timestamp)
-                .FirstOrDefaultAsync();
-
-            return $@"
-                <table class='other-stats-table'>
-                    <tr><th>Metrica</th><th>Valore</th></tr>
-                    <tr><td>Record analizzati</td><td>{dataCount}</td></tr>
-                    <tr><td>Primo record</td><td>{firstRecord:yyyy-MM-dd HH:mm}</td></tr>
-                    <tr><td>Ultimo record</td><td>{lastRecord:yyyy-MM-dd HH:mm}</td></tr>
-                    <tr><td>Durata monitoraggio</td><td>{(lastRecord - firstRecord).TotalHours:0} ore</td></tr>
-                    <tr><td>Frequenza campionamento</td><td>{(dataCount > 0 ? (lastRecord - firstRecord).TotalMinutes / dataCount : 0):0} min/campione</td></tr>
-                </table>";
-        }
-        catch
-        {
-            return "<p class='stats-error'>Statistiche non disponibili.</p>";
-        }
-    }
-
-    /// <summary>
     /// Ottiene riepilogo dati grezzi
     /// </summary>
     private async Task<string> GetFormattedRawDataAsync(PdfReport report)
@@ -445,7 +383,5 @@ public class HtmlReportOptions
     public string DateFormat { get; set; } = "dd/MM/yyyy";
     public string DateTimeFormat { get; set; } = "dd/MM/yyyy HH:mm";
     public string? AdditionalCss { get; set; }
-    public bool ShowDetailedStats { get; set; } = true;
     public bool ShowCharts { get; set; } = false;
-    public bool ShowRawData { get; set; } = false;
 }

@@ -81,26 +81,6 @@ public static class DefaultHtmlTemplate
                         </div>
                     </section>
 
-                    <!-- ✅ Statistiche dettagliate (condizionali) -->
-                    {{#if showDetailedStats}}
-                    <section class=""section detailed-stats"">
-                        <h2 class=""section-title"">Altre Statistiche</h2>
-                        <div class=""stats-content"">
-                            {{detailedStats}}
-                        </div>
-                    </section>
-                    {{/if}}
-
-                    <!-- ✅ Dati grezzi (condizionali) -->
-                    {{#if showRawData}}
-                    <section class=""section raw-data"">
-                        <h2 class=""section-title"">Riepilogo Dati Tecnici</h2>
-                        <div class=""raw-data-content"">
-                            {{rawDataSummary}}
-                        </div>
-                    </section>
-                    {{/if}}
-
                     <!-- ✅ Footer -->
                     <footer class=""report-footer footer"">
                         <div class=""footer-content"">

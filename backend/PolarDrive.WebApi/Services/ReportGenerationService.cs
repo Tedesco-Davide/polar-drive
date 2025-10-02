@@ -602,8 +602,6 @@ namespace PolarDrive.WebApi.Services
             var htmlSvc = new HtmlReportService(db);
             var htmlOpt = new HtmlReportOptions
             {
-                ShowDetailedStats = true,
-                ShowRawData = false,
                 ReportType = $"🧠 {period.AnalysisLevel}",
                 AdditionalCss = PolarAiReports.Templates.DefaultCssTemplate.Value
             };
