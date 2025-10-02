@@ -20,15 +20,7 @@ const puppeteer_1 = require("puppeteer");
     yield page.setContent(html, { waitUntil: "networkidle0" });
     yield page.pdf({
         path: pdfPath,
-        format: "A4",
-        printBackground: true,
         preferCSSPageSize: true,
-        margin: {
-            top: "30px",
-            bottom: "30px",
-            left: "20px",
-            right: "20px",
-        },
     });
     yield browser.close();
 }))();

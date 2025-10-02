@@ -11,15 +11,7 @@ import { launch } from "puppeteer";
   await page.setContent(html, { waitUntil: "networkidle0" });
   await page.pdf({
     path: pdfPath,
-    format: "A4",
-    printBackground: true,
     preferCSSPageSize: true,
-    margin: {
-      top: "30px",
-      bottom: "30px",
-      left: "20px",
-      right: "20px",
-    },
   });
   await browser.close();
 })();

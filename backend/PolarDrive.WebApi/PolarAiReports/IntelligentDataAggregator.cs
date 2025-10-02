@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Diagnostics;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -280,7 +281,7 @@ public class IntelligentDataAggregator
             {
                 var disconnectDelay = (normalizedUnlatch.Value - normalizedStop.Value).TotalMinutes;
                 // Validazione delay realistico (max 12 ore)
-                if (disconnectDelay >= 0 && disconnectDelay <= 720)
+                if (disconnectDelay >= 0 && disconnectDelay <= MONTHLY_HOURS_THRESHOLD)
                 {
                     session.DisconnectDelay = disconnectDelay;
                 }

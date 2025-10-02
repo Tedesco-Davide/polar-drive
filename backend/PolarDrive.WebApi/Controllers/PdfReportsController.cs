@@ -130,15 +130,21 @@ public class PdfReportsController : ControllerBase
         var (htmlPath, pdfPath) = GetReportFilePaths(report);
         var fileInfo = GetFileInfo(htmlPath, pdfPath);
         
-        // ✅ Record nel periodo del report (per validazione status)
         var dataCountInPeriod = await CountDataRecordsForReport(report);
-        
-        // ✅ Record totali storici (per mostrare nella lista)
         var totalHistoricalRecords = await db.VehiclesData
             .Where(vd => vd.VehicleId == report.VehicleId)
             .CountAsync();
         
-        var monitoringDuration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
+        // Calcola il tempo totale di monitoraggio, dal primo record mai registrato
+        var firstRecordEver = await db.VehiclesData
+            .Where(vd => vd.VehicleId == report.VehicleId)
+            .OrderBy(vd => vd.Timestamp)
+            .Select(vd => vd.Timestamp)
+            .FirstOrDefaultAsync();
+        
+        var totalMonitoringHours = firstRecordEver != default 
+            ? (DateTime.Now - firstRecordEver).TotalHours 
+            : 0;
 
         return new PdfReportDTO
         {
@@ -157,11 +163,11 @@ public class PdfReportsController : ControllerBase
             DataRecordsCount = totalHistoricalRecords,
             PdfFileSize = fileInfo.PdfSize,
             HtmlFileSize = fileInfo.HtmlSize,
-            MonitoringDurationHours = Math.Max(0, Math.Floor(monitoringDuration)),
+            MonitoringDurationHours = Math.Max(0, Math.Floor(totalMonitoringHours)),
             IsRegenerated = report.RegenerationCount > 0,
             RegenerationCount = report.RegenerationCount,
             LastRegenerated = report.GeneratedAt?.ToString("o"),
-            ReportType = DetermineReportType(report, dataCountInPeriod),
+            ReportType = DetermineReportType(totalHistoricalRecords),
             Status = await DetermineReportStatusAsync(report, fileInfo.PdfExists, fileInfo.HtmlExists, dataCountInPeriod),
         };
     }
@@ -183,14 +189,14 @@ public class PdfReportsController : ControllerBase
         return (pdfExists, htmlExists, pdfSize, htmlSize);
     }
 
-    private static string DetermineReportType(Data.Entities.PdfReport report, int dataCount)
+    private static string DetermineReportType(int totalHistoricalRecords)
     {
-        if (dataCount == 0)
+        if (totalHistoricalRecords == 0)
             return "No_Data";
 
-        var duration = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours;
-
-        return duration switch
+        // Classifica in base al numero di record
+        // Assumendo ~1 record/minuto in sviluppo, ~1 record/ora in produzione
+        return totalHistoricalRecords switch
         {
             >= MONTHLY_HOURS_THRESHOLD => "Mensile",
             >= WEEKLY_HOURS_THRESHOLD => "Settimanale",

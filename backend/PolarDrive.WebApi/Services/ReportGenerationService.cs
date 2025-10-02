@@ -617,12 +617,6 @@ namespace PolarDrive.WebApi.Services
             var pdfSvc = new PdfGenerationService(db);
             var pdfOpt = new PdfConversionOptions
             {
-                PageFormat = "A4",
-                MarginTop = "2cm",
-                MarginBottom = "2cm",
-                MarginLeft = "1.5cm",
-                MarginRight = "1.5cm",
-                DisplayHeaderFooter = true,
                 HeaderTemplate = $@"
                                     <html>
                                     <head>
@@ -753,11 +747,11 @@ namespace PolarDrive.WebApi.Services
             return scheduleType switch
             {
                 ScheduleType.Development => new ReportInfo { AnalysisType = "Development Analysis", DefaultDataHours = 0 },
-                ScheduleType.Daily => new ReportInfo { AnalysisType = "Analisi Giornaliera", DefaultDataHours = 24 },
-                ScheduleType.Weekly => new ReportInfo { AnalysisType = "Analisi Settimanale", DefaultDataHours = 168 },
-                ScheduleType.Monthly => new ReportInfo { AnalysisType = "Analisi Mensile", DefaultDataHours = 720 },
-                ScheduleType.Retry => new ReportInfo { AnalysisType = "Retry Analysis", DefaultDataHours = 24 },
-                _ => new ReportInfo { AnalysisType = "Standard Analysis", DefaultDataHours = 24 }
+                ScheduleType.Daily => new ReportInfo { AnalysisType = "Analisi Giornaliera", DefaultDataHours = DAILY_HOURS_THRESHOLD },
+                ScheduleType.Weekly => new ReportInfo { AnalysisType = "Analisi Settimanale", DefaultDataHours = WEEKLY_HOURS_THRESHOLD },
+                ScheduleType.Monthly => new ReportInfo { AnalysisType = "Analisi Mensile", DefaultDataHours = MONTHLY_HOURS_THRESHOLD },
+                ScheduleType.Retry => new ReportInfo { AnalysisType = "Retry Analysis", DefaultDataHours = DAILY_HOURS_THRESHOLD },
+                _ => new ReportInfo { AnalysisType = "Standard Analysis", DefaultDataHours = DAILY_HOURS_THRESHOLD }
             };
         }
 

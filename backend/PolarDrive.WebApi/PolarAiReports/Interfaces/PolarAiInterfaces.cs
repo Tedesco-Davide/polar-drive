@@ -5,10 +5,10 @@ public class PdfConversionOptions
 {
     public string PageFormat { get; set; } = "A4";
     public bool PrintBackground { get; set; } = true;
-    public string MarginTop { get; set; } = "1cm";
-    public string MarginRight { get; set; } = "1cm";
+    public string MarginTop { get; set; } = "2cm";
+    public string MarginRight { get; set; } = "0.5cm";
     public string MarginBottom { get; set; } = "1cm";
-    public string MarginLeft { get; set; } = "1cm";
+    public string MarginLeft { get; set; } = "0.5cm";
     public bool DisplayHeaderFooter { get; set; } = true;
     public string HeaderTemplate { get; set; } = @"
         <div style='font-size: 10px; width: 100%; text-align: center; color: #666;'>

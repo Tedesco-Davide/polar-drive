@@ -199,7 +199,6 @@ public static class DefaultCssTemplate
             border: 1px solid rgba(139, 159, 242, 0.1);
             padding: 25px;
             border-radius: 12px;
-            margin: 25px;
             position: relative;
             overflow: hidden;
             page-break-inside: avoid;
@@ -247,7 +246,7 @@ public static class DefaultCssTemplate
         }
 
         .section {
-            margin: 25px;
+            margin: 25px 0px;
             page-break-inside: avoid;
         }
 
@@ -383,7 +382,6 @@ public static class DefaultCssTemplate
 
         /* CERTIFICAZIONE DATAPOLAR MODERNA */
         .certification-section {
-            margin: 25px;
             padding: 0;
             page-break-inside: avoid;
         }
@@ -465,10 +463,13 @@ public static class DefaultCssTemplate
             color: #4a5568;
         }
 
+        .detailed-log-table-title {
+            padding-top: 20px;
+        }
+
         .detailed-log-table-footer {
             width: calc(100% - 40px);
-            margin: 25px 20px 10px 20px;
-            padding: 15px 20px 5px 20px;
+            margin: 0px 20px 15px 20px;
             border-radius: 12px;
             color: #768094;
             font-size: 14px;
@@ -788,12 +789,6 @@ public static class DefaultCssTemplate
 
         .keep-with-next {
             page-break-after: avoid;
-        }
-
-        /* Margini ottimizzati per stampa */
-        @page {
-            margin: 2cm 1.5cm;
-            size: A4;
         }
 
         /* Assicura che tutti i colori e sfondi vengano stampati */

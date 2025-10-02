@@ -25,34 +25,50 @@ public class DataPolarCertification
     /// Genera il blocco HTML completo della certificazione DataPolar
     /// Include: certificazione generale + statistiche mensili + tabella dettagliata
     /// </summary>
-    public async Task<string> GenerateCompleteCertificationHtmlAsync(int vehicleId, TimeSpan totalMonitoringPeriod, DateTime firstRecord, DateTime lastRecord, int totalRecords, PdfReport report)
+    public async Task<string> GenerateCompleteCertificationHtmlAsync(
+        int vehicleId, 
+        TimeSpan totalMonitoringPeriod, 
+        DateTime firstRecord,
+        DateTime lastRecord,
+        int totalRecords, 
+        PdfReport report)
     {
         try
         {
-            // Genera certificazione usando i dati già forniti
+            // Genera certificazione usando i dati lifetime
             var certification = GenerateDataCertificationHtml(
                 totalRecords, 
                 firstRecord, 
                 lastRecord, 
                 totalMonitoringPeriod);
 
-            // Conta solo i record degli ultimi 30 giorni
-            var startTime = DateTime.Now.AddHours(-720); // 30 giorni
-            var monthlyDataCount = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
-                .CountAsync();
-
-            var dataCount = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.VehicleId &&
-                           vd.Timestamp >= report.ReportPeriodStart &&
-                           vd.Timestamp <= report.ReportPeriodEnd)
-                .CountAsync();
-
-            // Genera le statistiche mensili
-            var statistics = GenerateMonthlyStatisticsHtml(monthlyDataCount, totalMonitoringPeriod, dataCount, firstRecord, lastRecord);
+            // Calcola first/last record mensili (ultimi 30 giorni)
+            var startTime = DateTime.Now.AddHours(-MONTHLY_HOURS_THRESHOLD);
             
-            // Genera la tabella dettagliata delle ultime 720 ore
-            var detailedTable = await GenerateDetailedLogTableAsync(vehicleId, 720);
+            var monthlyTimeRange = await _dbContext.VehiclesData
+                .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
+                .GroupBy(vd => vd.VehicleId)
+                .Select(g => new
+                {
+                    FirstRecord = g.Min(vd => vd.Timestamp),
+                    LastRecord = g.Max(vd => vd.Timestamp),
+                    TotalCount = g.Count()
+                })
+                .FirstOrDefaultAsync();
+
+            var monthlyDataCount = monthlyTimeRange?.TotalCount ?? 0;
+            var monthlyFirstRecord = monthlyTimeRange?.FirstRecord ?? DateTime.Now;
+            var monthlyLastRecord = monthlyTimeRange?.LastRecord ?? DateTime.Now;
+
+            // ✅ Passa i dati mensili per il calcolo della frequenza
+            var statistics = GenerateMonthlyStatisticsHtml(
+                monthlyDataCount, 
+                totalMonitoringPeriod, 
+                monthlyFirstRecord,
+                monthlyLastRecord
+            );
+            
+            var detailedTable = await GenerateDetailedLogTableAsync(vehicleId, MONTHLY_HOURS_THRESHOLD);
 
             return $@"
                 <div class='certification-datapolar'>
@@ -62,7 +78,7 @@ public class DataPolarCertification
                     <h4>📊 Statistiche Analisi Mensile</h4>
                     {statistics}
                     
-                    <h4>📋 Tabella Dettagliata Log Timestamp Certificati - Ultime 720 ore (30 giorni)</h4>
+                    <h4 class='detailed-log-table-title'>📋 Tabella Dettagliata Log Timestamp Certificati - Ultime 720 ore (30 giorni)</h4>
                     {detailedTable}
                 </div>";
         }
@@ -110,18 +126,25 @@ public class DataPolarCertification
     /// <summary>
     /// 📊 Genera statistiche mensili in formato HTML
     /// </summary>
-    private static string GenerateMonthlyStatisticsHtml(int monthlyRecords, TimeSpan totalMonitoringPeriod, int dataCount, DateTime firstRecord, DateTime lastRecord)
+    private static string GenerateMonthlyStatisticsHtml(
+        int monthlyRecords, 
+        TimeSpan totalMonitoringPeriod, 
+        DateTime firstRecord, 
+        DateTime lastRecord)
     {
         const int dataHours = MONTHLY_HOURS_THRESHOLD;
-
+        
+        // Calcola le ore effettive dei dati mensili
+        var actualMonthlyHours = Math.Max((lastRecord - firstRecord).TotalHours, 1);
+        
         return $@"
             <table class='statistics-table'>
                 <tr><td>Durata monitoraggio totale</td><td>{totalMonitoringPeriod.TotalDays:0} giorni</td></tr>
                 <tr><td>Campioni mensili analizzati</td><td>{monthlyRecords:N0}</td></tr>
-                <tr><td>Finestra unificata</td><td>{dataHours} ore (30 giorni)</td></tr>
-                <tr><td>Densità dati mensile</td><td>{monthlyRecords / Math.Max(dataHours, 1):0} campioni/ora</td></tr>
-                <tr><td>Frequenza campionamento</td><td>{(dataCount > 0 ? (lastRecord - firstRecord).TotalMinutes / dataCount : 0):0} min/campione</td></tr>
-                <tr><td>Copertura dati</td><td>{Math.Min(100, (dataHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):0}% del periodo totale</td></tr>
+                <tr><td>Finestra unificata</td><td>{dataHours} ore ({PROD_MONTHLY_REPEAT_DAYS} giorni)</td></tr>
+                <tr><td>Densità dati mensile</td><td>{monthlyRecords / actualMonthlyHours:0} campioni/ora</td></tr>
+                <tr><td>Frequenza campionamento</td><td>{(monthlyRecords > 0 ? (lastRecord - firstRecord).TotalMinutes / monthlyRecords : 0):F2} min/campione</td></tr>
+                <tr><td>Copertura dati</td><td>{Math.Min(100, (actualMonthlyHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):0}% del periodo totale</td></tr>
                 <tr><td>Strategia</td><td>Analisi mensile consistente con context evolutivo</td></tr>
             </table>";
     }
