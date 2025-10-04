@@ -632,9 +632,9 @@ namespace PolarDrive.WebApi.Services
                                             }}
                                             .header-content {{
                                                 font-size: 10px;
-                                                color: #004E92;
+                                                color: #ccc;
                                                 text-align: center;
-                                                border-bottom: 1px solid #004E92;
+                                                border-bottom: 1px solid #ccc;
                                                 padding-bottom: 5px;
                                                 width: 100%;
                                             }}
@@ -659,7 +659,7 @@ namespace PolarDrive.WebApi.Services
                                             }
                                             .footer-content {
                                                 font-size: 10px;
-                                                color: #666;
+                                                color: #ccc;
                                                 text-align: center;
                                                 border-top: 1px solid #ccc;
                                                 padding-top: 5px;

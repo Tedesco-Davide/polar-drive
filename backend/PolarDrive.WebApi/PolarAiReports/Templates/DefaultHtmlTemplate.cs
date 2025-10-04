@@ -56,10 +56,10 @@ public static class DefaultHtmlTemplate
                                 <strong>Veicolo</strong> {{vehicleModel}} - {{vehicleVin}}
                             </div>
                             <div class=""info-item"">
-                                <strong>Periodo</strong> {{periodStart}} → {{periodEnd}}
+                                <strong>Data generazione PDF</strong> {{generatedAt}}
                             </div>
                             <div class=""info-item"">
-                                <strong>Generato</strong> {{generatedAt}}
+                                <strong>Periodo monitorato</strong> Dal {{periodStart}} al {{periodEnd}}
                             </div>
                             {{#if notes}}
                             <div class=""info-item notes"">
@@ -69,16 +69,16 @@ public static class DefaultHtmlTemplate
                         </div>
                     </section>
 
-                    <!-- ✅ Certificazione DataPolar -->
-                    <section class=""section certification-section"">
-                        {{dataPolarCertification}}
-                    </section>
-
                     <!-- ✅ Analisi AI -->
-                    <section class=""section ai-insights"">
+                    <section class=""section ai-insights page-break"">
                         <div class=""insights-content"">
                             {{insights}}
                         </div>
+                    </section>
+
+                    <!-- ✅ Certificazione DataPolar -->
+                    <section class=""section certification-section page-break"">
+                        {{dataPolarCertification}}
                     </section>
 
                     <!-- ✅ Footer -->

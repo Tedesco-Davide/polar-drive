@@ -60,25 +60,26 @@ public class DataPolarCertification
             var monthlyFirstRecord = monthlyTimeRange?.FirstRecord ?? DateTime.Now;
             var monthlyLastRecord = monthlyTimeRange?.LastRecord ?? DateTime.Now;
 
-            // ✅ Passa i dati mensili per il calcolo della frequenza
-            var statistics = GenerateMonthlyStatisticsHtml(
+            var statistics = await GenerateMonthlyStatisticsHtml(
                 monthlyDataCount, 
                 totalMonitoringPeriod, 
                 monthlyFirstRecord,
-                monthlyLastRecord
+                monthlyLastRecord,
+                vehicleId,
+                MONTHLY_HOURS_THRESHOLD
             );
             
             var detailedTable = await GenerateDetailedLogTableAsync(vehicleId, MONTHLY_HOURS_THRESHOLD);
 
             return $@"
                 <div class='certification-datapolar'>
-                    <h4 class='certification-datapolar-generic'>📊 Statistiche Generali (Lifetime)</h4>
+                    <h4 class='certification-datapolar-generic'>📋 Statistiche Generali (Lifetime)</h4>
                     {certification}
                     
                     <h4>📊 Statistiche Analisi Mensile</h4>
                     {statistics}
                     
-                    <h4 class='detailed-log-table-title'>📋 Tabella Dettagliata Log Timestamp Certificati - Ultime 720 ore (30 giorni)</h4>
+                    <h4 class='detailed-log-table-title'>💽 Tabella Dettagliata Log Timestamp Certificati - Ultime 720 ore (30 giorni)</h4>
                     {detailedTable}
                 </div>";
         }
@@ -126,25 +127,55 @@ public class DataPolarCertification
     /// <summary>
     /// 📊 Genera statistiche mensili in formato HTML
     /// </summary>
-    private static string GenerateMonthlyStatisticsHtml(
+    private async Task<string> GenerateMonthlyStatisticsHtml(
         int monthlyRecords, 
         TimeSpan totalMonitoringPeriod, 
         DateTime firstRecord, 
-        DateTime lastRecord)
+        DateTime lastRecord,
+        int vehicleId,
+        int dataHours)
     {
-        const int dataHours = MONTHLY_HOURS_THRESHOLD;
+        const int monthlyThreshold = MONTHLY_HOURS_THRESHOLD;
         
         // Calcola le ore effettive dei dati mensili
         var actualMonthlyHours = Math.Max((lastRecord - firstRecord).TotalHours, 1);
+        
+        // Calcola periodo effettivo per tabella dettagliata
+        var now = DateTime.Now;
+        var maxStartTime = now.AddHours(-dataHours);
+        var effectiveStartTime = firstRecord > maxStartTime ? firstRecord : maxStartTime;
+        
+        var startTime = new DateTime(
+            effectiveStartTime.Year,
+            effectiveStartTime.Month,
+            effectiveStartTime.Day,
+            effectiveStartTime.Hour,
+            0, 0
+        );
+        
+        var actualHoursToShow = (int)Math.Ceiling((now - startTime).TotalHours);
+        
+        // Conta record certificati nel periodo della tabella dettagliata
+        var certifiedRecords = await _dbContext.VehiclesData
+            .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
+            .CountAsync();
+        
+        var totalExpectedRecords = actualHoursToShow;
+        var completeness = totalExpectedRecords > 0 
+            ? (certifiedRecords / (double)totalExpectedRecords * 100) 
+            : 0;
         
         return $@"
             <table class='statistics-table'>
                 <tr><td>Durata monitoraggio totale</td><td>{totalMonitoringPeriod.TotalDays:0} giorni</td></tr>
                 <tr><td>Campioni mensili analizzati</td><td>{monthlyRecords:N0}</td></tr>
-                <tr><td>Finestra unificata</td><td>{dataHours} ore ({PROD_MONTHLY_REPEAT_DAYS} giorni)</td></tr>
+                <tr><td>Finestra unificata</td><td>{monthlyThreshold} ore ({PROD_MONTHLY_REPEAT_DAYS} giorni)</td></tr>
                 <tr><td>Densità dati mensile</td><td>{monthlyRecords / actualMonthlyHours:0} campioni/ora</td></tr>
                 <tr><td>Frequenza campionamento</td><td>{(monthlyRecords > 0 ? (lastRecord - firstRecord).TotalMinutes / monthlyRecords : 0):F2} min/campione</td></tr>
                 <tr><td>Copertura dati</td><td>{Math.Min(100, (actualMonthlyHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):0}% del periodo totale</td></tr>
+                <tr><td>Ore monitorate</td><td>{actualHoursToShow} ore ({actualHoursToShow / 24.0:0} giorni)</td></tr>
+                <tr><td>N. Record certificati</td><td>{certifiedRecords:N0} su {totalExpectedRecords}</td></tr>
+                <tr><td>Percentuale completezza</td><td>{completeness:0}%</td></tr>
                 <tr><td>Strategia</td><td>Analisi mensile consistente con context evolutivo</td></tr>
             </table>";
     }
@@ -172,9 +203,7 @@ public class DataPolarCertification
 
         // Calcola il periodo effettivo da mostrare
         var now = DateTime.Now;
-        var maxStartTime = now.AddHours(-dataHours); // 30 giorni fa massimo
-
-        // Usa il più recente tra il primo record e 30 giorni fa
+        var maxStartTime = now.AddHours(-dataHours);
         var effectiveStartTime = firstRecordTime > maxStartTime ? firstRecordTime : maxStartTime;
 
         // Arrotonda all'ora precedente per avere timestamp puliti
@@ -185,10 +214,6 @@ public class DataPolarCertification
             effectiveStartTime.Hour,
             0, 0
         );
-
-        // Calcola ore effettive da mostrare
-        var actualHoursToShow = (int)Math.Ceiling((now - startTime).TotalHours);
-        var totalExpectedRecords = actualHoursToShow;
 
         // Recupera i record effettivi
         var actualRecords = await _dbContext.VehiclesData
@@ -218,15 +243,15 @@ public class DataPolarCertification
         {
             if (recordLookup.TryGetValue(currentTime, out var record))
             {
-                var adaptiveProfiling = record.IsSmsAdaptiveProfiling ?
-                    "<span class='detailed-log-badge-success-profiling'>Sì</span>" :
-                    "<span class='detailed-log-badge-default-profiling'>No</span>";
+                var adaptiveProfiling = record.IsSmsAdaptiveProfiling
+                    ? "<span class='detailed-log-badge-success-profiling'>Sì</span>"
+                    : "<span class='detailed-log-badge-default-profiling'>No</span>";
 
-                var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized) ?
-                    "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>" :
-                    "<span class='detailed-log-badge-warning-dataValidated'>Dati operativi da validare</span>";
+                var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized)
+                    ? "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>"
+                    : "<span class='detailed-log-badge-warning-dataValidated'>Dati operativi da validare</span>";
 
-                sb.AppendLine($"<tr class='record-present'>");
+                sb.AppendLine("<tr class='record-present'>");
                 sb.AppendLine($"<td>{record.Timestamp:yyyy-MM-dd HH:mm}</td>");
                 sb.AppendLine($"<td>{adaptiveProfiling}</td>");
                 sb.AppendLine($"<td>{datiOperativi}</td>");
@@ -234,10 +259,10 @@ public class DataPolarCertification
             }
             else
             {
-                sb.AppendLine($"<tr class='record-missing'>");
+                sb.AppendLine("<tr class='record-missing'>");
                 sb.AppendLine($"<td>{currentTime:yyyy-MM-dd HH:mm}</td>");
-                sb.AppendLine($"<td><span class='badge-default'>No</span></td>");
-                sb.AppendLine($"<td><span class='badge-warning'>Dati operativi da validare</span></td>");
+                sb.AppendLine("<td><span class='badge-default'>No</span></td>");
+                sb.AppendLine("<td><span class='badge-warning'>Dati operativi da validare</span></td>");
                 sb.AppendLine("</tr>");
             }
 
@@ -246,14 +271,6 @@ public class DataPolarCertification
 
         sb.AppendLine("</tbody>");
         sb.AppendLine("</table>");
-
-        sb.AppendLine("<div class='detailed-log-table-footer'>");
-        sb.AppendLine($"  <div><span class='icon'>🕒</span> Periodo monitorato: {startTime:yyyy-MM-dd HH:mm} → {now:yyyy-MM-dd HH:mm}</div>");
-        sb.AppendLine($"  <div><span class='icon'>⏱️</span> Ore totali: {actualHoursToShow} ore ({actualHoursToShow / 24.0:0} giorni)</div>");
-        sb.AppendLine($"  <div><span class='icon'>📑</span> N. record certificati: {actualRecords.Count} su {totalExpectedRecords}</div>");
-        sb.AppendLine($" <div><span class='icon'>📊</span> Percentuale completezza: {(actualRecords.Count / (double)totalExpectedRecords * 100):0}%</div>");
-
-        sb.AppendLine("</div>");
 
         return sb.ToString();
     }
@@ -264,24 +281,43 @@ public class DataPolarCertification
     private static double CalculateQualityScore(int totalRecords, double uptimePercentage, TimeSpan monitoringPeriod)
     {
         double score = 0;
-
+        
         // 40% - Uptime
         score += (uptimePercentage / 100) * 40;
-
-        // 30% - Densità records
+        
+        // 30% - Densità records (migliorata)
         var recordDensity = totalRecords / Math.Max(monitoringPeriod.TotalHours, 1);
-        var densityScore = Math.Min(1, recordDensity / 1.0);
+        var densityScore = Math.Min(1, recordDensity / 2.0); // ✅ Aumentato da 1.0 a 2.0
         score += densityScore * 30;
-
-        // 20% - Stabilità (semplificato)
-        score += 18;
-
+        
+        // 20% - Stabilità (dinamica basata su continuità)
+        var stabilityScore = CalculateStability(monitoringPeriod);
+        score += stabilityScore * 20;
+        
         // 10% - Maturità dataset
-        if (monitoringPeriod.TotalDays >= 30) score += 10;
-        else if (monitoringPeriod.TotalDays >= 7) score += 7;
-        else if (monitoringPeriod.TotalDays >= 1) score += 3;
-
+        var totalHours = monitoringPeriod.TotalHours;
+        if (totalHours >= MONTHLY_HOURS_THRESHOLD) score += 10;      // 30+ giorni
+        else if (totalHours >= WEEKLY_HOURS_THRESHOLD) score += 7;   // 7+ giorni  
+        else if (totalHours >= DAILY_HOURS_THRESHOLD) score += 3;    // 1+ giorno
+        
         return Math.Max(0, Math.Min(100, score));
+    }
+
+    /// <summary>
+    /// Calcola stabilità basandosi sulla continuità del monitoraggio
+    /// </summary>
+    private static double CalculateStability(TimeSpan monitoringPeriod)
+    {
+        var hours = monitoringPeriod.TotalHours;
+        
+        // Più ore continuative = maggiore stabilità
+        if (hours >= (MONTHLY_HOURS_THRESHOLD * 3)) return 1.0;   // 90+ giorni (3 mesi) = eccellente
+        if (hours >= MONTHLY_HOURS_THRESHOLD) return 0.95;        // 30+ giorni (1 mese) = ottimo
+        if (hours >= WEEKLY_HOURS_THRESHOLD) return 0.85;         // 7+ giorni (1 settimana) = buono
+        if (hours >= (DAILY_HOURS_THRESHOLD * 3)) return 0.75;    // 3+ giorni = discreto
+        if (hours >= DAILY_HOURS_THRESHOLD) return 0.60;          // 1+ giorno = sufficiente
+        
+        return 0.50; // < 24 ore = base
     }
 
     /// <summary>

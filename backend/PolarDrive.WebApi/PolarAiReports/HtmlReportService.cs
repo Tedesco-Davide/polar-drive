@@ -3,6 +3,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.PolarAiReports.Templates;
 using System.Text;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -77,6 +78,31 @@ public class HtmlReportService
         string aiReportContentInsights,
         HtmlReportOptions options)
     {
+        var vehicleId = report.VehicleId;
+
+        // Trova il primo record effettivo del veicolo
+        var firstRecordTime = await _dbContext.VehiclesData
+            .Where(vd => vd.VehicleId == vehicleId)
+            .OrderBy(vd => vd.Timestamp)
+            .Select(vd => vd.Timestamp)
+            .FirstOrDefaultAsync();
+
+        // Calcola il periodo effettivo da mostrare
+        var now = DateTime.Now;
+        var maxStartTime = now.AddHours(-MONTHLY_HOURS_THRESHOLD); // 30 giorni fa massimo
+
+        // Usa il più recente tra il primo record e 30 giorni fa
+        var effectiveStartTime = firstRecordTime > maxStartTime ? firstRecordTime : maxStartTime;
+
+        // Arrotonda all'ora precedente per avere timestamp puliti
+        var startTime = new DateTime(
+            effectiveStartTime.Year,
+            effectiveStartTime.Month,
+            effectiveStartTime.Day,
+            effectiveStartTime.Hour,
+            0, 0
+        );
+
         var data = new Dictionary<string, object>
         {
             // Dati base del report
@@ -85,8 +111,8 @@ public class HtmlReportService
             ["vatNumber"] = report.ClientCompany?.VatNumber ?? "N/A",
             ["vehicleModel"] = report.ClientVehicle?.Model ?? "N/A",
             ["vehicleVin"] = report.ClientVehicle?.Vin ?? "N/A",
-            ["periodStart"] = report.ReportPeriodStart.ToString(options.DateFormat),
-            ["periodEnd"] = report.ReportPeriodEnd.ToString(options.DateFormat),
+            ["periodStart"] = $"{startTime:yyyy-MM-dd HH:mm}",
+            ["periodEnd"] = $"{now:yyyy-MM-dd HH:mm}",
             ["generatedAt"] = DateTime.Now.ToString(options.DateTimeFormat),
             ["notes"] = report.Notes ?? "N/A",
             ["insights"] = FormatInsightsForHtml(aiReportContentInsights),

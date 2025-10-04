@@ -270,22 +270,7 @@ public static class DefaultCssTemplate
             color-adjust: exact;
         }
 
-        /* INSIGHTS AI MODERNI */
-        .ai-report-badge {
-            background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
-            color: white;
-            padding: 8px 16px;
-            border-radius: 25px;
-            font-size: 12px;
-            font-weight: 500;
-            display: inline-block;
-            margin: 10px 15px 10px 0;
-            box-shadow: 0 4px 12px rgba(139, 159, 242, 0.3);
-            backdrop-filter: blur(10px);
-            -webkit-print-color-adjust: exact;
-            color-adjust: exact;
-        }
-        
+        /* INSIGHTS AI MODERNI */    
         .ai-insights {
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.03) 0%, rgba(156, 130, 199, 0.03) 100%);
             border: 1px solid rgba(139, 159, 242, 0.15);
@@ -465,28 +450,6 @@ public static class DefaultCssTemplate
 
         .detailed-log-table-title {
             padding-top: 20px;
-        }
-
-        .detailed-log-table-footer {
-            width: calc(100% - 40px);
-            margin: 0px 20px 15px 20px;
-            border-radius: 12px;
-            color: #768094;
-            font-size: 14px;
-            line-height: 1.6;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-        }
-
-        .detailed-log-table-footer .row {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-    
-        .detailed-log-table-footer .row:last-child { margin-bottom: 0; }
-        .detailed-log-table-footer .ico {
-            width: 20px; height: 20px; flex: 0 0 20px;
         }
 
         .detailed-log-table td:nth-child(2) {
