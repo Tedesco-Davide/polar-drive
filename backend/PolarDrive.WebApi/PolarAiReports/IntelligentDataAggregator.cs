@@ -70,7 +70,18 @@ public class IntelligentDataAggregator
                     continue;
                 }
 
-                var jsonHash = ComputeHash(rawJsonAnonymous);
+                // Scarta righe non-JSON (evita lavoro inutile alla sanitizzazione)
+                var span = rawJsonAnonymous.AsSpan().TrimStart();
+                if (!(span.StartsWith("{") || span.StartsWith("[")))
+                {
+                    await LogProcessingStep("SkipNonJson", "Record non JSON");
+                    continue;
+                }
+
+                var fixes = new List<string>();
+                var sanitizedJson = SanitizeJsonAggressive(rawJsonAnonymous, msg => fixes.Add(msg));
+
+                var jsonHash = ComputeHash(sanitizedJson);
                 if (_processedRecords.Contains(jsonHash))
                 {
                     await LogProcessingStep("SkipDuplicate", $"JSON duplicato saltato (hash: {jsonHash[..8]})");
@@ -78,7 +89,10 @@ public class IntelligentDataAggregator
                 }
                 _processedRecords.Add(jsonHash);
 
-                using var doc = JsonDocument.Parse(rawJsonAnonymous);
+                using var doc = JsonDocument.Parse(
+                    sanitizedJson,
+                    new JsonDocumentOptions { AllowTrailingCommas = true }
+                );
                 var root = doc.RootElement;
 
                 if (root.TryGetProperty("response", out var response) &&
@@ -118,11 +132,11 @@ public class IntelligentDataAggregator
                                 await LogProcessingStep("PartnerKey", $"Processata partner key");
                                 break;
                             case "user_profile":
-                                ProcessUserProfileComplete(content, aggregation);
-                                await LogProcessingStep("UserProfile", $"Processato user profile");
+                                // Ignoriamo esplicitamente per rispettare Tesla Fleet Api
                                 break;
                             default:
-                                await LogProcessingStep("UnknownType", $"Tipo sconosciuto: {type}");
+                                if (!"user_profile".Equals(type, StringComparison.OrdinalIgnoreCase))
+                                    await LogProcessingStep("UnknownType", $"Tipo sconosciuto: {type}");
                                 break;
                         }
 
@@ -171,9 +185,6 @@ public class IntelligentDataAggregator
                 recordStopwatch?.Stop();
             }
         }
-
-        // Calcola le metriche finali
-        aggregation.FinalizeCalculations();
 
         // Aggiungi dati SMS Adaptive Profiling
         await AddAdaptiveProfilingDataComplete(vehicleId, aggregation);
@@ -225,7 +236,6 @@ public class IntelligentDataAggregator
         var startDateTime = GetSafeStringValue(content, "chargeStartDateTime");
         var stopDateTime = GetSafeStringValue(content, "chargeStopDateTime");
         var site = GetSafeStringValue(content, "siteLocationName");
-        var vin = GetSafeStringValue(content, "vin");
         var unlatch = GetSafeStringValue(content, "unlatchDateTime");
         var country = GetSafeStringValue(content, "countryCode");
         var billingType = GetSafeStringValue(content, "billingType");
@@ -261,7 +271,7 @@ public class IntelligentDataAggregator
                 StopTime = normalizedStop.Value,
 
                 // NORMALIZZAZIONE TESTI
-                Site = DataNormalizer.NormalizeText(site!),
+                Site = AnonymizeChargingSite(site),
                 Country = DataNormalizer.NormalizeText(country!),
                 BillingType = DataNormalizer.NormalizeText(billingType!),
                 VehicleType = DataNormalizer.NormalizeText(vehicleType!)
@@ -280,8 +290,8 @@ public class IntelligentDataAggregator
             if (normalizedUnlatch.HasValue)
             {
                 var disconnectDelay = (normalizedUnlatch.Value - normalizedStop.Value).TotalMinutes;
-                // Validazione delay realistico (max 12 ore)
-                if (disconnectDelay >= 0 && disconnectDelay <= MONTHLY_HOURS_THRESHOLD)
+                const double MaxDisconnectDelayMinutes = 12 * 60; // 12 ore
+                if (disconnectDelay >= 0 && disconnectDelay <= MaxDisconnectDelayMinutes)
                 {
                     session.DisconnectDelay = disconnectDelay;
                 }
@@ -314,7 +324,7 @@ public class IntelligentDataAggregator
 
         // Aggregazione per paese e sito con testi normalizzati
         var normalizedCountry = DataNormalizer.NormalizeText(country!);
-        var normalizedSite = DataNormalizer.NormalizeText(site!);
+        var normalizedSite = AnonymizeChargingSite(site);
 
         if (!string.IsNullOrEmpty(normalizedCountry))
             aggregation.ChargingByCountry[normalizedCountry] = aggregation.ChargingByCountry.GetValueOrDefault(normalizedCountry) + 1;
@@ -432,17 +442,9 @@ public class IntelligentDataAggregator
     private void ProcessVehicleDataComplete(JsonElement vdResponse, CompleteTeslaDataAggregation aggregation)
     {
         // Informazioni base
-        var vin = GetSafeStringValue(vdResponse, "vin");
-        if (!string.IsNullOrEmpty(vin))
-        {
-            var normalizedVin = DataNormalizer.NormalizeVin(vin);
-            if (DataValidator.IsValidVin(normalizedVin))
-                aggregation.VehicleVin = normalizedVin;
-        }
-        var state = GetSafeStringValue(vdResponse, "state");
-
-        if (!string.IsNullOrEmpty(vin)) aggregation.VehicleVin = vin;
-        if (!string.IsNullOrEmpty(state)) aggregation.VehicleStates[state] = aggregation.VehicleStates.GetValueOrDefault(state) + 1;
+        var state = DataNormalizer.NormalizeText(GetSafeStringValue(vdResponse, "state") ?? "");
+        if (!string.IsNullOrEmpty(state))
+            aggregation.VehicleStates[state] = aggregation.VehicleStates.GetValueOrDefault(state) + 1;
 
         // Charge State - analisi completa
         if (vdResponse.TryGetProperty("charge_state", out var chargeState))
@@ -480,12 +482,6 @@ public class IntelligentDataAggregator
         var chargeRate = GetSafeDecimalValue(chargeState, "charge_rate");
         var minutesToFull = GetSafeIntValue(chargeState, "minutes_to_full_charge");
 
-        // NORMALIZZAZIONE APPLICATA
-        if (batteryLevel > 0 && DataValidator.IsValidBatteryLevel(batteryLevel))
-        {
-            aggregation.BatteryLevels.Add(batteryLevel); // Già normalizzato (%)
-        }
-
         if (batteryRange > 0)
         {
             var normalizedRange = DataNormalizer.NormalizeDistance(batteryRange);
@@ -520,12 +516,6 @@ public class IntelligentDataAggregator
             invalidBatteryLevels++;
         }
 
-        if (batteryRange > 0 && batteryRange <= 1000) // Range realistico
-            aggregation.BatteryRanges.Add(batteryRange);
-
-        if (!string.IsNullOrEmpty(chargingState) && IsValidChargingState(chargingState))
-            aggregation.ChargingStates[chargingState] = aggregation.ChargingStates.GetValueOrDefault(chargingState) + 1;
-
         if (chargeLimit > 0 && DataValidator.IsValidBatteryLevel(chargeLimit))
             aggregation.ChargeLimits.Add(chargeLimit);
 
@@ -542,7 +532,8 @@ public class IntelligentDataAggregator
     }
 
     private static bool IsValidChargingState(string state) =>
-        new[] { "Charging", "Complete", "Disconnected", "Stopped", "NoPower" }.Contains(state);
+        new[] { "CHARGING", "COMPLETE", "DISCONNECTED", "STOPPED", "NOPOWER" }
+            .Contains(state?.ToUpperInvariant());
 
     private void ProcessClimateStateComplete(JsonElement climateState, CompleteTeslaDataAggregation aggregation)
     {
@@ -575,23 +566,11 @@ public class IntelligentDataAggregator
                 aggregation.DriverTempSettings.Add(normalizedTemp);
         }
 
-        // VALIDAZIONE STRUTTURATA TEMPERATURE
-        if (insideTemp != 0 && DataValidator.IsValidTemperature(insideTemp))
-            aggregation.InsideTemperatures.Add(insideTemp);
-
-        if (outsideTemp != 0 && DataValidator.IsValidTemperature(outsideTemp))
-            aggregation.OutsideTemperatures.Add(outsideTemp);
-
-        if (driverTemp != 0 && DataValidator.IsValidTemperature(driverTemp))
-            aggregation.DriverTempSettings.Add(driverTemp);
-
-        if (passengerTemp != 0 && DataValidator.IsValidTemperature(passengerTemp))
-            aggregation.PassengerTempSettings.Add(passengerTemp);
-
         aggregation.ClimateUsage[isClimateOn] = aggregation.ClimateUsage.GetValueOrDefault(isClimateOn) + 1;
 
-        if (!string.IsNullOrEmpty(cabinOverheat))
-            aggregation.CabinOverheatSettings[cabinOverheat] = aggregation.CabinOverheatSettings.GetValueOrDefault(cabinOverheat) + 1;
+        var normalizedOverheat = DataNormalizer.NormalizeText(cabinOverheat ?? "");
+        if (!string.IsNullOrEmpty(normalizedOverheat))
+            aggregation.CabinOverheatSettings[normalizedOverheat] = aggregation.CabinOverheatSettings.GetValueOrDefault(normalizedOverheat) + 1;
 
         // Analisi intelligente del clima
         if (insideTemp != 0 && outsideTemp != 0)
@@ -625,21 +604,15 @@ public class IntelligentDataAggregator
 
         if (latitude != 0 && longitude != 0)
         {
-            var (normalizedLat, normalizedLon) = DataNormalizer.NormalizeCoordinates(latitude, longitude);
-
-            if (DataValidator.IsValidCoordinates(normalizedLat, normalizedLon))
+            // Aggrega per ZONA GEOGRAFICA invece di coordinate precise
+            var zone = GetGeographicZone(latitude, longitude);
+            aggregation.GeographicZones[zone] = aggregation.GeographicZones.GetValueOrDefault(zone) + 1;
+            
+            // Aggrega direzione separatamente (senza collegare alle coordinate)
+            if (heading >= 0 && heading <= 360)
             {
-                var location = new LocationPointComplete
-                {
-                    Latitude = normalizedLat,
-                    Longitude = normalizedLon,
-                    Heading = heading >= 0 && heading <= 360 ? heading : 0,
-                    Speed = DataValidator.IsValidSpeed(normalizedSpeed) ? normalizedSpeed : 0,
-                    FormattedCoords = FormatCoordinatesItalian(normalizedLat, normalizedLon),
-                    LocationName = GetItalianLocationName(normalizedLat, normalizedLon),
-                    CompassDirection = GetCompassDirection(heading)
-                };
-                aggregation.Locations.Add(location);
+                var direction = GetCompassDirection(heading);
+                aggregation.HeadingDistribution[direction] = aggregation.HeadingDistribution.GetValueOrDefault(direction) + 1;
             }
         }
 
@@ -649,31 +622,18 @@ public class IntelligentDataAggregator
             var translatedShift = TranslateShiftState(normalizedShift);
             aggregation.ShiftStates[translatedShift] = aggregation.ShiftStates.GetValueOrDefault(translatedShift) + 1;
         }
+    }
 
-        // VALIDAZIONE STRUTTURATA
-        if (speed > 0 && DataValidator.IsValidSpeed(speed))
-            aggregation.Speeds.Add(speed);
-
-        if (latitude != 0 && longitude != 0 && DataValidator.IsValidCoordinates(latitude, longitude))
+    private static string GetGeographicZone(decimal lat, decimal lon)
+    {
+        // Dividi Italia in zone molto ampie (>50 km di differenza tra zone)
+        return lat switch
         {
-            var location = new LocationPointComplete
-            {
-                Latitude = latitude,
-                Longitude = longitude,
-                Heading = heading >= 0 && heading <= 360 ? heading : 0, // Validazione heading
-                Speed = DataValidator.IsValidSpeed(speed) ? speed : 0,
-                FormattedCoords = FormatCoordinatesItalian(latitude, longitude),
-                LocationName = GetItalianLocationName(latitude, longitude),
-                CompassDirection = GetCompassDirection(heading)
-            };
-            aggregation.Locations.Add(location);
-        }
-
-        if (!string.IsNullOrEmpty(shiftState))
-        {
-            var translatedShift = TranslateShiftState(shiftState);
-            aggregation.ShiftStates[translatedShift] = aggregation.ShiftStates.GetValueOrDefault(translatedShift) + 1;
-        }
+            > 45.0m => "Nord Italia",
+            > 43.0m => "Centro-Nord Italia", 
+            > 41.0m => "Centro Italia",
+            _ => "Sud Italia"
+        };
     }
 
     private void ProcessVehicleStateComplete(JsonElement vehicleState, CompleteTeslaDataAggregation aggregation)
@@ -756,6 +716,13 @@ public class IntelligentDataAggregator
             var success = command.TryGetProperty("response", out var resp) && GetSafeBooleanValue(resp, "result");
             var commandKey = $"{commandName}_{timestamp}";
 
+            if (!success && resp.TryGetProperty("reason", out var reason))
+            {
+                var failureReason = reason.GetString() ?? "Unknown";
+                aggregation.CommandFailureReasons[failureReason] =
+                    aggregation.CommandFailureReasons.GetValueOrDefault(failureReason) + 1;
+            }
+
             // DEDUPLICAZIONE COMANDI
             if (_processedCommands.Contains(commandKey))
                 continue; // Comando già processato
@@ -778,6 +745,36 @@ public class IntelligentDataAggregator
                     var hourKey = $"{cmdTime.Hour:00}:xx";
                     aggregation.CommandsByHour[hourKey] = aggregation.CommandsByHour.GetValueOrDefault(hourKey) + 1;
                 }
+
+                // Aggiungi parametri comandi
+                if (command.TryGetProperty("parameters", out var parameters))
+                {
+                    aggregation.CommandsWithParameters.Add(new CommandWithParameters
+                    {
+                        CommandName = commandName,
+                        Parameters = parameters.ValueKind == JsonValueKind.Null 
+                            ? "" 
+                            : parameters.GetRawText(),
+                        Success = success,
+                        Timestamp = timestamp ?? DateTime.Now.ToString("o")
+                    });
+                }
+            }
+        }
+        
+        if (aggregation.CommandTypes.Count != 0)
+        {
+            var totalCommands = aggregation.CommandTypes.Values.Sum();
+            var topCommand = aggregation.CommandTypes.OrderByDescending(kvp => kvp.Value).First();
+            
+            if (topCommand.Value > totalCommands * 0.5m)
+            {
+                aggregation.CommandAnalyses["Comando dominante"] = topCommand.Value;
+            }
+            
+            if (aggregation.CommandSuccess.GetValueOrDefault(false) > totalCommands * 0.9m)
+            {
+                aggregation.CommandAnalyses["Alta affidabilità"] = 1;
             }
         }
     }
@@ -799,8 +796,34 @@ public class IntelligentDataAggregator
         {
             ProcessSiteInfoComplete(siteResponse, aggregation);
         }
+        
+        // Altri endpoint energetici
+        if (content.TryGetProperty("charge_history", out var chargeHistory) &&
+            chargeHistory.TryGetProperty("response", out var chResponse) &&
+            chResponse.TryGetProperty("charge_history", out var chArray))
+        {
+            foreach (var charge in chArray.EnumerateArray())
+            {
+                if (charge.TryGetProperty("charge_start_time", out var startTime) &&
+                    startTime.TryGetProperty("seconds", out var seconds))
+                {
+                    var duration = charge.TryGetProperty("charge_duration", out var dur) &&
+                                dur.TryGetProperty("seconds", out var durSec)
+                        ? durSec.GetInt32() / 3600.0 // converti in ore
+                        : 0;
 
-        // Altri endpoint energetici...
+                    var energyAdded = GetSafeIntValue(charge, "energy_added_wh");
+
+                    aggregation.VehicleChargeHistory.Add(new VehicleChargeEntry
+                    {
+                        StartTime = DateTimeOffset.FromUnixTimeSeconds(seconds.GetInt64())
+                            .ToString("o"),
+                        DurationHours = duration,
+                        EnergyAdded = energyAdded
+                    });
+                }
+            }
+        }
     }
 
     private void ProcessLiveStatusComplete(JsonElement liveResponse, CompleteTeslaDataAggregation aggregation)
@@ -826,37 +849,35 @@ public class IntelligentDataAggregator
             aggregation.EnergySiteInfo = new EnergySiteInfo
             {
                 SiteName = siteName!,
-                BatteryCount = batteryCount
+                BatteryCount = batteryCount,
+                BackupReservePercent = GetSafeIntValue(siteResponse, "backup_reserve_percent"),
+                RealMode = GetSafeStringValue(siteResponse, "default_real_mode") ?? "",
+                InstallationDate = GetSafeStringValue(siteResponse, "installation_date") ?? "",
+                NameplatePower = GetSafeIntValue(siteResponse, "nameplate_power"),
+                NameplateEnergy = GetSafeIntValue(siteResponse, "nameplate_energy"),
+                Version = GetSafeStringValue(siteResponse, "version") ?? "",
+                HasSolar = siteResponse.TryGetProperty("components", out var comp) 
+                    && GetSafeBooleanValue(comp, "solar"),
+                HasBattery = siteResponse.TryGetProperty("components", out var comp2) 
+                    && GetSafeBooleanValue(comp2, "battery"),
+                HasGrid = siteResponse.TryGetProperty("components", out var comp3) 
+                    && GetSafeBooleanValue(comp3, "grid")
             };
         }
     }
 
     private void ProcessPartnerPublicKeyComplete(JsonElement content, CompleteTeslaDataAggregation aggregation)
     {
-        // Implementa logica partner public key
         var publicKey = GetSafeStringValue(content, "public_key");
         if (!string.IsNullOrEmpty(publicKey))
         {
             aggregation.PublicKeyInfo = new PublicKeyInfo
             {
                 KeyLength = publicKey.Length,
-                KeyStrength = publicKey.Length >= 128 ? "Forte" : "Media"
-            };
-        }
-    }
-
-    private void ProcessUserProfileComplete(JsonElement content, CompleteTeslaDataAggregation aggregation)
-    {
-        if (content.TryGetProperty("me", out var me) &&
-            me.TryGetProperty("response", out var meResponse))
-        {
-            var email = GetSafeStringValue(meResponse, "email");
-            var fullName = GetSafeStringValue(meResponse, "full_name");
-
-            aggregation.UserProfile = new UserProfileInfo
-            {
-                Email = DataNormalizer.NormalizeText(email!).ToLowerInvariant(),
-                FullName = DataNormalizer.NormalizeText(fullName!)
+                KeyStrength = publicKey.Length >= 128 ? "Forte" : "Media",
+                KeyPreview = publicKey.Length > 20 
+                    ? publicKey.Substring(0, 20) + "..."
+                    : publicKey
             };
         }
     }
@@ -986,6 +1007,12 @@ public class IntelligentDataAggregator
                         var avgCostPerKwh = aggregation.CostPerKwhValues.Average();
                         sb.AppendLine($"- **Tariffa media**: {avgCostPerKwh:F3} EUR/kWh");
                     }
+                    
+                    // ✅ AGGIUNGI QUESTO:
+                    if (aggregation.AvgEnergyEfficiency > 0)
+                    {
+                        sb.AppendLine($"- **Costo medio normalizzato**: {aggregation.AvgEnergyEfficiency:F2} EUR/kWh");
+                    }
                 }
 
                 // Analisi per paese e sito
@@ -1019,23 +1046,18 @@ public class IntelligentDataAggregator
         }
 
         // 🚗 GUIDA E POSIZIONE
-        if (aggregation.Speeds.Any() || aggregation.Locations.Any())
+        if (aggregation.Speeds.Any())
         {
             sb.AppendLine("### 🚗 GUIDA E POSIZIONE");
             sb.AppendLine($"- **Velocità media**: {aggregation.AvgSpeed:F1} km/h");
             sb.AppendLine($"- **Stile di guida**: {aggregation.DrivingStyleAnalysis}");
 
-            if (aggregation.Locations.Any())
+            if (aggregation.GeographicZones.Any())
             {
-                var locationGroups = aggregation.Locations
-                    .GroupBy(l => l.LocationName)
-                    .OrderByDescending(g => g.Count())
-                    .Take(3);
-
-                sb.AppendLine("- **Zone più frequentate**:");
-                foreach (var group in locationGroups)
+                sb.AppendLine("- **Zone geografiche più frequentate**:");
+                foreach (var zone in aggregation.GeographicZones.OrderByDescending(kvp => kvp.Value))
                 {
-                    sb.AppendLine($"  • {group.Key}: {group.Count()} rilevazioni");
+                    sb.AppendLine($"  • {zone.Key}: {zone.Value} rilevazioni");
                 }
             }
 
@@ -1273,19 +1295,7 @@ public class IntelligentDataAggregator
 
         public static bool IsValidTemperature(decimal temp) => temp >= -50 && temp <= 70; // Celsius
 
-        public static bool IsValidCoordinates(decimal lat, decimal lon) =>
-            lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
-
         public static bool IsValidTirePressure(decimal pressure) => pressure >= 1.0m && pressure <= 5.0m; // bar
-
-        public static bool IsValidTimestamp(string timestamp) =>
-            DateTime.TryParse(timestamp, out var dt) && dt > DateTime.MinValue && dt < DateTime.MaxValue;
-
-        public static bool IsValidVin(string vin) =>
-            !string.IsNullOrEmpty(vin) && vin.Length == 17 && vin.All(char.IsLetterOrDigit);
-
-        public static bool IsValidEmail(string email) =>
-            !string.IsNullOrEmpty(email) && email.Contains('@') && email.Length > 5;
     }
 
     public static class DataNormalizer
@@ -1374,17 +1384,9 @@ public class IntelligentDataAggregator
             // Anonimizza prima di normalizzare
             latitude = Math.Round(latitude, 1);
             longitude = Math.Round(longitude, 1);
-            var lat = Math.Round(latitude, 1);
-            var lon = Math.Round(longitude, 1);
+            var lat = Math.Round(latitude, 2);
+            var lon = Math.Round(longitude, 2);
             return (lat, lon);
-        }
-
-        // Normalizzazione VIN
-        public static string NormalizeVin(string vin)
-        {
-            if (string.IsNullOrWhiteSpace(vin)) return "";
-
-            return vin.Trim().ToUpperInvariant().Replace("-", "").Replace(" ", "");
         }
 
         // Normalizzazione valori monetari
@@ -1448,21 +1450,271 @@ public class IntelligentDataAggregator
         }
     }
 
-    private async Task LogDeduplication(string dataType, int processed, int duplicates)
-    {
-        if (duplicates > 0)
-        {
-            await _logger.Info($"IntelligentDataAggregator.Deduplication",
-                $"{dataType}: {processed} processati, {duplicates} duplicati saltati",
-                $"Tasso duplicazione: {(duplicates * 100.0 / (processed + duplicates)):F1}%");
-        }
-    }
-
     #endregion
 
     #region METODI HELPER COMPLETI
 
-    private static string? GetSafeStringValue(JsonElement element, string propertyName, string? defaultValue = "N/A")
+    private static string AnonymizeChargingSite(string? site)
+    {
+        if (string.IsNullOrWhiteSpace(site)) return "";
+
+        // Normalizza il testo
+        var normalized = DataNormalizer.NormalizeText(site);
+
+        // Estrai solo la città, rimuovi via/indirizzo
+        if (normalized.Contains("MILANO")) return "MILANO";
+        if (normalized.Contains("ROMA")) return "ROMA";
+        if (normalized.Contains("TORINO")) return "TORINO";
+        if (normalized.Contains("NAPOLI")) return "NAPOLI";
+        if (normalized.Contains("BOLOGNA")) return "BOLOGNA";
+        if (normalized.Contains("FIRENZE")) return "FIRENZE";
+        if (normalized.Contains("VENEZIA")) return "VENEZIA";
+        if (normalized.Contains("GENOVA")) return "GENOVA";
+        if (normalized.Contains("PALERMO")) return "PALERMO";
+        if (normalized.Contains("BARI")) return "BARI";
+
+        // Se non trovi città, usa tipo generico
+        if (normalized.Contains("SUPERCHARGER")) return "SUPERCHARGER - ITALIA";
+        if (normalized.Contains("DESTINATION")) return "DESTINATION - ITALIA";
+
+        return "SITO GENERICO - ITALIA";
+    }
+
+    /// <summary>
+    /// Sanitizza numeri malformati nel JSON
+    /// </summary>
+    private static string SanitizeJsonAggressive(string input, Action<string>? onFix = null)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+
+        var sb = new StringBuilder(input.Length + 128);
+        var stack = new Stack<char>(); // '{' o '[' per capire dove siamo
+        bool inString = false, escape = false;
+        bool lastTokenWasValue = false;     // ha appena chiuso un valore (num/true/false/null/string/]/})
+        bool lastNonSpaceWasCommaOrOpen = true; // l'ultimo significativo era ',' o '{'/'['
+        int i = 0;
+
+        // helper: logga fix
+        void Fix(string msg) { onFix?.Invoke(msg); }
+
+        // helper: salta whitespace ma non lo scrive subito
+        int PeekNextNonSpace(int from)
+        {
+            int j = from;
+            while (j < input.Length && char.IsWhiteSpace(input[j])) j++;
+            return j;
+        }
+
+        // helper: quando chiudiamo valore in un oggetto, se dopo non c'è , } ] -> metti la virgola
+        void MaybeInsertComma(int lookFrom)
+        {
+            if (stack.Count == 0 || stack.Peek() != '{') return; // serve solo dentro oggetto
+            if (!lastTokenWasValue) return;
+            int j = PeekNextNonSpace(lookFrom);
+            if (j >= input.Length) return;
+            char nx = input[j];
+            if (nx == ',' || nx == '}' ) return; // ok
+            // se arriva una chiave/valore senza virgola (", {, [, lettera o numero) metti la virgola
+            if (nx == '"' || nx == '{' || nx == '[' || char.IsLetter(nx) || nx == '-' || char.IsDigit(nx))
+            {
+                sb.Append(',');
+                Fix("Inserita virgola mancante dopo un valore in oggetto.");
+                lastNonSpaceWasCommaOrOpen = true;
+            }
+        }
+
+        // helper: pulizia token numerico grezzo
+        string CleanNumber(string raw)
+        {
+            string n = raw.Trim();
+
+            // gestisci simboli strani in coda al decimale: "123.*", "123.x", "123."
+            // -> forza almeno una cifra dopo il punto
+            if (System.Text.RegularExpressions.Regex.IsMatch(n, @"^\-?\d+\.(?:\D.*|)$"))
+            {
+                // se non ci sono cifre dopo il punto, metti ".0"
+                n = System.Text.RegularExpressions.Regex.Replace(n, @"^(\-?\d+)\.(?!\d)", "$1.0");
+                // se c'è ".*" o ".qualcosa-non-digit", tronca a ".0"
+                n = System.Text.RegularExpressions.Regex.Replace(n, @"^(\-?\d+)\.[^\d].*$", "$1.0");
+            }
+
+            // multipli punti: "123..", "123...5" -> prima occorrenza valida, poi ".0"
+            n = System.Text.RegularExpressions.Regex.Replace(n, @"^(\-?\d+)\.{2,}\d*$", "$1.0");
+
+            // notazione scientifica malformata tipo "1.2e*" -> "1.2e0"
+            n = System.Text.RegularExpressions.Regex.Replace(n, @"^(\-?\d+(?:\.\d+)?[eE])[^\+\-\d].*$", "${1}0");
+
+            // decimali con virgola: ": 123,45" -> ": 123.45"
+            // SOLO se non esistono altri punti e non c'è 'e/E'
+            if (System.Text.RegularExpressions.Regex.IsMatch(n, @"^\-?\d+,\d+$"))
+            {
+                n = n.Replace(',', '.');
+                Fix("Convertita virgola decimale in punto.");
+            }
+
+            // doppio segno negativo: "--123" -> "-123"
+            n = System.Text.RegularExpressions.Regex.Replace(n, @"^\-\-(\d+)$", "-$1");
+
+            // validazione finale: se ancora contiene caratteri non-numerici ammessi, fallback a "0"
+            if (!System.Text.RegularExpressions.Regex.IsMatch(n, @"^\-?\d+(?:\.\d+)?(?:[eE][\+\-]?\d+)?$"))
+            {
+                Fix($"Numero malformato '{raw}' -> impostato a 0.");
+                n = "0";
+            }
+
+            return n;
+        }
+
+        // rimozione BOM
+        if (input.Length > 0 && input[0] == '\uFEFF') input = input.Substring(1);
+
+        while (i < input.Length)
+        {
+            char c = input[i];
+
+            if (inString)
+            {
+                sb.Append(c);
+                if (escape) { escape = false; i++; continue; }
+                if (c == '\\') { escape = true; i++; continue; }
+                if (c == '"') { inString = false; lastTokenWasValue = true; lastNonSpaceWasCommaOrOpen = false; MaybeInsertComma(i + 1); }
+                i++;
+                continue;
+            }
+
+            // fuori da stringa
+            if (char.IsWhiteSpace(c)) { sb.Append(c); i++; continue; }
+
+            if (c == '"')
+            {
+                inString = true;
+                sb.Append(c);
+                lastTokenWasValue = false;
+                lastNonSpaceWasCommaOrOpen = false;
+                i++;
+                continue;
+            }
+
+            if (c == '{' || c == '[')
+            {
+                stack.Push(c);
+                sb.Append(c);
+                lastTokenWasValue = false;
+                lastNonSpaceWasCommaOrOpen = true; // appena aperto
+                i++;
+                continue;
+            }
+
+            if (c == '}' || c == ']')
+            {
+                // elimina eventuale virgola finale prima della chiusura
+                int k = sb.Length - 1;
+                while (k >= 0 && char.IsWhiteSpace(sb[k])) k--;
+                if (k >= 0 && sb[k] == ',')
+                {
+                    sb.Remove(k, 1);
+                    Fix("Rimossa virgola finale prima di '}' o ']'.");
+                }
+
+                if (stack.Count > 0) stack.Pop();
+                sb.Append(c);
+                lastTokenWasValue = true;
+                lastNonSpaceWasCommaOrOpen = false;
+                // dopo chiusura valore in oggetto, magari serve virgola
+                MaybeInsertComma(i + 1);
+                i++;
+                continue;
+            }
+
+            if (c == ',')
+            {
+                sb.Append(c);
+                lastTokenWasValue = false;
+                lastNonSpaceWasCommaOrOpen = true;
+                i++;
+                continue;
+            }
+
+            if (c == ':')
+            {
+                sb.Append(c);
+                lastTokenWasValue = false;
+                lastNonSpaceWasCommaOrOpen = false;
+                i++;
+                continue;
+            }
+
+            // true / false / null
+            if (char.IsLetter(c))
+            {
+                int j = i;
+                while (j < input.Length && char.IsLetter(input[j])) j++;
+                string word = input.Substring(i, j - i);
+
+                if (word is "true" or "false" or "null")
+                {
+                    sb.Append(word);
+                    lastTokenWasValue = true;
+                    lastNonSpaceWasCommaOrOpen = false;
+                    MaybeInsertComma(j);
+                    i = j;
+                    continue;
+                }
+
+                // se entra qui, è una lettera dove ci si aspettava altro: prova a inserire virgola
+                if (stack.Count > 0 && stack.Peek() == '{' && !lastNonSpaceWasCommaOrOpen && lastTokenWasValue)
+                {
+                    sb.Append(',');
+                    Fix($"Inserita virgola prima di '{word}'.");
+                }
+
+                sb.Append(word);
+                i = j;
+                continue;
+            }
+
+            // NUMERI (o numeri malformati)
+            if (c == '-' || char.IsDigit(c))
+            {
+                int j = i;
+                // cattura una "run" di numero + caratteri associati finché non vediamo un terminatore JSON
+                while (j < input.Length)
+                {
+                    char cj = input[j];
+                    if (char.IsDigit(cj) || cj == '-' || cj == '+' || cj == '.' || cj == 'e' || cj == 'E') { j++; continue; }
+                    // fermati prima di delimitatori o virgolette
+                    if (cj == ',' || cj == '}' || cj == ']' || cj == ':' || cj == ' ' || cj == '\t' || cj == '\r' || cj == '\n' || cj == '"'
+                        || cj == '{' || cj == '[')
+                        break;
+                    // include caratteri “strani” nella run per poterli ripulire
+                    j++;
+                }
+
+                string rawNum = input.Substring(i, j - i);
+                string clean = CleanNumber(rawNum);
+                if (!rawNum.Equals(clean, StringComparison.Ordinal))
+                    Fix($"Numero riparato: '{rawNum}' -> '{clean}'.");
+
+                sb.Append(clean);
+                lastTokenWasValue = true;
+                lastNonSpaceWasCommaOrOpen = false;
+
+                // se il prossimo token non è , } ] inserisci virgola (solo dentro oggetto)
+                MaybeInsertComma(j);
+
+                i = j;
+                continue;
+            }
+
+            // qualunque altro simbolo “strano”: scrivi com’è (non lo tocchiamo)
+            sb.Append(c);
+            i++;
+        }
+
+        return sb.ToString();
+    }
+
+    private static string? GetSafeStringValue(JsonElement element, string propertyName, string? defaultValue = "")
     {
         return element.TryGetProperty(propertyName, out var prop) && prop.ValueKind == JsonValueKind.String
             ? (prop.GetString() ?? defaultValue)
@@ -1516,27 +1768,6 @@ public class IntelligentDataAggregator
         };
     }
 
-    private static string FormatCoordinatesItalian(decimal latitude, decimal longitude)
-    {
-        var latDir = latitude >= 0 ? "N" : "S";
-        var lonDir = longitude >= 0 ? "E" : "W";
-        return $"{Math.Abs(latitude):F6}°{latDir}, {Math.Abs(longitude):F6}°{lonDir}";
-    }
-
-    private static string GetItalianLocationName(decimal latitude, decimal longitude)
-    {
-        return (latitude, longitude) switch
-        {
-            var (lat, lon) when Math.Abs(lat - 41.9028m) < 0.1m && Math.Abs(lon - 12.4964m) < 0.1m => "Roma",
-            var (lat, lon) when Math.Abs(lat - 45.4642m) < 0.1m && Math.Abs(lon - 9.1900m) < 0.1m => "Milano",
-            var (lat, lon) when Math.Abs(lat - 40.8518m) < 0.1m && Math.Abs(lon - 14.2681m) < 0.1m => "Napoli",
-            var (lat, lon) when Math.Abs(lat - 45.0703m) < 0.1m && Math.Abs(lon - 7.6869m) < 0.1m => "Torino",
-            var (lat, lon) when Math.Abs(lat - 44.4949m) < 0.1m && Math.Abs(lon - 11.3426m) < 0.1m => "Bologna",
-            var (lat, lon) when Math.Abs(lat - 43.7696m) < 0.1m && Math.Abs(lon - 11.2558m) < 0.1m => "Firenze",
-            _ => "Località italiana"
-        };
-    }
-
     private static string GetCommandCategoryComplete(string commandName)
     {
         return commandName switch
@@ -1578,8 +1809,7 @@ public class IntelligentDataAggregator
     {
         foreach (var vehicle in listResponse.EnumerateArray())
         {
-            var displayName = GetSafeStringValue(vehicle, "display_name");
-            var state = GetSafeStringValue(vehicle, "state");
+            var state = DataNormalizer.NormalizeText(GetSafeStringValue(vehicle, "state") ?? "");
             var accessType = GetSafeStringValue(vehicle, "access_type");
 
             if (!string.IsNullOrEmpty(state))
@@ -1589,16 +1819,14 @@ public class IntelligentDataAggregator
 
     private void ProcessDriversList(JsonElement driversResponse, CompleteTeslaDataAggregation aggregation)
     {
+        var driverCount = 0;
         foreach (var driver in driversResponse.EnumerateArray())
         {
             var firstName = GetSafeStringValue(driver, "driver_first_name");
-            var lastName = GetSafeStringValue(driver, "driver_last_name");
-
-            if (!string.IsNullOrEmpty(firstName) && !string.IsNullOrEmpty(lastName))
-            {
-                aggregation.AuthorizedDrivers.Add($"{firstName} {lastName}");
-            }
+            if (!string.IsNullOrEmpty(firstName)) 
+                driverCount++;
         }
+        aggregation.AuthorizedDriversCount = driverCount;
     }
 
     private void ProcessFleetStatus(JsonElement fleetStatus, CompleteTeslaDataAggregation aggregation)
@@ -1709,8 +1937,8 @@ public class CompleteTeslaDataAggregation
 
     // Guida - con analisi posizioni complete
     public List<int> Speeds { get; set; } = new();
-    public List<LocationPointComplete> Locations { get; set; } = new();
-    public List<decimal> OdometerReadings { get; set; } = new();
+    public Dictionary<string, int> GeographicZones { get; set; } = new();
+    public Dictionary<string, int> HeadingDistribution { get; set; } = new();    public List<decimal> OdometerReadings { get; set; } = new();
     public Dictionary<string, int> ShiftStates { get; set; } = new();
 
     // Sicurezza e manutenzione
@@ -1729,13 +1957,11 @@ public class CompleteTeslaDataAggregation
     public List<DateTime> CommandTimestamps { get; set; } = new();
 
     // Informazioni veicolo e flotta
-    public string? VehicleVin { get; set; }
     public string? VehicleName { get; set; }
     public Dictionary<string, int> VehicleStates { get; set; } = new();
     public int AssociatedVehiclesCount { get; set; }
     public Dictionary<string, int> AssociatedVehicleStates { get; set; } = new();
     public int AuthorizedDriversCount { get; set; }
-    public List<string> AuthorizedDrivers { get; set; } = new();
 
     // Fleet Status
     public int KeyPairedVehicles { get; set; }
@@ -1762,7 +1988,6 @@ public class CompleteTeslaDataAggregation
     public int AdaptiveDataRecordsCount { get; set; }
 
     // Profilo utente
-    public UserProfileInfo? UserProfile { get; set; }
     public PublicKeyInfo? PublicKeyInfo { get; set; }
 
     // Alert e avvisi
@@ -1779,7 +2004,7 @@ public class CompleteTeslaDataAggregation
 
     public decimal AvgChargingDuration => ChargingSessions.Any() ? (decimal)ChargingSessions.Average(s => s.Duration) : 0;
     public decimal AvgChargingCost => ChargingCosts.Any() ? ChargingCosts.Average() : 0;
-    public decimal AvgEnergyEfficiency => (ChargingCosts.Any() && EnergyConsumed.Any() && EnergyConsumed.Average() != 0)
+    public decimal AvgEnergyEfficiency => (ChargingCosts.Count != 0 && EnergyConsumed.Count != 0 && EnergyConsumed.Average() != 0)
         ? ChargingCosts.Average() / EnergyConsumed.Average()
         : 0;
 
@@ -1851,11 +2076,6 @@ public class CompleteTeslaDataAggregation
             };
         }
     }
-
-    public void FinalizeCalculations()
-    {
-        // Eventuali calcoli finali o validazioni
-    }
 }
 
 #endregion
@@ -1880,17 +2100,6 @@ public class ChargingSessionComplete
     public string Currency { get; set; } = "";
     public string CostAnalysis { get; set; } = "";
     public int InvoiceCount { get; set; }
-}
-
-public class LocationPointComplete
-{
-    public decimal Latitude { get; set; }
-    public decimal Longitude { get; set; }
-    public int Heading { get; set; }
-    public int Speed { get; set; }
-    public string FormattedCoords { get; set; } = "";
-    public string LocationName { get; set; } = "";
-    public string CompassDirection { get; set; } = "";
 }
 
 public class PricingTierData
@@ -1929,13 +2138,6 @@ public class VehicleChargeEntry
     public string StartTime { get; set; } = "";
     public double DurationHours { get; set; }
     public int EnergyAdded { get; set; }
-}
-
-public class UserProfileInfo
-{
-    public string Email { get; set; } = "";
-    public string FullName { get; set; } = "";
-    public string VaultUuid { get; set; } = "";
 }
 
 public class PublicKeyInfo

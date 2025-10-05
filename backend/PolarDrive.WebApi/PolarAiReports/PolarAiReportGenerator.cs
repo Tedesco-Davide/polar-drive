@@ -122,33 +122,52 @@ public class PolarAiReportGenerator
     }
 
     /// <summary>
-    /// Recupera sempre gli ultimi 30 giorni (720 ore)
+    /// Recupera gli ultimi N. record disponibili per il veicolo ( lo standard equivale a 720 record ),
+    /// rispettando il loro periodo reale di riferimento e restituendoli in ordine cronologico crescente.
     /// </summary>
-    private async Task<List<string>> GetHistoricalData(int vehicleId, int hours)
+    private async Task<List<string>> GetHistoricalData(int vehicleId, int recordsCount)
     {
         try
         {
-            var startTime = DateTime.Now.AddHours(-hours);
-
-            await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
-                $"Recupero dati mensili: {hours}h ({hours / 24} giorni)",
-                $"Da: {startTime:yyyy-MM-dd HH:mm}");
-
-            var data = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
-                .OrderBy(vd => vd.Timestamp)
-                .Select(vd => vd.RawJsonAnonymized)
+            // Prendo gli ultimi N. record in base al Timestamp (più recenti per primi)
+            var itemsDesc = await _dbContext.VehiclesData
+                .AsNoTracking()
+                .Where(vd => vd.VehicleId == vehicleId)
+                .OrderByDescending(vd => vd.Timestamp)
+                .Select(vd => new { vd.Timestamp, vd.RawJsonAnonymized })
+                .Take(recordsCount)
                 .ToListAsync();
 
+            // Se non ci sono dati, log e return vuoto
+            if (itemsDesc.Count == 0)
+            {
+                await _logger.Warning("PolarAiReportGenerator.GetHistoricalData",
+                    $"Nessun dato disponibile per VehicleId={vehicleId}", null);
+                return new List<string>();
+            }
+
+            // Riordino in senso cronologico (dal più vecchio al più recente)
+            itemsDesc.Reverse();
+
+            var firstTs = itemsDesc.First().Timestamp;
+            var lastTs  = itemsDesc.Last().Timestamp;
+            var span    = lastTs - firstTs;
+
             await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
-                $"Recuperati {data.Count} record mensili");
+                $"Recupero ultimi {recordsCount} record disponibili (periodo effettivo)",
+                $"Da: {firstTs:yyyy-MM-dd HH:mm} a {lastTs:yyyy-MM-dd HH:mm} - Durata: {span.TotalDays:F1} giorni");
+
+            var data = itemsDesc.Select(x => x.RawJsonAnonymized).ToList();
+
+            await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
+                $"Recuperati {data.Count} record (copertura effettiva: {(int)Math.Round(span.TotalDays)} giorni)");
 
             return data;
         }
         catch (Exception ex)
         {
             await _logger.Error("PolarAiReportGenerator.GetHistoricalData",
-                "Errore recupero dati mensili", ex.ToString());
+                "Errore recupero ultimi N record", ex.ToString());
             return new List<string>();
         }
     }
