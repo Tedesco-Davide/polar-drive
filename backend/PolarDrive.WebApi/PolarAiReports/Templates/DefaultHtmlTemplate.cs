@@ -30,20 +30,6 @@ public static class DefaultHtmlTemplate
                                 </td>
                             </tr>
                         </table>
-                        
-                        <!-- ✅ HEADER FALLBACK per compatibilità (nascosto dal CSS) -->
-                        <div class=""report-header"">
-                            <div class=""report-title-container"">
-                                <h1 class=""report-title"">PolarDrive™ Report</h1>
-                                <div class=""report-id"">Report ID: {{reportId}}</div>
-                            </div>
-                            <div class=""company-logo"">
-                                {{#if logoBase64}}
-                                <img src=""data:image/svg+xml;base64,{{logoBase64}}"" alt=""DataPolar Logo"" class=""logo company-logo-img"" 
-                                    onerror=""this.src='data:image/png;base64,{{logoBase64}}'"" />
-                                {{/if}}
-                            </div>
-                        </div>
                     </header>
 
                     <!-- ✅ Informazioni principali -->

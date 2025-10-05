@@ -58,6 +58,14 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
             // Fallback: salva come HTML
             return await SaveAsHtmlFallback(htmlContent, report, source);
         }
+        finally
+        {
+            // ✅ FORZA GARBAGE COLLECTION
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
+            GC.WaitForPendingFinalizers();
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true);   
+            await _logger.Debug("PdfGenerationService", "Garbage Collection forzato post-conversione");
+        }
     }
 
     /// <summary>
@@ -115,9 +123,10 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     private async Task<byte[]> ConvertWithPuppeteerAsync(string htmlPath, string pdfPath, PdfConversionOptions options)
     {
         var source = "PdfGenerationService.ConvertWithPuppeteer";
-        const int maxRetries = 2;
-        const int timeoutSeconds = 90;
-
+        int maxRetries = options.MaxRetries;
+        int timeoutSeconds = options.ConvertTimeoutSeconds;
+        string? scriptPath = null;
+        
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
@@ -132,7 +141,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
 
                 // ✅ SALVA LO SCRIPT NELLA DIRECTORY DEL PROGETTO, NON IN TEMP
                 var projectDirectory = FindProjectDirectory();
-                var scriptPath = Path.Combine(projectDirectory, $"temp_puppeteer_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
+                scriptPath = Path.Combine(projectDirectory, $"temp_puppeteer_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
                 await File.WriteAllTextAsync(scriptPath, puppeteerScript);
 
                 var process = new Process
@@ -231,6 +240,23 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
             {
                 await _logger.Warning(source, $"Tentativo {attempt} fallito con eccezione", ex.Message);
                 await Task.Delay(2000);
+            }
+            finally
+            {
+                // ✅ CLEANUP GARANTITO
+                if (scriptPath != null && File.Exists(scriptPath))
+                {
+                    try
+                    {
+                        File.Delete(scriptPath);
+                        await _logger.Debug(source, "Script temporaneo eliminato", scriptPath);
+                    }
+                    catch (Exception cleanupEx)
+                    {
+                        await _logger.Warning(source, "Impossibile eliminare script temporaneo",
+                            $"{scriptPath}: {cleanupEx.Message}");
+                    }
+                }
             }
         }
 
@@ -402,6 +428,9 @@ try {{
       path: pdfPath,
       format: '{options.PageFormat}',
       printBackground: {options.PrintBackground.ToString().ToLower()},
+      omitBackground: {options.OmitBackground.ToString().ToLower()},
+      tagged: {options.Tagged.ToString().ToLower()},
+      timeout: {options.Timeout},
       margin: {{
         top: '{options.MarginTop}',
         right: '{options.MarginRight}',
@@ -432,6 +461,7 @@ try {{
   }} finally {{
     if (browser) {{
       try {{
+        await page.close();
         await browser.close();
         console.log('✅ Browser closed');
       }} catch (closeError) {{

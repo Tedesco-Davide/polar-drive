@@ -11,6 +11,7 @@ using PolarDrive.Services;
 using PolarDrive.WebApi.Controllers;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using PolarDrive.WebApi.PolarAiReports;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -92,7 +93,8 @@ builder.Services.AddScoped<TeslaApiService>();
 builder.Services.AddScoped<VehicleApiServiceRegistry>();
 builder.Services.AddScoped<VehicleDataService>();
 
-// SERVIZIO PER GENERAZIONE REPORT MANUALE
+// SERVIZIO PER GENERAZIONE REPORT
+builder.Services.AddScoped<PdfGenerationService>();
 builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
 // SCHEDULER

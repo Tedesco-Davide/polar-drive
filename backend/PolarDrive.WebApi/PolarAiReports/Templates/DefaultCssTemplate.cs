@@ -142,10 +142,6 @@ public static class DefaultCssTemplate
         }
 
         /* Nascondi i vecchi elementi */
-        .report-header {
-            display: none;
-        }
-
         .report-title-container,
         .company-logo {
             display: none;
