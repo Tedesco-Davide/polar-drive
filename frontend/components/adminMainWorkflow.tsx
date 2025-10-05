@@ -582,7 +582,7 @@ export default function AdminMainWorkflow({
         .slice(0, 19)
         .replace(/[:-]/g, "");
       const sanitizedCompanyName = companyName.replace(/[^a-zA-Z0-9]/g, "_");
-      link.download = `profilo_cliente_${sanitizedCompanyName}_${vatNumber}_${timestamp}.pdf`;
+      link.download = `Profilo_Cliente_${sanitizedCompanyName}_${vatNumber}_${timestamp}.pdf`;
 
       document.body.appendChild(link);
       link.click();

@@ -879,6 +879,6 @@ public class ClientProfileController : ControllerBase
         var sanitizedCompanyName = System.Text.RegularExpressions.Regex.Replace(
             company.Name, @"[^a-zA-Z0-9]", "_");
 
-        return $"profilo_cliente_{sanitizedCompanyName}_{company.VatNumber}_{timestamp}.pdf";
+        return $"Profilo_Cliente_{sanitizedCompanyName}_{company.VatNumber}_{timestamp}.pdf";
     }
 }

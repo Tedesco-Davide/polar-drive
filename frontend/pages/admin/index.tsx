@@ -39,6 +39,9 @@ export default function AdminDashboard() {
   const [pdfReports, setPdfReports] = useState<PdfReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [isRefreshingReports, setIsRefreshingReports] = useState(false);
+  const [isRefreshingFileManager, setIsRefreshingFileManager] = useState(false);
+  const [isRefreshingOutages, setIsRefreshingOutages] = useState(false);
   const { theme } = useTheme();
   const { t } = useTranslation("common");
 
@@ -461,16 +464,22 @@ export default function AdminDashboard() {
                           setOutagePeriods(updatedOutagePeriods);
                           return updatedOutagePeriods;
                         }}
+                        isRefreshing={isRefreshingOutages}
+                        setIsRefreshing={setIsRefreshingOutages}
                       />
                       <AdminPdfReports
                         t={t}
                         reports={pdfReports}
                         refreshPdfReports={refreshPdfReports}
+                        isRefreshing={isRefreshingReports}
+                        setIsRefreshing={setIsRefreshingReports}
                       />
                       <AdminFileManagerTable
                         jobs={fileManagerJobs}
                         t={t}
                         refreshJobs={refreshFileManagerJobs}
+                        isRefreshing={isRefreshingFileManager}
+                        setIsRefreshing={setIsRefreshingFileManager}
                       />
                     </div>
                   </div>

@@ -12,6 +12,7 @@ import SearchBar from "@/components/searchBar";
 import Chip from "@/components/chip";
 import NotesModal from "./notesModal";
 import AdminFileManagerModal from "./adminFileManagerModal";
+import AdminLoader from "./adminLoader";
 
 const PDF_JOB_STATUS = {
   PENDING: "PENDING",
@@ -103,43 +104,56 @@ type Props = {
   refreshJobs?: () => Promise<FileManager[]>;
 };
 
-export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
-  const [localJobs, setLocalJobs] = useState<FileManager[]>([]);
-  const refreshRef = useRef(refreshJobs);
-  const [selectedJobForNotes, setSelectedJobForNotes] =
-    useState<FileManager | null>(null);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+export default function AdminFileManagerTable({
+  jobs,
+  t,
+  refreshJobs,
+  isRefreshing,
+  setIsRefreshing,
+}: {
+  jobs: FileManager[];
+  t: TFunction;
+  refreshJobs?: () => Promise<FileManager[]>;
+  isRefreshing?: boolean;
+  setIsRefreshing?: (value: boolean) => void;
+}) {
+    const refreshRef = useRef(refreshJobs);
+    const [localJobs, setLocalJobs] = useState<FileManager[]>([]);
+    const [selectedJobForNotes, setSelectedJobForNotes] =
+        useState<FileManager | null>(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
-  const handleRefreshJobs = async () => {
-    if (refreshJobs) {
-      try {
-        const updatedJobs = await refreshJobs();
+    const handleRefreshJobs = async () => {
+    if (refreshRef.current) {
+        try {
+        const updatedJobs = await refreshRef.current();
         setLocalJobs(updatedJobs);
         logFrontendEvent(
-          "AdminFileManagerTable",
-          "INFO",
-          "PDF download jobs refreshed successfully",
-          `Updated ${updatedJobs.length} job records`
+            "AdminFileManagerTable",
+            "INFO",
+            "PDF download jobs refreshed successfully",
+            `Updated ${updatedJobs.length} job records`
         );
-      } catch (error) {
+        } catch (error) {
         logFrontendEvent(
-          "AdminFileManagerTable",
-          "ERROR",
-          "Failed to refresh PDF download jobs",
-          `Error: ${error}`
+            "AdminFileManagerTable",
+            "ERROR",
+            "Failed to refresh PDF download jobs",
+            `Error: ${error}`
         );
-      }
+        throw error;
+        }
     }
-  };
+    };
 
-  useEffect(() => {
-    setLocalJobs(jobs);
-    logFrontendEvent(
-      "AdminFileManagerTable",
-      "INFO",
-      "PDF File Manager component mounted",
-      `Loaded ${jobs.length} PDF download job records`
-    );
+    useEffect(() => {
+        setLocalJobs(jobs);
+        logFrontendEvent(
+        "AdminFileManagerTable",
+        "INFO",
+        "PDF File Manager component mounted",
+        `Loaded ${jobs.length} PDF download job records`
+        );
   }, [jobs]);
 
   useEffect(() => {
@@ -309,21 +323,29 @@ export default function AdminFileManagerTable({ t, jobs, refreshJobs }: Props) {
 
       {/* TABELLA */}
       <div className="bg-softWhite dark:bg-polarNight rounded-lg overflow-hidden shadow-lg">
+
+        {/* ✅ Loader fuori dalla tabella */}
+        {isRefreshing && <AdminLoader />}
+
         <table className="w-full text-sm">
           <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
             <tr>
               <th className="p-4">
-                {refreshRef.current && (
+                {refreshRef.current && setIsRefreshing && (
                   <button
                     onClick={async () => {
+                      setIsRefreshing(true);
                       try {
                         await handleRefreshJobs();
                         alert(t("admin.filemanager.tableRefreshSuccess"));
                       } catch {
                         alert(t("admin.filemanager.tableRefreshFail"));
+                      } finally {
+                        setIsRefreshing(false);
                       }
                     }}
-                    className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                    disabled={isRefreshing}
+                    className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <span className="uppercase text-xs tracking-widest">
                       {t("admin.tableRefreshButton")}

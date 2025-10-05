@@ -18,10 +18,14 @@ export default function AdminPdfReports({
   t,
   reports,
   refreshPdfReports,
+  isRefreshing,
+  setIsRefreshing,
 }: {
   t: TFunction;
   reports: PdfReport[];
   refreshPdfReports?: () => Promise<PdfReport[] | void>;
+  isRefreshing?: boolean;
+  setIsRefreshing?: (value: boolean) => void;
 }) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const refreshRef = useRef(refreshPdfReports);
@@ -400,7 +404,10 @@ export default function AdminPdfReports({
 
   return (
     <div>
-      {/* ✅ Header con statistiche semplici */}
+      {/* ✅ Loader fuori dalla tabella, come overlay full-page */}
+      {isRefreshing && <AdminLoader />}
+
+      {/* Header con statistiche */}
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
           {t("admin.vehicleReports.tableHeader")}: {localReports.length}{" "}
@@ -412,17 +419,21 @@ export default function AdminPdfReports({
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">
-              {refreshRef.current && (
+              {refreshRef.current && setIsRefreshing && (
                 <button
                   onClick={async () => {
+                    setIsRefreshing(true);
                     try {
                       await refreshRef.current?.();
                       alert(t("admin.vehicleReports.tableRefreshSuccess"));
                     } catch {
                       alert(t("admin.vehicleReports.tableRefreshFail"));
+                    } finally {
+                      setIsRefreshing(false);
                     }
                   }}
-                  className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+                  disabled={isRefreshing}
+                  className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <span className="uppercase text-xs tracking-widest">
                     {t("admin.tableRefreshButton")}

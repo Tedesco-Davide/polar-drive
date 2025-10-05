@@ -15,7 +15,16 @@ public class VehicleStateManager
     public VehicleStateManager(ILogger<VehicleStateManager> logger, IConfiguration configuration)
     {
         _logger = logger;
-        _stateFilePath = configuration.GetValue<string>("VehicleStateManager:StateFilePath", "vehicle_states.json");
+        _stateFilePath = configuration.GetValue<string>("VehicleStateManager:StateFilePath", "TempFiles/vehicle_states.json");
+
+        // Crea la cartella TempFiles se non esiste
+        var directory = Path.GetDirectoryName(_stateFilePath);
+        if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+            _logger.LogInformation($"Created directory: {directory}");
+        }
+
         LoadStateFromFile();
     }
 

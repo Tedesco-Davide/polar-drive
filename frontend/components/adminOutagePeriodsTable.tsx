@@ -21,11 +21,14 @@ import SearchBar from "@/components/searchBar";
 import Chip from "@/components/chip";
 import NotesModal from "./notesModal";
 import AdminOutagePeriodsAddForm from "./adminOutagePeriodsAddForm";
+import AdminLoader from "./adminLoader";
 
 interface Props {
   t: TFunction;
   outages: OutagePeriod[];
   refreshOutagePeriods: () => Promise<OutagePeriod[]>;
+  isRefreshing?: boolean;
+  setIsRefreshing?: (value: boolean) => void;
 }
 
 const formatDateTime = (dateTime: string): string => {
@@ -62,6 +65,8 @@ export default function AdminOutagePeriodsTable({
   t,
   outages,
   refreshOutagePeriods,
+  isRefreshing,
+  setIsRefreshing,
 }: Props) {
   const [localOutages, setLocalOutages] = useState<OutagePeriod[]>([]);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -269,6 +274,9 @@ export default function AdminOutagePeriodsTable({
 
   return (
     <div className="space-y-6">
+      {/* Loader full-page fuori dalla tabella */}
+      {isRefreshing && <AdminLoader />}
+
       {/* Header */}
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -303,21 +311,27 @@ export default function AdminOutagePeriodsTable({
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">
-              <button
-                onClick={async () => {
-                  try {
-                    await refreshOutagePeriods();
-                    alert(t("admin.outagePeriods.tableRefreshSuccess"));
-                  } catch {
-                    alert(t("admin.outagePeriods.tableRefreshFail"));
-                  }
-                }}
-                className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
-              >
-                <span className="uppercase text-xs tracking-widest">
-                  {t("admin.tableRefreshButton")}
-                </span>
-              </button>{" "}
+              {setIsRefreshing && (
+                <button
+                  onClick={async () => {
+                    setIsRefreshing(true);
+                    try {
+                      await refreshOutagePeriods();
+                      alert(t("admin.outagePeriods.tableRefreshSuccess"));
+                    } catch {
+                      alert(t("admin.outagePeriods.tableRefreshFail"));
+                    } finally {
+                      setIsRefreshing(false);
+                    }
+                  }}
+                  disabled={isRefreshing}
+                  className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <span className="uppercase text-xs tracking-widest">
+                    {t("admin.tableRefreshButton")}
+                  </span>
+                </button>
+              )}{" "}
               {t("admin.actions")}
             </th>
             <th className="p-4 text-left font-semibold">
