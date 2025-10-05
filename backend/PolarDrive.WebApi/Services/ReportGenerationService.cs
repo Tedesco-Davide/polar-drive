@@ -124,7 +124,7 @@ namespace PolarDrive.WebApi.Services
                     var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                     var end = now;
 
-                    _logger.LogInformation("🔍 DEBUG: Vehicle {VIN} - Start: {Start}, End: {End}, Now: {Now} [FIXED 720h window]", v.Vin, start, end, now);
+                    _logger.LogInformation("🔍 DEBUG: Vehicle {VIN} - Start: {Start}, End: {End}, Now: {Now}", v.Vin, start, end, now);
 
                     // 3) Infine genero con questi parametri
                     var analysisType = GetAnalysisType(scheduleType);
@@ -267,7 +267,7 @@ namespace PolarDrive.WebApi.Services
 
             //var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
             var insights = "TEST_INSIGHTS_NO_AI";
-            
+
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"Nessun insight generato per {vehicle.Vin}");
 
