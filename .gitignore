@@ -22,3 +22,4 @@ backend/PolarDrive.WebApi/storage/*
 
 # TRANNE il file .gitkeep
 !backend/PolarDrive.WebApi/storage/.gitkeep
+backend/PolarDrive.TeslaMockApiService/vehicle_states.json

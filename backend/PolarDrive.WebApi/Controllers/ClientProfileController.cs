@@ -4,6 +4,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.PolarAiReports;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -14,12 +15,14 @@ public class ClientProfileController : ControllerBase
     private readonly PolarDriveDbContext _db;
     private readonly PolarDriveLogger _logger;
     private readonly string _reportsStoragePath;
+    private readonly PdfGenerationService _pdfService;
 
-    public ClientProfileController(PolarDriveDbContext db)
+    public ClientProfileController(PolarDriveDbContext db, PdfGenerationService pdfService)
     {
         _db = db;
         _logger = new PolarDriveLogger(db);
         _reportsStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "client-profiles");
+        _pdfService = pdfService;
     }
 
     /// <summary>
@@ -66,57 +69,50 @@ public class ClientProfileController : ControllerBase
             await _logger.Info("ClientProfileController.GenerateClientProfilePdf",
                 "Starting client profile PDF generation", $"ClientCompanyId: {companyId}");
 
-            // Verifica che l'azienda esista
             var company = await _db.ClientCompanies.FindAsync(companyId);
             if (company == null)
             {
                 return NotFound(new { message = "Azienda non trovata", errorCode = "COMPANY_NOT_FOUND" });
             }
 
-            // Recupera i dati del profilo completo dalla view
             var profileData = await GetClientProfileDataAsync(companyId);
             if (profileData == null)
             {
                 return NotFound(new { message = "Dati del profilo non disponibili", errorCode = "PROFILE_DATA_NOT_FOUND" });
             }
 
-            // Genera l'HTML per il PDF
             var htmlContent = GenerateProfileHtml(profileData);
 
-            // Genera il PDF usando Puppeteer
-            var pdfBytes = await GeneratePdfFromHtmlAsync(htmlContent);
+            var tempReport = new PdfReport
+            {
+                Id = 0,
+                ReportPeriodStart = DateTime.UtcNow.AddMonths(-1),
+                ReportPeriodEnd = DateTime.UtcNow,
+                GeneratedAt = DateTime.UtcNow
+            };
 
-            // Salva il PDF nel filesystem
-            var fileName = GenerateProfileFileName(profileData.CompanyInfo);
-            var filePath = await SavePdfFileAsync(pdfBytes, fileName);
+            var pdfBytes = await _pdfService.ConvertHtmlToPdfAsync(htmlContent, tempReport);
 
-            await _logger.Info("ClientProfileController.GenerateClientProfilePdf",
-                "Client profile PDF generated successfully",
-                $"ClientCompanyId: {companyId}, FileName: {fileName}, Size: {pdfBytes.Length} bytes");
-
-            // Determina il content type e estensione del file in base al contenuto
             var contentType = "application/pdf";
-            var actualFileName = fileName;
+            var fileName = GenerateProfileFileName(profileData.CompanyInfo);
 
-            // Se è HTML fallback, aggiusta il content type e nome file
             if (System.Text.Encoding.UTF8.GetString(pdfBytes).StartsWith("<!DOCTYPE html") ||
                 System.Text.Encoding.UTF8.GetString(pdfBytes).StartsWith("<html"))
             {
                 contentType = "text/html";
-                actualFileName = fileName.Replace(".pdf", ".html");
-
-                await _logger.Info("ClientProfileController.GenerateClientProfilePdf",
-                    "Returning HTML fallback instead of PDF", $"FileName: {actualFileName}");
+                fileName = fileName.Replace(".pdf", ".html");
             }
 
-            // Ritorna il file per il download immediato
-            return File(pdfBytes, contentType, actualFileName);
+            await _logger.Info("ClientProfileController.GenerateClientProfilePdf",
+                "PDF generated successfully", $"Size: {pdfBytes.Length} bytes");
+
+            return File(pdfBytes, contentType, fileName);
         }
         catch (Exception ex)
         {
             await _logger.Error("ClientProfileController.GenerateClientProfilePdf",
-                $"Error generating client profile PDF for company {companyId}", ex.ToString());
-            return StatusCode(500, new { message = "Errore interno durante la generazione del PDF", errorCode = "INTERNAL_SERVER_ERROR" });
+                $"Error generating PDF for company {companyId}", ex.ToString());
+            return StatusCode(500, new { message = "Errore generazione PDF", errorCode = "INTERNAL_SERVER_ERROR" });
         }
     }
 
@@ -234,7 +230,7 @@ public class ClientProfileController : ControllerBase
                     ReferentEmail = r.ReferentEmail
                 })]
             };
-        }    
+        }
         finally
         {
             // Ripristina il timeout originale
@@ -873,470 +869,7 @@ public class ClientProfileController : ControllerBase
             <div class='info-value'>{string.Join(" • ", activities)}</div>
         </div>";
     }
-
-
-    /// <summary>
-    /// Genera il PDF usando la metodologia di PdfGenerationService (FUNZIONANTE)
-    /// </summary>
-    private async Task<byte[]> GeneratePdfFromHtmlAsync(string htmlContent)
-    {
-        try
-        {
-            await _logger.Info("ClientProfileController.GeneratePdfFromHtml",
-                "Starting PDF generation using proven methodology");
-
-            // 1. Salva HTML temporaneo
-            var tempHtmlPath = await SaveTemporaryHtmlAsync(htmlContent);
-
-            // 2. Prepara path di output temporaneo
-            var tempPdfPath = Path.Combine(Path.GetTempPath(), $"ClientProfile_{DateTime.Now.Ticks}.pdf");
-
-            // 3. Controlla disponibilità Node.js
-            if (!IsNodeJsAvailable())
-            {
-                await _logger.Warning("ClientProfileController.GeneratePdfFromHtml",
-                    "Node.js not available, falling back to HTML content");
-                return await ConvertToHtmlFallback(htmlContent);
-            }
-
-            // 4. Converti con Puppeteer usando la metodologia funzionante
-            var pdfBytes = await ConvertWithPuppeteerAsync(tempHtmlPath, tempPdfPath);
-
-            // 5. Cleanup
-            await CleanupTemporaryFiles(tempHtmlPath);
-            if (System.IO.File.Exists(tempPdfPath))
-                System.IO.File.Delete(tempPdfPath);
-
-            await _logger.Info("ClientProfileController.GeneratePdfFromHtml",
-                "PDF generation completed successfully", $"Size: {pdfBytes.Length} bytes");
-
-            return pdfBytes;
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("ClientProfileController.GeneratePdfFromHtml",
-                "Error during PDF generation", ex.ToString());
-
-            // Fallback: restituisci HTML come bytes
-            return await ConvertToHtmlFallback(htmlContent);
-        }
-    }
-
-    /// <summary>
-    /// Conversione Puppeteer con metodologia di PdfGenerationService (PROVATA E FUNZIONANTE)
-    /// </summary>
-    private async Task<byte[]> ConvertWithPuppeteerAsync(string htmlPath, string pdfPath)
-    {
-        const int maxRetries = 2;
-        const int timeoutSeconds = 90;
-
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
-        {
-            try
-            {
-                await _logger.Info("ClientProfileController.ConvertWithPuppeteer",
-                    $"Tentativo {attempt}/{maxRetries} conversione Puppeteer");
-
-                var programFiles = Environment.GetEnvironmentVariable("ProgramFiles") ?? @"C:\Program Files";
-                var nodePath = Path.Combine(programFiles, "nodejs", "node.exe");
-
-                // ✅ USA LO STESSO SCRIPT FUNZIONANTE DI PdfGenerationService
-                var puppeteerScript = GenerateOptimizedPuppeteerScript();
-
-                // ✅ SALVA NELLA DIRECTORY DEL PROGETTO (come PdfGenerationService)
-                var projectDirectory = FindProjectDirectory();
-                var scriptPath = Path.Combine(projectDirectory, $"temp_client_profile_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
-                await System.IO.File.WriteAllTextAsync(scriptPath, puppeteerScript);
-
-                var process = new System.Diagnostics.Process
-                {
-                    StartInfo = new System.Diagnostics.ProcessStartInfo
-                    {
-                        FileName = nodePath,
-                        Arguments = $"\"{scriptPath}\" \"{htmlPath}\" \"{pdfPath}\"",
-                        RedirectStandardOutput = true,
-                        RedirectStandardError = true,
-                        UseShellExecute = false,
-                        CreateNoWindow = true,
-                        WorkingDirectory = projectDirectory // ✅ STESSO WORKING DIRECTORY
-                    }
-                };
-
-                await _logger.Info("ClientProfileController.ConvertWithPuppeteer",
-                    "Avvio conversione Puppeteer", $"Attempt: {attempt}, WorkingDir: {projectDirectory}");
-
-                process.Start();
-
-                // ✅ STESSO TIMEOUT MANAGEMENT DI PdfGenerationService
-                var processTask = Task.Run(() => process.WaitForExit());
-                var timeoutTask = Task.Delay(TimeSpan.FromSeconds(timeoutSeconds));
-                var completedTask = await Task.WhenAny(processTask, timeoutTask);
-
-                if (completedTask == timeoutTask)
-                {
-                    await _logger.Warning("ClientProfileController.ConvertWithPuppeteer",
-                        $"Timeout tentativo {attempt} ({timeoutSeconds}s)");
-
-                    try
-                    {
-                        if (!process.HasExited)
-                        {
-                            process.Kill();
-                            await process.WaitForExitAsync();
-                        }
-                    }
-                    catch (Exception killEx)
-                    {
-                        await _logger.Debug("ClientProfileController.ConvertWithPuppeteer",
-                            "Errore terminazione processo", killEx.ToString());
-                    }
-
-                    // Cleanup e retry
-                    try { System.IO.File.Delete(scriptPath); } catch { }
-
-                    if (attempt == maxRetries)
-                    {
-                        throw new TimeoutException($"PDF conversion failed after {maxRetries} attempts with {timeoutSeconds}s timeout each");
-                    }
-
-                    await Task.Delay(2000);
-                    continue;
-                }
-
-                // Leggi output per debug
-                var stdout = await process.StandardOutput.ReadToEndAsync();
-                var stderr = await process.StandardError.ReadToEndAsync();
-
-                await _logger.Debug("ClientProfileController.ConvertWithPuppeteer",
-                    "Output Puppeteer", $"Stdout:\n\n{stdout}");
-                if (!string.IsNullOrEmpty(stderr))
-                {
-                    await _logger.Debug("ClientProfileController.ConvertWithPuppeteer",
-                        "Error Puppeteer", $"Stderr: {stderr}");
-                }
-
-                // ✅ STESSO CONTROLLO RISULTATO DI PdfGenerationService
-                if (System.IO.File.Exists(pdfPath))
-                {
-                    var pdfBytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
-                    await _logger.Info("ClientProfileController.ConvertWithPuppeteer",
-                        $"Conversione riuscita al tentativo {attempt}", $"PDF size: {pdfBytes.Length} bytes");
-
-                    // Cleanup
-                    try { System.IO.File.Delete(scriptPath); } catch { }
-
-                    return pdfBytes;
-                }
-                else
-                {
-                    await _logger.Warning("ClientProfileController.ConvertWithPuppeteer",
-                        $"Tentativo {attempt} fallito - file non creato",
-                        $"ExitCode: {process.ExitCode}, Stdout: {stdout}, Stderr: {stderr}");
-
-                    // Cleanup e retry
-                    try { System.IO.File.Delete(scriptPath); } catch { }
-
-                    if (attempt == maxRetries)
-                    {
-                        throw new InvalidOperationException($"PDF file not created after {maxRetries} attempts. Last error: {stderr}");
-                    }
-
-                    await Task.Delay(2000);
-                }
-            }
-            catch (Exception ex) when (attempt < maxRetries)
-            {
-                await _logger.Warning("ClientProfileController.ConvertWithPuppeteer",
-                    $"Tentativo {attempt} fallito con eccezione", ex.Message);
-                await Task.Delay(2000);
-            }
-        }
-
-        throw new InvalidOperationException($"PDF conversion failed after {maxRetries} attempts");
-    }
-
-    /// <summary>
-    /// STESSO SCRIPT FUNZIONANTE DI PdfGenerationService (adattato per Client Profile)
-    /// </summary>
-    private string GenerateOptimizedPuppeteerScript()
-    {
-        return @"
-                // ✅ FORZA L'USO DI CHROME DI SISTEMA
-                const path = require('path');
-                const fs = require('fs');
-
-                console.log('🔍 Using system Chrome instead of Puppeteer download...');
-
-                // Lista di possibili path di Chrome nel sistema
-                const systemChromePaths = [
-                    'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-                    'C:\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-                    'C:\\\\Users\\\\' + (process.env.USERNAME || 'Default') + '\\\\AppData\\\\Local\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-                    'C:\\\\Program Files\\\\Chromium\\\\Application\\\\chrome.exe',
-                    'C:\\\\Program Files (x86)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'
-                ];
-
-                // Trova Chrome nel sistema
-                function findSystemChrome() {
-                    for (const chromePath of systemChromePaths) {
-                        if (fs.existsSync(chromePath)) {
-                            console.log(`✅ Found system Chrome: ${chromePath}`);
-                            return chromePath;
-                        }
-                    }
-                    throw new Error('❌ No Chrome browser found in system');
-                }
-
-                // ✅ USA PUPPETEER-CORE INVECE DI PUPPETEER COMPLETO
-                let puppeteer;
-                try {
-                    // Prova prima puppeteer normale
-                    puppeteer = require('puppeteer');
-                    console.log('✅ Using full Puppeteer');
-                } catch (err1) {
-                    try {
-                        // Fallback a puppeteer-core
-                        puppeteer = require('puppeteer-core');
-                        console.log('✅ Using Puppeteer-core');
-                    } catch (err2) {
-                        console.error('💥 Neither puppeteer nor puppeteer-core found!');
-                        console.error('Install with: npm install puppeteer');
-                        process.exit(1);
-                    }
-                }
-
-                (async () => {
-                const [htmlPath, pdfPath] = process.argv.slice(2);
-                
-                if (!htmlPath || !pdfPath) {
-                    console.error('Usage: node script.js <htmlPath> <pdfPath>');
-                    process.exit(1);
-                }
-                
-                console.log(`Starting PDF conversion:`);
-                console.log(`  HTML: ${htmlPath}`);
-                console.log(`  PDF:  ${pdfPath}`);
-                
-                let browser;
-                try {
-                    console.log('🚀 Launching browser...');
-                    
-                    const launchOptions = {
-                    headless: true,
-                    args: [
-                        '--no-sandbox',
-                        '--disable-dev-shm-usage', 
-                        '--disable-gpu',
-                        '--disable-web-security',
-                        '--disable-features=TranslateUI',
-                        '--disable-ipc-flooding-protection',
-                        '--disable-background-timer-throttling',
-                        '--disable-renderer-backgrounding',
-                        '--disable-backgrounding-occluded-windows',
-                        '--memory-pressure-off'
-                    ],
-                    timeout: 20000
-                    };
-                    
-                    // ✅ FORZA L'USO DI CHROME DI SISTEMA
-                    try {
-                        const systemChrome = findSystemChrome();
-                        launchOptions.executablePath = systemChrome;
-                        console.log(`🎯 Using system Chrome: ${systemChrome}`);
-                    } catch (chromeError) {
-                        console.log('⚠️ No system Chrome found, using Puppeteer default');
-                    }
-                    
-                    browser = await puppeteer.launch(launchOptions);
-                    console.log('✅ Browser launched successfully');
-                    
-                    const page = await browser.newPage();
-                    await page.setViewport({ width: 1024, height: 768 });
-                    await page.setDefaultTimeout(15000);
-                    
-                    // Leggi e carica HTML
-                    console.log('📄 Loading HTML content...');
-                    const htmlContent = fs.readFileSync(htmlPath, 'utf8');
-                    console.log(`HTML content loaded (${htmlContent.length} chars)`);
-                    
-                    await page.setContent(htmlContent, { 
-                    waitUntil: 'domcontentloaded',
-                    timeout: 10000
-                    });
-                    console.log('✅ HTML content set successfully');
-                    
-                    // Crea directory output se necessario
-                    const outputDir = path.dirname(pdfPath);
-                    if (!fs.existsSync(outputDir)) {
-                    fs.mkdirSync(outputDir, { recursive: true });
-                    console.log(`📁 Created output directory: ${outputDir}`);
-                    }
-                    
-                    // Genera PDF con configurazione specifica per Client Profile
-                    console.log('🎨 Generating Client Profile PDF...');
-                    await page.pdf({
-                    path: pdfPath,
-                    format: 'A4',
-                    printBackground: true,
-                    margin: {
-                        top: '30px',
-                        right: '20px',
-                        bottom: '30px',
-                        left: '20px'
-                    },
-                    displayHeaderFooter: false,
-                    preferCSSPageSize: true,
-                    timeout: 15000
-                    });
-                    
-                    // Verifica risultato
-                    if (fs.existsSync(pdfPath)) {
-                    const stats = fs.statSync(pdfPath);
-                    console.log(`🎉 Client Profile PDF generated successfully!`);
-                    console.log(`   File: ${pdfPath}`);
-                    console.log(`   Size: ${stats.size} bytes`);
-                    } else {
-                    throw new Error('❌ PDF file was not created');
-                    }
-                    
-                } catch (error) {
-                    console.error('💥 PDF generation failed:', error.message);
-                    console.error('Stack trace:', error.stack);
-                    process.exit(1);
-                } finally {
-                    if (browser) {
-                    try {
-                        await browser.close();
-                        console.log('✅ Browser closed');
-                    } catch (closeError) {
-                        console.error('Warning: Error closing browser:', closeError.message);
-                    }
-                    }
-                }
-                })();";
-    }
-
-    /// <summary>
-    /// Salva HTML in file temporaneo
-    /// </summary>
-    private async Task<string> SaveTemporaryHtmlAsync(string htmlContent)
-    {
-        var tempDir = Path.GetTempPath();
-        var htmlPath = Path.Combine(tempDir, $"ClientProfile_{DateTime.Now.Ticks}.html");
-        await System.IO.File.WriteAllTextAsync(htmlPath, htmlContent);
-        return htmlPath;
-    }
-
-    /// <summary>
-    /// Controlla se Node.js è disponibile
-    /// </summary>
-    private bool IsNodeJsAvailable()
-    {
-        try
-        {
-            var programFiles = Environment.GetEnvironmentVariable("ProgramFiles") ?? @"C:\Program Files";
-            var nodePath = Path.Combine(programFiles, "nodejs", "node.exe");
-            return System.IO.File.Exists(nodePath);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// STESSO METODO FindProjectDirectory DI PdfGenerationService
-    /// </summary>
-    private string FindProjectDirectory()
-    {
-        // Inizia dalla directory corrente
-        var currentDir = Directory.GetCurrentDirectory();
-
-        // Cerca verso l'alto per package.json
-        while (!string.IsNullOrEmpty(currentDir))
-        {
-            var packageJsonPath = Path.Combine(currentDir, "package.json");
-            if (System.IO.File.Exists(packageJsonPath))
-            {
-                return currentDir;
-            }
-
-            // Cerca anche per .csproj o .sln (indicatori di progetto .NET)
-            var csprojFiles = Directory.GetFiles(currentDir, "*.csproj");
-            var slnFiles = Directory.GetFiles(currentDir, "*.sln");
-
-            if (csprojFiles.Length > 0 || slnFiles.Length > 0)
-            {
-                // Se c'è anche node_modules, questa è probabilmente la directory giusta
-                var nodeModulesPath = Path.Combine(currentDir, "node_modules");
-                if (Directory.Exists(nodeModulesPath))
-                {
-                    return currentDir;
-                }
-            }
-
-            var parentDir = Directory.GetParent(currentDir);
-            if (parentDir == null)
-                break;
-
-            currentDir = parentDir.FullName;
-        }
-
-        // Fallback: directory corrente
-        return Directory.GetCurrentDirectory();
-    }
-
-    /// <summary>
-    /// Fallback: converte HTML in bytes per download diretto
-    /// </summary>
-    private async Task<byte[]> ConvertToHtmlFallback(string htmlContent)
-    {
-        await _logger.Warning("ClientProfileController.ConvertToHtmlFallback",
-            "Using HTML fallback instead of PDF");
-
-        return System.Text.Encoding.UTF8.GetBytes(htmlContent);
-    }
-
-    /// <summary>
-    /// Cleanup migliorato (come PdfGenerationService)
-    /// </summary>
-    private async Task CleanupTemporaryFiles(params string[] filePaths)
-    {
-        foreach (var path in filePaths)
-        {
-            try
-            {
-                if (System.IO.File.Exists(path))
-                {
-                    System.IO.File.Delete(path);
-                    await _logger.Debug("ClientProfileController.CleanupTemporaryFiles",
-                        "File temporaneo eliminato", $"Path: {path}");
-                }
-            }
-            catch (Exception ex)
-            {
-                await _logger.Debug("ClientProfileController.CleanupTemporaryFiles",
-                    "Errore eliminazione file temporaneo", $"Path: {path}, Error: {ex.Message}");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Salva il PDF nel filesystem
-    /// </summary>
-    private async Task<string> SavePdfFileAsync(byte[] pdfBytes, string fileName)
-    {
-        if (!Directory.Exists(_reportsStoragePath))
-        {
-            Directory.CreateDirectory(_reportsStoragePath);
-        }
-
-        var filePath = Path.Combine(_reportsStoragePath, fileName);
-        await System.IO.File.WriteAllBytesAsync(filePath, pdfBytes);
-
-        return filePath;
-    }
-
+    
     /// <summary>
     /// Genera il nome del file PDF
     /// </summary>

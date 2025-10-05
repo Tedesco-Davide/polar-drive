@@ -139,9 +139,11 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
                 // Script Puppeteer portabile
                 var puppeteerScript = GenerateOptimizedPuppeteerScript(options);
 
-                // ✅ SALVA LO SCRIPT NELLA DIRECTORY DEL PROGETTO, NON IN TEMP
+                // ✅ CREA CARTELLA TempFiles SE NON ESISTE
                 var projectDirectory = FindProjectDirectory();
-                scriptPath = Path.Combine(projectDirectory, $"temp_puppeteer_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
+                var tempFilesDir = Path.Combine(projectDirectory, "TempFiles");
+                Directory.CreateDirectory(tempFilesDir); 
+                scriptPath = Path.Combine(tempFilesDir, $"temp_puppeteer_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
                 await File.WriteAllTextAsync(scriptPath, puppeteerScript);
 
                 var process = new Process
@@ -202,10 +204,10 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
                 var stdout = await process.StandardOutput.ReadToEndAsync();
                 var stderr = await process.StandardError.ReadToEndAsync();
 
-                await _logger.Debug(source, "Output Puppeteer", $"Stdout:\n\n{stdout}");
+                await _logger.Debug(source, "Output Puppeteer STDOUT", $"Stdout:\n\n{stdout}");
                 if (!string.IsNullOrEmpty(stderr))
                 {
-                    await _logger.Debug(source, "Error Puppeteer", $"Stderr: {stderr}");
+                    await _logger.Debug(source, "Error Puppeteer STDERR", $"Stderr: {stderr}");
                 }
 
                 // Controlla risultato
@@ -311,165 +313,131 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     private string GenerateOptimizedPuppeteerScript(PdfConversionOptions options)
     {
         return $@"
-// ✅ FORZA L'USO DI CHROME DI SISTEMA
-const path = require('path');
-const fs = require('fs');
+    const path = require('path');
+    const fs = require('fs');
 
-console.log('🔍 Using system Chrome instead of Puppeteer download...');
+    console.log('🔍 Using system Chrome...');
 
-// Lista di possibili path di Chrome nel sistema
-const systemChromePaths = [
-    'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-    'C:\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-    'C:\\\\Users\\\\' + (process.env.USERNAME || 'Default') + '\\\\AppData\\\\Local\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-    'C:\\\\Program Files\\\\Chromium\\\\Application\\\\chrome.exe',
-    'C:\\\\Program Files (x86)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'
-];
+    const systemChromePaths = [
+        'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+        'C:\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+        'C:\\\\Users\\\\' + (process.env.USERNAME || 'Default') + '\\\\AppData\\\\Local\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
+        'C:\\\\Program Files\\\\Chromium\\\\Application\\\\chrome.exe',
+        'C:\\\\Program Files (x86)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'
+    ];
 
-// Trova Chrome nel sistema
-function findSystemChrome() {{
-    for (const chromePath of systemChromePaths) {{
-        if (fs.existsSync(chromePath)) {{
-            console.log(`✅ Found system Chrome: ${{chromePath}}`);
-            return chromePath;
+    function findSystemChrome() {{
+        for (const chromePath of systemChromePaths) {{
+            if (fs.existsSync(chromePath)) {{
+                console.log(`✅ Found: ${{chromePath}}`);
+                return chromePath;
+            }}
+        }}
+        throw new Error('❌ No Chrome found');
+    }}
+
+    let puppeteer;
+    try {{
+        puppeteer = require('puppeteer');
+        console.log('✅ Using Puppeteer');
+    }} catch (err1) {{
+        try {{
+            puppeteer = require('puppeteer-core');
+            console.log('✅ Using Puppeteer-core');
+        }} catch (err2) {{
+            console.error('💥 Puppeteer not found');
+            process.exit(1);
         }}
     }}
-    throw new Error('❌ No Chrome browser found in system');
-}}
 
-// ✅ USA PUPPETEER-CORE INVECE DI PUPPETEER COMPLETO
-let puppeteer;
-try {{
-    // Prova prima puppeteer normale
-    puppeteer = require('puppeteer');
-    console.log('✅ Using full Puppeteer');
-}} catch (err1) {{
-    try {{
-        // Fallback a puppeteer-core
-        puppeteer = require('puppeteer-core');
-        console.log('✅ Using Puppeteer-core');
-    }} catch (err2) {{
-        console.error('💥 Neither puppeteer nor puppeteer-core found!');
-        console.error('Install with: npm install puppeteer');
+    (async () => {{
+    const [htmlPath, pdfPath] = process.argv.slice(2);
+    
+    if (!htmlPath || !pdfPath) {{
+        console.error('Usage: node script.js <htmlPath> <pdfPath>');
         process.exit(1);
     }}
-}}
-
-(async () => {{
-  const [htmlPath, pdfPath] = process.argv.slice(2);
-  
-  if (!htmlPath || !pdfPath) {{
-    console.error('Usage: node script.js <htmlPath> <pdfPath>');
-    process.exit(1);
-  }}
-  
-  console.log(`Starting PDF conversion:`);
-  console.log(`  HTML: ${{htmlPath}}`);
-  console.log(`  PDF:  ${{pdfPath}}`);
-  
-  let browser;
-  try {{
-    console.log('🚀 Launching browser...');
     
-    const launchOptions = {{
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-dev-shm-usage', 
-        '--disable-gpu',
-        '--disable-web-security',
-        '--disable-features=TranslateUI',
-        '--disable-ipc-flooding-protection',
-        '--disable-background-timer-throttling',
-        '--disable-renderer-backgrounding',
-        '--disable-backgrounding-occluded-windows',
-        '--memory-pressure-off'
-      ],
-      timeout: 20000
-    }};
+    console.log(`Starting PDF conversion`);
+    console.log(`  HTML: ${{htmlPath}}`);
+    console.log(`  PDF: ${{pdfPath}}`);
     
-    // ✅ FORZA L'USO DI CHROME DI SISTEMA
+    let browser;
+    let page;
     try {{
-        const systemChrome = findSystemChrome();
-        launchOptions.executablePath = systemChrome;
-        console.log(`🎯 Using system Chrome: ${{systemChrome}}`);
-    }} catch (chromeError) {{
-        console.log('⚠️ No system Chrome found, using Puppeteer default');
-    }}
-    
-    browser = await puppeteer.launch(launchOptions);
-    console.log('✅ Browser launched successfully');
-    
-    const page = await browser.newPage();
-    await page.setViewport({{ width: 1024, height: 768 }});
-    await page.setDefaultTimeout(15000);
-    
-    // Leggi e carica HTML
-    console.log('📄 Loading HTML content...');
-    const htmlContent = fs.readFileSync(htmlPath, 'utf8');
-    console.log(`HTML content loaded (${{htmlContent.length}} chars)`);
-    
-    await page.setContent(htmlContent, {{ 
-      waitUntil: 'domcontentloaded',
-      timeout: 10000
-    }});
-    console.log('✅ HTML content set successfully');
-    
-    // Crea directory output se necessario
-    const outputDir = path.dirname(pdfPath);
-    if (!fs.existsSync(outputDir)) {{
-      fs.mkdirSync(outputDir, {{ recursive: true }});
-      console.log(`📁 Created output directory: ${{outputDir}}`);
-    }}
-    
-    // Genera PDF
-    console.log('🎨 Generating PDF...');
-    await page.pdf({{
-      path: pdfPath,
-      format: '{options.PageFormat}',
-      printBackground: {options.PrintBackground.ToString().ToLower()},
-      omitBackground: {options.OmitBackground.ToString().ToLower()},
-      tagged: {options.Tagged.ToString().ToLower()},
-      timeout: {options.Timeout},
-      margin: {{
-        top: '{options.MarginTop}',
-        right: '{options.MarginRight}',
-        bottom: '{options.MarginBottom}',
-        left: '{options.MarginLeft}'
-      }},
-      displayHeaderFooter: {options.DisplayHeaderFooter.ToString().ToLower()},
-      headerTemplate: `{options.HeaderTemplate.Replace("`", "\\`")}`,
-      footerTemplate: `{options.FooterTemplate.Replace("`", "\\`")}`,
-      preferCSSPageSize: true,
-      timeout: 15000
-    }});
-    
-    // Verifica risultato
-    if (fs.existsSync(pdfPath)) {{
-      const stats = fs.statSync(pdfPath);
-      console.log(`🎉 PDF generated successfully!`);
-      console.log(`   File: ${{pdfPath}}`);
-      console.log(`   Size: ${{stats.size}} bytes`);
-    }} else {{
-      throw new Error('❌ PDF file was not created');
-    }}
-    
-  }} catch (error) {{
-    console.error('💥 PDF generation failed:', error.message);
-    console.error('Stack trace:', error.stack);
-    process.exit(1);
-  }} finally {{
-    if (browser) {{
-      try {{
-        await page.close();
-        await browser.close();
+        console.log('🚀 Launching browser...');
+        
+        const launchOptions = {{
+        headless: true,
+        args: [
+            '--no-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-gpu',
+            '--disable-web-security'
+        ],
+        timeout: 30000
+        }};
+        
+        try {{
+            const systemChrome = findSystemChrome();
+            launchOptions.executablePath = systemChrome;
+        }} catch (chromeError) {{
+            console.log('⚠️ Using Puppeteer default Chrome');
+        }}
+        
+        browser = await puppeteer.launch(launchOptions);
+        console.log('✅ Browser launched');
+        
+        page = await browser.newPage();
+        await page.setViewport({{ width: 1024, height: 768 }});
+        
+        console.log('📄 Loading HTML...');
+        const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+        
+        await page.setContent(htmlContent, {{ 
+        waitUntil: 'domcontentloaded',
+        timeout: 30000
+        }});
+        console.log('✅ HTML loaded');
+        
+        const outputDir = path.dirname(pdfPath);
+        if (!fs.existsSync(outputDir)) {{
+        fs.mkdirSync(outputDir, {{ recursive: true }});
+        }}
+        
+        console.log('🎨 Generating PDF...');
+        await page.pdf({{
+        path: pdfPath,
+        format: '{options.PageFormat}',
+        printBackground: {options.PrintBackground.ToString().ToLower()},
+        margin: {{
+            top: '{options.MarginTop}',
+            right: '{options.MarginRight}',
+            bottom: '{options.MarginBottom}',
+            left: '{options.MarginLeft}'
+        }},
+        displayHeaderFooter: {options.DisplayHeaderFooter.ToString().ToLower()},
+        headerTemplate: `{options.HeaderTemplate.Replace("`", "\\`")}`,
+        footerTemplate: `{options.FooterTemplate.Replace("`", "\\`")}`,
+        preferCSSPageSize: true
+        }});
+        
+        if (fs.existsSync(pdfPath)) {{
+        const stats = fs.statSync(pdfPath);
+        console.log(`🎉 PDF generated: ${{stats.size}} bytes`);
+        }} else {{
+        throw new Error('❌ PDF not created');
+        }}
+        
+    }} catch (error) {{
+        console.error('💥 Failed:', error.message);
+        process.exit(1);
+    }} finally {{
+        if (page) await page.close();
+        if (browser) await browser.close();
         console.log('✅ Browser closed');
-      }} catch (closeError) {{
-        console.error('Warning: Error closing browser:', closeError.message);
-      }}
     }}
-  }}
-}})();";
+    }})();";
     }
 
     /// <summary>

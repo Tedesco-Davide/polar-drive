@@ -4,7 +4,7 @@ namespace PolarDrive.WebApi.PolarAiReports;
 public class PdfConversionOptions
 {
     public int MaxRetries { get; set; } = 2;
-    public int ConvertTimeoutSeconds { get; set; } = 90;
+    public int ConvertTimeoutSeconds { get; set; } = 120;
     public bool PrintBackground { get; set; } = true;
     public bool OmitBackground { get; set; } = false;
     public bool Tagged { get; set; } = false;
