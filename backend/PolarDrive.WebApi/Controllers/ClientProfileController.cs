@@ -91,7 +91,69 @@ public class ClientProfileController : ControllerBase
                 GeneratedAt = DateTime.UtcNow
             };
 
-            var pdfBytes = await _pdfService.ConvertHtmlToPdfAsync(htmlContent, tempReport);
+            // OPZIONI PERSONALIZZATE PER HEADER E FOOTER
+            var pdfOptions = new PdfConversionOptions
+            {
+                HeaderTemplate = $@"
+                    <html>
+                    <head>
+                        <style>
+                            body {{
+                                margin: 0;
+                                padding: 0;
+                                width: 100%;
+                                height: 100%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            }}
+                            .header-content {{
+                                font-size: 10px;
+                                color: #ccc;
+                                text-align: center;
+                                border-bottom: 1px solid #ccc;
+                                padding-bottom: 5px;
+                                width: 100%;
+                            }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class='header-content'>Profilo Cliente - {company.Name} - {DateTime.Now:yyyy-MM-dd HH:mm}</div>
+                    </body>
+                    </html>",
+                FooterTemplate = @"
+                    <html>
+                    <head>
+                        <style>
+                            body {
+                                margin: 0;
+                                padding: 0;
+                                width: 100%;
+                                height: 100%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                            }
+                            .footer-content {
+                                font-size: 10px;
+                                color: #ccc;
+                                text-align: center;
+                                border-top: 1px solid #ccc;
+                                padding-top: 5px;
+                                width: 100%;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <div class='footer-content'>
+                            Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Analytics
+                        </div>
+                    </body>
+                    </html>"
+            };
+
+            // PASSA LE OPZIONI AL SERVIZIO PDF
+            var pdfBytes = await _pdfService.ConvertHtmlToPdfAsync(htmlContent, tempReport, pdfOptions);
 
             var contentType = "application/pdf";
             var fileName = GenerateProfileFileName(profileData.CompanyInfo);
