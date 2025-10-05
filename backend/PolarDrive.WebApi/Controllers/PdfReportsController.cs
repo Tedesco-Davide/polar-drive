@@ -64,37 +64,31 @@ public class PdfReportsController : ControllerBase
         }
     }
 
-    private async Task<string> DetermineReportStatusAsync(Data.Entities.PdfReport report, bool pdfExists, bool htmlExists, int dataCount)
+    private async Task<string> DetermineReportStatusAsync(
+        Data.Entities.PdfReport report, bool pdfExists, bool htmlExists, int dataCount)
     {
-        // 1. Status operativi
+        // 1) Stati bloccanti espliciti dal DB
         if (!string.IsNullOrEmpty(report.Status))
         {
             if (report.Status == "PROCESSING") return "PROCESSING";
             if (report.Status == "ERROR") return "ERROR";
         }
 
-        // 2. File esistenti
+        // 2) File presenti
         if (pdfExists) return "PDF-READY";
         if (htmlExists) return "HTML-ONLY";
 
-        // 3. Nessun dato
+        // 3) Nessun / pochi dati nel periodo
         if (dataCount == 0) return "NO-DATA";
+        if (dataCount < MIN_RECORDS_FOR_GENERATION) return "WAITING-RECORDS";
 
-        // 4. Controlla se dovrebbe avere file
+        // 4) Dati sufficienti → generazione è automatica:
+        //    se siamo oltre la grace window e ancora non ci sono file → FILE-MISSING
         var shouldHaveFiles = await ShouldReportHaveFiles(report);
+        if (shouldHaveFiles) return "FILE-MISSING";
 
-        if (shouldHaveFiles)
-        {
-            return "FILE-MISSING";
-        }
-
-        // 5. Valuta in base ai dati disponibili
-        if (dataCount < MIN_RECORDS_FOR_GENERATION)
-        {
-            return "WAITING-RECORDS";
-        }
-
-        return "GENERATE-READY";
+        // 5) Altrimenti consideralo in lavorazione (o in coda) perché l’enqueue è automatico
+        return "PROCESSING";
     }
 
     private async Task<bool> ShouldReportHaveFiles(Data.Entities.PdfReport report)

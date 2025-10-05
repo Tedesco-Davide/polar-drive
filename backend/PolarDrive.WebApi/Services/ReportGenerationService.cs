@@ -265,7 +265,9 @@ namespace PolarDrive.WebApi.Services
             var ollamaOptions = scope_ollama.ServiceProvider.GetRequiredService<IOptionsSnapshot<OllamaConfig>>();
             var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
 
-            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id);
+            //var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
+            var insights = "TEST_INSIGHTS_NO_AI";
+            
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"Nessun insight generato per {vehicle.Vin}");
 

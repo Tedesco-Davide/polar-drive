@@ -91,8 +91,6 @@ export default function AdminPdfReports({
         return "bg-yellow-100 text-yellow-700 border-yellow-500";
       case "NO-DATA":
         return "bg-red-100 text-red-700 border-red-500";
-      case "GENERATE-READY":
-        return "bg-blue-100 text-blue-700 border-blue-500";
       case "WAITING-RECORDS":
         return "bg-orange-100 text-orange-700 border-orange-500";
       case "PROCESSING":
@@ -468,66 +466,74 @@ export default function AdminPdfReports({
                 key={report.id}
                 className="border-b border-gray-300 dark:border-gray-600"
               >
+
                 {/* Actions Column */}
                 <td className="p-4 space-x-2">
-                  {/* Download Button */}
-                  <button
-                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
-                    title={
-                      status.text === "PROCESSING"
-                        ? t("admin.vehicleReports.downloadDisabledProcessing")
-                        : t("admin.vehicleReports.downloadSinglePdf")
-                    }
-                    disabled={
-                      !isDownloadable ||
-                      downloadingId === report.id ||
-                      status.text === "PROCESSING"
-                    }
-                    onClick={() => handleDownload(report)}
-                  >
-                    {downloadingId === report.id ? (
-                      <AdminLoader inline />
-                    ) : (
-                      <FileBadge size={16} />
-                    )}
-                  </button>
+                    {/* Download Button */}
+                    <button
+                        className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
+                        title={
+                        status.text === "PROCESSING"
+                            ? t("admin.vehicleReports.actionDisabledProcessing")
+                            : t("admin.vehicleReports.downloadSinglePdf")
+                        }
+                        disabled={
+                        !isDownloadable ||
+                        downloadingId === report.id ||
+                        status.text === "PROCESSING"
+                        }
+                        onClick={() => handleDownload(report)}
+                    >
+                        {downloadingId === report.id ? (
+                        <AdminLoader inline />
+                        ) : (
+                        <FileBadge size={16} />
+                        )}
+                    </button>
 
-                  {/* Regenerate Button */}
-                  <button
-                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
-                    title={
-                      status.text === "PROCESSING"
-                        ? t("admin.vehicleReports.regenerateDisabledProcessing")
-                        : t("admin.vehicleReports.forceRegenerate")
-                    }
-                    disabled={
-                      regeneratingId === report.id ||
-                      status.text === "PROCESSING"
-                    }
-                    onClick={() => {
-                      const message = t(
-                        "admin.vehicleReports.regenerateConfirmAction"
-                      );
-                      if (window.confirm(message)) {
-                        handleRegenerate(report);
-                      }
-                    }}
-                  >
-                    {regeneratingId === report.id ? (
-                      <AdminLoader inline />
-                    ) : (
-                      <RefreshCw size={16} />
-                    )}
-                  </button>
+                    {/* Regenerate Button */}
+                    <button
+                        className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
+                        title={
+                        status.text === "PROCESSING"
+                            ? t("admin.vehicleReports.actionDisabledProcessing")
+                            : t("admin.vehicleReports.forceRegenerate")
+                        }
+                        disabled={
+                        regeneratingId === report.id ||
+                        status.text === "PROCESSING"
+                        }
+                        onClick={() => {
+                        const message = t("admin.vehicleReports.regenerateConfirmAction");
+                        if (window.confirm(message)) {
+                            handleRegenerate(report);
+                        }
+                        }}
+                    >
+                        {regeneratingId === report.id ? (
+                        <AdminLoader inline />
+                        ) : (
+                        <RefreshCw size={16} />
+                        )}
+                    </button>
 
-                  {/* Notes Button */}
-                  <button
-                    className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
-                    title={t("admin.openNotesModal")}
-                    onClick={() => setSelectedReportForNotes(report)}
-                  >
-                    <NotebookPen size={16} />
-                  </button>
+                    {/* Notes Button */}
+                    <button
+                        className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
+                        title={
+                        status.text === "PROCESSING"
+                            ? t("admin.vehicleReports.actionDisabledProcessing")
+                            : t("admin.openNotesModal")
+                        }
+                        disabled={
+                        downloadingId === report.id ||
+                        regeneratingId === report.id ||
+                        status.text === "PROCESSING"
+                        }
+                        onClick={() => setSelectedReportForNotes(report)}
+                    >
+                        <NotebookPen size={16} />
+                    </button>
                 </td>
 
                 {/* Generated At */}
