@@ -17,6 +17,7 @@ public class IntelligentDataAggregator
 {
     private readonly PolarDriveDbContext _dbContext;
     private readonly PolarDriveLogger _logger;
+    private readonly PolarDriveLoggerFileSpecific _loggerFileSpecific;
     private readonly int _maxRetryAttempts;
     private readonly TimeSpan _baseDelay;
     private readonly Random _jitterRandom;
@@ -35,6 +36,7 @@ public class IntelligentDataAggregator
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         _logger = new PolarDriveLogger(_dbContext);
+        _loggerFileSpecific = new PolarDriveLoggerFileSpecific("IntelligentDataAggregator");
         _maxRetryAttempts = maxRetryAttempts;
         _baseDelay = TimeSpan.FromMilliseconds(baseDelayMs);
         _jitterRandom = new Random();
@@ -53,7 +55,7 @@ public class IntelligentDataAggregator
         _totalStopwatch.Start();
 
         await _logger.Info(source, $"Processando {rawJsonAnonymizedList.Count} record per aggregazione completa", $"VehicleId: {vehicleId}");
-        await LogProcessingStep("Initialize", $"Inizializzato processamento per {rawJsonAnonymizedList.Count} JSON");
+        LogProcessingStep("Initialize", $"Inizializzato processamento per {rawJsonAnonymizedList.Count} JSON");
 
         var aggregation = new CompleteTeslaDataAggregation();
         var processedRecords = 0;
@@ -66,7 +68,7 @@ public class IntelligentDataAggregator
             {
                 if (string.IsNullOrWhiteSpace(rawJsonAnonymous))
                 {
-                    await LogProcessingStep("SkipEmpty", "JSON vuoto saltato");
+                    LogProcessingStep("SkipEmpty", "JSON vuoto saltato");
                     continue;
                 }
 
@@ -74,7 +76,7 @@ public class IntelligentDataAggregator
                 var span = rawJsonAnonymous.AsSpan().TrimStart();
                 if (!(span.StartsWith("{") || span.StartsWith("[")))
                 {
-                    await LogProcessingStep("SkipNonJson", "Record non JSON");
+                    LogProcessingStep("SkipNonJson", "Record non JSON");
                     continue;
                 }
 
@@ -84,7 +86,7 @@ public class IntelligentDataAggregator
                 var jsonHash = ComputeHash(sanitizedJson);
                 if (_processedRecords.Contains(jsonHash))
                 {
-                    await LogProcessingStep("SkipDuplicate", $"JSON duplicato saltato (hash: {jsonHash[..8]})");
+                    LogProcessingStep("SkipDuplicate", $"JSON duplicato saltato (hash: {jsonHash[..8]})");
                     continue;
                 }
                 _processedRecords.Add(jsonHash);
@@ -113,30 +115,30 @@ public class IntelligentDataAggregator
                         {
                             case "charging_history":
                                 ProcessChargingHistoryComplete(content, aggregation);
-                                await LogProcessingStep("ChargingHistory", $"Processata charging history");
+                                LogProcessingStep("ChargingHistory", $"Processata charging history");
                                 break;
                             case "vehicle_endpoints":
                                 ProcessVehicleEndpointsComplete(content, aggregation);
-                                await LogProcessingStep("VehicleEndpoints", $"Processati vehicle endpoints");
+                                LogProcessingStep("VehicleEndpoints", $"Processati vehicle endpoints");
                                 break;
                             case "vehicle_commands":
                                 ProcessVehicleCommandsComplete(content, aggregation);
-                                await LogProcessingStep("VehicleCommands", $"Processati vehicle commands");
+                                LogProcessingStep("VehicleCommands", $"Processati vehicle commands");
                                 break;
                             case "energy_endpoints":
                                 ProcessEnergyEndpointsComplete(content, aggregation);
-                                await LogProcessingStep("EnergyEndpoints", $"Processati energy endpoints");
+                                LogProcessingStep("EnergyEndpoints", $"Processati energy endpoints");
                                 break;
                             case "partner_public_key":
                                 ProcessPartnerPublicKeyComplete(content, aggregation);
-                                await LogProcessingStep("PartnerKey", $"Processata partner key");
+                                LogProcessingStep("PartnerKey", $"Processata partner key");
                                 break;
                             case "user_profile":
                                 // Ignoriamo esplicitamente per rispettare Tesla Fleet Api
                                 break;
                             default:
                                 if (!"user_profile".Equals(type, StringComparison.OrdinalIgnoreCase))
-                                    await LogProcessingStep("UnknownType", $"Tipo sconosciuto: {type}");
+                                    LogProcessingStep("UnknownType", $"Tipo sconosciuto: {type}");
                                 break;
                         }
 
@@ -150,7 +152,7 @@ public class IntelligentDataAggregator
                         itemsProcessed++;
                     }
 
-                    await LogProcessingStep("JsonCompleted", $"JSON processato con {itemsProcessed} items");
+                    LogProcessingStep("JsonCompleted", $"JSON processato con {itemsProcessed} items");
                 }
 
                 recordStopwatch.Stop();
@@ -159,7 +161,7 @@ public class IntelligentDataAggregator
                 // Log progresso ogni 100 record
                 if (processedRecords % 100 == 0)
                 {
-                    await LogProcessingStep("Progress",
+                    LogProcessingStep("Progress",
                         $"Processati {processedRecords}/{rawJsonAnonymizedList.Count} JSON " +
                         $"(Velocità media: {(processedRecords / _totalStopwatch.Elapsed.TotalSeconds):F1} JSON/sec)");
                 }
@@ -318,8 +320,7 @@ public class IntelligentDataAggregator
             }
 
             // Log sessione processata (solo se logging dettagliato attivo)
-            _ = LogProcessingStep("ChargingSession",
-                $"Sessione {sessionId}: {session.Site}, {duration:F0}min, {session.SessionType}");
+            LogProcessingStep("ChargingSession", $"Sessione {sessionId}: {session.Site}, {duration:F0}min, {session.SessionType}");
         }
 
         // Aggregazione per paese e sito con testi normalizzati
@@ -1421,9 +1422,12 @@ public class IntelligentDataAggregator
         public DateTime Timestamp { get; set; } = DateTime.Now;
     }
 
-    private async Task LogProcessingStep(string step, string details)
+    private void LogProcessingStep(string step, string details)
     {
-        await _logger.Info($"IntelligentDataAggregator.{step}", details, "");
+        // 🔸 scrivi su file dedicato (non DB)
+        _loggerFileSpecific.Info($"{step}: {details}");
+
+        // 🔹 aggiorna statistiche in memoria
         _processingStats[step] = _processingStats.GetValueOrDefault(step) + 1;
     }
 
@@ -1435,19 +1439,24 @@ public class IntelligentDataAggregator
         _processingTimes[phase] = elapsed;
     }
 
-    private async Task LogValidationResult(string dataType, int valid, int invalid)
+    private Task LogValidationResult(string dataType, int valid, int invalid)
     {
         if (invalid > 0)
         {
-            await _logger.Warning($"IntelligentDataAggregator.Validation",
+            // caso interessante → resta nel log principale (DB + file giornaliero)
+            return _logger.Warning(
+                "IntelligentDataAggregator.Validation",
                 $"{dataType}: {valid} validi, {invalid} scartati per validazione",
-                $"Tasso validazione: {(valid * 100.0 / (valid + invalid)):F1}%");
+                $"Tasso validazione: {(valid * 100.0 / (valid + invalid)):F1}%"
+            );
         }
-        else
-        {
-            await _logger.Debug($"IntelligentDataAggregator.Validation",
-                $"{dataType}: tutti {valid} record validi", "");
-        }
+
+        // caso “tutti validi” → SOLO nel file specifico
+        _loggerFileSpecific.Debug(
+            $"Validation {dataType}: tutti {valid} record validi"
+        );
+
+        return Task.CompletedTask;
     }
 
     #endregion
