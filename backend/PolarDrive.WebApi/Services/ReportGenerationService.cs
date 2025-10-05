@@ -63,7 +63,6 @@ namespace PolarDrive.WebApi.Services
     public class ReportInfo
     {
         public string AnalysisType { get; set; } = string.Empty;
-        public int DefaultDataHours { get; set; }
     }
 
     public class ReportGenerationService(IServiceProvider serviceProvider,
@@ -128,8 +127,8 @@ namespace PolarDrive.WebApi.Services
                     _logger.LogInformation("🔍 DEBUG: Vehicle {VIN} - Start: {Start}, End: {End}, Now: {Now} [FIXED 720h window]", v.Vin, start, end, now);
 
                     // 3) Infine genero con questi parametri
-                    var info = GetReportInfo(scheduleType, now);
-                    await GenerateReportForVehicle(db, v.Id, info, start, end);
+                    var analysisType = GetAnalysisType(scheduleType);
+                    await GenerateReportForVehicle(db, v.Id, analysisType, start, end);
 
                     results.SuccessCount++;
                     _lastReportAttempts[v.Id] = now;
@@ -188,9 +187,9 @@ namespace PolarDrive.WebApi.Services
 
                     var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                     var end = now;
-
-                    var info = GetReportInfo(ScheduleType.Retry, now);
-                    await GenerateReportForVehicle(db, id, info, start, end);
+                    var analysisType = GetAnalysisType(ScheduleType.Retry);
+                    
+                    await GenerateReportForVehicle(db, id, analysisType, start, end);
 
                     results.SuccessCount++;
                     _retryCount[id] = 0;
@@ -459,33 +458,28 @@ namespace PolarDrive.WebApi.Services
         /// Metodo interno per generazione report che ritorna int? (compatibile con codice esistente)
         /// Adatta il metodo GenerateReportForVehicle esistente per API
         /// </summary>
-        private async Task<int?> GenerateReportForVehicleInternal(PolarDriveDbContext db, int vehicleId, string analysisLevel)
+        private async Task<int?> GenerateReportForVehicleInternal(
+            PolarDriveDbContext db, 
+            int vehicleId, 
+            string analysisLevel)
         {
             try
             {
-                // 1) Prendo la fine dell'ultimo report (se esiste)
+                // 1) Calcola periodo
                 var lastReportEnd = await db.PdfReports
                     .Where(r => r.VehicleId == vehicleId)
                     .OrderByDescending(r => r.ReportPeriodEnd)
                     .Select(r => (DateTime?)r.ReportPeriodEnd)
                     .FirstOrDefaultAsync();
 
-                // 2) SEMPRE 720H - FINESTRA MENSILE UNIFICATA
                 var now = DateTime.Now;
                 var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                 var end = now;
 
-                // 3) Crea ReportInfo per compatibilità
-                var info = new ReportInfo
-                {
-                    AnalysisType = analysisLevel,
-                    DefaultDataHours = (int)(end - start).TotalHours
-                };
+                // 2) ✅ Chiama direttamente con analysisLevel (stringa)
+                await GenerateReportForVehicle(db, vehicleId, analysisLevel, start, end);
 
-                // 4) Chiama il metodo esistente
-                await GenerateReportForVehicle(db, vehicleId, info, start, end);
-
-                // 5) Trova l'ultimo report creato per questo veicolo
+                // 3) Recupera ultimo report
                 var latestReport = await db.PdfReports
                     .Where(r => r.VehicleId == vehicleId)
                     .OrderByDescending(r => r.GeneratedAt)
@@ -500,34 +494,26 @@ namespace PolarDrive.WebApi.Services
             }
         }
 
-        private async Task GenerateReportForVehicle(PolarDriveDbContext db, int vehicleId, ReportInfo info, DateTime start, DateTime end)
+        private async Task GenerateReportForVehicle(
+            PolarDriveDbContext db, 
+            int vehicleId, 
+            string analysisType,
+            DateTime start, 
+            DateTime end)
         {
             var vehicle = await db.ClientVehicles
                                 .Include(v => v.ClientCompany)
                                 .FirstOrDefaultAsync(v => v.Id == vehicleId)
-                        ?? throw new InvalidOperationException($"Vehicle {vehicleId} not found");
-
-            if (!vehicle.IsActiveFlag && vehicle.IsFetchingDataFlag)
-                _logger.LogWarning("⏳ Grace Period for {VIN}", vehicle.Vin);
+                            ?? throw new InvalidOperationException($"Vehicle {vehicleId} not found");
 
             var reportCount = await db.PdfReports.CountAsync(r => r.VehicleId == vehicleId);
-
-            // Per il primo report, usa la data di attivazione
-            if (reportCount == 0 && vehicle.FirstActivationAt.HasValue)
-            {
-                start = vehicle.FirstActivationAt.Value;
-                end = DateTime.Now;
-
-                _logger.LogInformation("🔧 First report from activation: {ActivationDate} to {Now}",
-                                    start, end);
-            }
 
             var period = new ReportPeriodInfo
             {
                 Start = start,
                 End = end,
                 DataHours = (int)(end - start).TotalHours,
-                AnalysisLevel = reportCount == 0 ? "Valutazione Iniziale" : info.AnalysisType,
+                AnalysisLevel = reportCount == 0 ? "Valutazione Iniziale" : analysisType,
                 MonitoringDays = (end - start).TotalDays
             };
 
@@ -554,7 +540,7 @@ namespace PolarDrive.WebApi.Services
                 ReportPeriodStart = period.Start,
                 ReportPeriodEnd = period.End,
                 GeneratedAt = DateTime.Now,
-                Notes = $"[{period.AnalysisLevel}] DataHours: {period.DataHours}, Monitoring: {period.MonitoringDays:F1}d, Historical total: {totalHistoricalRecords}"
+                Notes = $"{period.AnalysisLevel}"
             };
 
             // Se non ci sono dati nel periodo, imposta status e non generare file
@@ -715,43 +701,35 @@ namespace PolarDrive.WebApi.Services
             return true;
         }
 
-        private async Task<List<ClientVehicle>> GetVehiclesToProcess(PolarDriveDbContext db, ScheduleType scheduleType)
+        private async Task<List<ClientVehicle>> GetVehiclesToProcess(
+            PolarDriveDbContext db, 
+            ScheduleType scheduleType)
         {
-            var query = db.ClientVehicles.Include(v => v.ClientCompany)
-                           .Where(v => v.IsFetchingDataFlag);
+            var query = db.ClientVehicles
+                .Include(v => v.ClientCompany)
+                .Where(v => v.IsFetchingDataFlag);
 
-            if (scheduleType != ScheduleType.Development && scheduleType != ScheduleType.Retry)
+            // In Development/Retry non filtri per periodo
+            if (scheduleType == ScheduleType.Monthly)
             {
-                var (start, end) = GetDateRangeForSchedule(scheduleType);
+                var now = DateTime.Now;
+                var start = now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+                
                 query = query.Where(v => db.VehiclesData
-                    .Any(d => d.VehicleId == v.Id && d.Timestamp >= start && d.Timestamp <= end));
+                    .Any(d => d.VehicleId == v.Id && d.Timestamp >= start && d.Timestamp <= now));
             }
 
             return await query.ToListAsync();
         }
 
-        private (DateTime start, DateTime end) GetDateRangeForSchedule(ScheduleType scheduleType)
-        {
-            var now = DateTime.Now;
-            return scheduleType switch
-            {
-                ScheduleType.Daily => (now.AddDays(-1).Date, now.Date.AddSeconds(-1)),
-                ScheduleType.Weekly => (now.AddDays(-7), now),
-                ScheduleType.Monthly => (now.AddMonths(-1), now),
-                _ => (now.AddHours(-24), now)
-            };
-        }
-
-        private ReportInfo GetReportInfo(ScheduleType scheduleType, DateTime now)
+        private static string GetAnalysisType(ScheduleType scheduleType)
         {
             return scheduleType switch
             {
-                ScheduleType.Development => new ReportInfo { AnalysisType = "Development Analysis", DefaultDataHours = 0 },
-                ScheduleType.Daily => new ReportInfo { AnalysisType = "Analisi Giornaliera", DefaultDataHours = DAILY_HOURS_THRESHOLD },
-                ScheduleType.Weekly => new ReportInfo { AnalysisType = "Analisi Settimanale", DefaultDataHours = WEEKLY_HOURS_THRESHOLD },
-                ScheduleType.Monthly => new ReportInfo { AnalysisType = "Analisi Mensile", DefaultDataHours = MONTHLY_HOURS_THRESHOLD },
-                ScheduleType.Retry => new ReportInfo { AnalysisType = "Retry Analysis", DefaultDataHours = DAILY_HOURS_THRESHOLD },
-                _ => new ReportInfo { AnalysisType = "Standard Analysis", DefaultDataHours = DAILY_HOURS_THRESHOLD }
+                ScheduleType.Development => "Development Analysis",
+                ScheduleType.Monthly => "Analisi Mensile",
+                ScheduleType.Retry => "Analysis post Retry",
+                _ => "Analisi Mensile"
             };
         }
 

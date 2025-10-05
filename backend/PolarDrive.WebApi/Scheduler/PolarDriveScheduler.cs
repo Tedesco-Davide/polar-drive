@@ -116,16 +116,6 @@ namespace PolarDrive.WebApi.Scheduler
             }
         }
 
-        private TimeSpan GetInitialDelayFor(DayOfWeek day, TimeSpan timeOfDay)
-        {
-            var now = DateTime.Now;
-            var target = now.Date.Add(timeOfDay);
-            var daysUntil = ((int)day - (int)now.DayOfWeek + 7) % 7;
-            if (daysUntil == 0 && now.TimeOfDay > timeOfDay) daysUntil = 7;
-            target = target.AddDays(daysUntil);
-            return target - now;
-        }
-
         private TimeSpan GetInitialDelayForFirstOfMonth(TimeSpan timeOfDay)
         {
             var now = DateTime.Now;
