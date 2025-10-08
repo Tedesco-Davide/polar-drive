@@ -223,7 +223,7 @@
   "admin.vehicleReports.totalRecords": "record totali ad oggi",
   "admin.vehicleReports.monitored": "tot monitorate",
   "admin.vehicleReports.pdfNotAvailable": "PDF non disponibile, scaricato HTML. Prova la rigenerazione per ottenere il PDF",
-  "admin.vehicleReports.regenerateConfirmAction": "ATTENZIONE! Rigenerando il report, i dati del periodo rimarranno identici, ma il report sarà rigenerato con l'analisi PolarAi più avanzata disponibile. Premi OK per confermare",
+  "admin.vehicleReports.regenerateConfirmAction": "ATTENZIONE! Rigenerando il report, i dati del periodo rimarranno identici, ma il report sarà rigenerato con l'analisi PolarAi™ più avanzata disponibile. Premi OK per confermare",
   "admin.vehicleReports.actionDisabledProcessing": "Report in elaborazione...",
   "admin.vehicleReports.errors.alreadyProcessing": "Il report è già in fase di rigenerazione. Attendere il completamento.",
   "admin.vehicleReports.errors.noDataAvailable": "Non ci sono dati disponibili per questo periodo.",

@@ -11,7 +11,7 @@ namespace PolarDrive.WebApi.PolarAiReports;
 
 /// <summary>
 /// Aggregatore intelligente COMPLETO che processa 720h di dati JSON Tesla,
-/// per ottimizzare l'uso di token con PolarAI
+/// per ottimizzare l'uso di token con PolarAi™
 /// </summary>
 public class IntelligentDataAggregator
 {

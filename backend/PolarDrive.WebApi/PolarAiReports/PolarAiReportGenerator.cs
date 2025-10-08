@@ -312,7 +312,6 @@ mantenendo tutte le informazioni essenziali per un'analisi approfondita:
 - **Focus**: Valore business e ottimizzazione basata su dati aggregati
 - **Evita**: Ripetizione delle statistiche di certificazione (già nel PDF)
 
----
 **GENERA REPORT {analysisLevel.ToUpper()} CON FOCUS TECNICO-COMPORTAMENTALE**
 **ANALIZZA I DATI AGGREGATI NEL CONTESTO DI {totalMonitoringPeriod.TotalDays:F0} GIORNI TOTALI**
 **LA CERTIFICAZIONE DATAPOLAR È GIÀ INCLUSA NEL PDF - CONCENTRATI SULL'ANALISI**";

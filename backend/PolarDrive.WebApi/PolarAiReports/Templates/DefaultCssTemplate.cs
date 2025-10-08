@@ -279,7 +279,7 @@ public static class DefaultCssTemplate
         }
 
         .ai-insights::before {
-            content: '🧠 Analisi intelligente PolarAi';
+            content: '🧠 Analisi intelligente PolarAi™';
             position: absolute;
             top: 0;
             left: 0;

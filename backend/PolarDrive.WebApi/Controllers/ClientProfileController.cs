@@ -690,7 +690,7 @@ public class ClientProfileController : ControllerBase
                 {GenerateVehiclesSection(data.Vehicles)}
 
                 <div class='footer'>
-                    <p>Report generato da PolarDrive™ • {generationDate}</p>
+                    <p>PolarReport™ generato da PolarDrive™ • {generationDate}</p>
                     <p class='company-info'>DataPolar - The future of AI</p>
                 </div>
             </body>

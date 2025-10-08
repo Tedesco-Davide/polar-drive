@@ -390,7 +390,7 @@ public class HtmlReportService
                 <div class='error-message'>
                     <strong>Errore nella generazione del report:</strong> {errorMessage}
                 </div>
-                <h2>Contenuto PolarAi (Fallback)</h2>
+                <h2>Contenuto PolarAi™ (Fallback)</h2>
                 <div class='error-fallback-content'>{insights}</div>
             </div>
         </body>

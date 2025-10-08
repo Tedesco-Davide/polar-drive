@@ -19,7 +19,7 @@ public static class DefaultHtmlTemplate
                             <tr>
                                 <td class=""title-cell"">
                                     <h1 class=""report-title"">PolarDrive™</h1>
-                                    <div class=""report-id"">Report ID: {{reportId}}</div>
+                                    <div class=""report-id"">PolarReport™ ID: {{reportId}}</div>
                                 </td>
                                 <td class=""logo-cell"">
                                     {{#if logoBase64}}
@@ -70,7 +70,7 @@ public static class DefaultHtmlTemplate
                     <!-- ✅ Footer -->
                     <footer class=""report-footer footer"">
                         <div class=""footer-content"">
-                            <p>Report generato da PolarDrive™ • {{generatedAt}}</p>
+                            <p>PolarReport™ generato da PolarDrive™ • {{generatedAt}}</p>
                             <p class=""company-info"">DataPolar - The future of AI</p>
                         </div>
                     </footer>
