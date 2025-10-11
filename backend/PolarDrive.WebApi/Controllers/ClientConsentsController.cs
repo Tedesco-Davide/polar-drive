@@ -248,7 +248,6 @@ public class ClientConsentsController : ControllerBase
                 return NotFound("No ZIP file associated with this consent");
             }
 
-            //  usa il path completo direttamente
             if (!System.IO.File.Exists(consent.ZipFilePath))
             {
                 return NotFound("ZIP file not found on server");
@@ -259,6 +258,8 @@ public class ClientConsentsController : ControllerBase
 
             await _logger.Info("ClientConsentsController.DownloadZip",
                 $"Downloaded ZIP file for consent {id}: {fileName}");
+
+            Response.Headers.Append("Content-Disposition", $"attachment; filename=\"{fileName}\"");
 
             return File(fileBytes, "application/zip", fileName);
         }
@@ -306,7 +307,6 @@ public class ClientConsentsController : ControllerBase
 
             // Rimuovi il riferimento dal database
             consent.ZipFilePath = "";
-            consent.ConsentHash = "";
             await _db.SaveChangesAsync();
 
             await _logger.Info("ClientConsentsController.DeleteZip", "ZIP file reference removed from database.",
@@ -398,16 +398,9 @@ public class ClientConsentsController : ControllerBase
 
         // Calcola l'hash del file ZIP
         string hash;
-        using (var reader = new StreamReader(
-            zipStream,
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false),
-            detectEncodingFromByteOrderMarks: false,
-            bufferSize: 1024,
-            leaveOpen: true))
-        {
-            string zipContent = await reader.ReadToEndAsync();
-            hash = GenericHelpers.ComputeContentHash(zipContent);
-        }
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        byte[] hashBytes = await sha256.ComputeHashAsync(zipStream);
+        hash = Convert.ToHexStringLower(hashBytes);
 
         zipStream.Position = 0;
 

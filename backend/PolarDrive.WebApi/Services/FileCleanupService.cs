@@ -18,6 +18,7 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
             {
                 await CleanupOldFileManagerFiles();
                 await CleanupOldOutageFiles();
+                await CleanupOldConsentFiles(); 
 
                 // Esegui ogni 24 ore
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
@@ -82,9 +83,7 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
     {
         using var scope = _serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
-
-        // ✅ Rimuovi outage più vecchi di 60 giorni (retention più lunga per gli outages)
-        var outagesCutoffDate = DateTime.Now.AddDays(-60);
+        var outagesCutoffDate = DateTime.Now.AddDays(-30); 
 
         var oldOutages = await db.OutagePeriods
             .Where(o => o.CreatedAt < outagesCutoffDate && !string.IsNullOrEmpty(o.ZipFilePath))
@@ -92,7 +91,6 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
 
         foreach (var outage in oldOutages)
         {
-            // Rimuovi il file ZIP se esiste
             if (!string.IsNullOrEmpty(outage.ZipFilePath) && File.Exists(outage.ZipFilePath))
             {
                 try
@@ -116,7 +114,7 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
             _logger.LogInformation($"Outage ZIP cleanup completato: {oldOutages.Count} file ZIP rimossi");
         }
 
-        // Rimuovi file ZIP orfani degli outages
+        // ✅ Rimuovi file ZIP orfani degli outages
         await CleanupOrphanedOutageFiles(db);
     }
 
@@ -185,6 +183,48 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
             {
                 _logger.LogWarning(ex, $"Impossibile eliminare il file ZIP orfano dell'outage: {orphanedFile}");
             }
+        }
+    }
+
+    /// <summary>
+    /// Cleanup dei Consent ZIP (mantiene record database, cancella solo file fisici)
+    /// Retention: 30 giorni
+    /// </summary>
+    private async Task CleanupOldConsentFiles()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
+
+        var cutoffDate = DateTime.Now.AddDays(-30); // 30 giorni
+
+        var oldConsents = await db.ClientConsents
+            .Where(c => c.UploadDate < cutoffDate && !string.IsNullOrEmpty(c.ZipFilePath))
+            .ToListAsync();
+
+        foreach (var consent in oldConsents)
+        {
+            // ✅ Elimina il file ZIP se esiste
+            if (!string.IsNullOrEmpty(consent.ZipFilePath) && File.Exists(consent.ZipFilePath))
+            {
+                try
+                {
+                    File.Delete(consent.ZipFilePath);
+                    _logger.LogInformation($"Consent ZIP eliminato: {consent.ZipFilePath}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, $"Impossibile eliminare consent ZIP: {consent.ZipFilePath}");
+                    continue;
+                }
+            }
+
+            consent.ZipFilePath = "";
+        }
+
+        if (oldConsents.Count != 0)
+        {
+            await db.SaveChangesAsync();
+            _logger.LogInformation($"Consent ZIP cleanup: {oldConsents.Count} file ZIP rimossi, record mantenuti");
         }
     }
 }

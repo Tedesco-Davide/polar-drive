@@ -118,16 +118,10 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             }
 
             // Calcola l'hash del file ZIP
-            memoryStream.Position = 0; // Reset position
-            using var reader = new StreamReader(
-                memoryStream,
-                new System.Text.UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false), // evita eccezioni su byte non UTF-8
-                detectEncodingFromByteOrderMarks: false,
-                bufferSize: 1024,
-                leaveOpen: true
-            );
-            string zipContent = await reader.ReadToEndAsync();
-            string hash = GenericHelpers.ComputeContentHash(zipContent);
+            memoryStream.Position = 0;
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            byte[] hashBytes = await sha256.ComputeHashAsync(memoryStream);
+            string hash = Convert.ToHexStringLower(hashBytes);
 
             // Controlla se esiste già un consenso con lo stesso hash
             var existingConsent = await _dbContext.ClientConsents

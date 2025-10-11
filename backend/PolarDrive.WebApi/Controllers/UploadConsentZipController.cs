@@ -249,7 +249,6 @@ public class UploadConsentZipController : ControllerBase
 
         // Rimuovi il riferimento dal database
         consent.ZipFilePath = "";
-        consent.ConsentHash = "";
         await _db.SaveChangesAsync();
 
         await _logger.Info("DeleteZipFromConsent", "ZIP file reference removed from database.",
@@ -305,16 +304,9 @@ public class UploadConsentZipController : ControllerBase
 
         // Calcola l'hash del file ZIP
         string hash;
-        using (var reader = new StreamReader(
-            zipStream,
-            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false),
-            detectEncodingFromByteOrderMarks: false,
-            bufferSize: 1024,
-            leaveOpen: true))
-        {
-            string zipContent = await reader.ReadToEndAsync();
-            hash = GenericHelpers.ComputeContentHash(zipContent);
-        }
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        byte[] hashBytes = await sha256.ComputeHashAsync(zipStream);
+        hash = Convert.ToHexStringLower(hashBytes);
 
         zipStream.Position = 0;
 
