@@ -3,8 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
-using System.Security.Cryptography;
 using System.Globalization;
+using System.Text;
+using PolarDrive.WebApi.Helpers;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -302,12 +303,17 @@ public class UploadConsentZipController : ControllerBase
 
         zipStream.Position = 0;
 
-        // ✅ Calcola l'hash SHA256
+        // Calcola l'hash del file ZIP
         string hash;
-        using (var sha = SHA256.Create())
+        using (var reader = new StreamReader(
+            zipStream,
+            new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: false),
+            detectEncodingFromByteOrderMarks: false,
+            bufferSize: 1024,
+            leaveOpen: true))
         {
-            var hashBytes = await sha.ComputeHashAsync(zipStream);
-            hash = Convert.ToHexStringLower(hashBytes);
+            string zipContent = await reader.ReadToEndAsync();
+            hash = GenericHelpers.ComputeContentHash(zipContent);
         }
 
         zipStream.Position = 0;
@@ -316,7 +322,7 @@ public class UploadConsentZipController : ControllerBase
         var companyConsentsPath = GetCompanyConsentsPath(companyId);
 
         // ✅ Genera il nome del file
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+        var timestamp = DateTime.Now.ToString("ddMMyyyy_HHmmss");
         var fileName = string.IsNullOrWhiteSpace(filePrefix)
             ? $"consent_{timestamp}.zip"
             : $"{filePrefix}_{timestamp}.zip"; // Aggiunto underscore per coerenza
