@@ -150,7 +150,7 @@
 
   "admin.clientConsents.tableHeader": "Consensi Azienda",
   "admin.clientConsents.consentType": "Tipologia del Consenso",
-  "admin.clientConsents.vehicleVIN": "Veicolo VIN",
+  "admin.clientConsents.vehicleVIN": "Veicolo",
   "admin.clientConsents.companyVatNumber": "Partita IVA",
   "admin.clientConsents.uploadDate": "Data Firma",
   "admin.clientConsents.hash": "Hash del Consenso",

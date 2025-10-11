@@ -42,7 +42,7 @@ public static class DefaultHtmlTemplate
                                 <strong>Veicolo</strong> {{vehicleModel}} - {{vehicleVin}}
                             </div>
                             <div class=""info-item"">
-                                <strong>Data generazione PDF</strong> {{generatedAt}}
+                                <strong>Data generazione PDF</strong> {{generatedAtDays}} alle {{generatedAtHours}}
                             </div>
                             <div class=""info-item"">
                                 <strong>Periodo monitorato</strong> Dal {{periodStart}} al {{periodEnd}}

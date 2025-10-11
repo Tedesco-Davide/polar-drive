@@ -391,7 +391,7 @@ public class TeslaFakeApiController : ControllerBase
         if (System.IO.File.Exists(pdfPath))
         {
             var bytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
-            var fileName = $"PolarDrive_Report_{report.Id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.pdf";
+            var fileName = $"PolarDrive_PolarReport_{report.Id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.pdf";
 
             return File(bytes, "application/pdf", fileName);
         }
@@ -401,7 +401,7 @@ public class TeslaFakeApiController : ControllerBase
         if (System.IO.File.Exists(htmlPath))
         {
             var htmlContent = await System.IO.File.ReadAllTextAsync(htmlPath);
-            var fileName = $"PolarDrive_Report_{report.Id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.html";
+            var fileName = $"PolarDrive_PolarReport_{report.Id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.html";
 
             return File(System.Text.Encoding.UTF8.GetBytes(htmlContent), "text/html", fileName);
         }
@@ -460,7 +460,7 @@ public class TeslaFakeApiController : ControllerBase
         return Path.Combine("storage", folder,
             generationDate.Year.ToString(),
             generationDate.Month.ToString("D2"),
-            $"PolarDrive_Report_{report.Id}.{ext}");
+            $"PolarDrive_PolarReport_{report.Id}.{ext}");
     }
 
     private async Task<bool> CheckAiSystemAvailability()

@@ -106,7 +106,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
             Directory.CreateDirectory(consentsDir);
 
             var zipFilename = Path.GetFileNameWithoutExtension(request.ConsentZip.FileName);
-            var uniqueName = $"{zipFilename}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
+            var uniqueName = $"{zipFilename}_{DateTime.Now:ddMMyyyy}.zip";
             var zipPath = Path.Combine(consentsDir, uniqueName);
 
             memoryStream.Position = 0;

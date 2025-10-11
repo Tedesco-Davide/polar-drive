@@ -150,7 +150,7 @@
 
   "admin.clientConsents.tableHeader": "Company Consents",
   "admin.clientConsents.consentType": "Consent Type",
-  "admin.clientConsents.vehicleVIN": "Vehicle VIN",
+  "admin.clientConsents.vehicleVIN": "Vehicle",
   "admin.clientConsents.companyVatNumber": "Company VAT",
   "admin.clientConsents.uploadDate": "Signed At",
   "admin.clientConsents.hash": "Consent Hash",

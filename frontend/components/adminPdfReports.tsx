@@ -142,7 +142,7 @@ export default function AdminPdfReports({
       const blob = await response.blob();
       const contentType = response.headers.get("Content-Type") || "";
       const isHtml = contentType.includes("text/html");
-      const fileName = `PolarDrive_${report.reportType.replace(/\s+/g, "_")}_${
+      const fileName = `PolarDrive_PolarReport_${report.reportType.replace(/\s+/g, "_")}_${
         report.id
       }_${report.vehicleVin}_${report.reportPeriodStart.split("T")[0]}${
         isHtml ? ".html" : ".pdf"

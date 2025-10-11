@@ -256,7 +256,7 @@ public class PdfReportsController : ControllerBase
             if (System.IO.File.Exists(pdfPath))
             {
                 var pdfBytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
-                var fileName = $"PolarDrive_Report_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.pdf";
+                var fileName = $"PolarDrive_PolarReport_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.pdf";
 
                 await _logger.Info("PdfReportsController.DownloadPdf", "PDF downloaded successfully.",
                     $"ReportId: {id}, Size: {pdfBytes.Length} bytes, FileName: {fileName}");
@@ -266,7 +266,7 @@ public class PdfReportsController : ControllerBase
             else if (System.IO.File.Exists(htmlPath))
             {
                 var htmlBytes = await System.IO.File.ReadAllBytesAsync(htmlPath);
-                var fileName = $"PolarDrive_Report_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.html";
+                var fileName = $"PolarDrive_PolarReport_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.html";
 
                 await _logger.Info("PdfReportsController.DownloadPdf", "HTML downloaded as fallback.",
                     $"ReportId: {id}, Size: {htmlBytes.Length} bytes");
@@ -459,7 +459,7 @@ public class PdfReportsController : ControllerBase
             generationDate.Year.ToString(),
             generationDate.Month.ToString("D2"));
 
-        var storageFileName = $"PolarDrive_Report_{report.Id}.{extension}";
+        var storageFileName = $"PolarDrive_PolarReport_{report.Id}.{extension}";
         var storagePath = Path.Combine(storageDir, storageFileName);
 
         return storagePath;

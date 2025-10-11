@@ -117,8 +117,8 @@ public class DataPolarCertification
                 <tr><td>Ore totali certificate</td><td>{totalCertifiedHours:F0} ore ({totalCertifiedHours / 24:0} giorni)</td></tr>
                 <tr><td>Uptime raccolta</td><td>{uptimePercentage:0}%</td></tr>
                 <tr><td>Qualità dataset</td><td>{qualityStars} ({GetQualityLabel(qualityScore)})</td></tr>
-                <tr><td>Primo record</td><td>{firstRecord:yyyy-MM-dd HH:mm}</td></tr>
-                <tr><td>Ultimo record</td><td>{lastRecord:yyyy-MM-dd HH:mm}</td></tr>
+                <tr><td>Primo record</td><td>{firstRecord:dd-MM-yyyy} alle {firstRecord:HH:mm}</td></tr>
+                <tr><td>Ultimo record</td><td>{lastRecord:dd-MM-yyyy} alle {lastRecord:HH:mm}</td></tr>
                 <tr><td>Records totali (lifetime)</td><td>{totalRecords:N0}</td></tr>
                 <tr><td>Frequenza media</td><td>{(totalRecords / totalCertifiedHours):0} campioni/ora</td></tr>
             </table>";
@@ -230,7 +230,7 @@ public class DataPolarCertification
         sb.AppendLine("<table class='detailed-log-table'>");
         sb.AppendLine("<thead>");
         sb.AppendLine("<tr>");
-        sb.AppendLine("<th>Timestamp (UTC)</th>");
+        sb.AppendLine("<th>Timestamp</th>");
         sb.AppendLine("<th>Adaptive Profiling</th>");
         sb.AppendLine("<th>Dati Operativi</th>");
         sb.AppendLine("</tr>");
@@ -252,7 +252,7 @@ public class DataPolarCertification
                     : "<span class='detailed-log-badge-warning-dataValidated'>Dati operativi da validare</span>";
 
                 sb.AppendLine("<tr class='record-present'>");
-                sb.AppendLine($"<td>{record.Timestamp:yyyy-MM-dd HH:mm}</td>");
+                sb.AppendLine($"<td>{record.Timestamp:dd-MM-yyyy} - {record.Timestamp:HH:mm}</td>");
                 sb.AppendLine($"<td>{adaptiveProfiling}</td>");
                 sb.AppendLine($"<td>{datiOperativi}</td>");
                 sb.AppendLine("</tr>");
@@ -260,7 +260,7 @@ public class DataPolarCertification
             else
             {
                 sb.AppendLine("<tr class='record-missing'>");
-                sb.AppendLine($"<td>{currentTime:yyyy-MM-dd HH:mm}</td>");
+                sb.AppendLine($"<td>{currentTime:dd-MM-yyyy} - {currentTime:HH:mm}</td>");
                 sb.AppendLine("<td><span class='badge-default'>No</span></td>");
                 sb.AppendLine("<td><span class='badge-warning'>Dati operativi da validare</span></td>");
                 sb.AppendLine("</tr>");

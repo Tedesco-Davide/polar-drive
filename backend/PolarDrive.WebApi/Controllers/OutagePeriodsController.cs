@@ -25,7 +25,6 @@ public class OutagePeriodsController : ControllerBase
         _env = env;
         _logger = new PolarDriveLogger(db);
 
-        //  usa storage/outages-zips invece di wwwroot/zips-outages
         _outageZipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "outages-zips");
     }
 

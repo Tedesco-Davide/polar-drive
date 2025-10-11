@@ -398,7 +398,9 @@ export default function AdminClientConsents({
                   <div className="text-sm">
                     <div className="font-mono">{consent.companyVatNumber}</div>
                     <div className="text-gray-500">—</div>
-                    <div className="font-mono">{consent.vehicleVIN}</div>
+                    <div className="font-mono">
+                        {consent.vehicleVIN} 
+                    </div>
                   </div>
                 </td>
                 <td className="p-4 font-mono text-xs">{consent.consentHash}</td>

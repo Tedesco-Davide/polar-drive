@@ -74,7 +74,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     private async Task<string> SaveTemporaryHtmlAsync(string htmlContent, int reportId)
     {
         var tempDir = Path.GetTempPath();
-        var htmlPath = Path.Combine(tempDir, $"PolarDrive_Report_{reportId}_{DateTime.Now.Ticks}.html");
+        var htmlPath = Path.Combine(tempDir, $"PolarDrive_PolarReport_{reportId}_{DateTime.Now.Ticks}.html");
 
         await File.WriteAllTextAsync(htmlPath, htmlContent);
 
@@ -96,7 +96,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
             generationDate.Month.ToString("D2"));
 
         Directory.CreateDirectory(outputDir);
-        return Path.Combine(outputDir, $"PolarDrive_Report_{report.Id}.pdf");
+        return Path.Combine(outputDir, $"PolarDrive_PolarReport_{report.Id}.pdf");
     }
 
     /// <summary>
@@ -450,7 +450,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
             var outputDir = Path.Combine("storage", "reports",
                 report.ReportPeriodStart.Year.ToString(),
                 report.ReportPeriodStart.Month.ToString("D2"));
-            var htmlPath = Path.Combine(outputDir, $"PolarDrive_Report_{report.Id}.html");
+            var htmlPath = Path.Combine(outputDir, $"PolarDrive_PolarReport_{report.Id}.html");
 
             Directory.CreateDirectory(outputDir);
             await File.WriteAllTextAsync(htmlPath, htmlContent);

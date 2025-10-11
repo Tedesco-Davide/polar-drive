@@ -743,7 +743,7 @@ namespace PolarDrive.WebApi.Services
             return Path.Combine("storage", folder,
                 generationDate.Year.ToString(),
                 generationDate.Month.ToString("D2"),
-                $"PolarDrive_Report_{report.Id}.{ext}");
+                $"PolarDrive_PolarReport_{report.Id}.{ext}");
         }
 
         private async Task SaveFile(string path, object content)

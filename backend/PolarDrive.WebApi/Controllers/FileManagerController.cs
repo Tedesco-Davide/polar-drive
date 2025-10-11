@@ -351,7 +351,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
         return Path.Combine(basePath, "storage", "reports",
             generationDate.Year.ToString(),
             generationDate.Month.ToString("D2"),
-            $"PolarDrive_Report_{report.Id}.pdf");
+            $"PolarDrive_PolarReport_{report.Id}.pdf");
     }
 
     private static string SanitizeFileName(string fileName)

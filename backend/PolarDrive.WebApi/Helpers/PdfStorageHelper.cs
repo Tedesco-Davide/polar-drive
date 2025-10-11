@@ -9,6 +9,6 @@ public static class PdfStorageHelper
         return Path.Combine("storage", "reports",
             report.ReportPeriodStart.Year.ToString(),
             report.ReportPeriodStart.Month.ToString("D2"),
-            $"PolarDrive_Report_{report.Id}.pdf");
+            $"PolarDrive_PolarReport_{report.Id}.pdf");
     }
 }

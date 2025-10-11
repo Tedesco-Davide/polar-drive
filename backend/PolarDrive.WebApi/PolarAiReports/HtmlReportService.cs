@@ -111,9 +111,10 @@ public class HtmlReportService
             ["vatNumber"] = report.ClientCompany?.VatNumber ?? "N/A",
             ["vehicleModel"] = report.ClientVehicle?.Model ?? "N/A",
             ["vehicleVin"] = report.ClientVehicle?.Vin ?? "N/A",
-            ["periodStart"] = $"{startTime:yyyy-MM-dd HH:mm}",
-            ["periodEnd"] = $"{now:yyyy-MM-dd HH:mm}",
-            ["generatedAt"] = DateTime.Now.ToString(options.DateTimeFormat),
+            ["periodStart"] = $"{startTime:dd-MM-yyyy}",
+            ["periodEnd"] = $"{now:dd-MM-yyyy}",
+            ["generatedAtDays"] = DateTime.Now.ToString(options.DateTimeFormatDays),
+            ["generatedAtHours"] = DateTime.Now.ToString(options.DateTimeFormatHours),
             ["notes"] = report.Notes ?? "N/A",
             ["insights"] = FormatInsightsForHtml(aiReportContentInsights),
 
@@ -407,7 +408,8 @@ public class HtmlReportOptions
     public string StyleName { get; set; } = "default";
     public string ReportType { get; set; } = "Standard";
     public string DateFormat { get; set; } = "dd/MM/yyyy";
-    public string DateTimeFormat { get; set; } = "dd/MM/yyyy HH:mm";
+    public string DateTimeFormatDays { get; set; } = "dd/MM/yyyy HH:mm";
+    public string DateTimeFormatHours { get; set; } = "HH:mm";
     public string? AdditionalCss { get; set; }
     public bool ShowCharts { get; set; } = false;
 }
