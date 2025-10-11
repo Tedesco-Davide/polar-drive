@@ -7,12 +7,12 @@ import { useState, useEffect, useRef } from "react";
 import { NotebookPen, FileBadge, RefreshCw } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
+import { ApiErrorResponse, ApiResponse } from "@/types/apiResponse";
 import Chip from "@/components/chip";
 import AdminLoader from "@/components/adminLoader";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
-import { ApiErrorResponse, ApiResponse } from "@/types/apiResponse";
 
 export default function AdminPdfReports({
   t,
@@ -460,7 +460,6 @@ export default function AdminPdfReports({
             const fileSize = report.hasPdfFile
               ? report.pdfFileSize
               : report.htmlFileSize;
-
             return (
               <tr
                 key={report.id}
@@ -553,14 +552,28 @@ export default function AdminPdfReports({
 
                 {/* File Info */}
                 <td className="p-4">
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex flex-col w-[150px]">
                     <Chip className={getStatusColor(status.text)}>
                       {status.text}
                       {needsAttention}
                     </Chip>
                     {fileSize > 0 && (
-                      <div className="text-xs text-gray-400">
-                        {(fileSize / (1024 * 1024)).toFixed(2)} MB
+                      <div className="text-xs text-gray-400 flex gap-1 items-center">
+                        {report.pdfHash && (
+                            <span 
+                                className="text-xs bg-gray-400 text-gray-200 font-mono cursor-pointer px-1 rounded"
+                                title={`${t("admin.vehicleReports.fullHash")}: ${report.pdfHash}\n${t("admin.clickToCopy")}`}
+                                    onClick={() => {
+                                    if (report.pdfHash) {
+                                        navigator.clipboard.writeText(report.pdfHash);
+                                        alert(t("admin.vehicleReports.hashCopied"));
+                                    }
+                                }}
+                            >
+                                HASH 
+                            </span>
+                        )}
+                        → {(fileSize / (1024 * 1024)).toFixed(2)} MB 
                       </div>
                     )}
                   </div>

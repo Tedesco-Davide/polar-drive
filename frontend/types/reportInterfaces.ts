@@ -27,15 +27,7 @@ export interface PdfReport {
   // Proprietà calcolate dal backend
   isDownloadable: boolean;
   status: string;
-}
-
-// ✅ Interface per le statistiche di download
-export interface DownloadStats {
-  success: boolean;
-  error?: string;
-  fileSize?: number;
-  downloadTime?: number;
-  regenerated?: boolean;
+  pdfHash?: string;
 }
 
 // ✅ Interface per il controllo pre-download

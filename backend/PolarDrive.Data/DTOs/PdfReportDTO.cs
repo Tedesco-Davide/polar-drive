@@ -23,4 +23,5 @@ public class PdfReportDTO
     public int RegenerationCount { get; set; }
     public string? LastRegenerated { get; set; }
     public string ReportType { get; set; } = string.Empty;
+    public string PdfHash { get; set; } = string.Empty;
 }

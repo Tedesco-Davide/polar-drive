@@ -384,10 +384,6 @@ export default function AdminDashboard() {
                 />
               )}
 
-              <div className="absolute inset-0 z-10 pointer-events-none">
-                <div className="absolute left-1/2 top-32 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-[#5c4de14a] dark:bg-[#5c4de130] blur-3xl opacity-60"></div>
-              </div>
-
               <div className="relative z-20 mx-auto">
                 <div className="relative z-20 mx-auto border-y-8 border-gray-300 dark:border-gray-600 py-3 my-6">
                   <p className="text-3xl font-medium text-gray-600 dark:text-softWhite">

@@ -163,6 +163,7 @@ public class PdfReportsController : ControllerBase
             LastRegenerated = report.GeneratedAt?.ToString("o"),
             ReportType = DetermineReportType(totalHistoricalRecords),
             Status = await DetermineReportStatusAsync(report, fileInfo.PdfExists, fileInfo.HtmlExists, dataCountInPeriod),
+            PdfHash = report.PdfHash
         };
     }
 

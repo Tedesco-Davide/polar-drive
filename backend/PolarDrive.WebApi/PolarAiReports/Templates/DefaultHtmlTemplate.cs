@@ -47,10 +47,13 @@ public static class DefaultHtmlTemplate
                             <div class=""info-item"">
                                 <strong>Periodo monitorato</strong> Dal {{periodStart}} al {{periodEnd}}
                             </div>
-                            {{#if notes}}
-                            <div class=""info-item notes"">
-                                <strong>Note</strong> {{notes}}
+                            <div class=""info-item"">
+                                <strong>Codice HASH univoco del file</strong> {{pdfHash}}
                             </div>
+                            {{#if notes}}
+                                <div class=""info-item notes"">
+                                    <strong>Note</strong> {{notes}}
+                                </div>
                             {{/if}}
                         </div>
                     </section>

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.Helpers;
 using PolarDrive.WebApi.PolarAiReports.Templates;
-using System.Globalization;
 using System.Text;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
@@ -104,6 +104,23 @@ public class HtmlReportService
             0, 0
         );
 
+        // Se l'HASH non esiste, viene calcolato adesso, prima di preparare i dati
+        if (string.IsNullOrEmpty(report.PdfHash))
+        {
+            // Crea un "contenuto deterministico" da cui calcolare l'hash
+            var contentForHash = $"{report.Id}|{report.VehicleId}|{report.ClientCompanyId}|" +
+                            $"{startTime:O}|{now:O}|{aiReportContentInsights}|" +
+                            $"{report.ClientCompany?.Name}|{report.ClientVehicle?.Vin}";
+            
+            var contentHash = GenericHelpers.ComputeContentHash(contentForHash);
+            
+            report.PdfHash = contentHash;
+            await _dbContext.SaveChangesAsync();
+            
+            await _logger.Info("PrepareTemplateDataAsync", "Hash calcolato e salvato",
+                $"ReportId: {report.Id}, Hash: {contentHash}");
+        }
+
         var data = new Dictionary<string, object>
         {
             // Dati base del report
@@ -116,6 +133,7 @@ public class HtmlReportService
             ["periodEnd"] = now.ToString("dd/MM/yyyy").Replace("-", "/"),
             ["generatedAtDays"] = DateTime.Now.ToString(options.DateTimeFormatDays).Replace("-", "/"),
             ["generatedAtHours"] = DateTime.Now.ToString(options.DateTimeFormatHours),
+            ["pdfHash"] = report.PdfHash,
             ["notes"] = report.Notes ?? "N/A",
             ["insights"] = FormatInsightsForHtml(aiReportContentInsights),
 

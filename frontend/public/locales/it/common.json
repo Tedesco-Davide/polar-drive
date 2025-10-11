@@ -57,6 +57,7 @@
   "admin.noFileAvailable": "Nessun file disponibile per il download",
   "admin.downloadError": "Errore generico durante il download",
   "admin.tableRefreshButton": "🔄REFRESH",
+  "admin.clickToCopy": "Clicca per copiare",
 
   "admin.mainWorkflow.alerts.confirmGenerateProfile": "Vuoi generare il profilo completo per l'azienda",
   "admin.mainWorkflow.alerts.clientProfileGenerated": "Profilo cliente generato e scaricato con successo!",
@@ -225,6 +226,8 @@
   "admin.vehicleReports.pdfNotAvailable": "PDF non disponibile, scaricato HTML. Prova la rigenerazione per ottenere il PDF",
   "admin.vehicleReports.regenerateConfirmAction": "ATTENZIONE! Rigenerando il report, i dati del periodo rimarranno identici, ma il report sarà rigenerato con l'analisi PolarAi™ più avanzata disponibile. Premi OK per confermare",
   "admin.vehicleReports.actionDisabledProcessing": "Report in elaborazione...",
+  "admin.vehicleReports.fullHash": "Hash intero",
+  "admin.vehicleReports.hashCopied": "Hash copiato!",
   "admin.vehicleReports.errors.alreadyProcessing": "Il report è già in fase di rigenerazione. Attendere il completamento.",
   "admin.vehicleReports.errors.noDataAvailable": "Non ci sono dati disponibili per questo periodo.",
   "admin.vehicleReports.errors.insufficientData": "Dati insufficienti per la rigenerazione del report.",

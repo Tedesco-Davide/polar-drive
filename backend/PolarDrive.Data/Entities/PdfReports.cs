@@ -22,6 +22,8 @@ public class PdfReport
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+    public string PdfHash { get; set; } = string.Empty;
+
     public ClientCompany? ClientCompany { get; set; }
 
     public ClientVehicle? ClientVehicle { get; set; }
