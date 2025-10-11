@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.PolarAiReports.Templates;
+using System.Globalization;
 using System.Text;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
@@ -111,9 +112,9 @@ public class HtmlReportService
             ["vatNumber"] = report.ClientCompany?.VatNumber ?? "N/A",
             ["vehicleModel"] = report.ClientVehicle?.Model ?? "N/A",
             ["vehicleVin"] = report.ClientVehicle?.Vin ?? "N/A",
-            ["periodStart"] = $"{startTime:dd-MM-yyyy}",
-            ["periodEnd"] = $"{now:dd-MM-yyyy}",
-            ["generatedAtDays"] = DateTime.Now.ToString(options.DateTimeFormatDays),
+            ["periodStart"] = startTime.ToString("dd/MM/yyyy").Replace("-", "/"),
+            ["periodEnd"] = now.ToString("dd/MM/yyyy").Replace("-", "/"),
+            ["generatedAtDays"] = DateTime.Now.ToString(options.DateTimeFormatDays).Replace("-", "/"),
             ["generatedAtHours"] = DateTime.Now.ToString(options.DateTimeFormatHours),
             ["notes"] = report.Notes ?? "N/A",
             ["insights"] = FormatInsightsForHtml(aiReportContentInsights),
@@ -407,8 +408,7 @@ public class HtmlReportOptions
     public string TemplateName { get; set; } = "default";
     public string StyleName { get; set; } = "default";
     public string ReportType { get; set; } = "Standard";
-    public string DateFormat { get; set; } = "dd/MM/yyyy";
-    public string DateTimeFormatDays { get; set; } = "dd/MM/yyyy HH:mm";
+    public string DateTimeFormatDays { get; set; } = "dd/MM/yyyy";
     public string DateTimeFormatHours { get; set; } = "HH:mm";
     public string? AdditionalCss { get; set; }
     public bool ShowCharts { get; set; } = false;

@@ -112,13 +112,16 @@ public class DataPolarCertification
         var qualityScore = CalculateQualityScore(totalRecords, uptimePercentage, totalMonitoringPeriod);
         var qualityStars = GetQualityStars(qualityScore);
 
+        var firstRecordDate = firstRecord.ToString("dd/MM/yyyy").Replace("-", "/");
+        var lastRecordDate = lastRecord.ToString("dd/MM/yyyy").Replace("-", "/");
+    
         return $@"
             <table class='certification-table'>
                 <tr><td>Ore totali certificate</td><td>{totalCertifiedHours:F0} ore ({totalCertifiedHours / 24:0} giorni)</td></tr>
                 <tr><td>Uptime raccolta</td><td>{uptimePercentage:0}%</td></tr>
                 <tr><td>Qualità dataset</td><td>{qualityStars} ({GetQualityLabel(qualityScore)})</td></tr>
-                <tr><td>Primo record</td><td>{firstRecord:dd-MM-yyyy} alle {firstRecord:HH:mm}</td></tr>
-                <tr><td>Ultimo record</td><td>{lastRecord:dd-MM-yyyy} alle {lastRecord:HH:mm}</td></tr>
+                <tr><td>Primo record</td><td>{firstRecordDate:dd/MM/yyyy} alle {firstRecord:HH:mm}</td></tr>
+                <tr><td>Ultimo record</td><td>{lastRecordDate:dd/MM/yyyy} alle {lastRecord:HH:mm}</td></tr>
                 <tr><td>Records totali (lifetime)</td><td>{totalRecords:N0}</td></tr>
                 <tr><td>Frequenza media</td><td>{(totalRecords / totalCertifiedHours):0} campioni/ora</td></tr>
             </table>";
@@ -250,9 +253,10 @@ public class DataPolarCertification
                 var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized)
                     ? "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>"
                     : "<span class='detailed-log-badge-warning-dataValidated'>Dati operativi da validare</span>";
-
+                var formattedDate = $"{record.Timestamp:dd-MM-yyyy}".Replace("-", "/");
+                
                 sb.AppendLine("<tr class='record-present'>");
-                sb.AppendLine($"<td>{record.Timestamp:dd-MM-yyyy} - {record.Timestamp:HH:mm}</td>");
+                sb.AppendLine($"<td>{formattedDate} - {record.Timestamp:HH:mm}</td>");
                 sb.AppendLine($"<td>{adaptiveProfiling}</td>");
                 sb.AppendLine($"<td>{datiOperativi}</td>");
                 sb.AppendLine("</tr>");
