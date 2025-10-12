@@ -485,13 +485,6 @@ public class OutageDetectionService(
             }
         }
 
-        if (currentVehicle == null || !currentVehicle.IsActiveFlag)
-        {
-            await _logger.Debug("OutageDetectionService",
-                $"Vehicle {vehicle.Vin} - Considered DOWN due to IsActive={currentVehicle?.IsActiveFlag}");
-            return true;
-        }
-
         // Verifica se il veicolo è in fetching - se sì, non considerarlo in outage
         if (!currentVehicle.IsFetchingDataFlag)
         {
