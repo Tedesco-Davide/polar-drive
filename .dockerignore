@@ -1,0 +1,11 @@
+**/bin/
+**/obj/
+**/out/
+**/.vs/
+**/.vscode/
+**/.git/
+**/node_modules/
+**/.next/
+**/*.md
+**/docker-compose*.yml
+**/Dockerfile
