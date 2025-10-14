@@ -20,7 +20,21 @@ backend/PolarDriveInitDB.Cli/datapolar.db-wal
 # Ignora tutto il contenuto della cartella storage
 backend/PolarDrive.WebApi/storage/*
 
+# Volumi Docker
+postgres_data_dev/
+postgres_data_prod/
+
 # TRANNE il file .gitkeep
 !backend/PolarDrive.WebApi/storage/.gitkeep
 backend/PolarDrive.TeslaMockApiService/TempFiles
 backend/PolarDrive.TeslaMockApiService/vehicle_states.json
+
+# Environment files ( MAI committare credenziali )
+.env
+.env.dev
+.env.prod
+.env.local
+.env*.local
+
+# Solo esempio
+!.env.example

@@ -1,0 +1,35 @@
+# docker-compose.yml
+# Configurazione BASE
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: backend/PolarDrive.WebApi/Dockerfile
+    restart: unless-stopped
+    networks:
+      - polardrive-network
+
+  mock-api:
+    build:
+      context: .
+      dockerfile: backend/PolarDrive.TeslaMockApiService/Dockerfile
+    restart: unless-stopped
+    networks:
+      - polardrive-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE: ${NEXT_PUBLIC_API_BASE}
+    restart: unless-stopped
+    depends_on:
+      - api
+    networks:
+      - polardrive-network
+
+networks:
+  polardrive-network:
+    driver: bridge

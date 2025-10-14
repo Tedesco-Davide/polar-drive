@@ -1,6 +1,6 @@
 # PolarDrive 🚗❄️
 
-Repository backend per il progetto **PolarDrive**.
+Repository per il progetto **PolarDrive**.
 
 ---
 
@@ -16,11 +16,6 @@ _(Tasto destro sulla cartella `frontend` → Open in integrated Terminal)_
 - `npm run dev` → Avvio in modalità sviluppo (hot reload, debug attivo)
 - `npm list` → Visualizza tutti i pacchetti installati
 
-#### **📦 PRODUZIONE (Production)**
-
-- `npm run build` → Compila l'applicazione per produzione (ottimizzato, minificato)
-- `npm run start` → Avvio in produzione (dopo build)
-
 ### 🔶 BACKEND PolarAi
 
 _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
@@ -28,9 +23,14 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 #### **🚀 SVILUPPO (Development)**
 
 - `dotnet build` → Rebuild completo della soluzione
-- `dotnet run --project PolarDriveInitDB.Cli` → Crea un nuovo DB da zero nella cartella `PolarDriveInitDB.Cli`
-- `dotnet run --project PolarDriveInitDBMockData.Cli` → Aggiunge dati di mock al DB creato (opzionale)
-- `dotnet run --project PolarDrive.WebApi` → Avvia la WebAPI principale in modalità sviluppo
+
+    - `$env:ASPNETCORE_ENVIRONMENT="Development"` → IMPORTANTISSIMO → Set di ambiente DEV
+
+    - `dotnet run --project PolarDriveInitDB.Cli` → Crea un nuovo DB (mock, cancellabile, per tesing) da ZERO in Micrisoft SQL Server
+
+    - `dotnet run --project PolarDriveInitDBMockData.Cli` → Aggiunge dati di mock al DB creato (opzionale)
+
+    - `dotnet run --project PolarDrive.WebApi` → Avvia la WebAPI principale in modalità sviluppo
 
     > Espone l'endpoint `http://localhost:3000/admin` per Dashboard Backend
 
@@ -42,12 +42,13 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
     
     > dotnet dev-certs https --check
 
+---
 
 #### **📦 PRODUZIONE (Production)**
 
-- `dotnet build --configuration Release` → Build ottimizzata per produzione
-- `dotnet run --project PolarDriveInitDB.Cli --configuration Release` → Crea DB (produzione)
-- `dotnet run --project PolarDrive.WebApi --configuration Release` → Avvia WebAPI in produzione
+- `$env:ASPNETCORE_ENVIRONMENT="Production"` → IMPORTANTISSIMO → Set di ambiente PROD
+- `dotnet run --project PolarDriveInitDB.Cli` → Crea un nuovo DB da zero ( di PRODUZIONE ) da ZERO in Micrisoft SQL Server
+- → IMPORTANTISSIMO → MAI eseguire questo comando se NON per RESETTARE IL DB DI PRODUZIONE
 
 ---
 

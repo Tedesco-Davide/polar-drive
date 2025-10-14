@@ -1,0 +1,39 @@
+# docker-compose.prod.yml
+# Configurazione PRODUZIONE con SQL Server locale
+
+services:
+  api:
+    container_name: polardrive-api-prod
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - TeslaApi__BaseUrl=${TESLA_API_BASE_URL}
+      - TeslaApi__ClientId=${TESLA_CLIENT_ID}
+      - TeslaApi__ClientSecret=${TESLA_CLIENT_SECRET}
+      - Jwt__SecretKey=${JWT_SECRET_KEY}
+      - Jwt__Issuer=${JWT_ISSUER}
+      - Jwt__Audience=${JWT_AUDIENCE}
+      - Jwt__ExpirationMinutes=${JWT_EXPIRATION_MINUTES}
+      - Twilio__AccountSid=${TWILIO_ACCOUNT_SID}
+      - Twilio__AuthToken=${TWILIO_AUTH_TOKEN}
+      - Twilio__PhoneNumber=${TWILIO_PHONE_NUMBER}
+    ports:
+      - "8081:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  mock-api:
+    profiles:
+      - donotstart
+
+  frontend:
+    container_name: polardrive-frontend-prod
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
+    ports:
+      - "3001:3000"
+
+networks:
+  polardrive-network:
+    name: polardrive-network-prod
