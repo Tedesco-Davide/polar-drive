@@ -98,12 +98,6 @@ const formatFileSize = (sizeMB: number): string => {
   return `${sizeMB.toFixed(1)} MB`;
 };
 
-type Props = {
-  t: TFunction;
-  jobs: FileManager[];
-  refreshJobs?: () => Promise<FileManager[]>;
-};
-
 export default function AdminFileManagerTable({
   jobs,
   t,

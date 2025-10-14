@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "next-i18next";
 import {
   MessageSquare,
@@ -66,49 +66,47 @@ export default function AdminSmsManagementModal({
     description: null as string | null,
   });
 
-  useEffect(() => {
-    if (isOpen) {
-      loadData();
-      loadAdaptiveStatus();
-    }
-  }, [isOpen, vehicleId]);
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Carica mappature telefoni
       const mappingsResponse = await fetch(
         `${API_BASE_URL}/api/TwilioSms/phone-mappings`
       );
+
+      let vehicleMappingsCount = 0;
+
       if (mappingsResponse.ok) {
         const allMappings = await mappingsResponse.json();
-        // Filtra solo per questo veicolo
         const vehicleMappings = allMappings.filter(
           (m: PhoneMapping) => m.vehicleId === vehicleId
         );
         setPhoneMappings(vehicleMappings);
+        vehicleMappingsCount = vehicleMappings.length;
       }
 
-      // Carica audit logs
       const auditResponse = await fetch(
         `${API_BASE_URL}/api/TwilioSms/audit-logs?pageSize=20`
       );
+
+      let vehicleLogsCount = 0;
+      
       if (auditResponse.ok) {
         const auditData = await auditResponse.json();
-        // Filtra logs per questo veicolo
         const vehicleLogs = auditData.logs.filter(
           (log: SmsAuditLog) => log.vehicleIdResolved === vehicleId
         );
         setAuditLogs(vehicleLogs);
+        vehicleLogsCount = vehicleLogs.length;
       }
 
       logFrontendEvent(
         "AdminSmsManagement",
         "INFO",
         "SMS data loaded successfully",
-        `VehicleId: ${vehicleId}, Mappings: ${phoneMappings.length}, Logs: ${auditLogs.length}`
+        `VehicleId: ${vehicleId}, Mappings: ${vehicleMappingsCount}, Logs: ${vehicleLogsCount}`
       );
+
     } catch (error) {
       logFrontendEvent(
         "AdminSmsManagement",
@@ -119,9 +117,9 @@ export default function AdminSmsManagementModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [vehicleId]);
 
-  const loadAdaptiveStatus = async () => {
+  const loadAdaptiveStatus = useCallback(async () => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/api/SmsAdaptiveProfiling/${vehicleId}/status`
@@ -133,7 +131,14 @@ export default function AdminSmsManagementModal({
     } catch (error) {
       console.error("Error loading adaptive status:", error);
     }
-  };
+  }, [vehicleId]);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadData();
+      loadAdaptiveStatus();
+    }
+  }, [isOpen, vehicleId, loadData, loadAdaptiveStatus]);  
 
   const handleAddPhoneMapping = async () => {
     if (!newPhoneNumber.trim()) {

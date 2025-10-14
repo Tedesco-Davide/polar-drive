@@ -1,13 +1,13 @@
 # backend/PolarDrive.WebApi/Dockerfile
 
-# 1) Runtime (.NET 9) – solo esecuzione
+# Runtime (.NET 9)
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 8080
 # Ascolta su
 ENV ASPNETCORE_URLS=http://+:8080
 
-# 2) Build + publish (.NET 9 SDK)
+# Build + publish
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
@@ -21,8 +21,13 @@ COPY backend/ ./backend/
 WORKDIR /src/backend/PolarDrive.WebApi
 RUN dotnet publish -c Release -o /app/out /p:UseAppHost=false
 
-# 3️⃣ Immagine finale (runtime)
+# Immagine finale runtime
 FROM base AS final
 WORKDIR /app
+
+# Utente non-root
+RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+USER appuser
+
 COPY --from=build /app/out .
 ENTRYPOINT ["dotnet", "PolarDrive.WebApi.dll"]

@@ -7,11 +7,12 @@ const nextConfig: NextConfig = {
     locales: ["it", "en"],
     localeDetection: false,
   },
-  // Necessario per il Dockerfile che copia .next/standalone
   output: "standalone",
-  // Salta gli errori ESLint nel build
-  eslint: {
-    ignoreDuringBuilds: true, 
+    eslint: {
+    ignoreDuringBuilds: false,
+  },
+    experimental: {
+    optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },
 };
 
