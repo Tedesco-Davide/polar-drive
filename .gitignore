@@ -30,13 +30,9 @@ backend/PolarDrive.TeslaMockApiService/TempFiles
 backend/PolarDrive.TeslaMockApiService/vehicle_states.json
 
 # Environment files ( MAI committare credenziali )
+!.env.example
 .env
 .env.dev
 .env.prod
 .env.local
 .env*.local
-
-# Solo esempio
-!.env.example
-.env.dev
-.env.prod
