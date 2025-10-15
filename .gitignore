@@ -38,3 +38,5 @@ backend/PolarDrive.TeslaMockApiService/vehicle_states.json
 
 # Solo esempio
 !.env.example
+.env.dev
+.env.prod
