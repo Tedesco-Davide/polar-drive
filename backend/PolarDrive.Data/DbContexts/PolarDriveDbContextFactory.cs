@@ -9,8 +9,7 @@ public class PolarDriveDbContextFactory : IDesignTimeDbContextFactory<PolarDrive
     public PolarDriveDbContext CreateDbContext(string[] args)
     {
         // 1. Leggi l'environment (default: Development)
-        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
-        
+        var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
         Console.WriteLine($"[DbFactory] Environment: {environment}");
 
         // 2. Cerca appsettings nel progetto CLI (parent directory)
@@ -51,7 +50,7 @@ public class PolarDriveDbContextFactory : IDesignTimeDbContextFactory<PolarDrive
 
         var context = new PolarDriveDbContext(optionsBuilder.Options);
 
-        Console.WriteLine($"✅ DbContext factory created successfully for {environment} environment");
+        Console.WriteLine($"🏭 DbContext factory created successfully for {environment} environment");
 
         return context;
     }
