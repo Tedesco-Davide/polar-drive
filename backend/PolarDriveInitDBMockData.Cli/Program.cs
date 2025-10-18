@@ -42,8 +42,8 @@ try
             "ClientConsents",
             "VehiclesData",
             "AnonymizedVehiclesData",
-            "SmsAdaptiveProfilingEvents",
-            "SmsAuditLogs",
+            "SmsAdaptiveProfiling",
+            "SmsAdaptiveAuditLogs",
             "PhoneVehicleMappings",
             "ClientTokens",
             "ClientVehicles",
@@ -77,8 +77,8 @@ try
                 "PdfReports",
                 "AdminFileManager",
                 "PhoneVehicleMappings",
-                "SmsAuditLogs",
-                "SmsAdaptiveProfilingEvents",
+                "SmsAdaptiveAuditLogs",
+                "SmsAdaptiveProfiling",
                 "AnonymizedVehiclesData",
                 "VehiclesData",
                 "PolarDriveLogs"  // ← Se ha identity
@@ -509,8 +509,8 @@ try
     };
 
     db.PhoneVehicleMappings.AddRange(phoneMappings);
-    db.SmsAuditLogs.AddRange(smsLogs);
-    db.SmsAdaptiveProfilingEvents.AddRange(adaptiveEvents);
+    db.SmsAdaptiveAuditLogs.AddRange(smsLogs);
+    db.SmsAdaptiveProfiling.AddRange(adaptiveEvents);
     await db.SaveChangesAsync();
 
     Console.WriteLine($"✅ Created {phoneMappings.Length} phone mappings");

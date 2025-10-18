@@ -96,7 +96,7 @@ BEGIN
                 SUM(CASE WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' THEN 1 ELSE 0 END) AS AdaptiveOnEvents,
                 SUM(CASE WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_OFF'' THEN 1 ELSE 0 END) AS AdaptiveOffEvents,
                 MAX(apse.ReceivedAt) AS LastSmsReceived
-            FROM SmsAdaptiveProfilingEvents apse
+            FROM SmsAdaptiveProfiling apse
             GROUP BY apse.VehicleId
         ) sms_stats ON cv.Id = sms_stats.VehicleId
     ),
@@ -240,8 +240,8 @@ BEGIN
 END
 
 -- Indice per migliorare le performance degli SMS
-IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_smsevents_vehicle_date' AND object_id = OBJECT_ID('SmsAdaptiveProfilingEvents'))
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_smsevents_vehicle_date' AND object_id = OBJECT_ID('SmsAdaptiveProfiling'))
 BEGIN
     CREATE INDEX idx_smsevents_vehicle_date 
-    ON SmsAdaptiveProfilingEvents (VehicleId, ReceivedAt);
+    ON SmsAdaptiveProfiling (VehicleId, ReceivedAt);
 END

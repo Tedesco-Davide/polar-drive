@@ -11,14 +11,14 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<ClientConsent> ClientConsents => Set<ClientConsent>();
     public DbSet<PdfReport> PdfReports => Set<PdfReport>();
     public DbSet<VehicleData> VehiclesData => Set<VehicleData>();
-    public DbSet<SmsAdaptiveProfilingEvent> SmsAdaptiveProfilingEvents => Set<SmsAdaptiveProfilingEvent>();
+    public DbSet<SmsAdaptiveProfilingEvent> SmsAdaptiveProfiling => Set<SmsAdaptiveProfilingEvent>();
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
-    public DbSet<SmsAuditLog> SmsAuditLogs { get; set; }
-    public DbSet<SmsGdprConsent> SmsGdprConsent { get; set; }
+    public DbSet<SmsAuditLog> SmsAdaptiveAuditLogs { get; set; }
+    public DbSet<SmsAdaptiveGdpr> SmsAdaptiveGdpr { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -180,7 +180,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.RequestedBy);
             });
 
-            modelBuilder.Entity<SmsGdprConsent>(entity =>
+            modelBuilder.Entity<SmsAdaptiveGdpr>(entity =>
             {
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()

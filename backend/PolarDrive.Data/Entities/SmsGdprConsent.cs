@@ -3,7 +3,7 @@ using System.Security.Cryptography;
 
 namespace PolarDrive.Data.Entities
 {
-    public class SmsGdprConsent
+    public class SmsAdaptiveGdpr
     {
         public int Id { get; set; }
 

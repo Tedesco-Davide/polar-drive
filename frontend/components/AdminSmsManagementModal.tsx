@@ -53,7 +53,7 @@ export default function AdminSmsManagementModal({
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
   const [phoneMappings, setPhoneMappings] = useState<PhoneMapping[]>([]);
-  const [auditLogs, setAuditLogs] = useState<SmsAuditLog[]>([]);
+  const [AdaptiveAuditLogs, setAdaptiveAuditLogs] = useState<SmsAuditLog[]>([]);
   const [newPhoneNumber, setNewPhoneNumber] = useState("");
   const [newPhoneNotes, setNewPhoneNotes] = useState("");
   const [activeTab, setActiveTab] = useState<"mappings" | "audit">("mappings");
@@ -96,7 +96,7 @@ export default function AdminSmsManagementModal({
         const vehicleLogs = auditData.logs.filter(
           (log: SmsAuditLog) => log.vehicleIdResolved === vehicleId
         );
-        setAuditLogs(vehicleLogs);
+        setAdaptiveAuditLogs(vehicleLogs);
         vehicleLogsCount = vehicleLogs.length;
       }
 
@@ -353,7 +353,7 @@ export default function AdminSmsManagementModal({
             onClick={() => setActiveTab("audit")}
           >
             <MessageSquare size={16} className="inline mr-2" />
-            SMS Ricevuti ( {auditLogs.length} )
+            SMS Ricevuti ( {AdaptiveAuditLogs.length} )
           </button>
         </div>
 
@@ -455,12 +455,12 @@ export default function AdminSmsManagementModal({
 
         {activeTab === "audit" && (
           <div>
-            {auditLogs.length === 0 ? (
+            {AdaptiveAuditLogs.length === 0 ? (
               <p className="text-gray-500 text-start py-3">
                 Nessun SMS ricevuto per questo veicolo
               </p>
             ) : (
-              auditLogs.map((log) => (
+              AdaptiveAuditLogs.map((log) => (
                 <div
                   key={log.id}
                   className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4"

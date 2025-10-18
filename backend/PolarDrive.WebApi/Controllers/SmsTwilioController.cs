@@ -241,7 +241,7 @@ public class SmsTwilioController : ControllerBase
     /// 📊 STATISTICHE E MONITORING
     /// </summary>
     [HttpGet("audit-logs")]
-    public async Task<ActionResult> GetAuditLogs(
+    public async Task<ActionResult> GetAdaptiveAuditLogs(
         [FromQuery] DateTime? fromDate = null,
         [FromQuery] DateTime? toDate = null,
         [FromQuery] string? phoneNumber = null,
@@ -251,7 +251,7 @@ public class SmsTwilioController : ControllerBase
     {
         try
         {
-            var query = _db.SmsAuditLogs.AsQueryable();
+            var query = _db.SmsAdaptiveAuditLogs.AsQueryable();
 
             if (fromDate.HasValue)
                 query = query.Where(log => log.ReceivedAt >= fromDate.Value);
@@ -295,7 +295,7 @@ public class SmsTwilioController : ControllerBase
         }
         catch (Exception ex)
         {
-            await _logger.Error("TwilioSms.GetAuditLogs", "Error retrieving audit logs", $"Error: {ex.Message}");
+            await _logger.Error("TwilioSms.GetAdaptiveAuditLogs", "Error retrieving audit logs", $"Error: {ex.Message}");
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
@@ -366,7 +366,7 @@ public class SmsTwilioController : ControllerBase
     {
         try
         {
-            var query = _db.SmsAuditLogs.AsQueryable();
+            var query = _db.SmsAdaptiveAuditLogs.AsQueryable();
 
             if (fromDate.HasValue)
                 query = query.Where(log => log.ReceivedAt >= fromDate.Value);
@@ -571,7 +571,7 @@ public class SmsTwilioController : ControllerBase
     {
         var normalizedPhone = NormalizePhoneNumber(phoneNumber);
         
-        var consent = await _db.SmsGdprConsent
+        var consent = await _db.SmsAdaptiveGdpr
             .FirstOrDefaultAsync(c => c.PhoneNumber == normalizedPhone
                                 && c.VehicleId == vehicleId
                                 && c.IsActive
@@ -586,7 +586,7 @@ public class SmsTwilioController : ControllerBase
 
         // Rate limiting (max 3 tentativi per ora)
         var oneHourAgo = DateTime.Now.AddHours(-1);
-        var recentAttempts = await _db.SmsGdprConsent
+        var recentAttempts = await _db.SmsAdaptiveGdpr
             .CountAsync(c => c.PhoneNumber == normalizedPhone && c.RequestedAt >= oneHourAgo);
         
         if (recentAttempts >= 3)
@@ -597,19 +597,19 @@ public class SmsTwilioController : ControllerBase
         }
 
         var vehicle = await _db.ClientVehicles.FindAsync(vehicleId);
-        var consentToken = SmsGdprConsent.GenerateSecureToken();
+        var consentToken = SmsAdaptiveGdpr.GenerateSecureToken();
         
         // Invalida richieste precedenti
-        var existingRequests = await _db.SmsGdprConsent
+        var existingRequests = await _db.SmsAdaptiveGdpr
             .Where(c => c.PhoneNumber == normalizedPhone 
                     && c.VehicleId == vehicleId 
                     && !c.IsActive)
             .ToListAsync();
         
-        _db.SmsGdprConsent.RemoveRange(existingRequests);
+        _db.SmsAdaptiveGdpr.RemoveRange(existingRequests);
 
         // Crea nuova richiesta
-        var pendingConsent = new SmsGdprConsent
+        var pendingConsent = new SmsAdaptiveGdpr
         {
             PhoneNumber = normalizedPhone,
             VehicleId = vehicleId,
@@ -620,7 +620,7 @@ public class SmsTwilioController : ControllerBase
             AttemptCount = recentAttempts + 1
         };
         
-        _db.SmsGdprConsent.Add(pendingConsent);
+        _db.SmsAdaptiveGdpr.Add(pendingConsent);
         await _db.SaveChangesAsync();
 
         // Invia SMS (sostituisci con il tuo URL reale)
@@ -635,13 +635,13 @@ public class SmsTwilioController : ControllerBase
 
     private async Task SaveAuditLogAsync(SmsAuditLog auditLog)
     {
-        _db.SmsAuditLogs.Add(auditLog);
+        _db.SmsAdaptiveAuditLogs.Add(auditLog);
         await _db.SaveChangesAsync();
     }
 
     private async Task UpdateAuditLogAsync(SmsAuditLog auditLog)
     {
-        _db.SmsAuditLogs.Update(auditLog);
+        _db.SmsAdaptiveAuditLogs.Update(auditLog);
         await _db.SaveChangesAsync();
     }
 }

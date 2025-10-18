@@ -28,7 +28,7 @@ namespace PolarDrive.WebApi.Controllers
                 return Redirect(httpsUrl);
             }
 
-            var consent = await _db.SmsGdprConsent
+            var consent = await _db.SmsAdaptiveGdpr
                 .Include(c => c.ClientVehicle)
                 .ThenInclude(v => v!.ClientCompany)
                 .FirstOrDefaultAsync(c => c.ConsentToken == token && !c.IsActive);
@@ -58,7 +58,7 @@ namespace PolarDrive.WebApi.Controllers
                 return BadRequest("Connessione non sicura. Usa HTTPS.");
             }
 
-            var consent = await _db.SmsGdprConsent
+            var consent = await _db.SmsAdaptiveGdpr
                 .FirstOrDefaultAsync(c => c.ConsentToken == token && !c.IsActive);
 
             if (consent == null)
@@ -90,17 +90,17 @@ namespace PolarDrive.WebApi.Controllers
         [HttpPost("cleanup-expired")]
         public async Task<IActionResult> CleanupExpiredConsents()
         {
-            var expired = await _db.SmsGdprConsent
+            var expired = await _db.SmsAdaptiveGdpr
                 .Where(c => c.ExpiresAt < DateTime.Now && !c.IsActive)
                 .ToListAsync();
 
-            _db.SmsGdprConsent.RemoveRange(expired);
+            _db.SmsAdaptiveGdpr.RemoveRange(expired);
             await _db.SaveChangesAsync();
 
             return Ok(new { message = $"Removed {expired.Count} expired consent requests" });
         }
 
-        private string GenerateConsentPageHtml(SmsGdprConsent consent)
+        private string GenerateConsentPageHtml(SmsAdaptiveGdpr consent)
         {
             var vehicleInfo = consent.ClientVehicle != null 
                 ? $"Tesla {consent.ClientVehicle.Model ?? "Model"} (VIN: {consent.ClientVehicle.Vin})"

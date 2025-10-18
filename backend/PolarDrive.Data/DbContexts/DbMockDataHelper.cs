@@ -30,11 +30,11 @@ public static class DbMockDataHelper
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM ClientTokens");
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM PdfReports");
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM VehiclesData");
-            await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM SmsAdaptiveProfilingEvents");
+            await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM SmsAdaptiveProfiling");
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM AnonymizedVehiclesData");
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM OutagePeriods");
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM PhoneVehicleMappings");
-            await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM SmsAuditLogs");
+            await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM SmsAdaptiveAuditLogs");
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM AdminFileManager");
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM ClientVehicles");
             await dbContext.Database.ExecuteSqlRawAsync("DELETE FROM ClientCompanies");
@@ -49,8 +49,8 @@ public static class DbMockDataHelper
                 await dbContext.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('PdfReports', RESEED, 0)");
                 await dbContext.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('AdminFileManager', RESEED, 0)");
                 await dbContext.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('PhoneVehicleMappings', RESEED, 0)");
-                await dbContext.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('SmsAuditLogs', RESEED, 0)");
-                await dbContext.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('SmsAdaptiveProfilingEvents', RESEED, 0)");
+                await dbContext.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('SmsAdaptiveAuditLogs', RESEED, 0)");
+                await dbContext.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('SmsAdaptiveProfiling', RESEED, 0)");
                 await dbContext.Database.ExecuteSqlRawAsync("DBCC CHECKIDENT('AnonymizedVehiclesData', RESEED, 0)");
                 Console.WriteLine("✅ Identity counters reset successfully");
             }

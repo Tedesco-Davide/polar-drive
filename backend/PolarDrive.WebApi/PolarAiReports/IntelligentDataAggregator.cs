@@ -893,7 +893,7 @@ public class IntelligentDataAggregator
         {
             var thirtyDaysAgo = DateTime.Now.AddDays(-30);
             var adaptiveSessions = await ExecuteWithRetry(() =>
-                _dbContext.SmsAdaptiveProfilingEvents
+                _dbContext.SmsAdaptiveProfiling
                     .Where(e => e.VehicleId == vehicleId && e.ReceivedAt >= thirtyDaysAgo)
                     .OrderByDescending(e => e.ReceivedAt)
                     .ToListAsync());
@@ -952,7 +952,7 @@ public class IntelligentDataAggregator
         var fourHoursAgo = DateTime.Now.AddHours(-4);
 
         return await ExecuteWithRetry(() =>
-            _dbContext.SmsAdaptiveProfilingEvents
+            _dbContext.SmsAdaptiveProfiling
                 .Where(e => e.VehicleId == vehicleId
                         && e.ParsedCommand == "ADAPTIVE_PROFILING_ON"
                         && e.ReceivedAt >= fourHoursAgo)

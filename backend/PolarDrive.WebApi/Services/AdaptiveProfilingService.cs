@@ -34,7 +34,7 @@ public class SmsAdaptiveProfilingService(PolarDriveDbContext db) : ISmsAdaptiveP
     {
         var fourHoursAgo = DateTime.Now.AddHours(-4);
 
-        return await db.SmsAdaptiveProfilingEvents
+        return await db.SmsAdaptiveProfiling
             .Where(e => e.VehicleId == vehicleId
                      && e.ParsedCommand == "ADAPTIVE_PROFILING_ON"
                      && e.ReceivedAt >= fourHoursAgo)
@@ -75,7 +75,7 @@ public class SmsAdaptiveProfilingService(PolarDriveDbContext db) : ISmsAdaptiveP
     /// </summary>
     public async Task<AdaptiveProfilingStatsDTO> GetVehicleStatsAsync(int vehicleId, DateTime? fromDate = null, DateTime? toDate = null)
     {
-        var query = db.SmsAdaptiveProfilingEvents
+        var query = db.SmsAdaptiveProfiling
             .Where(e => e.VehicleId == vehicleId && e.ParsedCommand == "ADAPTIVE_PROFILING_ON");
 
         if (fromDate.HasValue)

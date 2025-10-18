@@ -66,7 +66,7 @@ public class SmsAdaptiveProfilingController : ControllerBase
                 ParsedCommand = parsedCommand
             };
 
-            db.SmsAdaptiveProfilingEvents.Add(smsEvent);
+            db.SmsAdaptiveProfiling.Add(smsEvent);
 
             // Se è un comando ON, verifica che non ci sia già una sessione attiva
             if (parsedCommand == "ADAPTIVE_PROFILING_ON")
@@ -177,7 +177,7 @@ public class SmsAdaptiveProfilingController : ControllerBase
                 return NotFound("Vehicle not found!");
             }
 
-            var query = db.SmsAdaptiveProfilingEvents
+            var query = db.SmsAdaptiveProfiling
                 .Where(e => e.VehicleId == vehicleId);
 
             if (fromDate.HasValue)
@@ -218,7 +218,7 @@ public class SmsAdaptiveProfilingController : ControllerBase
     {
         try
         {
-            var query = db.SmsAdaptiveProfilingEvents.AsQueryable();
+            var query = db.SmsAdaptiveProfiling.AsQueryable();
 
             if (fromDate.HasValue)
                 query = query.Where(e => e.ReceivedAt >= fromDate.Value);
@@ -270,7 +270,7 @@ public class SmsAdaptiveProfilingController : ControllerBase
     {
         var fourHoursAgo = DateTime.Now.AddHours(-4);
 
-        return await db.SmsAdaptiveProfilingEvents
+        return await db.SmsAdaptiveProfiling
             .Where(e => e.VehicleId == vehicleId
                      && e.ParsedCommand == "ADAPTIVE_PROFILING_ON"
                      && e.ReceivedAt >= fourHoursAgo)
