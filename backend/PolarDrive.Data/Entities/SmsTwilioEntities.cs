@@ -7,15 +7,16 @@ namespace PolarDrive.Data.Entities;
 /// </summary>
 public class PhoneVehicleMapping
 {
-    [Required]
-    [Phone]
+    [Key]
+    public int Id { get; set; }
+
+    [Required, Phone]
     public string PhoneNumber { get; set; } = string.Empty;
 
     public int VehicleId { get; set; }
 
-    public DateTime CreatedAt { get; set; }
-
-    public DateTime UpdatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
     public bool IsActive { get; set; } = true;
 

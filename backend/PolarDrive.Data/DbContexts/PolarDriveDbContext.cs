@@ -196,12 +196,18 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
             modelBuilder.Entity<PhoneVehicleMapping>(entity =>
             {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Id).ValueGeneratedOnAdd();
+
+                entity.Property(e => e.PhoneNumber)
+                    .IsRequired();
+
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
                     .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasIndex(e => new { e.PhoneNumber, e.VehicleId });
+                entity.HasIndex(e => new { e.PhoneNumber, e.VehicleId }).IsUnique();
                 entity.HasIndex(e => e.IsActive);
             });
 

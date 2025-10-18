@@ -7,13 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Hangfire" Version="1.8.20" />
+    <PackageReference Include="Hangfire" Version="1.8.21" />
     <PackageReference Include="Hangfire.MemoryStorage" Version="1.8.1.2" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.10">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.1" />
     <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="6.8.1" />
     <PackageReference Include="Twilio" Version="7.11.3" />
