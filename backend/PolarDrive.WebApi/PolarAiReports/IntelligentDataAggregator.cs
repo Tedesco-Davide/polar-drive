@@ -947,7 +947,7 @@ public class IntelligentDataAggregator
         }
     }
 
-    private async Task<SmsAdaptiveProfilingEvent?> GetActiveAdaptiveSession(int vehicleId)
+    private async Task<SmsAdaptiveProfiling?> GetActiveAdaptiveSession(int vehicleId)
     {
         var fourHoursAgo = DateTime.Now.AddHours(-4);
 

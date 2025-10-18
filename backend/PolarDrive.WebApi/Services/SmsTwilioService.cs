@@ -14,17 +14,13 @@ public interface ISmsTwilioConfigurationService
     Task<bool> SendSmsAsync(string phoneNumber, string message);
 }
 
-public class SmsTwilioService : ISmsTwilioConfigurationService
+public class SmsTwilioService(IConfiguration configuration) : ISmsTwilioConfigurationService
 {
-    private readonly SmsTwilioConfigurationDTO _config;
-    private readonly Dictionary<string, List<DateTime>> _rateLimitTracker = new();
-    private readonly object _rateLimitLock = new();
-
-    public SmsTwilioService(IConfiguration configuration)
-    {
-        _config = configuration.GetSection("Twilio").Get<SmsTwilioConfigurationDTO>()
+    private readonly SmsTwilioConfigurationDTO _config = configuration.GetSection("Twilio").Get<SmsTwilioConfigurationDTO>()
                   ?? throw new InvalidOperationException("Twilio configuration not found");
-    }
+    private readonly Dictionary<string, List<DateTime>> _rateLimitTracker = [];
+    
+    private readonly Lock _rateLimitLock = new();
 
     public SmsTwilioConfigurationDTO GetConfiguration() => _config;
 

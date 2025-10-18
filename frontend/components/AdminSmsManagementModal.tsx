@@ -2,24 +2,14 @@ import { useEffect, useState, useCallback } from "react";
 import { useTranslation } from "next-i18next";
 import {
   MessageSquare,
-  Phone,
-  Trash2,
   CheckCircle,
   AlertCircle,
+  Clock,
+  User,
+  Shield,
 } from "lucide-react";
 import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
-
-interface PhoneMapping {
-  id: number;
-  phoneNumber: string;
-  vehicleId: number;
-  vehicleVin: string;
-  companyName: string;
-  createdAt: string;
-  updatedAt: string;
-  notes: string | null;
-}
 
 interface SmsAuditLog {
   id: number;
@@ -30,7 +20,28 @@ interface SmsAuditLog {
   processingStatus: string;
   errorMessage: string | null;
   vehicleIdResolved: number | null;
-  responseStatus: string | null;
+  responseSent: string | null;
+}
+
+interface AdaptiveProfilingSession {
+  id: number;
+  vehicleId: number;
+  adaptiveProfilingNumber: string;
+  adaptiveProfilingName: string;
+  receivedAt: string;
+  expiresAt: string;
+  parsedCommand: string;
+  consentAccepted: boolean;
+}
+
+interface GdprConsent {
+  id: number;
+  phoneNumber: string;
+  brand: string;
+  requestedAt: string;
+  consentGivenAt: string | null;
+  consentAccepted: boolean;
+  expiresAt: string | null;
 }
 
 interface AdminSmsManagementModalProps {
@@ -38,6 +49,7 @@ interface AdminSmsManagementModalProps {
   onClose: () => void;
   vehicleId: number;
   vehicleVin: string;
+  vehicleBrand: string;
   companyName: string;
   isVehicleActive: boolean;
 }
@@ -47,66 +59,57 @@ export default function AdminSmsManagementModal({
   onClose,
   vehicleId,
   vehicleVin,
+  vehicleBrand,
   companyName,
   isVehicleActive,
 }: AdminSmsManagementModalProps) {
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
-  const [phoneMappings, setPhoneMappings] = useState<PhoneMapping[]>([]);
-  const [AdaptiveAuditLogs, setAdaptiveAuditLogs] = useState<SmsAuditLog[]>([]);
-  const [newPhoneNumber, setNewPhoneNumber] = useState("");
-  const [newPhoneNotes, setNewPhoneNotes] = useState("");
-  const [activeTab, setActiveTab] = useState<"mappings" | "audit">("mappings");
-
-  const [adaptiveStatus, setAdaptiveStatus] = useState({
-    isActive: false,
-    sessionStartedAt: null as string | null,
-    sessionEndTime: null as string | null,
-    remainingMinutes: 0,
-    description: null as string | null,
-  });
+  const [auditLogs, setAuditLogs] = useState<SmsAuditLog[]>([]);
+  const [profilingSessions, setProfilingSessions] = useState<AdaptiveProfilingSession[]>([]);
+  const [gdprConsents, setGdprConsents] = useState<GdprConsent[]>([]);
+  const [activeTab, setActiveTab] = useState<"profiling" | "gdpr" | "audit">("profiling");
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
-      const mappingsResponse = await fetch(
-        `${API_BASE_URL}/api/TwilioSms/phone-mappings`
+      // Carica sessioni ADAPTIVE_PROFILING
+      const profilingResponse = await fetch(
+        `${API_BASE_URL}/api/SmsAdaptiveProfiling/${vehicleId}/history`
       );
-
-      let vehicleMappingsCount = 0;
-
-      if (mappingsResponse.ok) {
-        const allMappings = await mappingsResponse.json();
-        const vehicleMappings = allMappings.filter(
-          (m: PhoneMapping) => m.vehicleId === vehicleId
-        );
-        setPhoneMappings(vehicleMappings);
-        vehicleMappingsCount = vehicleMappings.length;
+      if (profilingResponse.ok) {
+        const sessions = await profilingResponse.json();
+        setProfilingSessions(sessions);
       }
 
+      // Carica audit logs
       const auditResponse = await fetch(
-        `${API_BASE_URL}/api/TwilioSms/audit-logs?pageSize=20`
+        `${API_BASE_URL}/api/SmsTwilio/audit-logs?pageSize=50`
       );
-
-      let vehicleLogsCount = 0;
-      
       if (auditResponse.ok) {
         const auditData = await auditResponse.json();
         const vehicleLogs = auditData.logs.filter(
           (log: SmsAuditLog) => log.vehicleIdResolved === vehicleId
         );
-        setAdaptiveAuditLogs(vehicleLogs);
-        vehicleLogsCount = vehicleLogs.length;
+        setAuditLogs(vehicleLogs);
+      }
+
+      // Carica consensi GDPR per il Brand
+      const gdprResponse = await fetch(
+        `${API_BASE_URL}/api/SmsAdaptiveGdpr/consents?brand=${vehicleBrand}`
+      );
+      if (gdprResponse.ok) {
+        const consents = await gdprResponse.json();
+        setGdprConsents(consents);
       }
 
       logFrontendEvent(
         "AdminSmsManagement",
         "INFO",
         "SMS data loaded successfully",
-        `VehicleId: ${vehicleId}, Mappings: ${vehicleMappingsCount}, Logs: ${vehicleLogsCount}`
+        `VehicleId: ${vehicleId}, Sessions: ${profilingSessions.length}, Logs: ${auditLogs.length}`
       );
-
     } catch (error) {
       logFrontendEvent(
         "AdminSmsManagement",
@@ -117,136 +120,13 @@ export default function AdminSmsManagementModal({
     } finally {
       setLoading(false);
     }
-  }, [vehicleId]);
-
-  const loadAdaptiveStatus = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/SmsAdaptiveProfiling/${vehicleId}/status`
-      );
-      if (response.ok) {
-        const status = await response.json();
-        setAdaptiveStatus(status);
-      }
-    } catch (error) {
-      console.error("Error loading adaptive status:", error);
-    }
-  }, [vehicleId]);
+  }, [vehicleId, vehicleBrand]);
 
   useEffect(() => {
     if (isOpen) {
       loadData();
-      loadAdaptiveStatus();
     }
-  }, [isOpen, vehicleId, loadData, loadAdaptiveStatus]);  
-
-  const handleAddPhoneMapping = async () => {
-    if (!newPhoneNumber.trim()) {
-      alert("Inserisci un numero di telefono valido");
-      return;
-    }
-
-    // Validazione numero telefono italiano
-    const phoneRegex = /^(\+39)?[0-9]{10}$/;
-    if (!phoneRegex.test(newPhoneNumber.replace(/\s/g, ""))) {
-      alert(
-        "Formato numero non valido. Usa formato: +393401234567 o 3401234567"
-      );
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/TwilioSms/register-phone`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            phoneNumber: newPhoneNumber,
-            vehicleId: vehicleId,
-            notes: newPhoneNotes || `Associato via admin per ${companyName}`,
-          }),
-        }
-      );
-
-      if (response.ok) {
-        const result = await response.json();
-        alert(
-          `✅ Numero ${result.phoneNumber} associato con successo al veicolo ${vehicleVin}`
-        );
-        setNewPhoneNumber("");
-        setNewPhoneNotes("");
-        await loadData(); // Ricarica i dati
-
-        logFrontendEvent(
-          "AdminSmsManagement",
-          "INFO",
-          "Phone mapping created successfully",
-          `Phone: ${result.phoneNumber}, VehicleId: ${vehicleId}`
-        );
-      } else {
-        const error = await response.json();
-        alert(`❌ Errore: ${error.error || "Impossibile associare il numero"}`);
-      }
-    } catch (error) {
-      alert(`❌ Errore di connessione: ${error}`);
-      logFrontendEvent(
-        "AdminSmsManagement",
-        "ERROR",
-        "Failed to create phone mapping",
-        error instanceof Error ? error.message : String(error)
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDeletePhoneMapping = async (
-    mappingId: number,
-    phoneNumber: string
-  ) => {
-    if (
-      !confirm(
-        `Sei sicuro di voler eliminare l'associazione con ${phoneNumber}?`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // Note: Assumo che esista un endpoint DELETE per le mappature
-      const response = await fetch(
-        `${API_BASE_URL}/api/TwilioSms/phone-mappings/${mappingId}`,
-        {
-          method: "DELETE",
-        }
-      );
-
-      if (response.ok) {
-        alert(`✅ Associazione con ${phoneNumber} eliminata`);
-        await loadData();
-
-        logFrontendEvent(
-          "AdminSmsManagement",
-          "INFO",
-          "Phone mapping deleted successfully",
-          `Phone: ${phoneNumber}, MappingId: ${mappingId}`
-        );
-      } else {
-        alert("❌ Errore durante l'eliminazione");
-      }
-    } catch (error) {
-      alert(`❌ Errore: ${error}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isOpen, loadData]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("it-IT");
@@ -255,59 +135,54 @@ export default function AdminSmsManagementModal({
   const getStatusColor = (status: string) => {
     switch (status) {
       case "SUCCESS":
-        return "text-green-600 bg-green-100";
+        return "text-green-600 bg-green-100 dark:bg-green-900/20";
       case "ERROR":
-        return "text-red-600 bg-red-100";
+        return "text-red-600 bg-red-100 dark:bg-red-900/20";
       case "REJECTED":
-        return "text-orange-600 bg-orange-100";
+        return "text-orange-600 bg-orange-100 dark:bg-orange-900/20";
       default:
-        return "text-gray-600 bg-gray-100";
+        return "text-gray-600 bg-gray-100 dark:bg-gray-900/20";
     }
   };
 
+  const isSessionActive = (session: AdaptiveProfilingSession) => {
+    return (
+      session.consentAccepted &&
+      session.parsedCommand === "ADAPTIVE_PROFILING_ON" &&
+      new Date(session.expiresAt) > new Date()
+    );
+  };
+
+  const getRemainingTime = (expiresAt: string) => {
+    const now = new Date();
+    const expires = new Date(expiresAt);
+    const diff = expires.getTime() - now.getTime();
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return diff > 0 ? `${hours}h ${minutes}m` : "Scaduto";
+  };
+
   if (!isOpen) return null;
+
+  const activeSessions = profilingSessions.filter(isSessionActive);
 
   return (
     <div className="fixed top-[64px] md:top-[0px] inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm note-modal">
       <div className="w-full h-full p-6 relative overflow-y-auto bg-softWhite dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-none rounded-lg md:h-auto md:w-11/12">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center">
-            <div>
-              <h2 className="whitespace-normal text-xl font-semibold text-polarNight dark:text-softWhite mb-4">
-                Gestione SMS
-              </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {companyName} - {vehicleVin}
-              </p>
-            </div>
+          <div>
+            <h2 className="text-xl font-semibold text-polarNight dark:text-softWhite mb-2">
+              🔐 Gestione SMS Adaptive
+            </h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {companyName} - {vehicleBrand} {vehicleVin}
+            </p>
           </div>
         </div>
 
-        {/* Status Adaptive Profiling */}
-        {adaptiveStatus.isActive && (
-          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-            <div className="flex items-center space-x-2 mb-2">
-              <CheckCircle className="text-blue-500" size={16} />
-              <span className="font-semibold text-blue-700 dark:text-blue-300">
-                Adaptive Profiling ATTIVO
-              </span>
-            </div>
-            <p className="text-sm text-blue-600 dark:text-blue-400">
-              Sessione attiva fino a{" "}
-              {adaptiveStatus.sessionEndTime
-                ? new Date(adaptiveStatus.sessionEndTime).toLocaleString(
-                    "it-IT"
-                  )
-                : "N/A"}
-              <br />
-              Tempo rimanente: {adaptiveStatus.remainingMinutes} minuti
-            </p>
-          </div>
-        )}
-
         {/* Status Veicolo */}
-        <div className="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <div className="flex items-center space-x-2">
             {isVehicleActive ? (
               <CheckCircle className="text-green-500" size={16} />
@@ -326,182 +201,253 @@ export default function AdminSmsManagementModal({
           </div>
           {!isVehicleActive && (
             <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-              ⚠️ Il veicolo deve essere attivo per ricevere SMS
+              ⚠️ Il veicolo deve essere attivo per le procedure Adaptive
             </p>
           )}
         </div>
 
+        {/* Sessioni Attive */}
+        {activeSessions.length > 0 && (
+          <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <div className="flex items-center space-x-2 mb-3">
+              <CheckCircle className="text-blue-500" size={20} />
+              <span className="font-semibold text-blue-700 dark:text-blue-300">
+                {activeSessions.length} Sessione/i ADAPTIVE_PROFILING Attiva/e
+              </span>
+            </div>
+            {activeSessions.map((session) => (
+              <div key={session.id} className="mb-2 p-3 bg-white dark:bg-gray-800 rounded">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <User size={16} className="text-blue-600" />
+                      <span className="font-semibold text-polarNight dark:text-softWhite">
+                        {session.adaptiveProfilingName}
+                      </span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        ({session.adaptiveProfilingNumber})
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-1">
+                      Scade: {formatDate(session.expiresAt)}
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Clock size={16} className="text-blue-500" />
+                    <span className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                      {getRemainingTime(session.expiresAt)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Tabs */}
-        <div className="flex mb-4 border-y border-gray-300 dark:border-gray-600">
+        <div className="flex mb-4 border-b border-gray-300 dark:border-gray-600">
           <button
             className={`px-4 py-2 font-medium ${
-              activeTab === "mappings"
-                ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite  dark:border-articWhite"
-                : "text-gray-500 hover:text-gray-700"
+              activeTab === "profiling"
+                ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite dark:border-articWhite"
+                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
-            onClick={() => setActiveTab("mappings")}
+            onClick={() => setActiveTab("profiling")}
           >
-            <Phone size={16} className="inline mr-2" />
-            Numeri Associati ( {phoneMappings.length} )
+            <User size={16} className="inline mr-2" />
+            Profiling ({profilingSessions.length})
+          </button>
+          <button
+            className={`px-4 py-2 font-medium ml-4 ${
+              activeTab === "gdpr"
+                ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite dark:border-articWhite"
+                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+            }`}
+            onClick={() => setActiveTab("gdpr")}
+          >
+            <Shield size={16} className="inline mr-2" />
+            Consensi GDPR ({gdprConsents.length})
           </button>
           <button
             className={`px-4 py-2 font-medium ml-4 ${
               activeTab === "audit"
-                ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite  dark:border-articWhite"
-                : "text-gray-500 hover:text-gray-700"
+                ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite dark:border-articWhite"
+                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
             onClick={() => setActiveTab("audit")}
           >
             <MessageSquare size={16} className="inline mr-2" />
-            SMS Ricevuti ( {AdaptiveAuditLogs.length} )
+            Audit SMS ({auditLogs.length})
           </button>
         </div>
 
         {/* Content */}
-        {activeTab === "mappings" && (
-          <div>
-            {/* Form Aggiunta Numero */}
-            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
-              <h3 className="font-semibold mb-3 text-polarNight dark:text-softWhite">
-                Associa Nuovo Numero
-              </h3>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleAddPhoneMapping}
-                  disabled={loading || !isVehicleActive}
-                  className={`px-4 py-2 rounded text-white font-bold ${
-                    !isVehicleActive
-                      ? "bg-gray-400 cursor-not-allowed opacity-20"
-                      : "bg-blue-500 hover:bg-blue-600"
-                  }`}
-                >
-                  Associa
-                </button>
-                <input
-                  type="tel"
-                  placeholder="+393401234567"
-                  value={newPhoneNumber}
-                  onChange={(e) => setNewPhoneNumber(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-polarNight dark:text-softWhite"
-                  disabled={!isVehicleActive}
-                />
-                <input
-                  type="text"
-                  placeholder="Note opzionali"
-                  value={newPhoneNotes}
-                  onChange={(e) => setNewPhoneNotes(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-polarNight dark:text-softWhite"
-                  disabled={!isVehicleActive}
-                />
-              </div>
-              {!isVehicleActive && (
-                <p className="text-sm text-orange-600 dark:text-orange-400 mt-2">
-                  ⚠️ Attiva il veicolo per poter associare numeri SMS
-                </p>
-              )}
-            </div>
-
-            {/* Lista Numeri */}
+        <div className="min-h-[400px]">
+          {/* Tab PROFILING */}
+          {activeTab === "profiling" && (
             <div>
-              {phoneMappings.length === 0 ? (
-                <p className="text-gray-500 text-start py-4">
-                  Nessun numero associato a questo veicolo
+              {profilingSessions.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  Nessuna sessione ADAPTIVE_PROFILING registrata
                 </p>
               ) : (
-                phoneMappings.map((mapping) => (
+                profilingSessions.map((session) => (
                   <div
-                    key={mapping.id}
-                    className="flex items-center py-2 bg-gray-50 dark:bg-gray-800 rounded-lg space-x-4"
+                    key={session.id}
+                    className={`p-4 rounded-lg mb-3 ${
+                      isSessionActive(session)
+                        ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                        : "bg-gray-50 dark:bg-gray-800"
+                    }`}
                   >
-                    <button
-                      className="p-2 bg-red-500 text-softWhite rounded hover:bg-red-600"
-                      title={t("admin.filemanager.deleteJob")}
-                      disabled={loading}
-                      onClick={() =>
-                        handleDeletePhoneMapping(
-                          mapping.id,
-                          mapping.phoneNumber
-                        )
-                      }
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                    <div>
-                      <div className="font-semibold text-polarNight dark:text-softWhite">
-                        {mapping.phoneNumber}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <User size={16} />
+                        <span className="font-semibold text-polarNight dark:text-softWhite">
+                          {session.adaptiveProfilingName || "Nome non specificato"}
+                        </span>
+                        <span className="text-sm text-gray-600 dark:text-gray-400">
+                          {session.adaptiveProfilingNumber}
+                        </span>
                       </div>
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        Creato: {formatDate(mapping.createdAt)}
-                        {mapping.notes && (
-                          <span className="ml-2">• {mapping.notes}</span>
-                        )}
-                      </div>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          isSessionActive(session)
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                        }`}
+                      >
+                        {isSessionActive(session) ? "ATTIVO" : "SCADUTO"}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Inizio: {formatDate(session.receivedAt)}
+                      <br />
+                      Scadenza: {formatDate(session.expiresAt)}
+                      {isSessionActive(session) && (
+                        <span className="ml-2 text-green-600 dark:text-green-400 font-medium">
+                          (Rimanente: {getRemainingTime(session.expiresAt)})
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex items-center space-x-4 text-xs">
+                      <span
+                        className={`${
+                          session.consentAccepted
+                            ? "text-green-600 dark:text-green-400"
+                            : "text-red-600 dark:text-red-400"
+                        }`}
+                      >
+                        Consenso: {session.consentAccepted ? "✅ Attivo" : "❌ Revocato"}
+                      </span>
+                      <span className="text-gray-500">Comando: {session.parsedCommand}</span>
                     </div>
                   </div>
                 ))
               )}
             </div>
-            <button
-              className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 mt-6"
-              onClick={() => {
-                logFrontendEvent("SmsModal", "INFO", "Sms modal closed");
-                onClose();
-              }}
-            >
-              {t("admin.close")}
-            </button>
-          </div>
-        )}
+          )}
 
-        {activeTab === "audit" && (
-          <div>
-            {AdaptiveAuditLogs.length === 0 ? (
-              <p className="text-gray-500 text-start py-3">
-                Nessun SMS ricevuto per questo veicolo
-              </p>
-            ) : (
-              AdaptiveAuditLogs.map((log) => (
-                <div
-                  key={log.id}
-                  className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4"
-                >
-                  <div className="flex items-center mb-2 space-x-2">
-                    <span
-                      className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                        log.processingStatus
-                      )}`}
-                    >
-                      {log.processingStatus}
-                    </span>
-                    <div className="font-semibold text-polarNight dark:text-softWhite">
-                      {log.fromPhoneNumber}
+          {/* Tab GDPR */}
+          {activeTab === "gdpr" && (
+            <div>
+              {gdprConsents.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  Nessun consenso GDPR registrato per {vehicleBrand}
+                </p>
+              ) : (
+                gdprConsents.map((consent) => (
+                  <div
+                    key={consent.id}
+                    className={`p-4 rounded-lg mb-3 ${
+                      consent.consentAccepted
+                        ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
+                        : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <Shield size={16} />
+                        <span className="font-semibold text-polarNight dark:text-softWhite">
+                          {consent.phoneNumber}
+                        </span>
+                      </div>
+                      <span
+                        className={`px-2 py-1 rounded text-xs font-medium ${
+                          consent.consentAccepted
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                            : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                        }`}
+                      >
+                        {consent.consentAccepted ? "ATTIVO" : "REVOCATO"}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      Brand: {consent.brand}
+                      <br />
+                      Richiesto: {formatDate(consent.requestedAt)}
+                      {consent.consentGivenAt && (
+                        <>
+                          <br />
+                          Accettato: {formatDate(consent.consentGivenAt)}
+                        </>
+                      )}
+                      {consent.expiresAt && (
+                        <>
+                          <br />
+                          Scadenza: {formatDate(consent.expiresAt)}
+                        </>
+                      )}
+                    </div>
+                    <div className="mt-2 text-xs text-gray-500">
+                      ID Consenso: #{consent.id}
                     </div>
                   </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                    Messaggio: &quot;{log.messageBody}&quot;
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {formatDate(log.receivedAt)} • ID: {log.messageSid}
-                  </div>
-                  {log.errorMessage && (
-                    <div className="text-xs text-red-500 mt-1">
-                      Errore: {log.errorMessage}
+                ))
+              )}
+            </div>
+          )}
+
+          {/* Tab AUDIT */}
+          {activeTab === "audit" && (
+            <div>
+              {auditLogs.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  Nessun SMS ricevuto per questo veicolo
+                </p>
+              ) : (
+                auditLogs.map((log) => (
+                  <div key={log.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <span
+                          className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
+                            log.processingStatus
+                          )}`}
+                        >
+                          {log.processingStatus}
+                        </span>
+                        <span className="font-semibold text-polarNight dark:text-softWhite">
+                          {log.fromPhoneNumber}
+                        </span>
+                      </div>
+                      <span className="text-xs text-gray-500">{formatDate(log.receivedAt)}</span>
                     </div>
-                  )}
-                </div>
-              ))
-            )}
-            <button
-              className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500 mt-5"
-              onClick={() => {
-                logFrontendEvent("SmsModal", "INFO", "Sms modal closed");
-                onClose();
-              }}
-            >
-              {t("admin.close")}
-            </button>
-          </div>
-        )}
+                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                      📩 &quot;{log.messageBody}&quot;
+                    </div>
+                    {log.errorMessage && (
+                      <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                        ❌ {log.errorMessage}
+                      </div>
+                    )}
+                    <div className="text-xs text-gray-500 mt-2">SID: {log.messageSid}</div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Loading */}
         {loading && (
@@ -509,6 +455,19 @@ export default function AdminSmsManagementModal({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
         )}
+
+        {/* Footer */}
+        <div className="mt-6 flex justify-end">
+          <button
+            className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
+            onClick={() => {
+              logFrontendEvent("SmsModal", "INFO", "SMS modal closed");
+              onClose();
+            }}
+          >
+            {t("admin.close")}
+          </button>
+        </div>
       </div>
     </div>
   );

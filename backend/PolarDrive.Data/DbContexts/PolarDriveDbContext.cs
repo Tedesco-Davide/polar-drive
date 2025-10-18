@@ -11,14 +11,14 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<ClientConsent> ClientConsents => Set<ClientConsent>();
     public DbSet<PdfReport> PdfReports => Set<PdfReport>();
     public DbSet<VehicleData> VehiclesData => Set<VehicleData>();
-    public DbSet<SmsAdaptiveProfilingEvent> SmsAdaptiveProfiling => Set<SmsAdaptiveProfilingEvent>();
+    public DbSet<SmsAdaptiveGdpr> SmsAdaptiveGdpr { get; set; }
+    public DbSet<SmsAdaptiveProfiling> SmsAdaptiveProfiling => Set<SmsAdaptiveProfiling>();
+    public DbSet<SmsAuditLog> SmsAdaptiveAuditLogs { get; set; }
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
     public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
-    public DbSet<SmsAuditLog> SmsAdaptiveAuditLogs { get; set; }
-    public DbSet<SmsAdaptiveGdpr> SmsAdaptiveGdpr { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -81,7 +81,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .OnDelete(DeleteBehavior.Cascade);
             });
 
-            modelBuilder.Entity<SmsAdaptiveProfilingEvent>(entity =>
+            modelBuilder.Entity<SmsAdaptiveProfiling>(entity =>
             {
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
@@ -182,15 +182,16 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
             modelBuilder.Entity<SmsAdaptiveGdpr>(entity =>
             {
-                entity.HasOne(e => e.ClientVehicle)
+                entity.HasOne(e => e.ClientCompany)
                     .WithMany()
-                    .HasForeignKey(e => e.VehicleId)
+                    .HasForeignKey(e => e.ClientCompanyId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasIndex(e => new { e.PhoneNumber, e.VehicleId });
+                entity.HasIndex(e => new { e.PhoneNumber, e.Brand });
                 entity.HasIndex(e => e.ConsentToken).IsUnique();
                 entity.HasIndex(e => e.ExpiresAt);
                 entity.HasIndex(e => new { e.PhoneNumber, e.RequestedAt });
+                entity.HasIndex(e => e.ConsentAccepted);
             });
 
             modelBuilder.Entity<PhoneVehicleMapping>(entity =>

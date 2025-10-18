@@ -12,7 +12,11 @@ namespace PolarDrive.Data.Entities
         public string PhoneNumber { get; set; } = string.Empty;
 
         [Required]
-        public int VehicleId { get; set; }
+        [StringLength(50)]
+        public string Brand { get; set; } = string.Empty;
+
+        [Required]
+        public int ClientCompanyId { get; set; }
 
         [Required]
         [StringLength(64)]
@@ -24,7 +28,7 @@ namespace PolarDrive.Data.Entities
         public DateTime? ConsentGivenAt { get; set; }
 
         [Required]
-        public bool IsActive { get; set; } = false;
+        public bool ConsentAccepted { get; set; } = false;
 
         [StringLength(45)]
         public string? IpAddress { get; set; }
@@ -36,7 +40,8 @@ namespace PolarDrive.Data.Entities
 
         public int AttemptCount { get; set; } = 0;
 
-        public ClientVehicle? ClientVehicle { get; set; }
+        // Navigation property
+        public ClientCompany? ClientCompany { get; set; }
 
         // Metodo per generare token sicuro
         public static string GenerateSecureToken()

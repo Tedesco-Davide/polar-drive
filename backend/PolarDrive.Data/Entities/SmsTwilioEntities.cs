@@ -7,8 +7,6 @@ namespace PolarDrive.Data.Entities;
 /// </summary>
 public class PhoneVehicleMapping
 {
-    public int Id { get; set; }
-
     [Required]
     [Phone]
     public string PhoneNumber { get; set; } = string.Empty;
@@ -48,7 +46,7 @@ public class SmsAuditLog
 
     public DateTime ReceivedAt { get; set; }
 
-    public string ProcessingStatus { get; set; } = string.Empty; // SUCCESS, ERROR, REJECTED
+    public string ProcessingStatus { get; set; } = string.Empty;
 
     public string? ErrorMessage { get; set; }
 
@@ -56,6 +54,5 @@ public class SmsAuditLog
 
     public string? ResponseSent { get; set; }
 
-    // Navigation property
     public ClientVehicle? ResolvedVehicle { get; set; }
 }

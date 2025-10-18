@@ -499,7 +499,7 @@ try
 
     var adaptiveEvents = new[]
     {
-        new SmsAdaptiveProfilingEvent
+        new SmsAdaptiveProfiling
         {
             VehicleId = vehicles[0].Id,
             ReceivedAt = DateTime.Now.AddMinutes(-15),
