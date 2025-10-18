@@ -17,6 +17,9 @@ services:
       - Twilio__AccountSid=${TWILIO_ACCOUNT_SID}
       - Twilio__AuthToken=${TWILIO_AUTH_TOKEN}
       - Twilio__PhoneNumber=${TWILIO_PHONE_NUMBER}
+      - Twilio__WebhookUrl=http://host.docker.internal:8081/api/TwilioSms/webhook
+      - Twilio__RateLimitPerMinute=10
+      - Twilio__EnableSignatureValidation=true
     ports:
       - "8081:8080"
     extra_hosts:
