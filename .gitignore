@@ -29,6 +29,12 @@ postgres_data_prod/
 backend/PolarDrive.TeslaMockApiService/TempFiles
 backend/PolarDrive.TeslaMockApiService/vehicle_states.json
 
+# Logs
+LOGS_DEV/*
+LOGS_PROD/*
+!LOGS_DEV/.gitkeep
+!LOGS_PROD/.gitkeep
+
 # Environment files ( MAI committare credenziali )
 .env.*
 !.env.example
