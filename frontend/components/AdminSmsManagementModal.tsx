@@ -85,7 +85,7 @@ export default function AdminSmsManagementModal({
 
       // Carica audit logs
       const auditResponse = await fetch(
-        `${API_BASE_URL}/api/SmsTwilio/audit-logs?pageSize=50`
+        `${API_BASE_URL}/api/Sms/audit-logs?pageSize=50`
       );
       if (auditResponse.ok) {
         const auditData = await auditResponse.json();

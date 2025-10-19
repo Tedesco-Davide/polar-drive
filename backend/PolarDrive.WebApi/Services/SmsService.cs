@@ -5,24 +5,24 @@ using Twilio.Types;
 
 namespace PolarDrive.WebApi.Services;
 
-public interface ISmsTwilioConfigurationService
+public interface ISmsConfigurationService
 {
-    SmsTwilioConfigurationDTO GetConfiguration();
+    SmsConfigurationDTO GetConfiguration();
     bool ValidateSignature(string expectedSignature, string url, Dictionary<string, string> parameters);
     bool IsPhoneNumberAllowed(string phoneNumber);
     Task<bool> IsRateLimitExceeded(string phoneNumber);
     Task<bool> SendSmsAsync(string phoneNumber, string message);
 }
 
-public class SmsTwilioService(IConfiguration configuration) : ISmsTwilioConfigurationService
+public class SmsService(IConfiguration configuration) : ISmsConfigurationService
 {
-    private readonly SmsTwilioConfigurationDTO _config = configuration.GetSection("Twilio").Get<SmsTwilioConfigurationDTO>()
+    private readonly SmsConfigurationDTO _config = configuration.GetSection("Twilio").Get<SmsConfigurationDTO>()
                   ?? throw new InvalidOperationException("Twilio configuration not found");
     private readonly Dictionary<string, List<DateTime>> _rateLimitTracker = [];
     
     private readonly Lock _rateLimitLock = new();
 
-    public SmsTwilioConfigurationDTO GetConfiguration() => _config;
+    public SmsConfigurationDTO GetConfiguration() => _config;
 
     public bool ValidateSignature(string expectedSignature, string url, Dictionary<string, string> parameters)
     {

@@ -11,19 +11,19 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class SmsTwilioController(
+public class SmsController(
     PolarDriveDbContext db,
-    ISmsTwilioConfigurationService twilioConfig) : ControllerBase
+    ISmsConfigurationService smsConfig) : ControllerBase
 {
     private readonly PolarDriveDbContext _db = db;
-    private readonly ISmsTwilioConfigurationService _twilioConfig = twilioConfig;
+    private readonly ISmsConfigurationService _smsConfig = smsConfig;
     private readonly PolarDriveLogger _logger = new(db);
 
     /// <summary>
-    /// 🎯 WEBHOOK PRINCIPALE - Riceve SMS da Twilio
+    /// 🎯 WEBHOOK PRINCIPALE - Riceve SMS
     /// </summary>
     [HttpPost("webhook")]
-    public async Task<ActionResult> ReceiveTwilioSms([FromForm] SmsTwilioWebhookDTO dto)
+    public async Task<ActionResult> ReceiveSms([FromForm] SmsWebhookDTO dto)
     {
         var auditLog = new SmsAuditLog
         {
@@ -38,34 +38,34 @@ public class SmsTwilioController(
         try
         {
             // 🔒 1. VALIDAZIONE SICUREZZA
-            if (!ValidateTwilioSignature())
+            if (!ValidateSignature())
             {
                 auditLog.ProcessingStatus = "REJECTED";
-                auditLog.ErrorMessage = "Invalid Twilio signature";
+                auditLog.ErrorMessage = "Invalid Sms signature";
                 await SaveAuditLogAsync(auditLog);
                 return Unauthorized("Invalid signature");
             }
 
-            if (!_twilioConfig.IsPhoneNumberAllowed(dto.From))
+            if (!_smsConfig.IsPhoneNumberAllowed(dto.From))
             {
                 auditLog.ProcessingStatus = "REJECTED";
                 auditLog.ErrorMessage = "Phone number not in whitelist";
                 await SaveAuditLogAsync(auditLog);
 
-                var response = GenerateTwilioResponse("❌ Numero non autorizzato per questo servizio.");
+                var response = GenerateSmsResponse("❌ Numero non autorizzato per questo servizio.");
                 auditLog.ResponseSent = response;
                 await UpdateAuditLogAsync(auditLog);
 
                 return Ok(response);
             }
 
-            if (await _twilioConfig.IsRateLimitExceeded(dto.From))
+            if (await _smsConfig.IsRateLimitExceeded(dto.From))
             {
                 auditLog.ProcessingStatus = "REJECTED";
                 auditLog.ErrorMessage = "Rate limit exceeded";
                 await SaveAuditLogAsync(auditLog);
 
-                var response = GenerateTwilioResponse("⏱️ Troppi messaggi. Riprova tra qualche minuto.");
+                var response = GenerateSmsResponse("⏱️ Troppi messaggi. Riprova tra qualche minuto.");
                 auditLog.ResponseSent = response;
                 await UpdateAuditLogAsync(auditLog);
 
@@ -102,7 +102,7 @@ public class SmsTwilioController(
             // ❌ Comando non riconosciuto
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Comando non riconosciuto";
-            var errorResponse = GenerateTwilioResponse("❌ Comando non valido. Usa ADAPTIVE_GDPR o ADAPTIVE_PROFILING.");
+            var errorResponse = GenerateSmsResponse("❌ Comando non valido. Usa ADAPTIVE_GDPR o ADAPTIVE_PROFILING.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
 
@@ -112,10 +112,10 @@ public class SmsTwilioController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = ex.Message;
-            auditLog.ResponseSent = GenerateTwilioResponse("❌ Errore interno del server.");
+            auditLog.ResponseSent = GenerateSmsResponse("❌ Errore interno del server.");
             await SaveAuditLogAsync(auditLog);
 
-            await _logger.Error("TwilioSms.Webhook", "Fatal error processing SMS",
+            await _logger.Error("Sms.Webhook", "Fatal error processing SMS",
                 $"Error: {ex.Message}, From: {dto.From}");
 
             return Ok(auditLog.ResponseSent);
@@ -123,7 +123,7 @@ public class SmsTwilioController(
     }
 
     // Gestione ADAPTIVE_GDPR
-    private async Task<ActionResult> HandleAdaptiveGdprCommand(SmsTwilioWebhookDTO dto, SmsAuditLog auditLog, string command)
+    private async Task<ActionResult> HandleAdaptiveGdprCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
     {
         // Estrai numero destinatario: "ADAPTIVE_GDPR XXXXXXXXXX"
         var parts = dto.Body.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -131,7 +131,7 @@ public class SmsTwilioController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Formato comando ADAPTIVE_GDPR non valido";
-            var errorResponse = GenerateTwilioResponse("❌ Formato non valido. Usa: ADAPTIVE_GDPR XXXXXXXXXX");
+            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_GDPR XXXXXXXXXX");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return Ok(errorResponse);
@@ -148,7 +148,7 @@ public class SmsTwilioController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Mittente non autorizzato";
-            var errorResponse = GenerateTwilioResponse("❌ Solo i referenti registrati possono richiedere consensi GDPR.");
+            var errorResponse = GenerateSmsResponse("❌ Solo i referenti registrati possono richiedere consensi GDPR.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return Ok(errorResponse);
@@ -188,20 +188,20 @@ public class SmsTwilioController(
         // Invia SMS al numero target
         var gdprMessage = $@"DataPolar - Consenso utilizzo {vehicle.Brand} da {vehicle.ClientCompany?.Name} Per guidare questo veicolo di ricerca, deve accettare il trattamento dati GPS/telemetria come richiesto da {vehicle.Brand}. 📄 Informativa completa: [short.link/gdpr-pdf] Risponda: ✅ ACCETTO - per dare consenso esplicito ℹ️ Ignora SMS per negare il consenso";
 
-        await _twilioConfig.SendSmsAsync(targetPhone, gdprMessage);
+        await _smsConfig.SendSmsAsync(targetPhone, gdprMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
-        auditLog.ResponseSent = GenerateTwilioResponse($"✅ Richiesta GDPR inviata a {targetPhone}");
+        auditLog.ResponseSent = GenerateSmsResponse($"✅ Richiesta GDPR inviata a {targetPhone}");
         await SaveAuditLogAsync(auditLog);
 
-        await _logger.Info("TwilioSms.GDPR", "GDPR request sent",
+        await _logger.Info("Sms.GDPR", "GDPR request sent",
             $"From: {dto.From}, To: {targetPhone}, Brand: {vehicle.Brand}");
 
         return Ok(auditLog.ResponseSent);
     }
 
     // Gestione ACCETTO
-    private async Task<ActionResult> HandleAccettoCommand(SmsTwilioWebhookDTO dto, SmsAuditLog auditLog)
+    private async Task<ActionResult> HandleAccettoCommand(SmsWebhookDTO dto, SmsAuditLog auditLog)
     {
         var gdprRequest = await _db.SmsAdaptiveGdpr
             .Include(g => g.ClientCompany)
@@ -213,7 +213,7 @@ public class SmsTwilioController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Nessuna richiesta GDPR valida trovata";
-            var errorResponse = GenerateTwilioResponse("❌ Nessuna richiesta di consenso valida per questo numero.");
+            var errorResponse = GenerateSmsResponse("❌ Nessuna richiesta di consenso valida per questo numero.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return Ok(errorResponse);
@@ -239,17 +239,17 @@ public class SmsTwilioController(
         // Invia SMS di conferma
         var confirmMessage = $@"Autorizzazione ADAPTIVE_GDPR confermata per {gdprRequest.Brand} da {gdprRequest.ClientCompany?.Name} ID Consenso: #{gdprRequest.Id} ❌ Consenso revocabile rispondendo a questo SMS con: STOP";
 
-        await _twilioConfig.SendSmsAsync(dto.From, confirmMessage);
+        await _smsConfig.SendSmsAsync(dto.From, confirmMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
         auditLog.ResponseSent = confirmMessage;
         await SaveAuditLogAsync(auditLog);
 
-        return Ok(GenerateTwilioResponse(confirmMessage));
+        return Ok(GenerateSmsResponse(confirmMessage));
     }
 
     // Gestione STOP
-    private async Task<ActionResult> HandleStopCommand(SmsTwilioWebhookDTO dto, SmsAuditLog auditLog)
+    private async Task<ActionResult> HandleStopCommand(SmsWebhookDTO dto, SmsAuditLog auditLog)
     {
         var gdprRequest = await _db.SmsAdaptiveGdpr
             .Where(g => g.PhoneNumber == dto.From && g.ConsentAccepted)
@@ -260,7 +260,7 @@ public class SmsTwilioController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Nessun consenso attivo trovato";
-            var errorResponse = GenerateTwilioResponse("❌ Nessun consenso attivo per questo numero.");
+            var errorResponse = GenerateSmsResponse("❌ Nessun consenso attivo per questo numero.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return Ok(errorResponse);
@@ -285,13 +285,13 @@ public class SmsTwilioController(
         // Invia SMS di conferma revoca
         var stopMessage = $@"Autorizzazione ADAPTIVE_GDPR rimossa per {gdprRequest.Brand} ID Consenso: #{gdprRequest.Id} ❌ Tutti i consensi ed i dati personali / informazioni sono state rimosse dal sistema a norma del GDPR";
 
-        await _twilioConfig.SendSmsAsync(dto.From, stopMessage);
+        await _smsConfig.SendSmsAsync(dto.From, stopMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
         auditLog.ResponseSent = stopMessage;
         await SaveAuditLogAsync(auditLog);
 
-        return Ok(GenerateTwilioResponse(stopMessage));
+        return Ok(GenerateSmsResponse(stopMessage));
     }
 
     /// <summary>
@@ -334,7 +334,7 @@ public class SmsTwilioController(
     /// <summary>
     /// Gestione comando ADAPTIVE_PROFILING
     /// </summary>
-    private async Task<ActionResult> HandleAdaptiveProfilingCommand(SmsTwilioWebhookDTO dto, SmsAuditLog auditLog, string command)
+    private async Task<ActionResult> HandleAdaptiveProfilingCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
     {
         // Estrai parametri: "ADAPTIVE_PROFILING XXXXXXXXXX Mario Rossi"
         var parts = dto.Body.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -342,7 +342,7 @@ public class SmsTwilioController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Formato comando ADAPTIVE_PROFILING non valido";
-            var errorResponse = GenerateTwilioResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILING XXXXXXXXXX Nome Cognome");
+            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILING XXXXXXXXXX Nome Cognome");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return Ok(errorResponse);
@@ -360,7 +360,7 @@ public class SmsTwilioController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Mittente non autorizzato";
-            var errorResponse = GenerateTwilioResponse("❌ Solo i referenti registrati possono attivare profili.");
+            var errorResponse = GenerateSmsResponse("❌ Solo i referenti registrati possono attivare profili.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return Ok(errorResponse);
@@ -382,12 +382,12 @@ public class SmsTwilioController(
             // Invia SMS al ReferentMobileNumber (il mittente)
             var warningMessage = $@"ATTENZIONE {vehicle.ReferentName}! Procedura ADAPTIVE_GDPR mai eseguita per {targetPhone}. Completare la procedura ADAPTIVE_GDPR per {targetPhone} prima di continuare";
 
-            await _twilioConfig.SendSmsAsync(dto.From, warningMessage);
+            await _smsConfig.SendSmsAsync(dto.From, warningMessage);
 
             auditLog.ResponseSent = warningMessage;
             await SaveAuditLogAsync(auditLog);
 
-            return Ok(GenerateTwilioResponse(warningMessage));
+            return Ok(GenerateSmsResponse(warningMessage));
         }
 
         // Trova o crea riga ADAPTIVE_PROFILING
@@ -429,26 +429,26 @@ public class SmsTwilioController(
         // Invia SMS di conferma al numero target
         var confirmMessage = $@"Autorizzazione ADAPTIVE_PROFILING confermata Giorno: {DateTime.Now:dd/MM/yyyy} Azienda: {vehicle.ClientCompany?.Name} Brand: {vehicle.Brand} VIN: {vehicle.Vin} Validità profilo: {SMS_ADPATIVE_HOURS_THRESHOLD} ORE";
 
-        await _twilioConfig.SendSmsAsync(targetPhone, confirmMessage);
+        await _smsConfig.SendSmsAsync(targetPhone, confirmMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
         auditLog.VehicleIdResolved = vehicle.Id;
         auditLog.ResponseSent = confirmMessage;
         await SaveAuditLogAsync(auditLog);
 
-        await _logger.Info("TwilioSms.PROFILING", "Adaptive Profiling activated",
+        await _logger.Info("Sms.PROFILING", "Adaptive Profiling activated",
             $"VehicleId: {vehicle.Id}, Phone: {targetPhone}, Name: {fullName}");
 
-        return Ok(GenerateTwilioResponse(confirmMessage));
+        return Ok(GenerateSmsResponse(confirmMessage));
     }
 
     // ============================================================================
     // METODI HELPER PRIVATI
     // ============================================================================
 
-    private bool ValidateTwilioSignature()
+    private bool ValidateSignature()
     {
-        if (!_twilioConfig.GetConfiguration().EnableSignatureValidation)
+        if (!_smsConfig.GetConfiguration().EnableSignatureValidation)
             return true;
 
         try
@@ -466,7 +466,7 @@ public class SmsTwilioController(
                 formData[kvp.Key] = kvp.Value.ToString();
             }
 
-            return _twilioConfig.ValidateSignature(signature, url, formData);
+            return _smsConfig.ValidateSignature(signature, url, formData);
         }
         catch
         {
@@ -474,7 +474,7 @@ public class SmsTwilioController(
         }
     }
 
-    private string GenerateTwilioResponse(string message)
+    private string GenerateSmsResponse(string message)
     {
         return $@"<?xml version=""1.0"" encoding=""UTF-8""?>
         <Response>
@@ -543,7 +543,7 @@ public class SmsTwilioController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("SmsTwilio.GetHistory", "Error fetching profiling history",
+            await _logger.Error("Sms.GetHistory", "Error fetching profiling history",
                 $"VehicleId: {vehicleId}, Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero dello storico" });
         }
@@ -592,7 +592,7 @@ public class SmsTwilioController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("SmsTwilio.GetStatus", "Error fetching profiling status",
+            await _logger.Error("Sms.GetStatus", "Error fetching profiling status",
                 $"VehicleId: {vehicleId}, Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero dello stato" });
         }
@@ -632,7 +632,7 @@ public class SmsTwilioController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("SmsTwilio.GetConsents", "Error fetching GDPR consents",
+            await _logger.Error("Sms.GetConsents", "Error fetching GDPR consents",
                 $"Brand: {brand}, Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero dei consensi GDPR" });
         }
@@ -669,7 +669,7 @@ public class SmsTwilioController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("SmsTwilio.GetAllConsents", "Error fetching all GDPR consents",
+            await _logger.Error("Sms.GetAllConsents", "Error fetching all GDPR consents",
                 $"Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero dei consensi GDPR" });
         }
@@ -715,7 +715,7 @@ public class SmsTwilioController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("SmsTwilio.GetAuditLogs", "Error fetching audit logs",
+            await _logger.Error("Sms.GetAuditLogs", "Error fetching audit logs",
                 $"Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero dei log" });
         }
@@ -758,7 +758,7 @@ public class SmsTwilioController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("SmsTwilio.GetStats", "Error fetching profiling stats",
+            await _logger.Error("Sms.GetStats", "Error fetching profiling stats",
                 $"VehicleId: {vehicleId}, Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero delle statistiche" });
         }

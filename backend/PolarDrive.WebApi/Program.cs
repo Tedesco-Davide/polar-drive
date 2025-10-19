@@ -106,9 +106,9 @@ builder.Services.AddHostedService<FileCleanupService>();
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
 builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 
-// SERVIZI SMS TWILIO
-builder.Services.AddScoped<ISmsTwilioConfigurationService, SmsTwilioService>();
-builder.Services.AddScoped<SmsTwilioController>();
+// SERVIZI SMS
+builder.Services.AddScoped<ISmsConfigurationService, SmsService>();
+builder.Services.AddScoped<SmsController>();
 
 // Registrazione HttpClientFactory per le chiamate alle API esterne
 builder.Services.AddHttpClient();

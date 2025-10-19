@@ -3,9 +3,9 @@ using System.ComponentModel.DataAnnotations;
 namespace PolarDrive.Data.DTOs;
 
 /// <summary>
-/// DTO per webhook Twilio
+/// DTO per webhook SMS
 /// </summary>
-public class SmsTwilioWebhookDTO
+public class SmsWebhookDTO
 {
     [Required]
     public string MessageSid { get; set; } = string.Empty;
@@ -21,9 +21,9 @@ public class SmsTwilioWebhookDTO
 }
 
 /// <summary>
-/// DTO per configurazione Twilio
+/// DTO per configurazione SMS
 /// </summary>
-public class SmsTwilioConfigurationDTO
+public class SmsConfigurationDTO
 {
     [Required]
     public string AccountSid { get; set; } = string.Empty;
