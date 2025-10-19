@@ -13,33 +13,16 @@ Crea la rete con nome esplicito (comando da lanciare una sola volta)
 - docker network create polardrive-network-dev
 - docker network create polardrive-network-prod
 
-PULIZIA => 
+DEV => REBUILD FRONTEND POST MODIFICHE =>
 
-- docker ps -aq | ForEach-Object { docker stop $_ }
-- docker ps -aq | ForEach-Object { docker rm $_ }
-- docker rmi polardrive-frontend:latest
-- docker rmi polardrive-api:latest
-- docker rmi polardrive-mock:latest
+- STOP CONTAINER DEV => docker compose -f docker-compose.dev.yml down
+- REBUILD IMMAGINE DEV FRONTEND => docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
+- RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+- LOGS => docker compose -f docker-compose.dev.yml logs -f frontend
 
 IMMAGINI => build
-
-- docker build -f frontend/Dockerfile -t polardrive-frontend .
-- docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock .
-- docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api .
-
-CONTAINER => Avvia per la prima volta con ambiente DEV leggendo le variabili da .env.dev
-
-- docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
-
-CONTAINER => Riavvia
-
-- docker compose -f docker-compose.dev.yml down
-
-- docker compose -f docker-compose.dev.yml up -d
-
-VERIFICA =>
-
-- docker ps
+- docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
+- docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
 
 ### 🔷 FRONTEND POLARDRIVE ADMIN
 

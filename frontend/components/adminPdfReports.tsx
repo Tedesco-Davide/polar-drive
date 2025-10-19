@@ -5,7 +5,6 @@ import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect, useRef } from "react";
 import { NotebookPen, FileBadge, RefreshCw } from "lucide-react";
-import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
 import { ApiErrorResponse, ApiResponse } from "@/types/apiResponse";
 import Chip from "@/components/chip";
@@ -128,7 +127,7 @@ export default function AdminPdfReports({
         `ReportId: ${report.id}, Type: ${report.reportType}, HasPDF: ${report.hasPdfFile}`
       );
 
-      const downloadUrl = `${API_BASE_URL}/api/pdfreports/${report.id}/download`;
+      const downloadUrl = `/api/pdfreports/${report.id}/download`;
 
       const response = await fetch(downloadUrl, {
         method: "GET",
@@ -195,7 +194,7 @@ export default function AdminPdfReports({
       );
 
       const response = await fetch(
-        `${API_BASE_URL}/api/pdfreports/${report.id}/regenerate`,
+        `/api/pdfreports/${report.id}/regenerate`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -350,7 +349,7 @@ export default function AdminPdfReports({
   const handleNotesUpdate = async (updated: PdfReport) => {
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/pdfreports/${updated.id}/notes`,
+        `/api/pdfreports/${updated.id}/notes`,
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },

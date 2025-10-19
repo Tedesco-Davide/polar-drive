@@ -12,6 +12,7 @@ using PolarDrive.WebApi.Controllers;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using PolarDrive.WebApi.PolarAiReports;
+using Microsoft.Data.SqlClient;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -76,7 +77,7 @@ builder.Services.AddCors(options =>
 
 // Setup DbContext
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Server=localhost;Database=DataPolar_PolarDrive_DB_DEV;Trusted_Connection=true;TrustServerCertificate=true;";
+    ?? throw new InvalidOperationException("❌ Connection string 'DefaultConnection' not found. Please set ConnectionStrings__DefaultConnection environment variable.");
 
 builder.Services.AddDbContext<PolarDriveDbContext>(options =>
     options.UseSqlServer(connectionString)
@@ -166,9 +167,14 @@ using (var scope = app.Services.CreateScope())
     try
     {
 
-        var dbName = app.Environment.IsDevelopment()
-            ? "DataPolar_PolarDrive_DB_DEV"
-            : "DataPolar_PolarDrive_DB_PROD";
+        // Estrai il DB name dalla connection string effettiva
+        var connectionStringBuilder = new SqlConnectionStringBuilder(connectionString);
+        var dbName = connectionStringBuilder.InitialCatalog;
+        var serverName = connectionStringBuilder.DataSource;
+
+    await logger.Info("Program.Main",
+        "PolarDrive Web API is starting...",
+        $"Database: {dbName}");
 
         await logger.Info("Program.Main",
             "PolarDrive Web API is starting...",

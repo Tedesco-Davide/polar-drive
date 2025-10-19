@@ -8,7 +8,7 @@ import {
   User,
   Shield,
 } from "lucide-react";
-import { API_BASE_URL } from "@/utils/api";
+
 import { logFrontendEvent } from "@/utils/logger";
 
 interface SmsAuditLog {
@@ -76,7 +76,7 @@ export default function AdminSmsManagementModal({
 
       // Carica sessioni ADAPTIVE_PROFILING
       const profilingResponse = await fetch(
-        `${API_BASE_URL}/api/SmsAdaptiveProfiling/${vehicleId}/history`
+        `/api/SmsAdaptiveProfiling/${vehicleId}/history`
       );
       if (profilingResponse.ok) {
         const sessions = await profilingResponse.json();
@@ -85,7 +85,7 @@ export default function AdminSmsManagementModal({
 
       // Carica audit logs
       const auditResponse = await fetch(
-        `${API_BASE_URL}/api/Sms/audit-logs?pageSize=50`
+        `/api/Sms/audit-logs?pageSize=50`
       );
       if (auditResponse.ok) {
         const auditData = await auditResponse.json();
@@ -97,7 +97,7 @@ export default function AdminSmsManagementModal({
 
       // Carica consensi GDPR per il Brand
       const gdprResponse = await fetch(
-        `${API_BASE_URL}/api/SmsAdaptiveGdpr/consents?brand=${vehicleBrand}`
+        `/api/SmsAdaptiveGdpr/consents?brand=${vehicleBrand}`
       );
       if (gdprResponse.ok) {
         const consents = await gdprResponse.json();

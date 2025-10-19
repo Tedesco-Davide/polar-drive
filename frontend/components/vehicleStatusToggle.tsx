@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/utils/api";
+
 import { useTranslation } from "next-i18next";
 import { logFrontendEvent } from "@/utils/logger";
 import { CircleCheck, CircleX } from "lucide-react";
@@ -82,7 +82,7 @@ export default function VehicleStatusToggle({
 
     try {
       setLoading(true);
-      await axios.patch(`${API_BASE_URL}/api/ClientVehicles/${id}/status`, {
+      await axios.patch(`/api/ClientVehicles/${id}/status`, {
         IsActive: newIsActive,
         IsFetching: newIsFetching,
       });

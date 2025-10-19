@@ -8,7 +8,7 @@ import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import { FileManager } from "@/types/adminFileManagerTypes";
-import { API_BASE_URL } from "@/utils/api";
+
 import { WorkflowRow } from "@/types/adminWorkflowTypes";
 import { PdfReport } from "@/types/reportInterfaces";
 import { ClientVehicleWithCompany as ClientVehicleWithCompany } from "@/types/adminWorkflowTypesExtended";
@@ -49,17 +49,17 @@ export default function AdminDashboard() {
     try {
       // 🔁 Veicoli
       const resClientVehicles = await fetch(
-        `${API_BASE_URL}/api/ClientVehicles`
+        `/api/ClientVehicles`
       );
       const data: ClientVehicleWithCompany[] = await resClientVehicles.json();
 
       // 🔁 Aziende
-      const resCompanies = await fetch(`${API_BASE_URL}/api/clientcompanies`);
+      const resCompanies = await fetch(`/api/clientcompanies`);
       const companiesData = await resCompanies.json();
       setClients(companiesData);
 
       // 🔁 Consensi
-      const resConsents = await fetch(`${API_BASE_URL}/api/clientconsents`);
+      const resConsents = await fetch(`/api/clientconsents`);
       const consents: ClientConsent[] = await resConsents.json();
       setClientConsents(consents);
 
@@ -150,7 +150,7 @@ export default function AdminDashboard() {
       );
 
       const res = await fetch(
-        `${API_BASE_URL}/api/pdfreports?t=${Date.now()}`,
+        `/api/pdfreports?t=${Date.now()}`,
         {
           headers: {
             "Cache-Control": "no-cache",
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
 
   const refreshFileManagerJobs = async (): Promise<FileManager[]> => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/filemanager`);
+      const res = await fetch(`/api/filemanager`);
 
       if (!res.ok) {
         throw new Error(
@@ -245,11 +245,11 @@ export default function AdminDashboard() {
         // ✅ Fetch delle API principali (che funzionano)
         const [companiesRes, vehiclesRes, consentsRes, outagesRes, reportsRes] =
           await Promise.all([
-            fetch(`${API_BASE_URL}/api/clientcompanies`),
-            fetch(`${API_BASE_URL}/api/clientvehicles`),
-            fetch(`${API_BASE_URL}/api/clientconsents`),
-            fetch(`${API_BASE_URL}/api/outageperiods`),
-            fetch(`${API_BASE_URL}/api/pdfreports`),
+            fetch(`/api/clientcompanies`),
+            fetch(`/api/clientvehicles`),
+            fetch(`/api/clientconsents`),
+            fetch(`/api/outageperiods`),
+            fetch(`/api/pdfreports`),
           ]);
 
         const companiesData = await companiesRes.json();
@@ -262,7 +262,7 @@ export default function AdminDashboard() {
         // ✅ Fetch separata per FileManager con gestione errori
         let schedulerData: FileManager[] = [];
         try {
-          const schedulerRes = await fetch(`${API_BASE_URL}/api/filemanager`);
+          const schedulerRes = await fetch(`/api/filemanager`);
 
           if (!schedulerRes.ok) {
             throw new Error(
@@ -443,7 +443,7 @@ export default function AdminDashboard() {
                         t={t}
                         refreshClientConsents={async () => {
                           const res = await fetch(
-                            `${API_BASE_URL}/api/clientconsents`
+                            `/api/clientconsents`
                           );
                           const updatedClientConsents = await res.json();
                           setClientConsents(updatedClientConsents);
@@ -454,7 +454,7 @@ export default function AdminDashboard() {
                         t={t}
                         refreshOutagePeriods={async () => {
                           const res = await fetch(
-                            `${API_BASE_URL}/api/outageperiods`
+                            `/api/outageperiods`
                           );
                           const updatedOutagePeriods = await res.json();
                           setOutagePeriods(updatedOutagePeriods);

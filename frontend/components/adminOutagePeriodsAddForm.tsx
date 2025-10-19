@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { TFunction } from "i18next";
 import { parseISO, isValid, isAfter } from "date-fns";
-import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
 import { formatOutageDateTimeToSave } from "@/utils/date";
 import { OutageFormData } from "@/types/outagePeriodTypes";
@@ -59,7 +58,7 @@ export default function AdminOutagePeriodsAddForm({
     const resolveCompanyAndVehicleIds = async () => {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${formData.companyVatNumber}&vin=${formData.vin}`
+          `/api/clientconsents/resolve-ids?vatNumber=${formData.companyVatNumber}&vin=${formData.vin}`
         );
 
         if (response.ok) {
@@ -239,7 +238,7 @@ export default function AdminOutagePeriodsAddForm({
       };
 
       // ✅ Crea l'outage prima
-      const outageResponse = await fetch(`${API_BASE_URL}/api/outageperiods`, {
+      const outageResponse = await fetch(`/api/outageperiods`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -261,7 +260,7 @@ export default function AdminOutagePeriodsAddForm({
         zipFormData.append("zipFile", formData.zipFile);
 
         const zipResponse = await fetch(
-          `${API_BASE_URL}/api/outageperiods/${outageId}/upload-zip`,
+          `/api/outageperiods/${outageId}/upload-zip`,
           {
             method: "POST",
             body: zipFormData,

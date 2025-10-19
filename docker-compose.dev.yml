@@ -8,7 +8,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
-      - TeslaApi__BaseUrl=http://mock-api:9090
+      - TeslaApi__BaseUrl=${TESLA_API_BASE_URL}
       - TeslaApi__ClientId=${TESLA_CLIENT_ID}
       - TeslaApi__ClientSecret=${TESLA_CLIENT_SECRET}
       - Jwt__SecretKey=${JWT_SECRET_KEY}
@@ -48,7 +48,7 @@ services:
     image: polardrive-frontend:latest
     environment:
       - NODE_ENV=production # Necessario per Next.js standalone
-      - API_BACKEND_URL=http://host.docker.internal:${NEXT_PUBLIC_API_BASE}
+      - API_BACKEND_URL=http://host.docker.internal:8080
     ports:
       - "3000:3000"
     networks:

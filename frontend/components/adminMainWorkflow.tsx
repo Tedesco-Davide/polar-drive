@@ -4,7 +4,7 @@ import { FileArchive, UserSearch, Link, MessageSquare } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { FuelType } from "@/types/fuelTypes";
-import { API_BASE_URL } from "@/utils/api";
+
 import {
   adminWorkflowTypesInputForm,
   WorkflowRow,
@@ -211,7 +211,7 @@ export default function AdminMainWorkflow({
       formDataToSend.append("ConsentZip", formData.zipFilePath);
 
       const response = await fetch(
-        `${API_BASE_URL}/api/adminfullclientinsert`,
+        `/api/adminfullclientinsert`,
         {
           method: "POST",
           body: formDataToSend,
@@ -372,7 +372,7 @@ export default function AdminMainWorkflow({
       setIsStatusChanging(true);
 
       const response = await fetch(
-        `${API_BASE_URL}/api/clientconsents/download-all-by-company?vatNumber=${encodeURIComponent(
+        `/api/clientconsents/download-all-by-company?vatNumber=${encodeURIComponent(
           companyVatNumber
         )}`,
         { method: "GET" }
@@ -525,7 +525,7 @@ export default function AdminMainWorkflow({
       setGeneratingProfileId(companyId);
 
       const response = await fetch(
-        `${API_BASE_URL}/api/ClientProfile/${companyId}/generate-profile-pdf`,
+        `/api/ClientProfile/${companyId}/generate-profile-pdf`,
         {
           method: "POST",
           headers: {
@@ -721,7 +721,7 @@ export default function AdminMainWorkflow({
                       }
                       const brand = entry.brand.toLowerCase();
                       const res = await fetch(
-                        `${API_BASE_URL}/api/VehicleOAuth/GenerateUrl?brand=${brand}&vin=${entry.vehicleVIN}`
+                        `/api/VehicleOAuth/GenerateUrl?brand=${brand}&vin=${entry.vehicleVIN}`
                       );
                       const data = await res.json();
                       if (data?.url) {

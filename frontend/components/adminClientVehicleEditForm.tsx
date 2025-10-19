@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { TFunction } from "i18next";
-import { API_BASE_URL } from "@/utils/api";
 import { formatDateToDisplay } from "@/utils/date";
 import { vehicleOptions } from "@/types/vehicleOptions";
 import { fuelTypeOptions } from "@/types/fuelTypes";
@@ -117,7 +116,7 @@ export default function AdminClientVehicleEditForm({
       );
 
       await axios.put(
-        `${API_BASE_URL}/api/ClientVehicles/${formData.id}`,
+        `/api/ClientVehicles/${formData.id}`,
         formData
       );
 

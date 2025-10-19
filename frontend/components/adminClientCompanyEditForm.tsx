@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { TFunction } from "i18next";
-import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
 
 type Props = {
@@ -122,7 +121,7 @@ export default function AdminClientCompanyEditForm({
       };
 
       const companyResponse = await fetch(
-        `${API_BASE_URL}/api/ClientCompanies/${formData.id}`,
+        `/api/ClientCompanies/${formData.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -140,7 +139,7 @@ export default function AdminClientCompanyEditForm({
       if (formData.correspondingVehicleId) {
         // Recupera il veicolo corrente
         const vehicleResponse = await fetch(
-          `${API_BASE_URL}/api/ClientVehicles/${formData.correspondingVehicleId}`
+          `/api/ClientVehicles/${formData.correspondingVehicleId}`
         );
 
         if (!vehicleResponse.ok) {
@@ -173,7 +172,7 @@ export default function AdminClientCompanyEditForm({
         };
 
         const updateResponse = await fetch(
-          `${API_BASE_URL}/api/ClientVehicles/${formData.correspondingVehicleId}`,
+          `/api/ClientVehicles/${formData.correspondingVehicleId}`,
           {
             method: "PUT",
             headers: { "Content-Type": "application/json" },

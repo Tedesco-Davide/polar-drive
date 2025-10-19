@@ -13,7 +13,7 @@ import {
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { format } from "date-fns";
-import { API_BASE_URL } from "@/utils/api";
+
 import { logFrontendEvent } from "@/utils/logger";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import PaginationControls from "@/components/paginationControls";
@@ -140,7 +140,7 @@ export default function AdminOutagePeriodsTable({
       formData.append("zipFile", file);
 
       const response = await fetch(
-        `${API_BASE_URL}/api/outageperiods/${outageId}/upload-zip`,
+        `/api/outageperiods/${outageId}/upload-zip`,
         {
           method: "POST",
           body: formData,
@@ -185,7 +185,7 @@ export default function AdminOutagePeriodsTable({
 
   const handleZipDownload = (outageId: number) => {
     window.open(
-      `${API_BASE_URL}/api/outageperiods/${outageId}/download-zip`,
+      `/api/outageperiods/${outageId}/download-zip`,
       "_blank"
     );
     logFrontendEvent(
@@ -203,7 +203,7 @@ export default function AdminOutagePeriodsTable({
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/outageperiods/${outageId}/resolve`,
+        `/api/outageperiods/${outageId}/resolve`,
         { method: "PATCH" }
       );
 
@@ -239,7 +239,7 @@ export default function AdminOutagePeriodsTable({
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/outageperiods/${outageId}/delete-zip`,
+        `/api/outageperiods/${outageId}/delete-zip`,
         { method: "DELETE" }
       );
 
@@ -552,7 +552,7 @@ export default function AdminOutagePeriodsTable({
           onSave={async (updated) => {
             try {
               const response = await fetch(
-                `${API_BASE_URL}/api/outageperiods/${updated.id}/notes`,
+                `/api/outageperiods/${updated.id}/notes`,
                 {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },

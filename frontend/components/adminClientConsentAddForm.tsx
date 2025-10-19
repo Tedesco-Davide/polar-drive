@@ -1,6 +1,5 @@
 import { TFunction } from "i18next";
 import { formatDateToSave } from "@/utils/date";
-import { API_BASE_URL } from "@/utils/api";
 import { isAfter, isValid, parseISO } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
 import DatePicker from "react-datepicker";
@@ -52,7 +51,7 @@ export default function AdminClientConsentAddForm({
     const resolveCompanyAndVehicleIds = async () => {
       try {
         const response = await fetch(
-          `${API_BASE_URL}/api/clientconsents/resolve-ids?vatNumber=${formData.companyVatNumber}&vin=${formData.vehicleVIN}`
+        `/api/clientconsents/resolve-ids?vatNumber=${formData.companyVatNumber}&vin=${formData.vehicleVIN}`
         );
 
         if (response.ok) {
@@ -189,16 +188,16 @@ export default function AdminClientConsentAddForm({
       };
 
       // ✅ Crea il consent prima
-      const consentResponse = await fetch(
-        `${API_BASE_URL}/api/clientconsents`,
+        const consentResponse = await fetch(
+        `/api/clientconsents`,
         {
-          method: "POST",
-          headers: {
+            method: "POST",
+            headers: {
             "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
+            },
+            body: JSON.stringify(payload),
         }
-      );
+        );
 
       if (!consentResponse.ok) {
         const errorText = await consentResponse.text();
@@ -214,11 +213,11 @@ export default function AdminClientConsentAddForm({
         zipFormData.append("zipFile", formData.zipFile);
 
         const zipResponse = await fetch(
-          `${API_BASE_URL}/api/clientconsents/${consentId}/upload-zip`,
-          {
+        `/api/clientconsents/${consentId}/upload-zip`,
+        {
             method: "POST",
             body: zipFormData,
-          }
+        }
         );
 
         if (!zipResponse.ok) {

@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { TFunction } from "i18next";
 import { Plus, Minus } from "lucide-react";
-import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
-import DatePicker from "react-datepicker";
 import { isAfter, isValid, parseISO } from "date-fns";
+import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
 interface AdminFileManagerModalProps {
@@ -61,8 +60,8 @@ export default function AdminFileManagerModal({
   const loadAvailableFilters = async () => {
     try {
       const [companiesRes, brandsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/filemanager/available-companies`),
-        fetch(`${API_BASE_URL}/api/filemanager/available-brands`),
+        fetch(`/api/filemanager/available-companies`),
+        fetch(`/api/filemanager/available-brands`),
       ]);
 
       const companies = await companiesRes.json();
@@ -151,7 +150,7 @@ export default function AdminFileManagerModal({
       );
 
       const response = await fetch(
-        `${API_BASE_URL}/api/filemanager/filemanager-download`,
+        `/api/filemanager/filemanager-download`,
         {
           method: "POST",
           headers: {

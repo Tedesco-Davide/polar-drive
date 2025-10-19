@@ -5,7 +5,6 @@ import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { useEffect, useState, useRef } from "react";
 import { FileArchive, NotebookPen, Download, Trash2 } from "lucide-react";
-import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -173,7 +172,7 @@ export default function AdminFileManagerTable({
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/filemanager/${job.id}/download`,
+        `/api/filemanager/${job.id}/download`,
         { method: "GET" }
       );
 
@@ -219,7 +218,7 @@ export default function AdminFileManagerTable({
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/filemanager/${job.id}`,
+        `/api/filemanager/${job.id}`,
         { method: "DELETE" }
       );
 
@@ -518,7 +517,7 @@ export default function AdminFileManagerTable({
           onSave={async (updated) => {
             try {
               await fetch(
-                `${API_BASE_URL}/api/filemanager/${updated.id}/notes`,
+                `/api/filemanager/${updated.id}/notes`,
                 {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },

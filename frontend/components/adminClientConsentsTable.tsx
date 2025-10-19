@@ -6,7 +6,6 @@ import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
 import { NotebookPen, Clock } from "lucide-react";
-import { API_BASE_URL } from "@/utils/api";
 import { logFrontendEvent } from "@/utils/logger";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
@@ -114,7 +113,7 @@ export default function AdminClientConsents({
       formData.append("zipFile", file);
 
       const response = await fetch(
-        `${API_BASE_URL}/api/clientconsents/${consentId}/upload-zip`,
+        `/api/clientconsents/${consentId}/upload-zip`,
         {
           method: "POST",
           body: formData,
@@ -159,7 +158,7 @@ export default function AdminClientConsents({
     const handleZipDownload = async (consentId: number) => {
     try {
         const response = await fetch(
-        `${API_BASE_URL}/api/clientconsents/${consentId}/download`
+        `/api/clientconsents/${consentId}/download`
         );
 
         const contentType = response.headers.get("content-type");
@@ -213,7 +212,7 @@ export default function AdminClientConsents({
 
     try {
       const response = await fetch(
-        `${API_BASE_URL}/api/clientconsents/${consentId}/delete-zip`,
+        `/api/clientconsents/${consentId}/delete-zip`,
         { method: "DELETE" }
       );
 
@@ -443,7 +442,7 @@ export default function AdminClientConsents({
           onSave={async (updated) => {
             try {
               const response = await fetch(
-                `${API_BASE_URL}/api/clientconsents/${updated.id}/notes`,
+                `/api/clientconsents/${updated.id}/notes`,
                 {
                   method: "PATCH",
                   headers: { "Content-Type": "application/json" },
