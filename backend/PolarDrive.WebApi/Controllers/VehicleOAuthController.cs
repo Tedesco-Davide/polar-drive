@@ -11,14 +11,15 @@ namespace PolarDrive.WebApi.Controllers;
 public class VehicleOAuthController : ControllerBase
 {
     private readonly PolarDriveDbContext _db;
-    private readonly PolarDriveLogger _logger;
     private readonly IWebHostEnvironment _env;
+    private readonly IConfiguration _cfg;
+    private readonly PolarDriveLogger _logger;
 
-
-    public VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment env)
+    public VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment env, IConfiguration cfg)
     {
         _db = db;
         _env = env;
+        _cfg = cfg;
         _logger = new PolarDriveLogger(_db);
     }
 
@@ -36,9 +37,11 @@ public class VehicleOAuthController : ControllerBase
         brand = brand.Trim().ToLowerInvariant();
 
         string clientId;
-        string redirectUri = "https://localhost:5041/api/VehicleOAuth/OAuthCallback";
         string scopes;
         string authBaseUrl;
+
+        var publicBase = _cfg["PublicBaseUrl"]?.TrimEnd('/');
+        string redirectUri = $"{publicBase}/api/VehicleOAuth/OAuthCallback";
 
         try
         {
@@ -124,7 +127,7 @@ public class VehicleOAuthController : ControllerBase
         {
             var tokens = brand.ToLowerInvariant() switch
             {
-                "tesla" => await TeslaOAuthService.ExchangeCodeForTokens(code, _env),
+                "tesla" => await TeslaOAuthService.ExchangeCodeForTokens(code, _cfg, _env),
                 _ => throw new NotSupportedException($"Brand '{brand}' not supported")
             };
 
@@ -169,39 +172,45 @@ public class VehicleOAuthController : ControllerBase
 
     public static class TeslaOAuthService
     {
-        public static async Task<(string AccessToken, string RefreshToken)> ExchangeCodeForTokens(string code, IWebHostEnvironment env)
+        public static async Task<(string AccessToken, string RefreshToken)> ExchangeCodeForTokens(
+            string code,
+            IConfiguration configuration,
+            IWebHostEnvironment env)
         {
             using var client = new HttpClient();
 
-            var content = new FormUrlEncodedContent(new Dictionary<string, string>
+            // 🔹 Legge la base URL configurata (es. http://mock-api:9090 in dev)
+            var baseUrl = configuration["TeslaApi:BaseUrl"];
+
+            // 🔹 Determina endpoint corretto
+            var tokenUrl = !string.IsNullOrWhiteSpace(baseUrl)
+                ? $"{baseUrl.TrimEnd('/')}/oauth2/v3/token"
+                : env.IsDevelopment()
+                    ? "http://mock-api:9090/oauth2/v3/token"
+                    : "https://auth.tesla.com/oauth2/v3/token";
+
+            // 🔹 Parametri comuni
+            var parameters = new Dictionary<string, string>
             {
                 ["grant_type"] = "authorization_code",
                 ["code"] = code
-            });
+            };
 
-            string tokenUrl;
-            if (env.IsDevelopment())
+            // 🔹 Se siamo in produzione (Tesla reale)
+            if (!env.IsDevelopment())
             {
-                // ✅ CASO MOCK → chiama il fake backend
-                tokenUrl = "http://localhost:5071/oauth2/v3/token";
-            }
-            else
-            {
-                // ✅ CASO REALE → chiama Tesla
-                tokenUrl = "https://auth.tesla.com/oauth2/v3/token";
-                // Aggiungi parametri extra per Tesla reale
-                content = new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    ["grant_type"] = "authorization_code",
-                    ["client_id"] = "ownerapi",
-                    ["code"] = code,
-                    ["redirect_uri"] = "https://localhost:5041/api/OAuthCallback"
-                });
+                parameters["client_id"] = "ownerapi";
+                parameters["redirect_uri"] =
+                    configuration["PublicBaseUrl"]?.TrimEnd('/') + "/api/OAuthCallback";
             }
 
+            var content = new FormUrlEncodedContent(parameters);
+
+            // 🔹 Esegue la POST al token endpoint
             var response = await client.PostAsync(tokenUrl, content);
             response.EnsureSuccessStatusCode();
 
+            // 🔹 Legge e parse il JSON di risposta
             var json = await response.Content.ReadAsStringAsync();
             var data = JsonSerializer.Deserialize<JsonElement>(json);
 

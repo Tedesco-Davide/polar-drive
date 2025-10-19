@@ -1,44 +1,30 @@
 using PolarDrive.Data.DTOs;
-using Twilio;
-using Twilio.Rest.Api.V2010.Account;
-using Twilio.Types;
+using Vonage;
+using Vonage.Messaging;
+using Vonage.Request;
 
 namespace PolarDrive.WebApi.Services;
 
 public interface ISmsConfigurationService
 {
     SmsConfigurationDTO GetConfiguration();
-    bool ValidateSignature(string expectedSignature, string url, Dictionary<string, string> parameters);
     bool IsPhoneNumberAllowed(string phoneNumber);
     Task<bool> IsRateLimitExceeded(string phoneNumber);
     Task<bool> SendSmsAsync(string phoneNumber, string message);
 }
 
-public class SmsService(IConfiguration configuration) : ISmsConfigurationService
+public class SmsService(IConfiguration configuration, ILogger<SmsService> logger) : ISmsConfigurationService
 {
-    private readonly SmsConfigurationDTO _config = configuration.GetSection("Twilio").Get<SmsConfigurationDTO>()
-                  ?? throw new InvalidOperationException("Twilio configuration not found");
+    private readonly SmsConfigurationDTO _config = configuration.GetSection("Vonage").Get<SmsConfigurationDTO>()
+        ?? throw new InvalidOperationException("Vonage configuration not found");
+
+    private readonly ILogger<SmsService> _logger = logger;
+
     private readonly Dictionary<string, List<DateTime>> _rateLimitTracker = [];
-    
+
     private readonly Lock _rateLimitLock = new();
 
     public SmsConfigurationDTO GetConfiguration() => _config;
-
-    public bool ValidateSignature(string expectedSignature, string url, Dictionary<string, string> parameters)
-    {
-        if (!_config.EnableSignatureValidation)
-            return true;
-
-        try
-        {
-            var validator = new Twilio.Security.RequestValidator(_config.AuthToken);
-            return validator.Validate(url, parameters, expectedSignature);
-        }
-        catch
-        {
-            return false;
-        }
-    }
 
     public bool IsPhoneNumberAllowed(string phoneNumber)
     {
@@ -46,22 +32,21 @@ public class SmsService(IConfiguration configuration) : ISmsConfigurationService
         var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
         if (env == "Development")
         {
-            Console.WriteLine($"🔴 DEV MODE: Allowing all numbers ({phoneNumber})");
+            _logger.LogWarning("DEV MODE: Allowing all numbers ({PhoneNumber})", phoneNumber);
             return true;
         }
 
         // In produzione, usa la whitelist
         if (_config?.AllowedPhoneNumbers?.Any() != true)
         {
-            // Se non c'è whitelist configurata, per sicurezza RIFIUTA
-            Console.WriteLine($"⚠️ PROD MODE: No whitelist configured - REJECTING {phoneNumber}");
+            _logger.LogWarning("PROD MODE: No whitelist configured - REJECTING {PhoneNumber}", phoneNumber);
             return false;
         }
 
         var isAllowed = _config.AllowedPhoneNumbers.Contains(phoneNumber);
         if (!isAllowed)
         {
-            Console.WriteLine($"⚠️ PROD MODE: Phone {phoneNumber} not in whitelist");
+            _logger.LogWarning("PROD MODE: Phone {PhoneNumber} not in whitelist", phoneNumber);
         }
 
         return isAllowed;
@@ -82,7 +67,11 @@ public class SmsService(IConfiguration configuration) : ISmsConfigurationService
 
             // Controlla rate limit
             if (_rateLimitTracker[phoneNumber].Count >= _config.RateLimitPerMinute)
+            {
+                _logger.LogInformation("Rate limit superato per {PhoneNumber}: {Count}/{Limit} in 60s",
+                    phoneNumber, _rateLimitTracker[phoneNumber].Count, _config.RateLimitPerMinute);
                 return Task.FromResult(true);
+            }
 
             // Aggiungi timestamp corrente
             _rateLimitTracker[phoneNumber].Add(now);
@@ -94,18 +83,47 @@ public class SmsService(IConfiguration configuration) : ISmsConfigurationService
     {
         try
         {
-            TwilioClient.Init(_config.AccountSid, _config.AuthToken);
-            
-            var messageResource = await MessageResource.CreateAsync(
-                body: message,
-                from: new PhoneNumber(_config.PhoneNumber),
-                to: new PhoneNumber(phoneNumber)
-            );
+            var credentials = Credentials.FromApiKeyAndSecret(_config.AccountSid, _config.AuthToken);
+            var client = new VonageClient(credentials);
 
-            return messageResource.Status != MessageResource.StatusEnum.Failed;
+            var request = new SendSmsRequest
+            {
+                To = phoneNumber,
+                From = _config.PhoneNumber,
+                Text = message
+            };
+
+            var response = await client.SmsClient.SendAnSmsAsync(request);
+
+            // "message-count" è una stringa nel modello Vonage
+            int.TryParse(response.MessageCount, out var declaredCount);
+            var messages = response.Messages;
+
+            if (messages is null || messages.Length == 0)
+            {
+                _logger.LogError("Vonage: response.Messages è vuoto o null per destinatario {PhoneNumber}. Dichiarati: {DeclaredCount}",
+                    phoneNumber, declaredCount);
+                return false;
+            }
+
+            // Successo se tutti i segmenti hanno Status == "0"
+            var allOk = messages.All(m => m.Status == "0");
+            if (allOk)
+            {
+                _logger.LogInformation("SMS inviato a {PhoneNumber} ({Segments} segmenti; dichiarati: {DeclaredCount}).",
+                    phoneNumber, messages.Length, declaredCount);
+                return true;
+            }
+
+            // Logga il primo errore utile
+            var firstError = messages.FirstOrDefault(m => m.Status != "0");
+            _logger.LogWarning("Vonage error {Status} per {PhoneNumber}: {ErrorText}",
+                firstError?.Status, phoneNumber, firstError?.ErrorText);
+            return false;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Vonage SendSmsAsync exception per {PhoneNumber}", phoneNumber);
             return false;
         }
     }

@@ -19,34 +19,59 @@ public class SmsController(
     private readonly ISmsConfigurationService _smsConfig = smsConfig;
     private readonly PolarDriveLogger _logger = new(db);
 
+    [HttpGet("test-sms")]
+    public async Task<IActionResult> TestSendSms([FromServices] ISmsConfigurationService sms)
+    {
+        await sms.SendSmsAsync("+393926321311", "🚀 Test SMS PolarDrive via Vonage OK");
+        return Ok("SMS di test inviato.");
+    }
+
     /// <summary>
     /// 🎯 WEBHOOK PRINCIPALE - Riceve SMS
     /// </summary>
+    [HttpGet("webhook")] // Vonage può chiamare in GET
     [HttpPost("webhook")]
-    public async Task<ActionResult> ReceiveSms([FromForm] SmsWebhookDTO dto)
+    public async Task<ActionResult> ReceiveSms([FromForm] SmsWebhookDTO? dto)
     {
+        // Leggi dai parametri HTTP se dto è nullo o parziale
+        string from = dto?.From 
+            ?? GetParam("msisdn") 
+            ?? string.Empty;
+
+        string to = dto?.To
+            ?? GetParam("to")
+            ?? string.Empty;
+
+        string body = dto?.Body
+            ?? GetParam("text")
+            ?? string.Empty;
+
+        string messageId = dto?.MessageSid
+            ?? GetParam("messageId")
+            ?? string.Empty;
+
         var auditLog = new SmsAuditLog
         {
-            MessageSid = dto.MessageSid,
-            FromPhoneNumber = dto.From,
-            ToPhoneNumber = dto.To,
-            MessageBody = dto.Body,
+            MessageSid = messageId,
+            FromPhoneNumber = from,
+            ToPhoneNumber = to,
+            MessageBody = body,
             ReceivedAt = DateTime.Now,
             ProcessingStatus = "PROCESSING"
         };
 
         try
         {
-            // 🔒 1. VALIDAZIONE SICUREZZA
-            if (!ValidateSignature())
+            // 🔒 1. VALIDAZIONE SICUREZZA (Vonage)
+            if (!ValidateSignatureVonage())
             {
                 auditLog.ProcessingStatus = "REJECTED";
-                auditLog.ErrorMessage = "Invalid Sms signature";
+                auditLog.ErrorMessage = "Invalid Vonage signature";
                 await SaveAuditLogAsync(auditLog);
-                return Unauthorized("Invalid signature");
+                return OkSms("Invalid signature");
             }
 
-            if (!_smsConfig.IsPhoneNumberAllowed(dto.From))
+            if (!_smsConfig.IsPhoneNumberAllowed(from))
             {
                 auditLog.ProcessingStatus = "REJECTED";
                 auditLog.ErrorMessage = "Phone number not in whitelist";
@@ -56,10 +81,10 @@ public class SmsController(
                 auditLog.ResponseSent = response;
                 await UpdateAuditLogAsync(auditLog);
 
-                return Ok(response);
+                return OkSms(response);
             }
 
-            if (await _smsConfig.IsRateLimitExceeded(dto.From))
+            if (await _smsConfig.IsRateLimitExceeded(from))
             {
                 auditLog.ProcessingStatus = "REJECTED";
                 auditLog.ErrorMessage = "Rate limit exceeded";
@@ -69,35 +94,28 @@ public class SmsController(
                 auditLog.ResponseSent = response;
                 await UpdateAuditLogAsync(auditLog);
 
-                return Ok(response);
+                return OkSms(response);
             }
 
             // 📱 2. PARSING COMANDO
-            var command = ParseSmsCommand(dto.Body);
+            var command = ParseSmsCommand(body);
 
-            // 🎯 3. GESTIONE COMANDO ADAPTIVE_GDPR
+            // 🎯 3. GESTIONE COMANDI
             if (command.StartsWith("ADAPTIVE_GDPR"))
-            {
-                return await HandleAdaptiveGdprCommand(dto, auditLog, command);
-            }
+                return await HandleAdaptiveGdprCommand(
+                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command);
 
-            // 🎯 4. GESTIONE COMANDO ADAPTIVE_PROFILING
             if (command.StartsWith("ADAPTIVE_PROFILING"))
-            {
-                return await HandleAdaptiveProfilingCommand(dto, auditLog, command);
-            }
+                return await HandleAdaptiveProfilingCommand(
+                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command);
 
-            // 🎯 5. GESTIONE ACCETTO
             if (command == "ACCETTO")
-            {
-                return await HandleAccettoCommand(dto, auditLog);
-            }
+                return await HandleAccettoCommand(
+                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog);
 
-            // 🎯 6. GESTIONE STOP
             if (command == "STOP")
-            {
-                return await HandleStopCommand(dto, auditLog);
-            }
+                return await HandleStopCommand(
+                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog);
 
             // ❌ Comando non riconosciuto
             auditLog.ProcessingStatus = "ERROR";
@@ -106,7 +124,7 @@ public class SmsController(
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
 
-            return Ok(errorResponse);
+            return OkSms(errorResponse);
         }
         catch (Exception ex)
         {
@@ -116,9 +134,46 @@ public class SmsController(
             await SaveAuditLogAsync(auditLog);
 
             await _logger.Error("Sms.Webhook", "Fatal error processing SMS",
-                $"Error: {ex.Message}, From: {dto.From}");
+                $"Error: {ex.Message}, From: {from}");
 
-            return Ok(auditLog.ResponseSent);
+            return OkSms(auditLog.ResponseSent);
+        }
+    }
+
+    // 🎯 WEBHOOK DLR - Delivery Receipts (stato invii)
+    [HttpGet("dlr")]   // Vonage può chiamare GET
+    [HttpPost("dlr")]
+    public async Task<ActionResult> DeliveryReceipt()
+    {
+        var auditLog = new SmsAuditLog
+        {
+            MessageSid = GetParam("messageId") ?? string.Empty,
+            FromPhoneNumber = GetParam("msisdn") ?? string.Empty, // mittente
+            ToPhoneNumber = GetParam("to") ?? string.Empty,       // nostro numero Vonage
+            MessageBody = $"DLR status={GetParam("status")} err-code={GetParam("err-code")} price={GetParam("price")}",
+            ReceivedAt = DateTime.Now,
+            ProcessingStatus = "DLR"
+        };
+
+        try
+        {
+            // (opzionale) valida firma come su inbound
+            if (!ValidateSignatureVonage())
+            {
+                auditLog.ErrorMessage = "Invalid Vonage signature (DLR)";
+                await SaveAuditLogAsync(auditLog);
+                return OkSms("Invalid signature");
+            }
+
+            await SaveAuditLogAsync(auditLog);
+            return OkSms("DLR OK");
+        }
+        catch (Exception ex)
+        {
+            auditLog.ProcessingStatus = "ERROR";
+            auditLog.ErrorMessage = $"DLR error: {ex.Message}";
+            await SaveAuditLogAsync(auditLog);
+            return OkSms("DLR ERROR");
         }
     }
 
@@ -134,7 +189,7 @@ public class SmsController(
             var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_GDPR XXXXXXXXXX");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
-            return Ok(errorResponse);
+            return OkSms(errorResponse);
         }
 
         var targetPhone = NormalizePhoneNumber(parts[1]);
@@ -151,7 +206,7 @@ public class SmsController(
             var errorResponse = GenerateSmsResponse("❌ Solo i referenti registrati possono richiedere consensi GDPR.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
-            return Ok(errorResponse);
+            return OkSms(errorResponse);
         }
 
         // Crea richiesta GDPR
@@ -197,7 +252,7 @@ public class SmsController(
         await _logger.Info("Sms.GDPR", "GDPR request sent",
             $"From: {dto.From}, To: {targetPhone}, Brand: {vehicle.Brand}");
 
-        return Ok(auditLog.ResponseSent);
+        return OkSms(auditLog.ResponseSent);
     }
 
     // Gestione ACCETTO
@@ -216,7 +271,7 @@ public class SmsController(
             var errorResponse = GenerateSmsResponse("❌ Nessuna richiesta di consenso valida per questo numero.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
-            return Ok(errorResponse);
+            return OkSms(errorResponse);
         }
 
         // Aggiorna consenso GDPR
@@ -245,7 +300,7 @@ public class SmsController(
         auditLog.ResponseSent = confirmMessage;
         await SaveAuditLogAsync(auditLog);
 
-        return Ok(GenerateSmsResponse(confirmMessage));
+        return OkSms(confirmMessage);
     }
 
     // Gestione STOP
@@ -263,7 +318,7 @@ public class SmsController(
             var errorResponse = GenerateSmsResponse("❌ Nessun consenso attivo per questo numero.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
-            return Ok(errorResponse);
+            return OkSms(errorResponse);
         }
 
         // Revoca consenso GDPR
@@ -291,7 +346,7 @@ public class SmsController(
         auditLog.ResponseSent = stopMessage;
         await SaveAuditLogAsync(auditLog);
 
-        return Ok(GenerateSmsResponse(stopMessage));
+        return OkSms(stopMessage);
     }
 
     /// <summary>
@@ -345,7 +400,7 @@ public class SmsController(
             var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILING XXXXXXXXXX Nome Cognome");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
-            return Ok(errorResponse);
+            return OkSms(errorResponse);
         }
 
         var targetPhone = NormalizePhoneNumber(parts[1]);
@@ -363,7 +418,7 @@ public class SmsController(
             var errorResponse = GenerateSmsResponse("❌ Solo i referenti registrati possono attivare profili.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
-            return Ok(errorResponse);
+            return OkSms(errorResponse);
         }
 
         // ⚠️ VERIFICA CHE ESISTA CONSENSO GDPR ATTIVO
@@ -387,7 +442,7 @@ public class SmsController(
             auditLog.ResponseSent = warningMessage;
             await SaveAuditLogAsync(auditLog);
 
-            return Ok(GenerateSmsResponse(warningMessage));
+            return OkSms(warningMessage);
         }
 
         // Trova o crea riga ADAPTIVE_PROFILING
@@ -439,47 +494,91 @@ public class SmsController(
         await _logger.Info("Sms.PROFILING", "Adaptive Profiling activated",
             $"VehicleId: {vehicle.Id}, Phone: {targetPhone}, Name: {fullName}");
 
-        return Ok(GenerateSmsResponse(confirmMessage));
+        return OkSms(confirmMessage);
     }
 
     // ============================================================================
     // METODI HELPER PRIVATI
     // ============================================================================
 
-    private bool ValidateSignature()
+    private bool ValidateSignatureVonage()
     {
         if (!_smsConfig.GetConfiguration().EnableSignatureValidation)
             return true;
 
-        try
-        {
-            var signature = Request.Headers["X-Twilio-Signature"].FirstOrDefault();
-            if (string.IsNullOrEmpty(signature))
-                return false;
+        // Vonage usa 'sig' (query/form) oppure header 'X-Nexmo-Signature'.
+        var provided = GetParam("sig") 
+                    ?? Request.Headers["X-Nexmo-Signature"].FirstOrDefault();
 
-            var url = $"{Request.Scheme}://{Request.Host}{Request.Path}";
-
-            // Leggi form data per validazione
-            var formData = new Dictionary<string, string>();
-            foreach (var kvp in Request.Form)
-            {
-                formData[kvp.Key] = kvp.Value.ToString();
-            }
-
-            return _smsConfig.ValidateSignature(signature, url, formData);
-        }
-        catch
-        {
+        if (string.IsNullOrEmpty(provided))
             return false;
-        }
+
+        // Costruisci il dizionario di parametri (senza 'sig') unendo form e query
+        var parameters = new Dictionary<string, string>(StringComparer.Ordinal);
+        if (Request.Query.Count > 0)
+            foreach (var kv in Request.Query) parameters[kv.Key] = kv.Value.ToString();
+
+        if (Request.HasFormContentType && Request.Form.Count > 0)
+            foreach (var kv in Request.Form) parameters[kv.Key] = kv.Value.ToString();
+
+        parameters.Remove("sig");
+
+        var secret = _smsConfig.GetConfiguration().AuthToken; // usa il tuo ApiSecret Vonage
+
+        // Vonage consente MD5, SHA1, SHA256, SHA512. Accettiamo qualsiasi match.
+        var candidates = new[]
+        {
+            VonageSignature(parameters, secret, "md5"),
+            VonageSignature(parameters, secret, "sha1"),
+            VonageSignature(parameters, secret, "sha256"),
+            VonageSignature(parameters, secret, "sha512"),
+        };
+
+        return candidates.Any(x => x.Equals(provided, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string VonageSignature(IDictionary<string, string> parameters, string secret, string algo)
+    {
+        // Ordina alfabeticamente per chiave, concatena "key=value" senza separatori, poi append 'secret'
+        var concat = string.Concat(parameters
+            .OrderBy(k => k.Key, StringComparer.Ordinal)
+            .Select(kv => $"{kv.Key}={kv.Value}")) + secret;
+
+        return algo switch
+        {
+            "md5"   => ToHex(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
+            "sha1"  => ToHex(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
+            "sha256"=> ToHex(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
+            "sha512"=> ToHex(System.Security.Cryptography.SHA512.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
+            _       => string.Empty
+        };
+    }
+
+    private static string ToHex(byte[] bytes)
+    {
+        var sb = new System.Text.StringBuilder(bytes.Length * 2);
+        foreach (var b in bytes) sb.Append(b.ToString("x2"));
+        return sb.ToString();
     }
 
     private string GenerateSmsResponse(string message)
     {
-        return $@"<?xml version=""1.0"" encoding=""UTF-8""?>
-        <Response>
-            <Message>{System.Net.WebUtility.HtmlEncode(message)}</Message>
-        </Response>";
+        // Per Vonage rispondiamo semplice testo (il controller userà OkSms per il content-type)
+        return message;
+    }
+
+    private string? GetParam(string key)
+    {
+        if (Request.HasFormContentType && Request.Form.ContainsKey(key))
+            return Request.Form[key].ToString();
+        if (Request.Query.ContainsKey(key))
+            return Request.Query[key].ToString();
+        return null;
+    }
+
+    private ActionResult OkSms(string message)
+    {
+        return Content(message, "text/plain"); // 200 OK con text/plain
     }
 
     private string NormalizePhoneNumber(string phoneNumber)

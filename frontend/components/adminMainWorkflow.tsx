@@ -480,6 +480,7 @@ export default function AdminMainWorkflow({
   const [selectedVehicleForSms, setSelectedVehicleForSms] = useState<{
     id: number;
     vin: string;
+    brand: string;
     companyName: string;
     isActive: boolean;
   } | null>(null);
@@ -769,6 +770,7 @@ export default function AdminMainWorkflow({
                     if (entry.isVehicleActive) {
                       setSelectedVehicleForSms({
                         id: entry.id,
+                        brand: entry.brand,
                         vin: entry.vehicleVIN,
                         companyName: entry.companyName,
                         isActive: entry.isVehicleActive,
@@ -907,6 +909,7 @@ export default function AdminMainWorkflow({
           }}
           vehicleId={selectedVehicleForSms.id}
           vehicleVin={selectedVehicleForSms.vin}
+          vehicleBrand={selectedVehicleForSms.brand}
           companyName={selectedVehicleForSms.companyName}
           isVehicleActive={selectedVehicleForSms.isActive}
         />

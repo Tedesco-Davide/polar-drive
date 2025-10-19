@@ -1,5 +1,3 @@
-import { API_BASE_URL } from "@/utils/api";
-
 export async function logFrontendEvent(
   source: string,
   level: "INFO" | "WARNING" | "ERROR" | "DEBUG",
@@ -7,7 +5,8 @@ export async function logFrontendEvent(
   details?: string
 ) {
   try {
-    await fetch(`${API_BASE_URL}/api/Logs`, {
+    // ✅ Usa URL relativo (il proxy Next.js lo gestisce)
+    await fetch('/api/Logs', {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

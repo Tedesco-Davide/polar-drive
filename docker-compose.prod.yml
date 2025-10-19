@@ -4,6 +4,7 @@
 services:
   api:
     container_name: polardrive-api-prod
+    image: polardrive-api:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
@@ -14,16 +15,22 @@ services:
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}
       - Jwt__ExpirationMinutes=${JWT_EXPIRATION_MINUTES}
-      - Twilio__AccountSid=${TWILIO_ACCOUNT_SID}
-      - Twilio__AuthToken=${TWILIO_AUTH_TOKEN}
-      - Twilio__PhoneNumber=${TWILIO_PHONE_NUMBER}
-      - Twilio__WebhookUrl=http://host.docker.internal:8081/api/TwilioSms/webhook
-      - Twilio__RateLimitPerMinute=10
-      - Twilio__EnableSignatureValidation=true
+      - Sms__Provider=Vonage
+      - Sms__Api=SMS
+      - Vonage__ApiKey=${VONAGE_API_KEY}
+      - Vonage__ApiSecret=${VONAGE_API_SECRET}
+      - Vonage__FromNumber=${VONAGE_FROM_NUMBER}
+      - Vonage__InboundWebhookUrl=${VONAGE_INBOUND_WEBHOOK_URL}
+      - Vonage__DlrWebhookUrl=${VONAGE_DLR_WEBHOOK_URL}
+      - Vonage__WebhookSignature__Secret=${VONAGE_WEBHOOK_SIGNATURE_SECRET}
+      - Vonage__WebhookSignature__Method=${VONAGE_WEBHOOK_SIGNATURE_METHOD}
+      - Vonage__UseMessagesApi=${VONAGE_USE_MESSAGES_API}
     ports:
       - "8081:8080"
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    networks:
+      - polardrive-network-prod
 
   mock-api:
     profiles:
@@ -31,12 +38,15 @@ services:
 
   frontend:
     container_name: polardrive-frontend-prod
+    image: polardrive-frontend:latest
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
+      - API_BACKEND_URL=http://host.docker.internal:${NEXT_PUBLIC_API_BASE}
     ports:
       - "3001:3000"
+    networks:
+      - polardrive-network-prod
 
 networks:
-  polardrive-network:
-    name: polardrive-network-prod
+  polardrive-network-prod:
+    external: true

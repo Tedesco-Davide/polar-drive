@@ -218,28 +218,6 @@ function createSampleBody(path, method) {
       interiorTemp: 22.5,
       exteriorTemp: 18.3,
     },
-
-    // TwilioSms - ENHANCED
-    "POST /api/TwilioSms/register-phone": {
-      phoneNumber: "+393331234567",
-      vehicleId: 1,
-      notes: `Phone registered via API test at ${timestamp}`,
-    },
-
-    // TwilioSms webhook - FIXED for multipart
-    "POST /api/TwilioSms/webhook": {
-      MessageSid: `SM${Date.now()}`,
-      AccountSid: "ACtest123456789",
-      From: "+393331234567",
-      To: "+393339876543",
-      Body: `Test SMS from API at ${timestamp}`,
-      MessageStatus: "received",
-      NumMedia: "0",
-      SmsStatus: "received",
-      SmsMessageSid: `SM${Date.now()}`,
-      NumSegments: "1",
-      ReferralNumMedia: "0",
-    },
   };
 
   return sampleBodies[`${method.toUpperCase()} ${path}`] || {};
@@ -250,8 +228,7 @@ function getContentType(path) {
   const multipartEndpoints = [
     "/api/AdminFullClientInsert",
     "/api/ClientConsents/{id}/upload-zip",
-    "/api/OutagePeriods/{id}/upload-zip",
-    "/api/TwilioSms/webhook",
+    "/api/OutagePeriods/{id}/upload-zip"
   ];
 
   if (

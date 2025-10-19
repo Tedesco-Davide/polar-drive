@@ -4,7 +4,42 @@ Repository per il progetto **PolarDrive**.
 
 ---
 
-## ⚙️ Comandi
+### 🐳 DOCKER
+
+_(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
+
+Crea la rete con nome esplicito (comando da lanciare una sola volta)
+
+- docker network create polardrive-network-dev
+- docker network create polardrive-network-prod
+
+PULIZIA => 
+
+- docker ps -aq | ForEach-Object { docker stop $_ }
+- docker ps -aq | ForEach-Object { docker rm $_ }
+- docker rmi polardrive-frontend:latest
+- docker rmi polardrive-api:latest
+- docker rmi polardrive-mock:latest
+
+IMMAGINI => build
+
+- docker build -f frontend/Dockerfile -t polardrive-frontend .
+- docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock .
+- docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api .
+
+CONTAINER => Avvia per la prima volta con ambiente DEV leggendo le variabili da .env.dev
+
+- docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+
+CONTAINER => Riavvia
+
+- docker compose -f docker-compose.dev.yml down
+
+- docker compose -f docker-compose.dev.yml up -d
+
+VERIFICA =>
+
+- docker ps
 
 ### 🔷 FRONTEND POLARDRIVE ADMIN
 
