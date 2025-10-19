@@ -18,8 +18,8 @@ export default function LanguageSwitcher() {
     logFrontendEvent(
       "LanguageSwitcher",
       "INFO",
-      `Language switched to ${lng}`,
-      `Current path: ${router.asPath}`
+      "Language switched to " + lng,
+      "Current path: " + router.asPath
     );
 
     // ✅ Preserva la posizione di scroll

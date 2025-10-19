@@ -276,7 +276,7 @@ export default function AdminOutagePeriodsAddForm({
         "AdminOutagePeriodsAddForm",
         "INFO",
         "Outage period successfully created",
-        `Outage ID: ${outageId}`
+        "Outage ID: " + outageId
       );
 
       alert(t("admin.outagePeriods.successAddNewOutage"));

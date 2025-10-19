@@ -71,7 +71,7 @@ export default function AdminMainWorkflow({
       "AdminMainWorkflow",
       "DEBUG",
       "Search query updated",
-      `Query: ${query}`
+      "Query: " + query
     );
   }, [query]);
 
@@ -89,7 +89,7 @@ export default function AdminMainWorkflow({
       "AdminMainWorkflow",
       "DEBUG",
       "Pagination or search interaction",
-      `Current page: ${currentPage}, Query: ${query}`
+      "Current page: " + currentPage + ", Query: " + query
     );
   }, [currentPage, query]);
 
@@ -228,7 +228,7 @@ export default function AdminMainWorkflow({
             "AdminMainWorkflow",
             "ERROR",
             "Error during form submission",
-            `Status: ${response.status}, VIN: ${formData.vehicleVIN}`
+            "Status: " + response.status + ", VIN: " + formData.vehicleVIN
           );
           alert(`${t("admin.genericError")} ${await response.text()}`);
           return;
@@ -240,7 +240,7 @@ export default function AdminMainWorkflow({
               "AdminMainWorkflow",
               "WARNING",
               "Form submission failed with known backend error",
-              `ErrorCode: ${errorCode}`
+              "ErrorCode: " + errorCode
             );
             alert(t("admin.vehicleAlreadyAssociatedToSameCompany"));
             return;
@@ -249,7 +249,7 @@ export default function AdminMainWorkflow({
               "AdminMainWorkflow",
               "WARNING",
               "Form submission failed with known backend error",
-              `ErrorCode: ${errorCode}`
+              "ErrorCode: " + errorCode
             );
             alert(t("admin.vehicleAlreadyAssociatedToAnotherCompany"));
             return;
@@ -258,7 +258,7 @@ export default function AdminMainWorkflow({
               "AdminMainWorkflow",
               "WARNING",
               "Form submission failed with known backend error",
-              `ErrorCode: ${errorCode}`
+              "ErrorCode: " + errorCode
             );
             alert(t("admin.duplicatePdfHash"));
             return;
@@ -267,7 +267,7 @@ export default function AdminMainWorkflow({
               "AdminMainWorkflow",
               "WARNING",
               "Form submission failed with known backend error",
-              `ErrorCode: ${errorCode}`
+              "ErrorCode: " + errorCode
             );
             alert(t("admin.validation.invalidZipType"));
             return;
@@ -276,7 +276,7 @@ export default function AdminMainWorkflow({
               "AdminMainWorkflow",
               "WARNING",
               "Form submission failed with known backend error",
-              `ErrorCode: ${errorCode}`
+              "ErrorCode: " + errorCode
             );
             alert(`${t("admin.genericError")} ${errorCode}`);
             return;
@@ -349,7 +349,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "INFO",
         "Download all consents triggered",
-        `Company VAT: ${companyVatNumber}, VIN: ${vehicleVin}`
+        "Company VAT: " + companyVatNumber + ", VIN: " + vehicleVin
       );
 
       // Conferma dall'utente per operazioni su grandi volumi
@@ -364,7 +364,7 @@ export default function AdminMainWorkflow({
           "AdminMainWorkflow",
           "INFO",
           "Download all consents cancelled by user",
-          `Company VAT: ${companyVatNumber}`
+          "Company VAT: " + companyVatNumber
         );
         return;
       }
@@ -396,7 +396,7 @@ export default function AdminMainWorkflow({
             "AdminMainWorkflow",
             "INFO",
             "No consents available for download",
-            `Company VAT: ${companyVatNumber}, Message: ${result.message}`
+            "Company VAT: " + companyVatNumber + ", Message: " + result.message
           );
           return;
         }
@@ -408,7 +408,7 @@ export default function AdminMainWorkflow({
           const errorText = await response.text();
           errorMessage = errorText;
         } catch {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          errorMessage = "HTTP " + response.status + ": " + response.statusText;
         }
         throw new Error(errorMessage);
       }
@@ -445,7 +445,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "INFO",
         "All consents downloaded successfully",
-        `Company VAT: ${companyVatNumber}, File size: ${blob.size} bytes`
+        "Company VAT: " + companyVatNumber + ", File size: " + blob.size + " bytes"
       );
 
       alert(t("admin.mainWorkflow.alerts.allConsentsDownloaded"));
@@ -456,7 +456,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "ERROR",
         "Failed to download all consents",
-        `Company VAT: ${companyVatNumber}, Error: ${errorMessage}`
+        "Company VAT: " + companyVatNumber + ", Error: " + errorMessage
       );
 
       // Messaggi di errore più specifici
@@ -501,7 +501,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "INFO",
         "Client profile PDF generation triggered",
-        `ClientCompanyId: ${companyId}, VAT: ${vatNumber}`
+        "ClientCompanyId: " + companyId + ", VAT: " + vatNumber
       );
 
       // Conferma dall'utente
@@ -516,7 +516,7 @@ export default function AdminMainWorkflow({
           "AdminMainWorkflow",
           "INFO",
           "Client profile generation cancelled by user",
-          `ClientCompanyId: ${companyId}`
+          "ClientCompanyId: " + companyId
         );
         return;
       }
@@ -557,7 +557,7 @@ export default function AdminMainWorkflow({
           const errorText = await response.text();
           errorMessage = errorText;
         } catch {
-          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+          errorMessage = "HTTP " + response.status + ": " + response.statusText;
         }
         throw new Error(errorMessage);
       }
@@ -594,7 +594,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "INFO",
         "Client profile PDF downloaded successfully",
-        `ClientCompanyId: ${companyId}, File size: ${blob.size} bytes`
+        "ClientCompanyId: " + companyId + ", File size: " + blob.size + " bytes"
       );
 
       alert(t("admin.mainWorkflow.alerts.clientProfileGenerated"));
@@ -606,7 +606,7 @@ export default function AdminMainWorkflow({
         "AdminMainWorkflow",
         "ERROR",
         "Failed to generate client profile PDF",
-        `ClientCompanyId: ${companyId}, Error: ${errorMessage}`
+        "ClientCompanyId: " + companyId + ", Error: " + errorMessage
       );
 
       // Messaggi di errore più specifici
@@ -649,7 +649,7 @@ export default function AdminMainWorkflow({
               "AdminMainWorkflow",
               "INFO",
               "Form visibility toggled",
-              `Now showing form: ${newValue}`
+              "Now showing form: " + newValue
             );
           }}
         >
@@ -730,7 +730,7 @@ export default function AdminMainWorkflow({
                           "AdminMainWorkflow",
                           "INFO",
                           "OAuth URL generated and copied to clipboard",
-                          `VIN: ${entry.vehicleVIN}`
+                          "VIN: " + entry.vehicleVIN
                         );
                         alert(
                           t("admin.mainWorkflow.alerts.urlGenerationConfirm")
@@ -780,7 +780,7 @@ export default function AdminMainWorkflow({
                         "AdminMainWorkflow",
                         "INFO",
                         "SMS management modal opened",
-                        `VIN: ${entry.vehicleVIN}, Active: ${entry.isVehicleActive}`
+                        "VIN: " + entry.vehicleVIN + ", Active: " + entry.isVehicleActive
                       );
                     }
                   }}
@@ -847,7 +847,7 @@ export default function AdminMainWorkflow({
                       "AdminMainWorkflow",
                       "INFO",
                       "Vehicle status changed",
-                      `VIN: ${entry.vehicleVIN}, Active: ${newIsActive}, Fetching: ${newIsFetching}`
+                      "VIN: " + entry.vehicleVIN + ", Active: " + newIsActive + ", Fetching: " + newIsFetching
                     );
                   }}
                   setLoading={setIsStatusChanging}
@@ -870,7 +870,7 @@ export default function AdminMainWorkflow({
                       "AdminMainWorkflow",
                       "INFO",
                       "Vehicle status changed",
-                      `VIN: ${entry.vehicleVIN}, Active: ${newIsActive}, Fetching: ${newIsFetching}`
+                      "VIN: " + entry.vehicleVIN + ", Active: " + newIsActive + ", Fetching: " + newIsFetching
                     );
                   }}
                   setLoading={setIsStatusChanging}

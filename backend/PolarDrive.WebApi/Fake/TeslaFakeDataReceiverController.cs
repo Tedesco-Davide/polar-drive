@@ -106,7 +106,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
 
             if (recentDataCount >= 50) // Max 50 record ogni 5 minuti in dev
             {
-                await _logger.Warning(source, $"Rate limit exceeded for vehicle {vin}: {recentDataCount} records in last 5 minutes");
+                await _logger.Warning(source, "Rate limit exceeded for vehicle " + vin + ": " + recentDataCount + " records in last 5 minutes");
                 return StatusCode(429, new
                 {
                     success = false,
@@ -527,7 +527,7 @@ public class TeslaFakeDataReceiverController : ControllerBase
         if (duration.TotalMinutes < 1) return "N/A";
 
         var recordsPerHour = totalRecords / duration.TotalHours;
-        return $"{recordsPerHour:F1} records/hour";
+        return recordsPerHour.ToString("F1") + " records/hour";
     }
 
     /// <summary>

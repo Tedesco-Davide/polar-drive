@@ -15,7 +15,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<AdminWorkflowExtendedDTO>>> Get()
     {
-        await _logger.Info("ClientVehiclesController.Get", "Requested list of client vehicles.");
+        await _logger.Info("ClientVehiclesController.Get", "Requested list of client vehicles");
 
         var rawItems = await db.ClientVehicles
             .Include(v => v.ClientCompany)

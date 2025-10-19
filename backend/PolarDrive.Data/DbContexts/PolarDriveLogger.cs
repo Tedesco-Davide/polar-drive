@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.Entities;
 
@@ -7,32 +8,35 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
 {
     private readonly PolarDriveDbContext _dbContext = dbContext;
 
-    // ✅ TIMEZONE ITALIANO
-    private static readonly TimeZoneInfo ItalianTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Central European Standard Time");
+    // 🔒 Lock statico per garantire atomicità nella scrittura su file/console
+    private static readonly object _fileSync = new();
 
-    private static DateTime GetItalianTime()
-    {
-        return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ItalianTimeZone);
-    }
+    public Task Info   (string source, string message, string? details = null) => LogAsync(source, PolarDriveLogLevel.INFO,    message, details);
+    public Task Error  (string source, string message, string? details = null) => LogAsync(source, PolarDriveLogLevel.ERROR,   message, details);
+    public Task Warning(string source, string message, string? details = null) => LogAsync(source, PolarDriveLogLevel.WARNING, message, details);
+    public Task Debug  (string source, string message, string? details = null) => LogAsync(source, PolarDriveLogLevel.DEBUG,   message, details);
 
     public async Task LogAsync(string source, PolarDriveLogLevel level, string message, string? details = null)
     {
-        WriteToFile(source, level, message, details);
+        // 🧼 Normalizza per evitare a capo interni che spezzano i log
+        var safeMessage = Sanitize(message);
+        var safeDetails = Sanitize(details);
 
+        // 📝 Scrive su file/console in modo atomico
+        WriteAtomicallyToFile(source, level, safeMessage!, safeDetails);
+
+        // 💾 Prova a salvare su DB (fuori dal lock)
         try
         {
-            if (!CanSafelyUseDb())
-            {
-                return;
-            }
+            if (!CanSafelyUseDb()) return;
 
             _dbContext.PolarDriveLogs.Add(new PolarDriveLog
             {
-                Timestamp = GetItalianTime(), // ✅ USA ORARIO ITALIANO
+                Timestamp = LoggerPathHelper.NowItalian(),
                 Source = source,
                 Level = level,
-                Message = message,
-                Details = details
+                Message = safeMessage!,
+                Details = safeDetails
             });
 
             await _dbContext.SaveChangesAsync();
@@ -47,34 +51,45 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
         }
     }
 
-    public Task Info(string source, string message, string? details = null) =>
-        LogAsync(source, PolarDriveLogLevel.INFO, message, details);
+    private static string? Sanitize(string? value)
+        => string.IsNullOrEmpty(value)
+            ? value
+            : value.Replace("\r", " ").Replace("\n", " ");
 
-    public Task Error(string source, string message, string? details = null) =>
-        LogAsync(source, PolarDriveLogLevel.ERROR, message, details);
-
-    public Task Warning(string source, string message, string? details = null) =>
-       LogAsync(source, PolarDriveLogLevel.WARNING, message, details);
-
-    public Task Debug(string source, string message, string? details = null) =>
-       LogAsync(source, PolarDriveLogLevel.DEBUG, message, details);
-
-    private static void WriteToFile(string source, PolarDriveLogLevel level, string message, string? details = null)
+    private static void WriteAtomicallyToFile(string source, PolarDriveLogLevel level, string message, string? details)
     {
         try
         {
-            var logDirectory = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Logs");
-            if (!Directory.Exists(logDirectory))
-                Directory.CreateDirectory(logDirectory);
+            var baseDir      = LoggerPathHelper.ResolveBaseLogsDir();
+            var logDirectory = Path.Combine(baseDir, "General"); // cartella generale
+            Directory.CreateDirectory(logDirectory);
 
-            var italianTime = GetItalianTime(); // ✅ USA ORARIO ITALIANO
-            var logFilePath = Path.Combine(logDirectory, $"log_{italianTime:yyyyMMdd}.txt");
-            var logEntry = $"[{italianTime:yyyy-MM-dd HH:mm:ss}] [{level}] [{source}] {message}";
+            var ts = LoggerPathHelper.NowItalian();
+            var logFilePath = Path.Combine(logDirectory, $"log_{ts:yyyyMMdd}.txt");
 
+            // Costruisci l'intera riga UNA SOLA VOLTA
+            var line = $"[{ts:yyyy-MM-dd HH:mm:ss}] [{level}] [{source}] {message}";
             if (!string.IsNullOrWhiteSpace(details))
-                logEntry += $" | Details: {details}";
+                line += $" | Details: {details}";
 
-            File.AppendAllText(logFilePath, logEntry + Environment.NewLine);
+            // 🔒 Scrittura atomica protetta da lock: una sola WriteLine
+            lock (_fileSync)
+            {
+                // Scrive su console (opzionale ma utile in dev)
+                Console.WriteLine(line);
+
+                // Scrive su file in append con UTF-8, condiviso per lettura
+                using var fs = new FileStream(
+                    logFilePath,
+                    FileMode.Append,
+                    FileAccess.Write,
+                    FileShare.ReadWrite
+                );
+                using var sw = new StreamWriter(fs, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                sw.WriteLine(line);
+                sw.Flush();
+                fs.Flush(true); // forza flush su disco per evitare perdite in crash
+            }
         }
         catch (Exception ex)
         {
@@ -86,28 +101,18 @@ public class PolarDriveLogger(PolarDriveDbContext dbContext)
     {
         try
         {
-            // 1. Verifica che il modello sia costruito
             var entityTypes = _dbContext.Model?.GetEntityTypes();
-            if (entityTypes == null || !entityTypes.Any())
-                return false;
+            if (entityTypes == null || !entityTypes.Any()) return false;
+            if (!_dbContext.Database.CanConnect()) return false;
 
-            // 2. Verifica che il DB sia accessibile
-            if (!_dbContext.Database.CanConnect())
-                return false;
-
-            // 3. Verifica che non ci siano entità non-log da salvare ancora in tracking
             if (_dbContext.ChangeTracker.HasChanges() &&
                 !_dbContext.ChangeTracker.Entries().All(e =>
                     e.State != EntityState.Added || e.Entity is PolarDriveLog))
             {
-                return false; // evitiamo conflitto col contesto attuale
+                return false;
             }
-
             return true;
         }
-        catch
-        {
-            return false;
-        }
+        catch { return false; }
     }
 }

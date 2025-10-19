@@ -20,9 +20,19 @@ DEV => REBUILD FRONTEND POST MODIFICHE =>
 - RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
 - LOGS => docker compose -f docker-compose.dev.yml logs -f frontend
 
-IMMAGINI => build
-- docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
-- docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
+DEV => REBUILD TESLA-MOCK-API-SERVICE POST MODIFICHE =>
+
+- STOP CONTAINER DEV ⇒ docker compose -f docker-compose.dev.yml down
+- REBUILD IMMAGINE TESLA MOCK ⇒ docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
+- RESTART CONTAINER DEV ⇒ docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+- LOGS ⇒ docker compose -f docker-compose.dev.yml logs -f mock
+
+DEV => REBUILD POLARDRIVE-WEB-API POST MODIFICHE =>
+
+- STOP CONTAINER DEV ⇒ docker compose -f docker-compose.dev.yml down
+- REBUILD IMMAGINE WEB-API ⇒ docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
+- RESTART CONTAINER DEV ⇒ docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+- LOGS ⇒ docker compose -f docker-compose.dev.yml logs -f api
 
 ### 🔷 FRONTEND POLARDRIVE ADMIN
 

@@ -43,7 +43,7 @@ export default function AdminPdfReports({
       "AdminPdfReports",
       "INFO",
       "Component reports updated from parent",
-      `Loaded ${reports.length} reports`
+      "Loaded " + reports.length + " reports"
     );
   }, [reports]);
 
@@ -124,7 +124,7 @@ export default function AdminPdfReports({
         "AdminPdfReports",
         "INFO",
         "Download started",
-        `ReportId: ${report.id}, Type: ${report.reportType}, HasPDF: ${report.hasPdfFile}`
+        "ReportId: " + report.id + ", Type: " + report.reportType + ", HasPDF: " + report.hasPdfFile
       );
 
       const downloadUrl = `/api/pdfreports/${report.id}/download`;
@@ -135,7 +135,7 @@ export default function AdminPdfReports({
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error("HTTP " + response.status + ": " + response.statusText);
       }
 
       const blob = await response.blob();
@@ -161,9 +161,7 @@ export default function AdminPdfReports({
         "AdminPdfReports",
         "INFO",
         "Download completed",
-        `ReportId: ${report.id}, Size: ${blob.size} bytes, Type: ${
-          isHtml ? "HTML" : "PDF"
-        }`
+        "ReportId: " + report.id + ", Size: " + blob.size + " bytes, Type: " + (isHtml ? "HTML" : "PDF")
       );
 
       if (isHtml) {
@@ -174,7 +172,7 @@ export default function AdminPdfReports({
         "AdminPdfReports",
         "ERROR",
         "Download failed",
-        `ReportId: ${report.id}, Error: ${error}`
+        "ReportId: " + report.id + ", Error: " + error
       );
       alert(`Errore download: ${error}`);
     } finally {
@@ -190,7 +188,7 @@ export default function AdminPdfReports({
         "AdminPdfReports",
         "INFO",
         "Manual regeneration started",
-        `ReportId: ${report.id}`
+        "ReportId: " + report.id
       );
 
       const response = await fetch(
@@ -243,7 +241,7 @@ export default function AdminPdfReports({
             "AdminPdfReports",
             "INFO",
             "Regeneration completed with immediate refresh",
-            `ReportId: ${report.id}`
+            "ReportId: " + report.id
           );
         } else {
           throw new Error(
@@ -264,7 +262,7 @@ export default function AdminPdfReports({
         "AdminPdfReports",
         "ERROR",
         "Regeneration failed",
-        `ReportId: ${report.id}, Error: ${errorMessage}`
+        "ReportId: " + report.id + ", Error: " + errorMessage
       );
 
       alert(
@@ -357,13 +355,11 @@ export default function AdminPdfReports({
         }
       );
 
-      if (!response.ok) {
-        throw new Error(
-          `HTTP ${response.status}: ${t(
-            "admin.vehicleReports.failedUpdateNotes"
-          )}`
-        );
-      }
+        if (!response.ok) {
+            throw new Error(
+                "HTTP " + response.status + ": " + t("admin.vehicleReports.failedUpdateNotes")
+            );
+        }
 
       setLocalReports((prev) =>
         prev.map((r) =>
@@ -377,7 +373,7 @@ export default function AdminPdfReports({
         "AdminPdfReports",
         "INFO",
         "Notes updated",
-        `ReportId: ${updated.id}`
+        "ReportId: " + updated.id
       );
 
       if (refreshRef.current) {
@@ -541,10 +537,10 @@ export default function AdminPdfReports({
                     : "-"}
                   {report.monitoringDurationHours >= 0 && (
                     <div className="text-xs text-gray-400 mt-1">
-                      {report.monitoringDurationHours < 1
+                        {report.monitoringDurationHours < 1
                         ? "< 1h"
-                        : `${Math.round(report.monitoringDurationHours)}h`}{" "}
-                      {t("admin.vehicleReports.monitored")}
+                        : Math.round(report.monitoringDurationHours) + "h"}{" "}
+                        {t("admin.vehicleReports.monitored")}
                     </div>
                   )}
                 </td>

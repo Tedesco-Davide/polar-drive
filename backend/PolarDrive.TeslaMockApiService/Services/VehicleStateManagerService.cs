@@ -22,7 +22,7 @@ public class VehicleStateManager
         if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
         {
             Directory.CreateDirectory(directory);
-            _logger.LogInformation($"Created directory: {directory}");
+            _logger.LogInformation("Created directory: " + directory);
         }
 
         LoadStateFromFile();
@@ -111,14 +111,13 @@ public class VehicleStateManager
                         _vehicles.TryAdd(vin, state);
                     }
 
-                    _logger.LogInformation("Loaded {Count} vehicle states from {FilePath}",
-                        states.Count, _stateFilePath);
+                    _logger.LogInformation("Loaded " + states.Count + " vehicle states from " + _stateFilePath);
                 }
             }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error loading vehicle states from {FilePath}", _stateFilePath);
+            _logger.LogError(ex, "Error loading vehicle states from " + _stateFilePath);
         }
     }
 
@@ -136,11 +135,11 @@ public class VehicleStateManager
             });
 
             File.WriteAllText(_stateFilePath, json);
-            _logger.LogDebug("Saved {Count} vehicle states to {FilePath}", states.Count, _stateFilePath);
+            _logger.LogDebug("Saved " + states.Count + " vehicle states to " + _stateFilePath);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error saving vehicle states to {FilePath}", _stateFilePath);
+            _logger.LogError(ex, "Error saving vehicle states to " + _stateFilePath);
         }
     }
 

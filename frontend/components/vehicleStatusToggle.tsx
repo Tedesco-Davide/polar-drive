@@ -41,7 +41,7 @@ export default function VehicleStatusToggle({
           "VehicleStatusToggle",
           "INFO",
           "User cancelled toggle operation",
-          `Field: ${field}, From: isActive=${isActive}, isFetching=${isFetching}`
+          "Field: " + field + ", From: isActive=" + isActive + ", isFetching=" + isFetching
         );
         newIsActive = false;
       } else {
@@ -91,7 +91,7 @@ export default function VehicleStatusToggle({
         "VehicleStatusToggle",
         "INFO",
         "Vehicle status successfully updated",
-        `Vehicle ID: ${id}, isActive: ${newIsActive}, isFetching: ${newIsFetching}`
+        "Vehicle ID: " + id + ", isActive: " + newIsActive + ", isFetching: " + newIsFetching
       );
       await refreshWorkflowData();
     } catch (err) {

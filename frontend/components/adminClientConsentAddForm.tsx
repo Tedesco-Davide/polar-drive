@@ -229,7 +229,7 @@ export default function AdminClientConsentAddForm({
         "AdminClientConsentAddForm",
         "INFO",
         "Consent successfully created",
-        `Consent ID: ${consentId}`
+        "Consent ID: " + consentId
       );
 
       alert(t("admin.clientConsents.successAddNewConsent"));

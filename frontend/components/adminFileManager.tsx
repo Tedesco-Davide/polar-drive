@@ -80,21 +80,21 @@ const formatJobDuration = (
   if (diffMins >= 60) {
     const hours = Math.floor(diffMins / 60);
     const remainingMins = diffMins % 60;
-    return `${hours}h ${remainingMins}m ${diffSecs}s`;
+    return hours + "h " + remainingMins + "m " + diffSecs + "s";
   }
 
   if (diffMins > 0) {
-    return `${diffMins}m ${diffSecs}s`;
+    return diffMins + "m " + diffSecs + "s";
   }
 
-  return `${diffSecs}s`;
+  return diffSecs + "s";
 };
 
 const formatFileSize = (sizeMB: number): string => {
   if (sizeMB < 1) {
-    return `${(sizeMB * 1024).toFixed(0)} KB`;
+    return (sizeMB * 1024).toFixed(0) + " KB";
   }
-  return `${sizeMB.toFixed(1)} MB`;
+  return sizeMB.toFixed(1) + " MB";
 };
 
 export default function AdminFileManagerTable({
@@ -125,14 +125,14 @@ export default function AdminFileManagerTable({
             "AdminFileManagerTable",
             "INFO",
             "PDF download jobs refreshed successfully",
-            `Updated ${updatedJobs.length} job records`
+            "Updated " + updatedJobs.length + " job records"
         );
         } catch (error) {
         logFrontendEvent(
             "AdminFileManagerTable",
             "ERROR",
             "Failed to refresh PDF download jobs",
-            `Error: ${error}`
+            "Error: " + error
         );
         throw error;
         }
@@ -145,7 +145,7 @@ export default function AdminFileManagerTable({
         "AdminFileManagerTable",
         "INFO",
         "PDF File Manager component mounted",
-        `Loaded ${jobs.length} PDF download job records`
+        "Loaded " + jobs.length + " PDF download job records"
         );
   }, [jobs]);
 
@@ -177,7 +177,7 @@ export default function AdminFileManagerTable({
       );
 
       if (!response.ok) {
-        throw new Error(`Download failed: ${response.statusText}`);
+        throw new Error("Download failed: ${response.statusText}");
       }
 
       const blob = await response.blob();
@@ -199,21 +199,21 @@ export default function AdminFileManagerTable({
         "AdminFileManagerTable",
         "INFO",
         "PDF ZIP download completed",
-        `Job ID: ${job.id}, Files: ${job.includedPdfCount}, Size: ${job.zipFileSizeMB}MB`
+        "Job ID: " + job.id + ", Files: " + job.includedPdfCount + ", Size: " + job.zipFileSizeMB + "MB"
       );
     } catch (error) {
       logFrontendEvent(
         "AdminFileManagerTable",
         "ERROR",
         "Failed to download PDF ZIP",
-        `Job ID: ${job.id}, Error: ${error}`
+        "Job ID: " + job.id + ", Error: " + error
       );
       alert("Errore durante il download del file ZIP");
     }
   };
 
   const handleDeleteJob = async (job: FileManager) => {
-    if (!confirm(`Sei sicuro di voler eliminare questo job di download PDF?`))
+    if (!confirm("Sei sicuro di voler eliminare questo job di download PDF?"))
       return;
 
     try {
@@ -223,7 +223,7 @@ export default function AdminFileManagerTable({
       );
 
       if (!response.ok) {
-        throw new Error(`Delete failed: ${response.statusText}`);
+        throw new Error("Delete failed: " + response.statusText);
       }
 
       setLocalJobs((prev) => prev.filter((j) => j.id !== job.id));
@@ -232,14 +232,14 @@ export default function AdminFileManagerTable({
         "AdminFileManagerTable",
         "INFO",
         "PDF download job deleted",
-        `Job ID: ${job.id}`
+        "Job ID: " + job.id
       );
     } catch (error) {
       logFrontendEvent(
         "AdminFileManagerTable",
         "ERROR",
         "Failed to delete PDF download job",
-        `Job ID: ${job.id}, Error: ${error}`
+        "Job ID: " + job.id + ", Error: " + error
       );
       alert("Errore durante l'eliminazione del job");
     }
@@ -257,8 +257,7 @@ export default function AdminFileManagerTable({
       logFrontendEvent(
         "AdminFileManagerTable",
         "INFO",
-        "PDF download request created and jobs refreshed",
-        ""
+        "PDF download request created and jobs refreshed"
       );
     } catch (error) {
       console.warn("Failed to refresh jobs after creation:", error);
@@ -286,7 +285,7 @@ export default function AdminFileManagerTable({
               "AdminFileManagerTable",
               "INFO",
               "Create modal visibility toggled",
-              `Now showing modal: ${!showCreateModal}`
+              "Now showing modal: " + !showCreateModal
             );
           }}
         >
@@ -305,8 +304,7 @@ export default function AdminFileManagerTable({
             logFrontendEvent(
               "AdminFileManagerTable",
               "INFO",
-              "Create modal closed",
-              ""
+              "Create modal closed"
             );
           }}
           onSuccess={handleCreateSuccess}
@@ -537,7 +535,7 @@ export default function AdminFileManagerTable({
                 "AdminFileManagerTable",
                 "INFO",
                 "Notes updated for PDF download job",
-                `Job ID: ${updated.id}`
+                "Job ID: " + updated.id
               );
             } catch (err) {
               const details = err instanceof Error ? err.message : String(err);

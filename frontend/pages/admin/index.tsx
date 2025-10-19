@@ -116,7 +116,7 @@ export default function AdminDashboard() {
         "AdminDashboard",
         "DEBUG",
         "Workflow data aggiornati",
-        `Veicoli: ${data.length}, Aziende: ${companiesData.length}`
+        "Veicoli: " + data.length + ", Aziende: " + companiesData.length
       );
     } catch (err) {
       console.error("ERROR:", err);
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
         "AdminDashboard",
         "INFO",
         "Starting PDF Reports refresh",
-        `Current count: ${currentCount}`
+        "Current count: " + currentCount
       );
 
       const res = await fetch(
@@ -160,7 +160,7 @@ export default function AdminDashboard() {
       );
 
       if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        throw new Error("HTTP " + res.status + ": " + res.statusText);
       }
 
       const updatedPdfReports: PdfReport[] = await res.json();
@@ -171,7 +171,7 @@ export default function AdminDashboard() {
         "AdminDashboard",
         "INFO",
         "PDF Reports refreshed successfully",
-        `${currentCount} → ${updatedPdfReports.length} reports`
+        currentCount + " → " + updatedPdfReports.length + " reports"
       );
 
       return updatedPdfReports;
@@ -193,14 +193,14 @@ export default function AdminDashboard() {
 
       if (!res.ok) {
         throw new Error(
-          `FileManager API error: ${res.status} ${res.statusText}`
+          "FileManager API error: " + res.status + " " + res.statusText
         );
       }
 
       const contentType = res.headers.get("content-type");
       if (!contentType?.includes("application/json")) {
         throw new Error(
-          `FileManager API returned non-JSON content: ${contentType}`
+          "FileManager API returned non-JSON content: " + contentType
         );
       }
 
@@ -266,14 +266,14 @@ export default function AdminDashboard() {
 
           if (!schedulerRes.ok) {
             throw new Error(
-              `FileManager API error: ${schedulerRes.status} ${schedulerRes.statusText}`
+                "FileManager API error: " + schedulerRes.status + " " + schedulerRes.statusText
             );
           }
 
           const contentType = schedulerRes.headers.get("content-type");
           if (!contentType?.includes("application/json")) {
             throw new Error(
-              `FileManager API returned non-JSON content: ${contentType}`
+                "FileManager API returned non-JSON content: " + contentType
             );
           }
 
@@ -283,7 +283,7 @@ export default function AdminDashboard() {
             "AdminDashboard",
             "INFO",
             "FileManager data loaded successfully",
-            `Jobs: ${schedulerData.length}`
+            "Jobs: " + schedulerData.length
           );
         } catch (fileManagerError) {
           console.warn("FileManager API not available:", fileManagerError);
@@ -332,7 +332,7 @@ export default function AdminDashboard() {
           "AdminDashboard",
           "INFO",
           "Dati caricati correttamente da tutte le API",
-          `Clienti: ${companiesData.length}, Veicoli: ${vehiclesData.length}, Consensi: ${consentsData.length}, Outage: ${outagesData.length}, Report: ${reportsData.length}, Jobs: ${schedulerData.length}`
+          "Clienti: " + companiesData.length + ", Veicoli: " + vehiclesData.length + ", Consensi: " + consentsData.length + ", Outage: " + outagesData.length + ", Report: " + reportsData.length + ", Jobs: " + schedulerData.length
         );
       } catch (err) {
         console.error("API fetch error:", err);

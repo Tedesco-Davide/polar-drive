@@ -13,6 +13,6 @@ export async function updateVehicleStatus(
 
   if (!response.ok) {
     const error = await response.text();
-    throw new Error(`Errore aggiornamento stato: ${error}`);
+    throw new Error("Errore aggiornamento stato: " + error);
   }
 }

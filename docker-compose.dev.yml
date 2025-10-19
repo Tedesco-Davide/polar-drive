@@ -7,6 +7,7 @@ services:
     image: polardrive-api:latest
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+      - POLAR_LOG_DIR=/app/Logs
       - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
       - TeslaApi__BaseUrl=${TESLA_API_BASE_URL}
       - TeslaApi__ClientId=${TESLA_CLIENT_ID}
@@ -25,6 +26,8 @@ services:
       - Vonage__WebhookSignature__Secret=${VONAGE_WEBHOOK_SIGNATURE_SECRET}
       - Vonage__WebhookSignature__Method=${VONAGE_WEBHOOK_SIGNATURE_METHOD}
       - Vonage__UseMessagesApi=${VONAGE_USE_MESSAGES_API}
+    volumes:
+      - ./LOGS_DEV:/app/Logs
     ports:
       - "8080:8080"
     extra_hosts:

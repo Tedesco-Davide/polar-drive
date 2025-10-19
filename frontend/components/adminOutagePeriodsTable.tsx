@@ -43,9 +43,9 @@ const formatDuration = (minutes: number): string => {
   const mins = minutes % 60;
 
   const parts: string[] = [];
-  if (days > 0) parts.push(`${days}g`);
-  if (hours > 0) parts.push(`${hours}h`);
-  if (mins > 0 || parts.length === 0) parts.push(`${mins}m`);
+    if (days > 0) parts.push(days + "g");
+    if (hours > 0) parts.push(hours + "h");
+    if (mins > 0 || parts.length === 0) parts.push(mins + "m");
 
   return parts.join(" ");
 };
@@ -80,7 +80,7 @@ export default function AdminOutagePeriodsTable({
       "AdminOutagePeriodsTable",
       "INFO",
       "Component mounted and outages data initialized",
-      `Loaded ${outages.length} outage records`
+      "Loaded " + outages.length + " outage records"
     );
   }, [outages]);
 
@@ -95,7 +95,7 @@ export default function AdminOutagePeriodsTable({
           "AdminOutagePeriodsTable",
           "INFO",
           "Auto-refreshed outage data",
-          `Updated ${updatedOutages.length} outage records`
+          "Updated " + updatedOutages.length + " outage records"
         );
       } catch (error) {
         console.warn("Auto-refresh failed:", error);
@@ -160,7 +160,7 @@ export default function AdminOutagePeriodsTable({
         "AdminOutagePeriodsTable",
         "INFO",
         "ZIP uploaded successfully",
-        `Outage ID: ${outageId}, File: ${file.name}`
+        "Outage ID: " + outageId + ", File: " + file.name
       );
 
       alert(t("admin.successUploadZip"));
@@ -192,7 +192,7 @@ export default function AdminOutagePeriodsTable({
       "AdminOutagePeriodsTable",
       "INFO",
       "ZIP download triggered",
-      `Outage ID: ${outageId}`
+      "Outage ID: " + outageId
     );
   };
 
@@ -218,7 +218,7 @@ export default function AdminOutagePeriodsTable({
         "AdminOutagePeriodsTable",
         "INFO",
         "Outage resolved manually",
-        `Outage ID: ${outageId}`
+        "Outage ID: " + outageId
       );
       alert(t("admin.outagePeriods.confirmResolveSuccess"));
     } catch (error) {
@@ -255,7 +255,7 @@ export default function AdminOutagePeriodsTable({
         "AdminOutagePeriodsTable",
         "INFO",
         "ZIP file deleted successfully",
-        `Outage ID: ${outageId}`
+        "Outage ID: " + outageId
       );
 
       alert(t("admin.successDeleteZip"));
@@ -575,7 +575,7 @@ export default function AdminOutagePeriodsTable({
                 "AdminOutagePeriodsTable",
                 "INFO",
                 "Notes updated for outage",
-                `Outage ID: ${updated.id}`
+                "Outage ID: " + updated.id
               );
             } catch (err) {
               const details = err instanceof Error ? err.message : String(err);

@@ -108,7 +108,7 @@ export default function AdminSmsManagementModal({
         "AdminSmsManagement",
         "INFO",
         "SMS data loaded successfully",
-        `VehicleId: ${vehicleId}, Sessions: ${profilingSessions.length}, Logs: ${auditLogs.length}`
+        "VehicleId: " + vehicleId + ", Sessions: " + profilingSessions.length + ", Logs: " + auditLogs.length
       );
     } catch (error) {
       logFrontendEvent(
@@ -159,7 +159,7 @@ export default function AdminSmsManagementModal({
     const diff = expires.getTime() - now.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return diff > 0 ? `${hours}h ${minutes}m` : "Scaduto";
+    return diff > 0 ? hours + "h " + minutes + "m" : "Scaduto";
   };
 
   if (!isOpen) return null;

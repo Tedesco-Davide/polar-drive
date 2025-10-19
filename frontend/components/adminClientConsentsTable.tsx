@@ -51,7 +51,7 @@ export default function AdminClientConsents({
       "AdminClientConsentsTable",
       "INFO",
       "Component mounted and consents data initialized",
-      `Loaded ${consents.length} consent records`
+      "Loaded " + consents.length + " consent records"
     );
   }, [consents]);
 
@@ -71,7 +71,7 @@ export default function AdminClientConsents({
       "AdminClientConsentsTable",
       "DEBUG",
       "Search query updated",
-      `Query: ${query}`
+      "Query: " + query
     );
   }, [query]);
 
@@ -89,7 +89,7 @@ export default function AdminClientConsents({
       "AdminClientConsentsTable",
       "DEBUG",
       "Pagination interaction",
-      `Current page: ${currentPage}`
+      "Current page: " + currentPage
     );
   }, [currentPage]);
 
@@ -132,7 +132,7 @@ export default function AdminClientConsents({
         "AdminClientConsentsTable",
         "INFO",
         "ZIP uploaded successfully",
-        `Consent ID: ${consentId}, File: ${file.name}`
+        "Consent ID: " + consentId + ", File: " + file.name
       );
 
       alert(t("admin.successUploadZip"));
@@ -169,7 +169,7 @@ export default function AdminClientConsents({
         return;
         }
 
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        if (!response.ok) throw new Error("HTTP " + response.status);
 
         const contentDisposition = response.headers.get("content-disposition");
         let filename = `consent_${consentId}.zip`;
@@ -195,7 +195,7 @@ export default function AdminClientConsents({
         "AdminClientConsentsTable",
         "INFO",
         "ZIP download completed",
-        `Consent ID: ${consentId}, Filename: ${filename}`
+        "Consent ID: " + consentId + ", Filename: " + filename
         );
     } catch (error) {
         const errorMessage =
@@ -227,7 +227,7 @@ export default function AdminClientConsents({
         "AdminClientConsentsTable",
         "INFO",
         "ZIP file deleted successfully",
-        `Consent ID: ${consentId}`
+        "Consent ID: " + consentId
       );
 
       alert(t("admin.successDeleteZip"));
@@ -263,7 +263,7 @@ export default function AdminClientConsents({
               "AdminClientConsentsTable",
               "INFO",
               "Consent form visibility toggled",
-              `Now showing form: ${newValue}`
+              "Now showing form: " + newValue
             );
           }}
         >
@@ -385,7 +385,7 @@ export default function AdminClientConsents({
                           "AdminClientConsentsTable",
                           "INFO",
                           "Notes modal opened for consent",
-                          `Consent ID: ${consent.id}, VIN: ${consent.vehicleVIN}`
+                          "Consent ID: " + consent.id + ", VIN: " + consent.vehicleVIN
                         );
                       }}
                     >
@@ -465,7 +465,7 @@ export default function AdminClientConsents({
                 "AdminClientConsentsTable",
                 "INFO",
                 "Notes updated for consent",
-                `Consent ID: ${updated.id}`
+                "Consent ID: " + updated.id
               );
             } catch (err) {
               const details = err instanceof Error ? err.message : String(err);

@@ -131,7 +131,7 @@ export default function AdminClientCompanyEditForm({
 
       if (!companyResponse.ok) {
         throw new Error(
-          `Failed to update company. Status: ${companyResponse.status}`
+          "Failed to update company. Status: " + companyResponse.status
         );
       }
 
@@ -144,7 +144,7 @@ export default function AdminClientCompanyEditForm({
 
         if (!vehicleResponse.ok) {
           throw new Error(
-            `Failed to fetch vehicle. Status: ${vehicleResponse.status}`
+            "Failed to fetch vehicle. Status: " + vehicleResponse.status
           );
         }
 
@@ -182,7 +182,7 @@ export default function AdminClientCompanyEditForm({
 
         if (!updateResponse.ok) {
           throw new Error(
-            `Failed to update vehicle. Status: ${updateResponse.status}`
+            "Failed to update vehicle. Status: " + updateResponse.status
           );
         }
       }

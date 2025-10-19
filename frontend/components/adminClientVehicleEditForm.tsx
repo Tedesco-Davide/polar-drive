@@ -124,7 +124,7 @@ export default function AdminClientVehicleEditForm({
         "AdminClientVehicleEditForm",
         "INFO",
         "Client vehicle updated successfully",
-        `VehicleId=${formData.id}, VIN=${formData.vin}`
+        "VehicleId=" + formData.id + ", VIN=" + formData.vin
       );
 
       // 🔄 Update workflow table

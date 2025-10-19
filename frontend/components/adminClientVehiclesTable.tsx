@@ -33,7 +33,7 @@ export default function AdminClientVehiclesTable({
       "AdminClientVehiclesTable",
       "DEBUG",
       "Search query updated",
-      `Query: ${query}`
+      "Query: " + query
     );
   }, [query]);
 
@@ -51,7 +51,7 @@ export default function AdminClientVehiclesTable({
       "AdminClientVehiclesTable",
       "DEBUG",
       "Pagination interaction",
-      `Current page: ${currentPage}`
+      "Current page: " + currentPage
     );
   }, [currentPage]);
 
@@ -66,7 +66,7 @@ export default function AdminClientVehiclesTable({
       "AdminClientVehiclesTable",
       "INFO",
       "Component mounted and vehicle data initialized",
-      `Loaded ${vehicles.length} vehicles`
+      "Loaded " + vehicles.length + " vehicles"
     );
   }, [vehicles]);
 
@@ -77,7 +77,7 @@ export default function AdminClientVehiclesTable({
       "AdminClientVehiclesTable",
       "INFO",
       "Edit modal opened for vehicle",
-      `Vehicle VIN: ${vehicle.vin}`
+      "Vehicle VIN: " + vehicle.vin
     );
   };
 
@@ -208,7 +208,7 @@ export default function AdminClientVehiclesTable({
                   "AdminClientVehiclesTable",
                   "INFO",
                   "Vehicle updated successfully",
-                  `Vehicle VIN: ${updatedVehicle.vin}`
+                  "Vehicle VIN: " + updatedVehicle.vin
                 );
               } catch (err) {
                 const details =

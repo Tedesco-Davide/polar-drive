@@ -47,7 +47,7 @@ export default function AdminFileManagerModal({
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const day = String(date.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return year + "-" + month + "-" + day;
   };
 
   // Carica liste disponibili
@@ -146,7 +146,7 @@ export default function AdminFileManagerModal({
         "AdminFileManagerModal",
         "INFO",
         "Attempting to create PDF download request",
-        `Period: ${formData.periodStart} to ${formData.periodEnd}, RequestedBy: ${formData.requestedBy}`
+        "Period: " + formData.periodStart + " to " + formData.periodEnd + ", RequestedBy: " + formData.requestedBy
       );
 
       const response = await fetch(
@@ -171,14 +171,14 @@ export default function AdminFileManagerModal({
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Errore ${response.status}: ${errorText}`);
+        throw new Error("Errore " + response.status + ": " + errorText);
       }
 
       logFrontendEvent(
         "AdminFileManagerModal",
         "INFO",
         "PDF download request created successfully",
-        `Period: ${formData.periodStart} to ${formData.periodEnd}`
+        "Period: " + formData.periodStart + " to " + formData.periodEnd
       );
 
       alert(t("admin.filemanager.modal.requestCreated"));

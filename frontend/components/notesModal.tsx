@@ -63,12 +63,12 @@ export default function NotesModal<T>({
     const updated = [...notes];
     updated[index] = value;
     setNotes(updated);
-    logFrontendEvent("NotesModal", "INFO", "Note edited", `Index: ${index}`);
+    logFrontendEvent("NotesModal", "INFO", "Note edited", "Index: " + index);
   };
 
   const handleDeleteNote = (index: number) => {
     setNotes(notes.filter((_, i) => i !== index));
-    logFrontendEvent("NotesModal", "INFO", "Note deleted", `Index: ${index}`);
+    logFrontendEvent("NotesModal", "INFO", "Note deleted", "Index: " + index);
   };
 
   // ✅ Modifica anche handleSave per gestire array vuoto

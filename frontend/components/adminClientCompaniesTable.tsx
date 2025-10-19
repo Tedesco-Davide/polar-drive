@@ -32,7 +32,7 @@ export default function AdminClientCompaniesTable({
       "AdminClientCompaniesTable",
       "INFO",
       "Component mounted and client data loaded",
-      `Loaded ${clients.length} clients`
+      "Loaded " + clients.length + " clients".replace(/\r?\n|\r/g, " ")
     );
   }, [clients]);
 
@@ -55,7 +55,7 @@ export default function AdminClientCompaniesTable({
       "AdminClientCompaniesTable",
       "DEBUG",
       "Search query updated",
-      `Query: ${query}`
+      "Query: " + query
     );
   }, [query]);
 
@@ -73,7 +73,7 @@ export default function AdminClientCompaniesTable({
       "AdminClientCompaniesTable",
       "DEBUG",
       "Pagination changed",
-      `Current page: ${currentPage}`
+      "Current page: " + currentPage
     );
   }, [currentPage]);
 
@@ -89,7 +89,7 @@ export default function AdminClientCompaniesTable({
       "AdminClientCompaniesTable",
       "INFO",
       "Edit modal opened for client",
-      `ClientId: ${client.id}, VAT: ${client.vatNumber}`
+      "ClientId: " + client.id + ", VAT: " + client.vatNumber
     );
   };
 
@@ -186,7 +186,7 @@ export default function AdminClientCompaniesTable({
                 "AdminClientCompaniesTable",
                 "INFO",
                 "Client update saved successfully",
-                `ClientId: ${updatedClient.id}, VehicleId: ${updatedClient.correspondingVehicleId}`
+                "ClientId: " + updatedClient.id + ", VehicleId: " + updatedClient.correspondingVehicleId
               );
             }}
             refreshWorkflowData={refreshWorkflowData}

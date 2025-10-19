@@ -187,7 +187,7 @@ using (var scope = app.Services.CreateScope())
         await logger.Info("Program.Main", "Vehicle statistics at startup:");
         foreach (var (brand, count) in stats)
         {
-            await logger.Info("Program.Main", $"  - {brand}: {count} active vehicles");
+            await logger.Info("Program.Main", $"- {brand}: {count} active vehicles");
         }
 
         // 🎯 INFO BASATA SULL'AMBIENTE
