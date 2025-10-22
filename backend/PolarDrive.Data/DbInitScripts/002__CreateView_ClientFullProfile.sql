@@ -1,4 +1,7 @@
--- SQL Server: Controlla se la view esiste prima di crearla
+-- ===============================================
+-- VISTA COMPLETA PROFILO CLIENTE (CORRETTA)
+-- ===============================================
+
 IF NOT EXISTS (SELECT * FROM sys.views WHERE name = 'vw_ClientFullProfile')
 BEGIN
     EXEC('CREATE VIEW vw_ClientFullProfile AS
@@ -38,12 +41,12 @@ BEGIN
             COALESCE(report_stats.TotalRegenerations, 0) AS TotalRegenerations,
             report_stats.LastReportGenerated,
             
-            -- Statistiche SMS per veicolo
+            -- Statistiche SMS per veicolo (CORRETTE)
             COALESCE(sms_stats.TotalSmsEvents, 0) AS TotalSmsEvents,
             COALESCE(sms_stats.AdaptiveOnEvents, 0) AS AdaptiveOnEvents,
             COALESCE(sms_stats.AdaptiveOffEvents, 0) AS AdaptiveOffEvents,
-            sms
             COALESCE(sms_stats.ActiveSessions, 0) AS ActiveSessions,
+            sms_stats.LastSmsReceived,
             sms_stats.LastActiveSessionExpires
             
         FROM ClientVehicles cv
@@ -79,6 +82,7 @@ BEGIN
             GROUP BY op.VehicleId
         ) outage_stats ON cv.Id = outage_stats.VehicleId
         
+        -- Statistiche report
         LEFT JOIN (
             SELECT 
                 pr.VehicleId,
@@ -90,30 +94,30 @@ BEGIN
             GROUP BY pr.VehicleId
         ) report_stats ON cv.Id = report_stats.VehicleId
         
-        -- Statistiche SMS
+        -- Statistiche SMS (CORRETTE)
         LEFT JOIN (
             SELECT 
-                apse.VehicleId,
+                sap.VehicleId,
                 COUNT(*) AS TotalSmsEvents,
-                SUM(CASE WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' THEN 1 ELSE 0 END) AS AdaptiveOnEvents,
-                SUM(CASE WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_OFF'' THEN 1 ELSE 0 END) AS AdaptiveOffEvents,
+                SUM(CASE WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' THEN 1 ELSE 0 END) AS AdaptiveOnEvents,
+                SUM(CASE WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILING_OFF'' THEN 1 ELSE 0 END) AS AdaptiveOffEvents,
                 SUM(CASE 
-                    WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' 
-                    AND apse.ConsentAccepted = 1 
-                    AND apse.ExpiresAt > GETDATE() 
+                    WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' 
+                    AND sap.ConsentAccepted = 1 
+                    AND sap.ExpiresAt > GETDATE() 
                     THEN 1 
                     ELSE 0 
                 END) AS ActiveSessions,
-                MAX(apse.ReceivedAt) AS LastSmsReceived,
+                MAX(sap.ReceivedAt) AS LastSmsReceived,
                 MAX(CASE 
-                    WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_ON''
-                    AND apse.ConsentAccepted = 1 
-                    AND apse.ExpiresAt > GETDATE() 
-                    THEN apse.ExpiresAt 
+                    WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILING_ON''
+                    AND sap.ConsentAccepted = 1 
+                    AND sap.ExpiresAt > GETDATE() 
+                    THEN sap.ExpiresAt 
                     ELSE NULL 
                 END) AS LastActiveSessionExpires
-            FROM SmsAdaptiveProfiling apse
-            GROUP BY apse.VehicleId
+            FROM SmsAdaptiveProfiling sap
+            GROUP BY sap.VehicleId
         ) sms_stats ON cv.Id = sms_stats.VehicleId
     ),
 
@@ -155,12 +159,12 @@ BEGIN
             SUM(vs.TotalRegenerations) AS TotalRegenerationsCompany,
             MAX(vs.LastReportGenerated) AS LastReportGeneratedCompany,
             
-            -- Statistiche aggregate SMS
+            -- Statistiche aggregate SMS (CORRETTE)
             SUM(vs.TotalSmsEvents) AS TotalSmsEventsCompany,
             SUM(vs.AdaptiveOnEvents) AS AdaptiveOnEventsCompany,
             SUM(vs.AdaptiveOffEvents) AS AdaptiveOffEventsCompany,
-            MAX(vs.LastSmsReceived) AS LastSmsReceivedCompany,
             SUM(vs.ActiveSessions) AS ActiveSessionsCompany,
+            MAX(vs.LastSmsReceived) AS LastSmsReceivedCompany,
             MAX(vs.LastActiveSessionExpires) AS LastActiveSessionExpiresCompany,
 
             -- Conteggio brand unici
@@ -209,11 +213,12 @@ BEGIN
         vs.TotalRegenerations AS VehicleRegenerations,
         vs.LastReportGenerated AS VehicleLastReport,
         
+        -- Statistiche SMS per veicolo (CORRETTE)
         vs.TotalSmsEvents AS VehicleSmsEvents,
         vs.AdaptiveOnEvents AS VehicleAdaptiveOn,
         vs.AdaptiveOffEvents AS VehicleAdaptiveOff,
-        vs.LastSmsReceived AS VehicleLastSms,
         vs.ActiveSessions AS VehicleActiveSessions,
+        vs.LastSmsReceived AS VehicleLastSms,
         vs.LastActiveSessionExpires AS VehicleActiveSessionExpires,
         
         -- Calcoli aggiuntivi
@@ -237,7 +242,6 @@ END
 -- INDICI AGGIUNTIVI PER PERFORMANCE
 -- ===============================================
 
--- SQL Server: Controlla se l'indice esiste prima di crearlo
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_outage_active_vehicle' AND object_id = OBJECT_ID('OutagePeriods'))
 BEGIN
     CREATE INDEX idx_outage_active_vehicle 
@@ -245,21 +249,18 @@ BEGIN
     WHERE OutageType = 'Outage Vehicle';
 END
 
--- Indice per migliorare le performance dei report
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_pdfreports_vehicle_period' AND object_id = OBJECT_ID('PdfReports'))
 BEGIN
     CREATE INDEX idx_pdfreports_vehicle_period 
     ON PdfReports (VehicleId, ReportPeriodStart, ReportPeriodEnd);
 END
 
--- Indice per migliorare le performance dei consensi
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_clientconsents_vehicle_date' AND object_id = OBJECT_ID('ClientConsents'))
 BEGIN
     CREATE INDEX idx_clientconsents_vehicle_date 
     ON ClientConsents (VehicleId, UploadDate);
 END
 
--- Indice per migliorare le performance degli SMS
 IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_smsevents_vehicle_date' AND object_id = OBJECT_ID('SmsAdaptiveProfiling'))
 BEGIN
     CREATE INDEX idx_smsevents_vehicle_date 
