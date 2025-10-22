@@ -42,7 +42,9 @@ BEGIN
             COALESCE(sms_stats.TotalSmsEvents, 0) AS TotalSmsEvents,
             COALESCE(sms_stats.AdaptiveOnEvents, 0) AS AdaptiveOnEvents,
             COALESCE(sms_stats.AdaptiveOffEvents, 0) AS AdaptiveOffEvents,
-            sms_stats.LastSmsReceived
+            sms
+            COALESCE(sms_stats.ActiveSessions, 0) AS ActiveSessions,
+            sms_stats.LastActiveSessionExpires
             
         FROM ClientVehicles cv
         
@@ -95,7 +97,21 @@ BEGIN
                 COUNT(*) AS TotalSmsEvents,
                 SUM(CASE WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' THEN 1 ELSE 0 END) AS AdaptiveOnEvents,
                 SUM(CASE WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_OFF'' THEN 1 ELSE 0 END) AS AdaptiveOffEvents,
-                MAX(apse.ReceivedAt) AS LastSmsReceived
+                SUM(CASE 
+                    WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' 
+                    AND apse.ConsentAccepted = 1 
+                    AND apse.ExpiresAt > GETDATE() 
+                    THEN 1 
+                    ELSE 0 
+                END) AS ActiveSessions,
+                MAX(apse.ReceivedAt) AS LastSmsReceived,
+                MAX(CASE 
+                    WHEN apse.ParsedCommand = ''ADAPTIVE_PROFILING_ON''
+                    AND apse.ConsentAccepted = 1 
+                    AND apse.ExpiresAt > GETDATE() 
+                    THEN apse.ExpiresAt 
+                    ELSE NULL 
+                END) AS LastActiveSessionExpires
             FROM SmsAdaptiveProfiling apse
             GROUP BY apse.VehicleId
         ) sms_stats ON cv.Id = sms_stats.VehicleId
@@ -144,7 +160,9 @@ BEGIN
             SUM(vs.AdaptiveOnEvents) AS AdaptiveOnEventsCompany,
             SUM(vs.AdaptiveOffEvents) AS AdaptiveOffEventsCompany,
             MAX(vs.LastSmsReceived) AS LastSmsReceivedCompany,
-            
+            SUM(vs.ActiveSessions) AS ActiveSessionsCompany,
+            MAX(vs.LastActiveSessionExpires) AS LastActiveSessionExpiresCompany,
+
             -- Conteggio brand unici
             COUNT(DISTINCT vs.Brand) AS UniqueBrands,
             
@@ -195,6 +213,8 @@ BEGIN
         vs.AdaptiveOnEvents AS VehicleAdaptiveOn,
         vs.AdaptiveOffEvents AS VehicleAdaptiveOff,
         vs.LastSmsReceived AS VehicleLastSms,
+        vs.ActiveSessions AS VehicleActiveSessions,
+        vs.LastActiveSessionExpires AS VehicleActiveSessionExpires,
         
         -- Calcoli aggiuntivi
         CASE 

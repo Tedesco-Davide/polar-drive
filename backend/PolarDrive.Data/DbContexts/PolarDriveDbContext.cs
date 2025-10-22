@@ -13,7 +13,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<VehicleData> VehiclesData => Set<VehicleData>();
     public DbSet<SmsAdaptiveGdpr> SmsAdaptiveGdpr { get; set; }
     public DbSet<SmsAdaptiveProfiling> SmsAdaptiveProfiling => Set<SmsAdaptiveProfiling>();
-    public DbSet<SmsAuditLog> SmsAdaptiveAuditLogs { get; set; }
+    public DbSet<SmsAuditLog> SmsAuditLog { get; set; }
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
@@ -77,14 +77,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
             {
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany(cv => cv.VehiclesData)
-                    .HasForeignKey(e => e.VehicleId)
-                    .OnDelete(DeleteBehavior.Cascade);
-            });
-
-            modelBuilder.Entity<SmsAdaptiveProfiling>(entity =>
-            {
-                entity.HasOne(e => e.ClientVehicle)
-                    .WithMany()
                     .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.Cascade);
             });
@@ -187,11 +179,29 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasForeignKey(e => e.ClientCompanyId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasIndex(e => new { e.PhoneNumber, e.Brand });
+                // Indice univoco su AdaptiveNumber + AdaptiveSurnameName + Brand
+                entity.HasIndex(e => new { e.AdaptiveNumber, e.AdaptiveSurnameName, e.Brand })
+                    .IsUnique();
+                
                 entity.HasIndex(e => e.ConsentToken).IsUnique();
-                entity.HasIndex(e => e.ExpiresAt);
-                entity.HasIndex(e => new { e.PhoneNumber, e.RequestedAt });
+                entity.HasIndex(e => new { e.AdaptiveNumber, e.RequestedAt });
                 entity.HasIndex(e => e.ConsentAccepted);
+            });
+
+            modelBuilder.Entity<SmsAdaptiveProfiling>(entity =>
+            {
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Relazione con SmsAdaptiveGdpr
+                entity.HasOne(e => e.SmsAdaptiveGdpr)
+                    .WithMany()
+                    .HasForeignKey(e => e.SmsAdaptiveGdprId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.AdaptiveProfilingNumber, e.AdaptiveProfilingName });
             });
 
             modelBuilder.Entity<PhoneVehicleMapping>(entity =>

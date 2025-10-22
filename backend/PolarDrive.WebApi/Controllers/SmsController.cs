@@ -149,7 +149,7 @@ public class SmsController(
         {
             MessageSid = GetParam("messageId") ?? string.Empty,
             FromPhoneNumber = GetParam("msisdn") ?? string.Empty, // mittente
-            ToPhoneNumber = GetParam("to") ?? string.Empty,       // nostro numero Vonage
+            ToPhoneNumber = GetParam("to") ?? string.Empty,       // numero Vonage DataPolar
             MessageBody = $"DLR status={GetParam("status")} err-code={GetParam("err-code")} price={GetParam("price")}",
             ReceivedAt = DateTime.Now,
             ProcessingStatus = "DLR"
@@ -180,19 +180,22 @@ public class SmsController(
     // Gestione ADAPTIVE_GDPR
     private async Task<ActionResult> HandleAdaptiveGdprCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
     {
-        // Estrai numero destinatario: "ADAPTIVE_GDPR XXXXXXXXXX"
+        // Estrai parametri: "ADAPTIVE_GDPR Rossi Mario +393331234567"
         var parts = dto.Body.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 2)
+        if (parts.Length < 4)  // comando + cognome + nome + numero
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Formato comando ADAPTIVE_GDPR non valido";
-            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_GDPR XXXXXXXXXX");
+            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa formato: ADAPTIVE_GDPR Cognome Nome 3334455666");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
         }
 
-        var targetPhone = NormalizePhoneNumber(parts[1]);
+        var surname = parts[1];
+        var name = parts[2];
+        var fullName = $"{surname} {name}";  // "Rossi Mario"
+        var targetPhone = NormalizePhoneNumber(parts[3]);
 
         // Verifica che il mittente sia un ReferentMobileNumber registrato
         var vehicle = await _db.ClientVehicles
@@ -209,48 +212,50 @@ public class SmsController(
             return OkSms(errorResponse);
         }
 
-        // Crea richiesta GDPR
+        // Crea richiesta GDPR con tutti i campi obbligatori
         var gdprRequest = new SmsAdaptiveGdpr
         {
-            PhoneNumber = targetPhone,
+            AdaptiveNumber = targetPhone,
+            AdaptiveSurnameName = fullName,
             Brand = vehicle.Brand,
             ClientCompanyId = vehicle.ClientCompanyId,
             ConsentToken = SmsAdaptiveGdpr.GenerateSecureToken(),
             RequestedAt = DateTime.Now,
-            ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
             ConsentAccepted = false,
             AttemptCount = 1
         };
 
         _db.SmsAdaptiveGdpr.Add(gdprRequest);
+        await _db.SaveChangesAsync();
 
         // Crea riga ADAPTIVE_PROFILING (vuota, in attesa di attivazione)
         var profilingEvent = new SmsAdaptiveProfiling
         {
             VehicleId = vehicle.Id,
             AdaptiveProfilingNumber = targetPhone,
-            AdaptiveProfilingName = string.Empty, // Verrà popolato dopo
+            AdaptiveProfilingName = fullName,
             ReceivedAt = DateTime.Now,
             ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
             MessageContent = dto.Body,
-            ParsedCommand = "ADAPTIVE_PROFILING_OFF", // Non ancora attivo
-            ConsentAccepted = false
+            ParsedCommand = "ADAPTIVE_PROFILING_OFF",
+            ConsentAccepted = false,
+            SmsAdaptiveGdprId = gdprRequest.Id
         };
 
         _db.SmsAdaptiveProfiling.Add(profilingEvent);
         await _db.SaveChangesAsync();
 
         // Invia SMS al numero target
-        var gdprMessage = $@"DataPolar - Consenso utilizzo {vehicle.Brand} da {vehicle.ClientCompany?.Name} Per guidare questo veicolo di ricerca, deve accettare il trattamento dati GPS/telemetria come richiesto da {vehicle.Brand}. 📄 Informativa completa: [short.link/gdpr-pdf] Risponda: ✅ ACCETTO - per dare consenso esplicito ℹ️ Ignora SMS per negare il consenso";
+        var gdprMessage = $@"DataPolar - Procedura ADAPTIVE_GDPR - Consenso utilizzo {vehicle.Brand} da {vehicle.ClientCompany?.Name} Per guidare questo veicolo e dare il suo apporto di Ricerca & Sviluppo, deve accettare il trattamento dati GPS/telemetria come richiesto da {vehicle.Brand}. 📄 Informativa completa: [short.link/gdpr-pdf] Risponda: ✅ ACCETTO - per dare consenso esplicito ℹ️ Ignora SMS per negare il consenso";
 
         await _smsConfig.SendSmsAsync(targetPhone, gdprMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
-        auditLog.ResponseSent = GenerateSmsResponse($"✅ Richiesta GDPR inviata a {targetPhone}");
+        auditLog.ResponseSent = GenerateSmsResponse($"✅ Richiesta GDPR inviata a {fullName} ({targetPhone})");
         await SaveAuditLogAsync(auditLog);
 
         await _logger.Info("Sms.GDPR", "GDPR request sent",
-            $"From: {dto.From}, To: {targetPhone}, Brand: {vehicle.Brand}");
+            $"From: {dto.From}, To: {targetPhone}, Name: {fullName}, Brand: {vehicle.Brand}");
 
         return OkSms(auditLog.ResponseSent);
     }
@@ -260,7 +265,7 @@ public class SmsController(
     {
         var gdprRequest = await _db.SmsAdaptiveGdpr
             .Include(g => g.ClientCompany)
-            .Where(g => g.PhoneNumber == dto.From && !g.ConsentAccepted && g.ExpiresAt > DateTime.Now)
+            .Where(g => g.AdaptiveNumber == dto.From && !g.ConsentAccepted)
             .OrderByDescending(g => g.RequestedAt)
             .FirstOrDefaultAsync();
 
@@ -278,6 +283,7 @@ public class SmsController(
         gdprRequest.ConsentAccepted = true;
         gdprRequest.ConsentGivenAt = DateTime.Now;
         gdprRequest.IpAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
+        gdprRequest.UserAgent = Request.Headers["User-Agent"].ToString();
 
         // Aggiorna tutte le righe ADAPTIVE_PROFILING legate a questo numero
         var profilingEvents = await _db.SmsAdaptiveProfiling
@@ -307,7 +313,7 @@ public class SmsController(
     private async Task<ActionResult> HandleStopCommand(SmsWebhookDTO dto, SmsAuditLog auditLog)
     {
         var gdprRequest = await _db.SmsAdaptiveGdpr
-            .Where(g => g.PhoneNumber == dto.From && g.ConsentAccepted)
+            .Where(g => g.AdaptiveNumber == dto.From && g.ConsentAccepted)
             .OrderByDescending(g => g.ConsentGivenAt)
             .FirstOrDefaultAsync();
 
@@ -391,20 +397,22 @@ public class SmsController(
     /// </summary>
     private async Task<ActionResult> HandleAdaptiveProfilingCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
     {
-        // Estrai parametri: "ADAPTIVE_PROFILING XXXXXXXXXX Mario Rossi"
+        // Estrai parametri: "ADAPTIVE_PROFILING Rossi Mario +393331234567"
         var parts = dto.Body.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 3)
+        if (parts.Length < 4)  // comando + cognome + nome + numero
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Formato comando ADAPTIVE_PROFILING non valido";
-            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILING XXXXXXXXXX Nome Cognome");
+            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILING Cognome Nome NUMERO-DI-TELEFONO");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
         }
 
-        var targetPhone = NormalizePhoneNumber(parts[1]);
-        var fullName = string.Join(" ", parts.Skip(2)); // "Mario Rossi"
+        var surname = parts[1];
+        var name = parts[2];
+        var fullName = $"{surname} {name}";  // "Rossi Mario"
+        var targetPhone = NormalizePhoneNumber(parts[3]);
 
         // Verifica che il mittente sia un ReferentMobileNumber registrato
         var vehicle = await _db.ClientVehicles
@@ -423,9 +431,9 @@ public class SmsController(
 
         // ⚠️ VERIFICA CHE ESISTA CONSENSO GDPR ATTIVO
         var gdprConsent = await _db.SmsAdaptiveGdpr
-            .Where(g => g.PhoneNumber == targetPhone
-                     && g.Brand == vehicle.Brand
-                     && g.ConsentAccepted)
+            .Where(g => g.AdaptiveNumber == targetPhone
+                    && g.Brand == vehicle.Brand
+                    && g.ConsentAccepted)
             .OrderByDescending(g => g.ConsentGivenAt)
             .FirstOrDefaultAsync();
 
@@ -435,7 +443,7 @@ public class SmsController(
             auditLog.ErrorMessage = "Procedura ADAPTIVE_GDPR mai eseguita";
 
             // Invia SMS al ReferentMobileNumber (il mittente)
-            var warningMessage = $@"ATTENZIONE {vehicle.ReferentName}! Procedura ADAPTIVE_GDPR mai eseguita per {targetPhone}. Completare la procedura ADAPTIVE_GDPR per {targetPhone} prima di continuare";
+            var warningMessage = $@"ATTENZIONE {vehicle.ReferentName}! Procedura ADAPTIVE_GDPR mai eseguita per {fullName} ({targetPhone}). Completare la procedura ADAPTIVE_GDPR prima di continuare";
 
             await _smsConfig.SendSmsAsync(dto.From, warningMessage);
 
@@ -448,13 +456,13 @@ public class SmsController(
         // Trova o crea riga ADAPTIVE_PROFILING
         var profilingEvent = await _db.SmsAdaptiveProfiling
             .Where(p => p.VehicleId == vehicle.Id
-                     && p.AdaptiveProfilingNumber == targetPhone)
+                    && p.AdaptiveProfilingNumber == targetPhone)
             .OrderByDescending(p => p.ReceivedAt)
             .FirstOrDefaultAsync();
 
         if (profilingEvent == null)
         {
-            // Crea nuova riga
+            // Crea nuova riga - INCLUDE SmsAdaptiveGdprId OBBLIGATORIO
             profilingEvent = new SmsAdaptiveProfiling
             {
                 VehicleId = vehicle.Id,
@@ -464,7 +472,8 @@ public class SmsController(
                 ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
                 MessageContent = dto.Body,
                 ParsedCommand = "ADAPTIVE_PROFILING_ON",
-                ConsentAccepted = true
+                ConsentAccepted = true,
+                SmsAdaptiveGdprId = gdprConsent.Id
             };
 
             _db.SmsAdaptiveProfiling.Add(profilingEvent);
@@ -477,12 +486,18 @@ public class SmsController(
             profilingEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD);
             profilingEvent.ParsedCommand = "ADAPTIVE_PROFILING_ON";
             profilingEvent.ConsentAccepted = true;
+            profilingEvent.SmsAdaptiveGdprId = gdprConsent.Id;
         }
 
         await _db.SaveChangesAsync();
 
         // Invia SMS di conferma al numero target
-        var confirmMessage = $@"Autorizzazione ADAPTIVE_PROFILING confermata Giorno: {DateTime.Now:dd/MM/yyyy} Azienda: {vehicle.ClientCompany?.Name} Brand: {vehicle.Brand} VIN: {vehicle.Vin} Validità profilo: {SMS_ADPATIVE_HOURS_THRESHOLD} ORE";
+        var confirmMessage = $@"Autorizzazione ADAPTIVE_PROFILING confermata 
+        Giorno: {DateTime.Now:dd/MM/yyyy} 
+        Azienda: {vehicle.ClientCompany?.Name} 
+        Brand: {vehicle.Brand} 
+        VIN: {vehicle.Vin} 
+        Validità profilo: {SMS_ADPATIVE_HOURS_THRESHOLD} ore";
 
         await _smsConfig.SendSmsAsync(targetPhone, confirmMessage);
 
@@ -599,13 +614,13 @@ public class SmsController(
 
     private async Task SaveAuditLogAsync(SmsAuditLog auditLog)
     {
-        _db.SmsAdaptiveAuditLogs.Add(auditLog);
+        _db.SmsAuditLog.Add(auditLog);
         await _db.SaveChangesAsync();
     }
 
     private async Task UpdateAuditLogAsync(SmsAuditLog auditLog)
     {
-        _db.SmsAdaptiveAuditLogs.Update(auditLog);
+        _db.SmsAuditLog.Update(auditLog);
         await _db.SaveChangesAsync();
     }
 
@@ -717,12 +732,13 @@ public class SmsController(
                 .Select(g => new
                 {
                     g.Id,
-                    g.PhoneNumber,
+                    PhoneNumber = g.AdaptiveNumber, // Per retrocompatibilità con il frontend
+                    g.AdaptiveNumber,
+                    g.AdaptiveSurnameName,
                     g.Brand,
                     g.RequestedAt,
                     g.ConsentGivenAt,
                     g.ConsentAccepted,
-                    g.ExpiresAt,
                     CompanyName = g.ClientCompany != null ? g.ClientCompany.Name : null
                 })
                 .ToListAsync();
@@ -745,6 +761,7 @@ public class SmsController(
     {
         try
         {
+            // CORREZIONE: PhoneNumber → AdaptiveNumber
             var consents = await _db.SmsAdaptiveGdpr
                 .Include(g => g.ClientCompany)
                 .OrderByDescending(g => g.RequestedAt)
@@ -752,12 +769,13 @@ public class SmsController(
                 .Select(g => new
                 {
                     g.Id,
-                    g.PhoneNumber,
+                    PhoneNumber = g.AdaptiveNumber, // Per retrocompatibilità con il frontend
+                    g.AdaptiveNumber,
+                    g.AdaptiveSurnameName,
                     g.Brand,
                     g.RequestedAt,
                     g.ConsentGivenAt,
                     g.ConsentAccepted,
-                    g.ExpiresAt,
                     g.AttemptCount,
                     CompanyName = g.ClientCompany != null ? g.ClientCompany.Name : null,
                     g.ClientCompanyId
@@ -782,9 +800,10 @@ public class SmsController(
     {
         try
         {
-            var totalCount = await _db.SmsAdaptiveAuditLogs.CountAsync();
+            // CORREZIONE: Verificare che il DbSet sia corretto
+            var totalCount = await _db.SmsAuditLog.CountAsync();
             
-            var logs = await _db.SmsAdaptiveAuditLogs
+            var logs = await _db.SmsAuditLog
                 .OrderByDescending(l => l.ReceivedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)

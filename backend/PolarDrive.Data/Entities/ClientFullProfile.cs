@@ -31,7 +31,14 @@ public class CompanyProfileInfo
     public int TotalConsentsCompany { get; set; }
     public int TotalOutagesCompany { get; set; }
     public int TotalReportsCompany { get; set; }
+    
+    // ✅ Statistiche SMS aggregate a livello aziendale
     public int TotalSmsEventsCompany { get; set; }
+    public int AdaptiveOnEventsCompany { get; set; }
+    public int AdaptiveOffEventsCompany { get; set; }
+    public int ActiveSessionsCompany { get; set; }
+    public DateTime? LastSmsReceivedCompany { get; set; }
+    public DateTime? LastActiveSessionExpiresCompany { get; set; }
     public DateTime? FirstVehicleActivation { get; set; }
     public DateTime? LastReportGeneratedCompany { get; set; }
     public string? LandlineNumbers { get; set; }
@@ -58,7 +65,14 @@ public class VehicleProfileInfo
     public int TotalConsents { get; set; }
     public int TotalOutages { get; set; }
     public int TotalReports { get; set; }
+    
+    // ✅ Statistiche SMS dettagliate per veicolo
     public int TotalSmsEvents { get; set; }
+    public int AdaptiveOnEvents { get; set; }
+    public int AdaptiveOffEvents { get; set; }
+    public int ActiveSessions { get; set; }
+    public DateTime? LastSmsReceived { get; set; }
+    public DateTime? ActiveSessionExpires { get; set; }
     public DateTime? LastConsentDate { get; set; }
     public DateTime? LastOutageStart { get; set; }
     public DateTime? LastReportGenerated { get; set; }

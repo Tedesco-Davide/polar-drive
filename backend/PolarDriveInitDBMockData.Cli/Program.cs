@@ -43,7 +43,7 @@ try
             "VehiclesData",
             "AnonymizedVehiclesData",
             "SmsAdaptiveProfiling",
-            "SmsAdaptiveAuditLogs",
+            "SmsAuditLog",
             "PhoneVehicleMappings",
             "ClientTokens",
             "ClientVehicles",
@@ -77,7 +77,7 @@ try
                 "PdfReports",
                 "AdminFileManager",
                 "PhoneVehicleMappings",
-                "SmsAdaptiveAuditLogs",
+                "SmsAuditLog",
                 "SmsAdaptiveProfiling",
                 "AnonymizedVehiclesData",
                 "VehiclesData",
@@ -509,7 +509,7 @@ try
     };
 
     db.PhoneVehicleMappings.AddRange(phoneMappings);
-    db.SmsAdaptiveAuditLogs.AddRange(smsLogs);
+    db.SmsAuditLog.AddRange(smsLogs);
     db.SmsAdaptiveProfiling.AddRange(adaptiveEvents);
     await db.SaveChangesAsync();
 

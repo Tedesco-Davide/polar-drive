@@ -9,7 +9,11 @@ namespace PolarDrive.Data.Entities
 
         [Required]
         [StringLength(20)]
-        public string PhoneNumber { get; set; } = string.Empty;
+        public string AdaptiveNumber { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(200)]
+        public string AdaptiveSurnameName { get; set; } = string.Empty;
 
         [Required]
         [StringLength(50)]
@@ -35,8 +39,6 @@ namespace PolarDrive.Data.Entities
 
         [StringLength(500)]
         public string? UserAgent { get; set; }
-
-        public DateTime? ExpiresAt { get; set; }
 
         public int AttemptCount { get; set; } = 0;
 

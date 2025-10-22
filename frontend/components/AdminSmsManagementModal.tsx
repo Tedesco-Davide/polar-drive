@@ -15,6 +15,7 @@ interface SmsAuditLog {
   id: number;
   messageSid: string;
   fromPhoneNumber: string;
+  toPhoneNumber: string;
   messageBody: string;
   receivedAt: string;
   processingStatus: string;
@@ -41,7 +42,6 @@ interface GdprConsent {
   requestedAt: string;
   consentGivenAt: string | null;
   consentAccepted: boolean;
-  expiresAt: string | null;
 }
 
 interface AdminSmsManagementModalProps {
@@ -97,7 +97,7 @@ export default function AdminSmsManagementModal({
 
       // Carica consensi GDPR per il Brand
       const gdprResponse = await fetch(
-        `/api/SmsAdaptiveGdpr/consents?brand=${vehicleBrand}`
+        `/api/Sms/gdpr/consents?brand=${vehicleBrand}`
       );
       if (gdprResponse.ok) {
         const consents = await gdprResponse.json();
@@ -392,12 +392,6 @@ export default function AdminSmsManagementModal({
                           Accettato: {formatDate(consent.consentGivenAt)}
                         </>
                       )}
-                      {consent.expiresAt && (
-                        <>
-                          <br />
-                          Scadenza: {formatDate(consent.expiresAt)}
-                        </>
-                      )}
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
                       ID Consenso: #{consent.id}
@@ -416,34 +410,42 @@ export default function AdminSmsManagementModal({
                   Nessun SMS ricevuto per questo veicolo
                 </p>
               ) : (
-                auditLogs.map((log) => (
-                  <div key={log.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <span
-                          className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                            log.processingStatus
-                          )}`}
-                        >
-                          {log.processingStatus}
-                        </span>
-                        <span className="font-semibold text-polarNight dark:text-softWhite">
-                          {log.fromPhoneNumber}
-                        </span>
-                      </div>
-                      <span className="text-xs text-gray-500">{formatDate(log.receivedAt)}</span>
+                    auditLogs.map((log) => (
+                    <div key={log.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3">
+                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                            <span
+                            className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
+                                log.processingStatus
+                            )}`}
+                            >
+                            {log.processingStatus}
+                            </span>
+                            <span className="font-semibold text-polarNight dark:text-softWhite">
+                            {log.fromPhoneNumber}
+                            </span>
+                        </div>
+                        <span className="text-xs text-gray-500">{formatDate(log.receivedAt)}</span>
+                        </div>
+                        
+                        {/* ✅ AGGIUNGI QUESTA SEZIONE */}
+                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                        📞 Da: <span className="font-medium">{log.fromPhoneNumber}</span>
+                        {" → "}
+                        📱 A: <span className="font-medium">{log.toPhoneNumber}</span>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        📩 &quot;{log.messageBody}&quot;
+                        </div>
+                        {log.errorMessage && (
+                        <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                            ❌ {log.errorMessage}
+                        </div>
+                        )}
+                        <div className="text-xs text-gray-500 mt-2">SID: {log.messageSid}</div>
                     </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                      📩 &quot;{log.messageBody}&quot;
-                    </div>
-                    {log.errorMessage && (
-                      <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                        ❌ {log.errorMessage}
-                      </div>
-                    )}
-                    <div className="text-xs text-gray-500 mt-2">SID: {log.messageSid}</div>
-                  </div>
-                ))
+                    ))
               )}
             </div>
           )}

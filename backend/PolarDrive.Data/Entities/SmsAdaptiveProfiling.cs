@@ -29,5 +29,11 @@ public class SmsAdaptiveProfiling
     [Required]
     public bool ConsentAccepted { get; set; } = false;
 
+    // Foreign Key verso SmsAdaptiveGdpr
+    [Required]
+    public int SmsAdaptiveGdprId { get; set; }
+
+    // Navigation properties
     public ClientVehicle? ClientVehicle { get; set; }
+    public SmsAdaptiveGdpr? SmsAdaptiveGdpr { get; set; }
 }

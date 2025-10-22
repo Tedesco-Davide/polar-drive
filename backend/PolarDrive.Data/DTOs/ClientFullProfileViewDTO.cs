@@ -5,6 +5,9 @@ namespace PolarDrive.Data.Entities;
 /// </summary>
 public class ClientFullProfileViewDto
 {
+    // ========================================
+    // DATI AZIENDA
+    // ========================================
     public int ClientCompanyId { get; set; }
     public string VatNumber { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
@@ -17,6 +20,8 @@ public class ClientFullProfileViewDto
     public string? ReferentEmail { get; set; }
     public DateTime CompanyCreatedAt { get; set; }
     public int DaysRegistered { get; set; }
+    
+    // Statistiche aggregate azienda
     public int TotalVehicles { get; set; }
     public int ActiveVehicles { get; set; }
     public int FetchingVehicles { get; set; }
@@ -25,14 +30,24 @@ public class ClientFullProfileViewDto
     public int TotalConsentsCompany { get; set; }
     public int TotalOutagesCompany { get; set; }
     public int TotalReportsCompany { get; set; }
+    
+    // ✅ Statistiche SMS aggregate azienda
     public int TotalSmsEventsCompany { get; set; }
+    public int AdaptiveOnEventsCompany { get; set; }
+    public int AdaptiveOffEventsCompany { get; set; }
+    public int ActiveSessionsCompany { get; set; }
+    public DateTime? LastSmsReceivedCompany { get; set; }
+    public DateTime? LastActiveSessionExpiresCompany { get; set; }
+    
     public DateTime? FirstVehicleActivation { get; set; }
     public DateTime? LastReportGeneratedCompany { get; set; }
     public string? LandlineNumbers { get; set; }
     public string? MobileNumbers { get; set; }
     public string? AssociatedPhones { get; set; }
 
-    // Dati del veicolo (nullable perché potrebbero non esserci veicoli)
+    // ========================================
+    // DATI VEICOLO (nullable se non ci sono veicoli)
+    // ========================================
     public int? VehicleId { get; set; }
     public string? Vin { get; set; }
     public string? Brand { get; set; }
@@ -44,10 +59,20 @@ public class ClientFullProfileViewDto
     public DateTime? VehicleFirstActivation { get; set; }
     public DateTime? VehicleLastDeactivation { get; set; }
     public DateTime? VehicleCreatedAt { get; set; }
+    
+    // Statistiche veicolo
     public int VehicleConsents { get; set; }
     public int VehicleOutages { get; set; }
     public int VehicleReports { get; set; }
+    
+    // ✅ Statistiche SMS dettagliate veicolo
     public int VehicleSmsEvents { get; set; }
+    public int VehicleAdaptiveOn { get; set; }
+    public int VehicleAdaptiveOff { get; set; }
+    public int VehicleActiveSessions { get; set; }
+    public DateTime? VehicleLastSms { get; set; }
+    public DateTime? VehicleActiveSessionExpires { get; set; }
+    
     public DateTime? VehicleLastConsent { get; set; }
     public DateTime? VehicleLastOutage { get; set; }
     public DateTime? VehicleLastReport { get; set; }

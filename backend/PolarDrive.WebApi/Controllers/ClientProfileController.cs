@@ -179,7 +179,7 @@ public class ClientProfileController : ControllerBase
     }
 
     /// <summary>
-    /// Ottiene i dati aggregati del profilo cliente dalla view
+    /// ✅ CORRETTO: Ottiene i dati aggregati del profilo cliente dalla view vw_ClientFullProfile
     /// </summary>
     private async Task<ClientProfileData?> GetClientProfileDataAsync(int companyId)
     {
@@ -188,45 +188,12 @@ public class ClientProfileController : ControllerBase
 
         try
         {
+            // ✅ USA LA VIEW CORRETTA con tutti i campi inclusi quelli SMS
             var sql = @"
-            SELECT 
-                -- Dati azienda (SENZA referente)
-                c.Id as ClientCompanyId, c.VatNumber, c.Name, c.Address, c.Email, c.PecAddress, c.LandlineNumber,
-                c.CreatedAt as CompanyCreatedAt,
-                -- Calcoli statistici azienda
-                (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as TotalVehicles,
-                (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsActiveFlag = 1) as ActiveVehicles,
-                (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND IsFetchingDataFlag = 1) as FetchingVehicles,
-                (SELECT COUNT(*) FROM ClientVehicles WHERE ClientCompanyId = c.Id AND ClientOAuthAuthorized = 1) as AuthorizedVehicles,
-                (SELECT COUNT(DISTINCT Brand) FROM ClientVehicles WHERE ClientCompanyId = c.Id) as UniqueBrands,
-                0 as TotalConsentsCompany, 0 as TotalOutagesCompany, 0 as TotalReportsCompany, 0 as TotalSmsEventsCompany,
-                DATEDIFF(day, c.CreatedAt, GETDATE()) as DaysRegistered,
-                NULL as FirstVehicleActivation, NULL as LastReportGeneratedCompany,
-                NULL as LandlineNumbers, NULL as MobileNumbers, NULL as AssociatedPhones,
-                
-                -- Dati veicolo CON referente
-                v.Id as VehicleId, v.Vin, v.Brand, v.Model, v.FuelType,
-                CAST(ISNULL(v.IsActiveFlag, 0) AS BIT) as VehicleIsActive, 
-                CAST(ISNULL(v.IsFetchingDataFlag, 0) AS BIT) as VehicleIsFetching, 
-                CAST(ISNULL(v.ClientOAuthAuthorized, 0) AS BIT) as VehicleIsAuthorized,
-                v.CreatedAt as VehicleCreatedAt, v.FirstActivationAt as VehicleFirstActivation, 
-                v.LastDeactivationAt as VehicleLastDeactivation,
-                
-                -- Referenti dal veicolo
-                v.ReferentName, v.ReferentMobileNumber, v.ReferentEmail,
-                
-                -- Statistiche veicolo
-                0 as VehicleConsents, 0 as VehicleOutages, 0 as VehicleReports, 0 as VehicleSmsEvents,
-                NULL as VehicleLastConsent, NULL as VehicleLastOutage, NULL as VehicleLastReport,
-                CASE WHEN v.FirstActivationAt IS NOT NULL 
-                    THEN DATEDIFF(day, v.FirstActivationAt, GETDATE())
-                    ELSE NULL END as DaysSinceFirstActivation,
-                0 as VehicleOutageDays
-                
-            FROM ClientCompanies c
-            LEFT JOIN ClientVehicles v ON c.Id = v.ClientCompanyId
-            WHERE c.Id = @companyId 
-            ORDER BY v.Brand, v.Model, v.Vin";
+                SELECT * 
+                FROM vw_ClientFullProfile 
+                WHERE ClientCompanyId = @companyId 
+                ORDER BY Brand, Model, Vin";
 
             var companyParam = new SqlParameter("@companyId", SqlDbType.Int) { Value = companyId };
             var rawData = await _db.Database.SqlQueryRaw<ClientFullProfileViewDto>(sql, companyParam)
@@ -255,42 +222,65 @@ public class ClientProfileController : ControllerBase
                     FetchingVehicles = firstRow.FetchingVehicles,
                     AuthorizedVehicles = firstRow.AuthorizedVehicles,
                     UniqueBrands = firstRow.UniqueBrands,
+                    
+                    // ✅ CORRETTO: Mappa i dati aggregati reali dalla view
                     TotalConsentsCompany = firstRow.TotalConsentsCompany,
                     TotalOutagesCompany = firstRow.TotalOutagesCompany,
                     TotalReportsCompany = firstRow.TotalReportsCompany,
+                    
+                    // ✅ NUOVO: Statistiche SMS aggregate aziendali
                     TotalSmsEventsCompany = firstRow.TotalSmsEventsCompany,
+                    AdaptiveOnEventsCompany = firstRow.AdaptiveOnEventsCompany,
+                    AdaptiveOffEventsCompany = firstRow.AdaptiveOffEventsCompany,
+                    ActiveSessionsCompany = firstRow.ActiveSessionsCompany,
+                    LastSmsReceivedCompany = firstRow.LastSmsReceivedCompany,
+                    LastActiveSessionExpiresCompany = firstRow.LastActiveSessionExpiresCompany,
+                    
                     FirstVehicleActivation = firstRow.FirstVehicleActivation,
                     LastReportGeneratedCompany = firstRow.LastReportGeneratedCompany,
                     LandlineNumbers = firstRow.LandlineNumbers,
                     MobileNumbers = firstRow.MobileNumbers,
                     AssociatedPhones = firstRow.AssociatedPhones
                 },
-                Vehicles = [.. rawData.Where(r => r.VehicleId.HasValue).Select(r => new VehicleProfileInfo
-                {
-                    Id = r.VehicleId!.Value,
-                    Vin = r.Vin ?? "",
-                    Brand = r.Brand ?? "",
-                    Model = r.Model ?? "",
-                    FuelType = r.FuelType ?? "",
-                    IsActive = r.VehicleIsActive,
-                    IsFetching = r.VehicleIsFetching,
-                    IsAuthorized = r.VehicleIsAuthorized,
-                    VehicleCreatedAt = r.VehicleCreatedAt,
-                    FirstActivationAt = r.VehicleFirstActivation,
-                    LastDeactivationAt = r.VehicleLastDeactivation,
-                    TotalConsents = r.VehicleConsents,
-                    TotalOutages = r.VehicleOutages,
-                    TotalReports = r.VehicleReports,
-                    TotalSmsEvents = r.VehicleSmsEvents,
-                    LastConsentDate = r.VehicleLastConsent,
-                    LastOutageStart = r.VehicleLastOutage,
-                    LastReportGenerated = r.VehicleLastReport,
-                    DaysSinceFirstActivation = r.DaysSinceFirstActivation,
-                    VehicleOutageDays = r.VehicleOutageDays,
-                    ReferentName = r.ReferentName,
-                    ReferentMobileNumber = r.ReferentMobileNumber,
-                    ReferentEmail = r.ReferentEmail
-                })]
+                Vehicles = rawData
+                    .Where(r => r.VehicleId.HasValue)
+                    .Select(r => new VehicleProfileInfo
+                    {
+                        Id = r.VehicleId!.Value,
+                        Vin = r.Vin ?? "",
+                        Brand = r.Brand ?? "",
+                        Model = r.Model ?? "",
+                        FuelType = r.FuelType ?? "",
+                        IsActive = r.VehicleIsActive,
+                        IsFetching = r.VehicleIsFetching,
+                        IsAuthorized = r.VehicleIsAuthorized,
+                        VehicleCreatedAt = r.VehicleCreatedAt,
+                        FirstActivationAt = r.VehicleFirstActivation,
+                        LastDeactivationAt = r.VehicleLastDeactivation,
+                        
+                        // ✅ CORRETTO: Statistiche reali dalla view
+                        TotalConsents = r.VehicleConsents,
+                        TotalOutages = r.VehicleOutages,
+                        TotalReports = r.VehicleReports,
+                        
+                        // ✅ NUOVO: Statistiche SMS dettagliate per veicolo
+                        TotalSmsEvents = r.VehicleSmsEvents,
+                        AdaptiveOnEvents = r.VehicleAdaptiveOn,
+                        AdaptiveOffEvents = r.VehicleAdaptiveOff,
+                        ActiveSessions = r.VehicleActiveSessions,
+                        LastSmsReceived = r.VehicleLastSms,
+                        ActiveSessionExpires = r.VehicleActiveSessionExpires,
+                        
+                        LastConsentDate = r.VehicleLastConsent,
+                        LastOutageStart = r.VehicleLastOutage,
+                        LastReportGenerated = r.VehicleLastReport,
+                        DaysSinceFirstActivation = r.DaysSinceFirstActivation,
+                        VehicleOutageDays = r.VehicleOutageDays,
+                        ReferentName = r.ReferentName,
+                        ReferentMobileNumber = r.ReferentMobileNumber,
+                        ReferentEmail = r.ReferentEmail
+                    })
+                    .ToList()
             };
         }
         finally
@@ -398,332 +388,227 @@ public class ClientProfileController : ControllerBase
                         background: white;
                         padding: 20px;
                         border-radius: 8px;
+                        border: 2px solid #e9ecef;
                         text-align: center;
-                        border: 1px solid #e9ecef;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                        transition: all 0.3s;
                         height: auto;
-                        min-height: auto;
                     }}
                     .stat-number {{
                         font-size: 2.5em;
                         font-weight: 700;
                         color: #667eea;
                         margin-bottom: 5px;
-                        line-height: 1;
                     }}
                     .stat-label {{
                         color: #6c757d;
-                        font-weight: 500;
+                        font-size: 0.95em;
                         text-transform: uppercase;
-                        font-size: 0.9em;
-                        margin: 0;
+                        letter-spacing: 1px;
                     }}
 
-                    /* ✅ VEICOLI COMPATTI - ELIMINA SPAZI VUOTI */
+                    /* ✅ VEICOLI */
                     .vehicle-card {{
                         background: white;
-                        border: 1px solid #e9ecef;
+                        border: 1px solid #dee2e6;
                         border-radius: 8px;
                         padding: 20px;
-                        margin-bottom: 15px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        height: auto;
-                        min-height: auto;
+                        margin-bottom: 20px;
                         break-inside: avoid;
                         page-break-inside: avoid;
                     }}
                     .vehicle-header {{
-                        display: flex;
-                        align-items: center;
-                        margin-bottom: 15px;
+                        border-bottom: 2px solid #667eea;
                         padding-bottom: 15px;
-                        border-bottom: 2px solid #f8f9fa;
-                        flex-wrap: wrap;
-                        gap: 10px;
+                        margin-bottom: 20px;
                     }}
                     .vehicle-title {{
-                        font-size: 1.4em;
+                        font-size: 1.6em;
                         font-weight: 600;
-                        color: #495057;
+                        color: #212529;
                     }}
                     .vehicle-vin {{
                         font-family: 'Courier New', monospace;
-                        background: #f8f9fa;
-                        padding: 5px 10px;
-                        border-radius: 4px;
-                        font-size: 0.9em;
+                        color: #6c757d;
+                        font-size: 0.95em;
+                        margin-top: 5px;
                     }}
 
-                    /* ✅ BADGE COMPATTI */
+                    /* ✅ BADGE STATO */
                     .status-badges {{
                         display: flex;
-                        gap: 10px;
-                        margin: 15px 0;
                         flex-wrap: wrap;
+                        gap: 8px;
+                        margin: 15px 0;
                     }}
                     .badge {{
                         padding: 6px 12px;
-                        border-radius: 20px;
+                        border-radius: 6px;
                         font-size: 0.85em;
                         font-weight: 600;
                         text-transform: uppercase;
-                        white-space: nowrap;
+                        letter-spacing: 0.5px;
                     }}
-                    .badge.active {{ background: #d4edda; color: #155724; }}
-                    .badge.inactive {{ background: #f8d7da; color: #721c24; }}
-                    .badge.fetching {{ background: #d1ecf1; color: #0c5460; }}
-                    .badge.authorized {{ background: #fff3cd; color: #856404; }}
+                    .badge.active {{
+                        background: #d4edda;
+                        color: #155724;
+                        border: 1px solid #c3e6cb;
+                    }}
+                    .badge.inactive {{
+                        background: #f8d7da;
+                        color: #721c24;
+                        border: 1px solid #f5c6cb;
+                    }}
+                    .badge.fetching {{
+                        background: #d1ecf1;
+                        color: #0c5460;
+                        border: 1px solid #bee5eb;
+                    }}
+                    .badge.authorized {{
+                        background: #fff3cd;
+                        color: #856404;
+                        border: 1px solid #ffeeba;
+                    }}
 
                     .footer {{
+                        margin-top: 40px;
+                        padding-top: 20px;
+                        border-top: 2px solid #dee2e6;
                         text-align: center;
-                        margin-top: 30px;
-                        padding: 20px;
                         color: #6c757d;
-                        border-top: 1px solid #e9ecef;
-                    }}
-                    .company-info {{
-                        font-style: italic;
-                    }}
-                    .no-vehicles {{
-                        text-align: center;
-                        padding: 20px;
-                        color: #6c757d;
-                        font-style: italic;
-                        background: white;
-                        border-radius: 8px;
-                        border: 1px solid #e9ecef;
-                    }}
-
-                    /* ✅ TITOLO VEICOLI SEPARATO */
-                    .vehicles-title {{
-                        color: #667eea;
-                        margin: 30px 0 20px 0;
-                        font-size: 1.8em;
-                        font-weight: 600;
-                        padding: 20px 25px;
-                        background: #f8f9fa;
-                        border-radius: 8px;
-                        border-left: 5px solid #667eea;
-                        /* ✅ PERMETTI IL BREAK DOPO IL TITOLO */
-                        break-after: auto;
-                        page-break-after: auto;
-                    }}
-
-                    /* ✅ RIMUOVI break-inside: avoid DALLA CLASSE .section PER I VEICOLI */
-                    .section {{
-                        background: #f8f9fa;
-                        border-radius: 8px;
-                        padding: 25px;
-                        margin-bottom: 20px;
-                        border-left: 5px solid #667eea;
-                        /* ✅ RIMUOVI QUESTE RIGHE CHE CAUSANO PROBLEMI:
-                        break-inside: avoid;
-                        page-break-inside: avoid;
-                        */
-                    }}
-
-                    /* ✅ VEHICLE CARD OTTIMIZZATE */
-                    .vehicle-card {{
-                        background: white;
-                        border: 1px solid #e9ecef;
-                        border-radius: 8px;
-                        padding: 20px;
-                        margin-bottom: 15px;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                        height: auto;
-                        min-height: auto;
-                        /* ✅ MANTIENI BREAK SOLO PER LE CARD */
-                        break-inside: avoid;
-                        page-break-inside: avoid;
-                    }}
-
-                    /* ✅ PRINT OTTIMIZZATO */
-                    @media print {{
-                        body {{ margin: 0; padding: 10px; }}
-                        
-                        /* ✅ TITOLO VEICOLI IN STAMPA */
-                        .vehicles-title {{
-                            margin: 20px 0 15px 0;
-                            break-after: auto;
-                            page-break-after: auto;
-                        }}
-                        
-                        /* ✅ SEZIONI NORMALI */
-                        .section {{ 
-                            margin-bottom: 10px;
-                            /* ✅ NON USARE break-inside: avoid */
-                        }}
-                        
-                        /* ✅ VEHICLE CARD */
-                        .vehicle-card {{ 
-                            break-inside: avoid; 
-                            page-break-inside: avoid;
-                            margin-bottom: 10px;
-                        }}
-                        
-                        .stats-grid {{ gap: 8px; }}
-                        .info-grid {{ gap: 8px; }}
-                        
-                        .section:last-child {{ margin-bottom: 0; }}
-                        .vehicle-card:last-child {{ margin-bottom: 0; }}
-                    }}
-
-                    /* ✅ RESPONSIVE */
-                    @media (max-width: 768px) {{
-                        .info-grid {{
-                            grid-template-columns: 1fr;
-                        }}
-                        .stats-grid {{
-                            grid-template-columns: repeat(2, 1fr);
-                        }}
-                        .vehicle-header {{
-                            flex-direction: column;
-                            align-items: flex-start;
-                        }}
-                    }}
-
-                    /* ✅ PRINT OTTIMIZZATO - ELIMINA PAGINE VUOTE */
-                    @media print {{
-                        body {{ margin: 0; padding: 10px; }}
-                        .section {{ 
-                            break-inside: avoid; 
-                            page-break-inside: avoid;
-                            margin-bottom: 10px;
-                        }}
-                        .vehicle-card {{ 
-                            break-inside: avoid; 
-                            page-break-inside: avoid;
-                            margin-bottom: 10px;
-                        }}
-                        .stats-grid {{ gap: 8px; }}
-                        .info-grid {{ gap: 8px; }}
-                        /* ✅ ELIMINA MARGIN FINALE */
-                        .section:last-child {{
-                            margin-bottom: 0;
-                        }}
-                        .vehicle-card:last-child {{
-                            margin-bottom: 0;
-                        }}
+                        font-size: 0.9em;
                     }}
                 </style>
             </head>
             <body>
                 <div class='header'>
-                    <h1>Profilo Cliente Completo</h1>
-                    <div class='subtitle'>{data.CompanyInfo.Name} • P.IVA: {data.CompanyInfo.VatNumber}</div>
-                </div>
-
-                <div class='section'>
-                    <h2>📋 Informazioni Azienda</h2>
-                    <div class='info-grid'>
-                        <div class='info-item'>
-                            <div class='info-label'>Ragione Sociale</div>
-                            <div class='info-value'>{data.CompanyInfo.Name}</div>
-                        </div>
-                        <div class='info-item'>
-                            <div class='info-label'>Partita IVA</div>
-                            <div class='info-value'>{data.CompanyInfo.VatNumber}</div>
-                        </div>
-                        <div class='info-item'>
-                            <div class='info-label'>Indirizzo</div>
-                            <div class='info-value'>{data.CompanyInfo.Address ?? "Non specificato"}</div>
-                        </div>
-                        <div class='info-item'>
-                            <div class='info-label'>Email Aziendale</div>
-                            <div class='info-value'>{data.CompanyInfo.Email}</div>
-                        </div>
-                        <div class='info-item'>
-                            <div class='info-label'>PEC Aziendale</div>
-                            <div class='info-value'>{data.CompanyInfo.PecAddress ?? "Non specificata"}</div>
-                        </div>
-                        <div class='info-item'>
-                            <div class='info-label'>Data Registrazione</div>
-                            <div class='info-value'>{data.CompanyInfo.CompanyCreatedAt:dd/MM/yyyy} ({data.CompanyInfo.DaysRegistered} giorni fa)</div>
-                        </div>
-                        <div class='info-item'>
-                            <div class='info-label'>Telefono Fisso</div>
-                            <div class='info-value'>{data.CompanyInfo.LandlineNumber ?? "Non specificato"}</div>
-                        </div>
-                    </div>
-
-                    {GeneratePhoneNumbersSection(data.CompanyInfo)}
-                </div>
-
-                <div class='section'>
-                    <h2>📊 Altre Statistiche</h2>
-                    <div class='stats-grid'>
-                        <div class='stat-card'>
-                            <div class='stat-number'>{data.CompanyInfo.TotalVehicles}</div>
-                            <div class='stat-label'>Veicoli Totali</div>
-                        </div>
-                        <div class='stat-card'>
-                            <div class='stat-number'>{data.CompanyInfo.ActiveVehicles}</div>
-                            <div class='stat-label'>Veicoli Attivi</div>
-                        </div>
-                        <div class='stat-card'>
-                            <div class='stat-number'>{data.CompanyInfo.AuthorizedVehicles}</div>
-                            <div class='stat-label'>Autorizzati</div>
-                        </div>
-                        <div class='stat-card'>
-                            <div class='stat-number'>{data.CompanyInfo.UniqueBrands}</div>
-                            <div class='stat-label'>Brand Diversi</div>
-                        </div>
-                        <div class='stat-card'>
-                            <div class='stat-number'>{data.CompanyInfo.TotalConsentsCompany}</div>
-                            <div class='stat-label'>Consensi Totali</div>
-                        </div>
-                        <div class='stat-card'>
-                            <div class='stat-number'>{data.CompanyInfo.TotalOutagesCompany}</div>
-                            <div class='stat-label'>Outages Totali</div>
-                        </div>
-                        <div class='stat-card'>
-                            <div class='stat-number'>{data.CompanyInfo.TotalReportsCompany}</div>
-                            <div class='stat-label'>Report Generati</div>
-                        </div>
-                        <div class='stat-card'>
-                            <div class='stat-number'>{data.CompanyInfo.TotalSmsEventsCompany}</div>
-                            <div class='stat-label'>Eventi SMS</div>
-                        </div>
+                    <h1>📊 Profilo Cliente Completo</h1>
+                    <div class='subtitle'>{data.CompanyInfo.Name}</div>
+                    <div style='margin-top: 10px; font-size: 0.9em; opacity: 0.8;'>
+                        Generato il {generationDate}
                     </div>
                 </div>
 
+                {GenerateCompanySection(data.CompanyInfo)}
                 {GenerateVehiclesSection(data.Vehicles)}
 
                 <div class='footer'>
-                    <p>PolarReport™ generato da PolarDrive™ • {generationDate}</p>
-                    <p class='company-info'>DataPolar - The future of AI</p>
+                    <p>© {DateTime.Now.Year} DataPolar Analytics - Documento Riservato</p>
+                    <p>P.IVA: {data.CompanyInfo.VatNumber}</p>
                 </div>
             </body>
         </html>";
     }
 
     /// <summary>
-    /// Genera la sezione dei numeri di telefono
+    /// Genera la sezione aziendale
     /// </summary>
-    private string GeneratePhoneNumbersSection(CompanyProfileInfo company)
+    private string GenerateCompanySection(CompanyProfileInfo company)
     {
-        var phones = new List<string>();
+        // ✅ NUOVO: Mostra statistiche SMS aggregate aziendali
+        var smsStats = company.TotalSmsEventsCompany > 0 ? $@"
+        <div class='stat-card'>
+            <div class='stat-number'>{company.TotalSmsEventsCompany}</div>
+            <div class='stat-label'>SMS Totali</div>
+            <div style='font-size: 11px; margin-top: 8px; color: #666;'>
+                ON: {company.AdaptiveOnEventsCompany} | OFF: {company.AdaptiveOffEventsCompany}
+            </div>
+        </div>" : "";
 
-        if (!string.IsNullOrWhiteSpace(company.LandlineNumbers))
-            phones.Add(company.LandlineNumbers);
-        if (!string.IsNullOrWhiteSpace(company.MobileNumbers))
-            phones.Add(company.MobileNumbers);
-        if (!string.IsNullOrWhiteSpace(company.AssociatedPhones))
-            phones.Add(company.AssociatedPhones);
-
-        if (!phones.Any())
-            return "";
+        // ✅ NUOVO: Mostra sessioni attive aggregate
+        var activeSessions = company.ActiveSessionsCompany > 0 ? $@"
+        <div class='stat-card' style='border-color: #10b981; background: #f0fdf4;'>
+            <div class='stat-number' style='color: #10b981;'>{company.ActiveSessionsCompany}</div>
+            <div class='stat-label' style='color: #10b981;'>Sessioni SMS Attive</div>
+            {(company.LastActiveSessionExpiresCompany.HasValue ? $@"
+            <div style='font-size: 10px; margin-top: 5px; color: #059669;'>
+                Ultima scadenza: {company.LastActiveSessionExpiresCompany:dd/MM/yyyy HH:mm}
+            </div>" : "")}
+        </div>" : "";
 
         return $@"
-        <h3>📞 Numeri di Telefono Associati</h3>
-        <div class='info-item'>
-            <div class='info-label'>Contatti Registrati</div>
-            <div class='info-value'>{string.Join(" • ", phones)}</div>
+        <div class='section'>
+            <h2>🏢 Informazioni Azienda</h2>
+            <div class='info-grid'>
+                <div class='info-item'>
+                    <div class='info-label'>Ragione Sociale</div>
+                    <div class='info-value'>{company.Name}</div>
+                </div>
+                <div class='info-item'>
+                    <div class='info-label'>Partita IVA</div>
+                    <div class='info-value'>{company.VatNumber}</div>
+                </div>
+                {(!string.IsNullOrWhiteSpace(company.Address) ? $@"
+                <div class='info-item'>
+                    <div class='info-label'>Indirizzo</div>
+                    <div class='info-value'>{company.Address}</div>
+                </div>" : "")}
+                <div class='info-item'>
+                    <div class='info-label'>Email</div>
+                    <div class='info-value'>{company.Email}</div>
+                </div>
+                {(!string.IsNullOrWhiteSpace(company.PecAddress) ? $@"
+                <div class='info-item'>
+                    <div class='info-label'>PEC</div>
+                    <div class='info-value'>{company.PecAddress}</div>
+                </div>" : "")}
+                {(!string.IsNullOrWhiteSpace(company.LandlineNumber) ? $@"
+                <div class='info-item'>
+                    <div class='info-label'>Telefono</div>
+                    <div class='info-value'>{company.LandlineNumber}</div>
+                </div>" : "")}
+                <div class='info-item'>
+                    <div class='info-label'>Data Registrazione</div>
+                    <div class='info-value'>{company.CompanyCreatedAt:dd/MM/yyyy} ({company.DaysRegistered} giorni fa)</div>
+                </div>
+                {(company.FirstVehicleActivation.HasValue ? $@"
+                <div class='info-item'>
+                    <div class='info-label'>Prima Attivazione Veicolo</div>
+                    <div class='info-value'>{company.FirstVehicleActivation:dd/MM/yyyy HH:mm}</div>
+                </div>" : "")}
+            </div>
+
+            <h3 style='margin-top: 30px; margin-bottom: 15px; color: #495057;'>📈 Statistiche Flotta</h3>
+            <div class='stats-grid'>
+                <div class='stat-card'>
+                    <div class='stat-number'>{company.TotalVehicles}</div>
+                    <div class='stat-label'>Veicoli Totali</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-number'>{company.ActiveVehicles}</div>
+                    <div class='stat-label'>Veicoli Attivi</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-number'>{company.FetchingVehicles}</div>
+                    <div class='stat-label'>In Acquisizione</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-number'>{company.AuthorizedVehicles}</div>
+                    <div class='stat-label'>Autorizzati OAuth</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-number'>{company.UniqueBrands}</div>
+                    <div class='stat-label'>Brand Unici</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-number'>{company.TotalConsentsCompany}</div>
+                    <div class='stat-label'>Consensi Totali</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-number'>{company.TotalOutagesCompany}</div>
+                    <div class='stat-label'>Outage Totali</div>
+                </div>
+                <div class='stat-card'>
+                    <div class='stat-number'>{company.TotalReportsCompany}</div>
+                    <div class='stat-label'>Report Generati</div>
+                </div>
+                {smsStats}
+                {activeSessions}
+            </div>
         </div>";
     }
 
     /// <summary>
-    /// Genera la sezione dei veicoli SENZA WRAPPER SECTION
+    /// Genera la sezione veicoli
     /// </summary>
     private string GenerateVehiclesSection(List<VehicleProfileInfo> vehicles)
     {
@@ -731,19 +616,18 @@ public class ClientProfileController : ControllerBase
         {
             return @"
             <div class='section'>
-                <h2>🚗 Veicoli Associati</h2>
-                <div class='no-vehicles'>
-                    <p>Nessun veicolo associato a questa azienda</p>
-                </div>
+                <h2>🚗 Veicoli</h2>
+                <p style='color: #6c757d; font-style: italic;'>Nessun veicolo registrato per questa azienda.</p>
             </div>";
         }
 
-        // ✅ GENERA DIRETTAMENTE LE CARD SENZA IL DIV SECTION WRAPPER
-        var vehiclesHtml = string.Join("", vehicles.Select(GenerateVehicleCard));
+        var vehicleCards = string.Join("", vehicles.Select(GenerateVehicleCard));
 
         return $@"
-            <h2 class='vehicles-title'>🚗 Veicoli Associati ({vehicles.Count})</h2>
-            {vehiclesHtml}";
+        <div class='section'>
+            <h2>🚗 Veicoli ({vehicles.Count})</h2>
+            {vehicleCards}
+        </div>";
     }
 
     /// <summary>
@@ -751,24 +635,27 @@ public class ClientProfileController : ControllerBase
     /// </summary>
     private string GenerateVehicleCard(VehicleProfileInfo vehicle)
     {
-        var statusBadges = GenerateStatusBadges(vehicle);
         var activationInfo = GenerateActivationInfo(vehicle);
+        var statusBadges = GenerateStatusBadges(vehicle);
         var statisticsGrid = GenerateVehicleStatistics(vehicle);
 
-        // ✅ Referente solo se presente
-        var referentSection = !string.IsNullOrEmpty(vehicle.ReferentName) ? $@"
-        <h4>👤 Referente Veicolo</h4>
-        <div class='info-grid'>
+        // ✅ Sezione Referente (se presente)
+        var referentSection = !string.IsNullOrWhiteSpace(vehicle.ReferentName) ||
+                            !string.IsNullOrWhiteSpace(vehicle.ReferentMobileNumber) ||
+                            !string.IsNullOrWhiteSpace(vehicle.ReferentEmail) ? $@"
+        <div class='info-grid' style='margin-top: 20px;'>
+            <h4 style='grid-column: 1 / -1; margin: 10px 0;'>👤 Referente Veicolo</h4>
+            {(!string.IsNullOrWhiteSpace(vehicle.ReferentName) ? $@"
             <div class='info-item'>
                 <div class='info-label'>Nome Referente</div>
                 <div class='info-value'>{vehicle.ReferentName}</div>
-            </div>
-            {(!string.IsNullOrEmpty(vehicle.ReferentMobileNumber) ? $@"
+            </div>" : "")}
+            {(!string.IsNullOrWhiteSpace(vehicle.ReferentMobileNumber) ? $@"
             <div class='info-item'>
-                <div class='info-label'>Cellulare Referente</div>
+                <div class='info-label'>Telefono Referente</div>
                 <div class='info-value'>{vehicle.ReferentMobileNumber}</div>
             </div>" : "")}
-            {(!string.IsNullOrEmpty(vehicle.ReferentEmail) ? $@"
+            {(!string.IsNullOrWhiteSpace(vehicle.ReferentEmail) ? $@"
             <div class='info-item'>
                 <div class='info-label'>Email Referente</div>
                 <div class='info-value'>{vehicle.ReferentEmail}</div>
@@ -863,8 +750,8 @@ public class ClientProfileController : ControllerBase
     {
         // ✅ Mostra solo statistiche non-zero o significative
         var hasStats = vehicle.TotalConsents > 0 || vehicle.TotalOutages > 0 ||
-                       vehicle.TotalReports > 0 || vehicle.TotalSmsEvents > 0 ||
-                       vehicle.VehicleOutageDays > 0;
+                    vehicle.TotalReports > 0 || vehicle.TotalSmsEvents > 0 ||
+                    vehicle.VehicleOutageDays > 0;
 
         if (!hasStats)
         {
@@ -882,6 +769,27 @@ public class ClientProfileController : ControllerBase
             <div class='stat-label'>Giorni Outage</div>
         </div>" : "";
 
+        // ✅ NUOVO: Card SMS dettagliata
+        var smsCard = vehicle.TotalSmsEvents > 0 ? $@"
+        <div class='stat-card'>
+            <div class='stat-number'>{vehicle.TotalSmsEvents}</div>
+            <div class='stat-label'>SMS Eventi</div>
+            <div style='font-size: 10px; margin-top: 5px; color: #666;'>
+                ON: {vehicle.AdaptiveOnEvents} | OFF: {vehicle.AdaptiveOffEvents}
+            </div>
+        </div>" : "";
+
+        // ✅ NUOVO: Card Sessioni Attive
+        var activeSessionCard = vehicle.ActiveSessions > 0 ? $@"
+        <div class='stat-card' style='border: 2px solid #10b981;'>
+            <div class='stat-number' style='color: #10b981;'>{vehicle.ActiveSessions}</div>
+            <div class='stat-label'>Sessioni SMS Attive</div>
+            {(vehicle.ActiveSessionExpires.HasValue ? $@"
+            <div style='font-size: 10px; margin-top: 5px; color: #10b981;'>
+                Scade: {vehicle.ActiveSessionExpires:dd/MM/yyyy HH:mm}
+            </div>" : "")}
+        </div>" : "";
+
         return $@"
         <h4>📈 Statistiche Veicolo</h4>
         <div class='stats-grid'>
@@ -897,10 +805,8 @@ public class ClientProfileController : ControllerBase
                 <div class='stat-number'>{vehicle.TotalReports}</div>
                 <div class='stat-label'>Report</div>
             </div>
-            <div class='stat-card'>
-                <div class='stat-number'>{vehicle.TotalSmsEvents}</div>
-                <div class='stat-label'>SMS Eventi</div>
-            </div>
+            {smsCard}
+            {activeSessionCard}
             {outageCard}
         </div>
         {GenerateLastActivityInfo(vehicle)}";
@@ -921,6 +827,10 @@ public class ClientProfileController : ControllerBase
 
         if (vehicle.LastReportGenerated.HasValue)
             activities.Add($"Ultimo report: {vehicle.LastReportGenerated:dd/MM/yyyy}");
+
+        // ✅ NUOVO: Ultimo SMS ricevuto
+        if (vehicle.LastSmsReceived.HasValue)
+            activities.Add($"Ultimo SMS: {vehicle.LastSmsReceived:dd/MM/yyyy HH:mm}");
 
         if (!activities.Any())
             return "";
