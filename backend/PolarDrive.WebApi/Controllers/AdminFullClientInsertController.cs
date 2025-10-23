@@ -79,7 +79,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 FirstActivationAt = null,
                 ReferentName = request.ReferentName,
                 ReferentEmail = request.ReferentEmail,
-                ReferentMobileNumber = request.ReferentMobile,
+                VehicleMobileNumber = request.VehicleMobileNumber,
             };
             _dbContext.ClientVehicles.Add(vehicle);
 

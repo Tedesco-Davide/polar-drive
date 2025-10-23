@@ -16,7 +16,7 @@ public class AdminWorkflowExtendedDTO
     public string? LastDeactivationAt { get; set; }
     public string? LastFetchingDataAt { get; set; }
     public string? ReferentName { get; set; }
-    public string? ReferentMobileNumber { get; set; }
+    public string? VehicleMobileNumber { get; set; }
     public string? ReferentEmail { get; set; }
     public ClientCompanyDTO ClientCompany { get; set; } = new();
 }

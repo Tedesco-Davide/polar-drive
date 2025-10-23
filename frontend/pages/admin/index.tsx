@@ -71,7 +71,7 @@ export default function AdminDashboard() {
           companyVatNumber: entry.clientCompany?.vatNumber ?? "",
           companyName: entry.clientCompany?.name ?? "",
           referentName: entry.referentName ?? "",
-          referentMobile: entry.referentMobileNumber ?? "",
+          vehicleMobileNumber: entry.vehicleMobileNumber ?? "",
           referentEmail: entry.referentEmail ?? "",
           zipFilePath: "",
           uploadDate: entry.firstActivationAt ?? "",
@@ -107,7 +107,7 @@ export default function AdminDashboard() {
           lastFetchingDataAt: entry.lastFetchingDataAt ?? null,
           clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
           referentName: entry.referentName ?? "",
-          referentMobileNumber: entry.referentMobileNumber ?? "",
+          vehicleMobileNumber: entry.vehicleMobileNumber ?? "",
           referentEmail: entry.referentEmail ?? "",
         }))
       );
@@ -319,7 +319,7 @@ export default function AdminDashboard() {
             lastFetchingDataAt: entry.lastFetchingDataAt ?? null,
             clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
             referentName: entry.referentName ?? "",
-            referentMobileNumber: entry.referentMobileNumber ?? "",
+            vehicleMobileNumber: entry.vehicleMobileNumber ?? "",
             referentEmail: entry.referentEmail ?? "",
           }))
         );

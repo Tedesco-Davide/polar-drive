@@ -78,7 +78,7 @@
   "admin.mainWorkflow.labels.companyVatNumber": "Company VAT",
   "admin.mainWorkflow.labels.companyName": "Company Name",
   "admin.mainWorkflow.labels.referentName": "Referent Name",
-  "admin.mainWorkflow.labels.referentMobile": "Referent Mobile",
+  "admin.mainWorkflow.labels.vehicleMobileNumber": "Referent Mobile",
   "admin.mainWorkflow.labels.referentEmail": "Referent Email",
   "admin.mainWorkflow.labels.model": "Vehicle Model",
   "admin.mainWorkflow.labels.zipFilePath": ".zip Signed Consents",
@@ -132,7 +132,7 @@
   "admin.clientCompany.pec": "Company PEC",
   "admin.clientCompany.landline": "Landline Number",
   "admin.clientCompany.referentName": "Referent Name",
-  "admin.clientCompany.referentMobile": "Referent Mobile",
+  "admin.clientCompany.vehicleMobileNumber": "Authorized Operating Cell Phone",
   "admin.clientCompany.referentEmail": "Referent Email",
   "admin.clientCompany.editModal": "Editing row for: Companies Table",
 

@@ -26,7 +26,7 @@ export default function AdminClientCompanyEditForm({
     landlineNumber: client.landlineNumber ?? "",
     // MAPPA i display fields ai campi che il form usa
     referentName: client.displayReferentName ?? "",
-    referentMobileNumber: client.displayReferentMobile ?? "",
+    vehicleMobileNumber: client.displayVehicleMobileNumber ?? "",
     referentEmail: client.displayReferentEmail ?? "",
     // AGGIUNGI anche il correspondingVehicleId
     correspondingVehicleId: client.correspondingVehicleId,
@@ -61,8 +61,8 @@ export default function AdminClientCompanyEditForm({
 
     // ✅ Cellulare referente obbligatorio + esattamente 10 cifre
     if (
-      !formData.referentMobileNumber?.trim() ||
-      !/^[0-9]{10}$/.test(formData.referentMobileNumber.trim())
+      !formData.vehicleMobileNumber?.trim() ||
+      !/^[0-9]{10}$/.test(formData.vehicleMobileNumber.trim())
     ) {
       alert(t("admin.validation.invalidMobile"));
       return;
@@ -167,7 +167,7 @@ export default function AdminClientCompanyEditForm({
           lastFetchingDataAt: currentVehicle.lastFetchingDataAt,
           // Solo questi campi vengono aggiornati
           referentName: formData.referentName,
-          referentMobileNumber: formData.referentMobileNumber,
+          vehicleMobileNumber: formData.vehicleMobileNumber,
           referentEmail: formData.referentEmail,
         };
 
@@ -198,7 +198,7 @@ export default function AdminClientCompanyEditForm({
         landlineNumber: formData.landlineNumber,
         // Aggiorna i dati referente con quelli del form
         displayReferentName: formData.referentName,
-        displayReferentMobile: formData.referentMobileNumber,
+        displayVehicleMobileNumber: formData.vehicleMobileNumber,
         displayReferentEmail: formData.referentEmail,
         // Mantieni gli identificatori
         correspondingVehicleId: formData.correspondingVehicleId,
@@ -300,14 +300,14 @@ export default function AdminClientCompanyEditForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.clientCompany.referentMobile")}
+            {t("admin.clientCompany.vehicleMobileNumber")}
           </span>
           <input
             maxLength={10}
             pattern="[0-9]*"
             inputMode="numeric"
-            name="referentMobileNumber"
-            value={formData.referentMobileNumber}
+            name="vehicleMobileNumber"
+            value={formData.vehicleMobileNumber}
             onChange={handleChange}
             className="input"
           />

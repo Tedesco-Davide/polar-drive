@@ -31,7 +31,7 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
                                     PecAddress = company.PecAddress ?? "",
                                     LandlineNumber = company.LandlineNumber ?? "",
                                     DisplayReferentName = vehicle.ReferentName ?? "—",
-                                    DisplayReferentMobile = vehicle.ReferentMobileNumber ?? "—",
+                                    DisplayVehicleMobileNumber = vehicle.VehicleMobileNumber ?? "—",
                                     DisplayReferentEmail = vehicle.ReferentEmail ?? "—",
                                     CorrespondingVehicleId = vehicle.Id,
                                     CorrespondingVehicleVin = vehicle.Vin

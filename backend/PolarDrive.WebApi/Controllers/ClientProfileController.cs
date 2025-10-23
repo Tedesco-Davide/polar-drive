@@ -277,7 +277,7 @@ public class ClientProfileController : ControllerBase
                         DaysSinceFirstActivation = r.DaysSinceFirstActivation,
                         VehicleOutageDays = r.VehicleOutageDays,
                         ReferentName = r.ReferentName,
-                        ReferentMobileNumber = r.ReferentMobileNumber,
+                        VehicleMobileNumber = r.VehicleMobileNumber,
                         ReferentEmail = r.ReferentEmail
                     })
                     .ToList()
@@ -641,7 +641,7 @@ public class ClientProfileController : ControllerBase
 
         // ✅ Sezione Referente (se presente)
         var referentSection = !string.IsNullOrWhiteSpace(vehicle.ReferentName) ||
-                            !string.IsNullOrWhiteSpace(vehicle.ReferentMobileNumber) ||
+                            !string.IsNullOrWhiteSpace(vehicle.VehicleMobileNumber) ||
                             !string.IsNullOrWhiteSpace(vehicle.ReferentEmail) ? $@"
         <div class='info-grid' style='margin-top: 20px;'>
             <h4 style='grid-column: 1 / -1; margin: 10px 0;'>👤 Referente Veicolo</h4>
@@ -650,10 +650,10 @@ public class ClientProfileController : ControllerBase
                 <div class='info-label'>Nome Referente</div>
                 <div class='info-value'>{vehicle.ReferentName}</div>
             </div>" : "")}
-            {(!string.IsNullOrWhiteSpace(vehicle.ReferentMobileNumber) ? $@"
+            {(!string.IsNullOrWhiteSpace(vehicle.VehicleMobileNumber) ? $@"
             <div class='info-item'>
-                <div class='info-label'>Telefono Referente</div>
-                <div class='info-value'>{vehicle.ReferentMobileNumber}</div>
+                <div class='info-label'>Cellulare Operativo Autorizzato</div>
+                <div class='info-value'>{vehicle.VehicleMobileNumber}</div>
             </div>" : "")}
             {(!string.IsNullOrWhiteSpace(vehicle.ReferentEmail) ? $@"
             <div class='info-item'>

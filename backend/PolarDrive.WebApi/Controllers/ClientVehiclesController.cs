@@ -37,7 +37,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             LastFetchingDataAt = v.LastFetchingDataAt?.ToString("o"),
             ClientOAuthAuthorized = v.ClientOAuthAuthorized,
             ReferentName = v.ReferentName,
-            ReferentMobileNumber = v.ReferentMobileNumber,
+            VehicleMobileNumber = v.VehicleMobileNumber,
             ReferentEmail = v.ReferentEmail,
             ClientCompany = new ClientCompanyDTO
             {
@@ -81,7 +81,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             LastFetchingDataAt = vehicle.LastFetchingDataAt?.ToString("o"),
             ClientOAuthAuthorized = vehicle.ClientOAuthAuthorized,
             ReferentName = vehicle.ReferentName,
-            ReferentMobileNumber = vehicle.ReferentMobileNumber,
+            VehicleMobileNumber = vehicle.VehicleMobileNumber,
             ReferentEmail = vehicle.ReferentEmail,
             ClientCompany = new ClientCompanyDTO
             {
@@ -125,7 +125,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             LastDeactivationAt = ParseDate(dto.LastDeactivationAt),
             CreatedAt = DateTime.Now,
             ReferentName = dto.ReferentName,
-            ReferentMobileNumber = dto.ReferentMobileNumber,
+            VehicleMobileNumber = dto.VehicleMobileNumber,
             ReferentEmail = dto.ReferentEmail,
         };
 
@@ -238,7 +238,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         vehicle.FirstActivationAt = ParseDate(dto.FirstActivationAt);
         vehicle.LastDeactivationAt = ParseDate(dto.LastDeactivationAt);
         vehicle.ReferentName = dto.ReferentName;
-        vehicle.ReferentMobileNumber = dto.ReferentMobileNumber;
+        vehicle.VehicleMobileNumber = dto.VehicleMobileNumber;
         vehicle.ReferentEmail = dto.ReferentEmail;
 
         await db.SaveChangesAsync();

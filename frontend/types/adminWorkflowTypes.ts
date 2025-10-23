@@ -5,7 +5,7 @@ export type adminWorkflowTypesInputForm = {
   companyVatNumber: string;
   companyName: string;
   referentName: string;
-  referentMobile: string;
+  vehicleMobileNumber: string;
   referentEmail: string;
   zipFilePath: File;
   uploadDate: string;

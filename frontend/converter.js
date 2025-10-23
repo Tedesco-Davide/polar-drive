@@ -69,7 +69,7 @@ function createSampleBody(path, method) {
       CompanyVatNumber: "IT98765432101",
       ReferentName: "Mario Rossi",
       ReferentEmail: "mario.rossi@datapolar.com",
-      ReferentMobile: "+393331234567",
+      VehicleMobileNumber: "+393331234567",
       VehicleVIN: "TESTVIN987654321",
       VehicleFuelType: "Electric",
       VehicleBrand: "Tesla",
@@ -88,7 +88,7 @@ function createSampleBody(path, method) {
       pecAddress: `pec${Date.now()}@datapolar.pec.it`,
       landlineNumber: "+390212345678",
       referentName: "Test Manager",
-      referentMobileNumber: "+393339876543",
+      vehicleMobileNumber: "+393339876543",
       referentEmail: `manager${Date.now()}@datapolar.com`,
     },
 
@@ -101,7 +101,7 @@ function createSampleBody(path, method) {
       pecAddress: "updated@datapolar.pec.it",
       landlineNumber: "+390687654321",
       referentName: "Updated Manager",
-      referentMobileNumber: "+393337654321",
+      vehicleMobileNumber: "+393337654321",
       referentEmail: "updated.manager@datapolar.com",
     },
 

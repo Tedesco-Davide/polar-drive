@@ -78,7 +78,7 @@
   "admin.mainWorkflow.labels.companyVatNumber": "Partita IVA",
   "admin.mainWorkflow.labels.companyName": "Nome Azienda",
   "admin.mainWorkflow.labels.referentName": "Nome Referente",
-  "admin.mainWorkflow.labels.referentMobile": "Cell. Referente",
+  "admin.mainWorkflow.labels.vehicleMobileNumber": "Cellulare Operativo Autorizzato",
   "admin.mainWorkflow.labels.referentEmail": "Email Referente",
   "admin.mainWorkflow.labels.zipFilePath": ".zip Consensi Firmati",
   "admin.mainWorkflow.labels.model": "Modello Veicolo",
@@ -132,7 +132,7 @@
   "admin.clientCompany.pec": "PEC Aziendale",
   "admin.clientCompany.landline": "Telefono fisso",
   "admin.clientCompany.referentName": "Nome Referente",
-  "admin.clientCompany.referentMobile": "Cell. Referente",
+  "admin.clientCompany.vehicleMobileNumber": "Cell. Referente",
   "admin.clientCompany.referentEmail": "Email Referente",
   "admin.clientCompany.editModal": "Modifica riga per: Tabella Aziende",
 

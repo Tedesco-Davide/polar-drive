@@ -16,7 +16,7 @@ export interface ClientVehicle {
   lastDeactivationAt: string | null;
   lastFetchingDataAt: string | null;
   referentName?: string;
-  referentMobileNumber?: string;
+  vehicleMobileNumber?: string;
   referentEmail?: string;
 }
 

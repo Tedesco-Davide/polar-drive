@@ -172,7 +172,7 @@ try
             CreatedAt = DateTime.Now.AddDays(-30),
             ReferentName = "Test User",
             ReferentEmail = "test@datapolar.com",
-            ReferentMobileNumber = "+393331234567",
+            VehicleMobileNumber = "+393331234567",
         },
         new ClientVehicle
         {
@@ -190,7 +190,7 @@ try
             CreatedAt = DateTime.Now.AddDays(-5),
             ReferentName = "Luca Rossi",
             ReferentEmail = "luca.rossi@paninotecarossi.com",
-            ReferentMobileNumber = "+393201234567",
+            VehicleMobileNumber = "+393201234567",
         },
         new ClientVehicle
         {
@@ -208,7 +208,7 @@ try
             CreatedAt = DateTime.Now.AddHours(-1),
             ReferentName = "Mario Bianchi",
             ReferentEmail = "mario.bianchi@paninotecarossi.com",
-            ReferentMobileNumber = "+393209876543",
+            VehicleMobileNumber = "+393209876543",
         }
     };
 

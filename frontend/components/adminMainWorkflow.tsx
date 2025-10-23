@@ -31,7 +31,7 @@ export default function AdminMainWorkflow({
     companyVatNumber: "",
     companyName: "",
     referentName: "",
-    referentMobile: "",
+    vehicleMobileNumber: "",
     referentEmail: "",
     zipFilePath: new File([""], ""),
     uploadDate: "",
@@ -60,7 +60,7 @@ export default function AdminMainWorkflow({
     [
       "companyVatNumber",
       "companyName",
-      "referentMobile",
+      "vehicleMobileNumber",
       "referentEmail",
       "vehicleVIN",
     ]
@@ -113,7 +113,7 @@ export default function AdminMainWorkflow({
       "companyVatNumber",
       "companyName",
       "referentName",
-      "referentMobile",
+      "vehicleMobileNumber",
       "referentEmail",
       "zipFilePath",
       "uploadDate",
@@ -162,8 +162,8 @@ export default function AdminMainWorkflow({
     }
 
     // ✅ Validazione Cellulare Referente
-    const referentMobileRegex = /^[0-9]{10}$/;
-    if (!referentMobileRegex.test(formData.referentMobile)) {
+    const vehicleMobileNumberRegex = /^[0-9]{10}$/;
+    if (!vehicleMobileNumberRegex.test(formData.vehicleMobileNumber)) {
       alert(t("admin.validation.invalidMobile"));
       return;
     }
@@ -200,7 +200,7 @@ export default function AdminMainWorkflow({
       formDataToSend.append("CompanyVatNumber", formData.companyVatNumber);
       formDataToSend.append("ReferentName", formData.referentName);
       formDataToSend.append("ReferentEmail", formData.referentEmail);
-      formDataToSend.append("ReferentMobile", formData.referentMobile);
+      formDataToSend.append("VehicleMobileNumber", formData.vehicleMobileNumber);
       formDataToSend.append("VehicleVIN", formData.vehicleVIN);
       formDataToSend.append("VehicleFuelType", formData.fuelType);
       formDataToSend.append("VehicleBrand", formData.brand);
@@ -315,7 +315,7 @@ export default function AdminMainWorkflow({
       companyVatNumber: "",
       companyName: "",
       referentName: "",
-      referentMobile: "",
+      vehicleMobileNumber: "",
       referentEmail: "",
       zipFilePath: new File([""], ""),
       uploadDate: "",

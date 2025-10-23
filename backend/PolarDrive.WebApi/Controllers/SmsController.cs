@@ -197,16 +197,16 @@ public class SmsController(
         var fullName = $"{surname} {name}";  // "Rossi Mario"
         var targetPhone = NormalizePhoneNumber(parts[3]);
 
-        // Verifica che il mittente sia un ReferentMobileNumber registrato
+        // Verifica che il mittente sia un VehicleMobileNumber registrato
         var vehicle = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .FirstOrDefaultAsync(v => v.ReferentMobileNumber == dto.From && v.IsActiveFlag);
+            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == dto.From && v.IsActiveFlag);
 
         if (vehicle == null)
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Mittente non autorizzato";
-            var errorResponse = GenerateSmsResponse("❌ Solo i referenti registrati possono richiedere consensi GDPR.");
+            var errorResponse = GenerateSmsResponse("❌ Solo il Cellulare Operativo Autorizzato registrato può richiedere i consensi GDPR.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
@@ -414,16 +414,16 @@ public class SmsController(
         var fullName = $"{surname} {name}";  // "Rossi Mario"
         var targetPhone = NormalizePhoneNumber(parts[3]);
 
-        // Verifica che il mittente sia un ReferentMobileNumber registrato
+        // Verifica che il mittente sia un VehicleMobileNumber registrato
         var vehicle = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .FirstOrDefaultAsync(v => v.ReferentMobileNumber == dto.From && v.IsActiveFlag);
+            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == dto.From && v.IsActiveFlag);
 
         if (vehicle == null)
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Mittente non autorizzato";
-            var errorResponse = GenerateSmsResponse("❌ Solo i referenti registrati possono attivare profili.");
+            var errorResponse = GenerateSmsResponse("❌ Solo il Cellulare Operativo Autorizzato può attivare la procedura ADAPTIVE_PROFILE.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
@@ -442,7 +442,7 @@ public class SmsController(
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Procedura ADAPTIVE_GDPR mai eseguita";
 
-            // Invia SMS al ReferentMobileNumber (il mittente)
+            // Invia SMS al VehicleMobileNumber (il mittente)
             var warningMessage = $@"ATTENZIONE {vehicle.ReferentName}! Procedura ADAPTIVE_GDPR mai eseguita per {fullName} ({targetPhone}). Completare la procedura ADAPTIVE_GDPR prima di continuare";
 
             await _smsConfig.SendSmsAsync(dto.From, warningMessage);

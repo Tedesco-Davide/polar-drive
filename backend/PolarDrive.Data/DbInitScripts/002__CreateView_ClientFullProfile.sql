@@ -20,7 +20,7 @@ BEGIN
             cv.LastDeactivationAt,
             cv.CreatedAt AS VehicleCreatedAt,
             cv.ReferentName,
-            cv.ReferentMobileNumber,
+            cv.VehicleMobileNumber,
             cv.ReferentEmail,
             
             -- Statistiche consensi per veicolo
@@ -195,7 +195,7 @@ BEGIN
         vs.TotalOutageDays AS VehicleOutageDays,
         vs.VehicleCreatedAt,
         vs.ReferentName,
-        vs.ReferentMobileNumber,
+        vs.VehicleMobileNumber,
         vs.ReferentEmail,
         
         -- Statistiche dettagliate per veicolo

@@ -79,6 +79,6 @@ public class VehicleProfileInfo
     public int? DaysSinceFirstActivation { get; set; }
     public int VehicleOutageDays { get; set; }
     public string? ReferentName { get; set; }
-    public string? ReferentMobileNumber { get; set; }
+    public string? VehicleMobileNumber { get; set; }
     public string? ReferentEmail { get; set; }
 }

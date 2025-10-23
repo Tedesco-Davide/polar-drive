@@ -141,7 +141,7 @@
                   "ReferentEmail": {
                     "type": "string"
                   },
-                  "ReferentMobile": {
+                  "VehicleMobileNumber": {
                     "type": "string"
                   },
                   "VehicleVIN": {
@@ -185,7 +185,7 @@
                 "ReferentEmail": {
                   "style": "form"
                 },
-                "ReferentMobile": {
+                "VehicleMobileNumber": {
                   "style": "form"
                 },
                 "VehicleVIN": {
@@ -1949,7 +1949,7 @@
             "type": "string",
             "nullable": true
           },
-          "referentMobileNumber": {
+          "vehicleMobileNumber": {
             "type": "string",
             "nullable": true
           },
@@ -2112,7 +2112,7 @@
             "type": "string",
             "nullable": true
           },
-          "referentMobileNumber": {
+          "vehicleMobileNumber": {
             "type": "string",
             "nullable": true
           },

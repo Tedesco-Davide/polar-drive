@@ -172,14 +172,14 @@ export default function AdminMainWorkflowInputForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.mainWorkflow.labels.referentMobile")}
+            {t("admin.mainWorkflow.labels.vehicleMobileNumber")}
           </span>
           <input
             maxLength={10}
             pattern="[0-9]*"
             inputMode="numeric"
-            name="referentMobile"
-            value={formData.referentMobile}
+            name="vehicleMobileNumber"
+            value={formData.vehicleMobileNumber}
             onChange={handleChange}
             className="input"
           />

@@ -9,12 +9,12 @@ export interface ClientCompany {
 
   // ✅ Campi display (da veicoli) - usati per mostrare i dati nella tabella
   displayReferentName?: string;
-  displayReferentMobile?: string;
+  displayVehicleMobileNumber?: string;
   displayReferentEmail?: string;
 
   // ✅ Campi form (temporanei) - usati nel form di edit
   referentName?: string;
-  referentMobileNumber?: string;
+  vehicleMobileNumber?: string;
   referentEmail?: string;
 
   // ✅ ID e VIN del veicolo corrispondente
