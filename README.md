@@ -13,6 +13,12 @@ Crea la rete con nome esplicito (comando da lanciare una sola volta)
 - docker network create polardrive-network-dev
 - docker network create polardrive-network-prod
 
+DEV => !!!UNA TANTUM!!! => LAUNCH INIT DB PER RESETTARE IL DB DataPolar_PolarDrive_DB_DEV =>
+
+- STOP CONTAINER DEV => docker compose -f docker-compose.dev.yml down
+- REBUILD IMMAGINE INITDB => docker build -f backend/PolarDriveInitDB.Cli/Dockerfile -t polardrive-initdb:latest .
+- AZIONE INIT DB => docker compose -f docker-compose.dev.yml --env-file .env.dev run --rm initdb
+
 DEV => REBUILD FRONTEND POST MODIFICHE =>
 
 - STOP CONTAINER DEV => docker compose -f docker-compose.dev.yml down

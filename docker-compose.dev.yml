@@ -50,12 +50,26 @@ services:
     container_name: polardrive-frontend-dev
     image: polardrive-frontend:latest
     environment:
-      - NODE_ENV=production # Necessario per Next.js standalone
+      - NODE_ENV=production
       - API_BACKEND_URL=http://host.docker.internal:8080
     ports:
       - "3000:3000"
     networks:
       - polardrive-network-dev
+  
+  initdb:
+    container_name: polardrive-initdb-dev
+    image: polardrive-initdb:latest
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - polardrive-network-dev
+    profiles:
+      - tools
 
 networks:
   polardrive-network-dev:

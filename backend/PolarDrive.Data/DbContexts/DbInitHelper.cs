@@ -4,51 +4,53 @@ namespace PolarDrive.Data.DbContexts;
 
 public static class DbInitHelper
 {
-    public static async Task RunDbInitScriptsAsync(PolarDriveDbContext dbContext)
+    public static async Task RunDbInitScriptsAsync(PolarDriveDbContext context)
     {
-        var logger = new PolarDriveLogger(dbContext);
-
-        string basePath = AppContext.BaseDirectory;
-        string scriptsPath = Path.GetFullPath(Path.Combine(basePath, "..", "..", "..", "..", "PolarDrive.Data", "DbInitScripts"));
-
+        var baseDir = AppContext.BaseDirectory;
+        var scriptsPath = Path.Combine(baseDir, "DbInitScripts");
+        
+        Console.WriteLine($"  📁 Looking for scripts in: {scriptsPath}");
+        
         if (!Directory.Exists(scriptsPath))
         {
-            Console.WriteLine("❌ DbInitScripts folder not found.");
-            await logger.Error("DbInitHelper.RunDbInitScriptsAsync", "Scripts folder not found", $"Path attempted: {scriptsPath}");
+            // Prova anche nella directory corrente
+            scriptsPath = Path.Combine(Directory.GetCurrentDirectory(), "DbInitScripts");
+            Console.WriteLine($"  📁 Alternative path: {scriptsPath}");
+        }
+        
+        if (!Directory.Exists(scriptsPath))
+        {
+            Console.WriteLine("  ⚠️  DbInitScripts folder not found (optional).");
             return;
         }
 
         var sqlFiles = Directory.GetFiles(scriptsPath, "*.sql")
                                 .OrderBy(f => f)
                                 .ToList();
-
+        
+        Console.WriteLine($"  📝 Found {sqlFiles.Count} SQL scripts to execute");
+        
         foreach (var file in sqlFiles)
         {
-            string sql = await File.ReadAllTextAsync(file);
-            if (!string.IsNullOrWhiteSpace(sql))
+            var fileName = Path.GetFileName(file);
+            Console.WriteLine($"  ▶️  Executing: {fileName}");
+            
+            var sql = await File.ReadAllTextAsync(file);
+            
+            // Split by GO statements
+            var batches = sql.Split(
+                new[] { "\r\nGO\r\n", "\nGO\n", "\r\nGO", "\nGO", "GO\r\n", "GO\n" }, 
+                StringSplitOptions.RemoveEmptyEntries);
+            
+            foreach (var batch in batches)
             {
-                string fileName = Path.GetFileName(file);
-                try
+                if (!string.IsNullOrWhiteSpace(batch))
                 {
-                    await dbContext.Database.ExecuteSqlRawAsync(sql);
-                    Console.WriteLine($"✅ Executed: {fileName}");
-
-                    await logger.Info(
-                        "DbInitHelper.RunDbInitScriptsAsync",
-                        $"Executed script: {fileName}"
-                    );
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"❌ Error in {fileName}: {ex.Message}");
-
-                    await logger.Error(
-                        "DbInitHelper.RunDbInitScriptsAsync",
-                        $"Failed to execute script: {fileName}",
-                        ex.ToString()
-                    );
+                    await context.Database.ExecuteSqlRawAsync(batch);
                 }
             }
+            
+            Console.WriteLine($"  ✅ {fileName} executed successfully");
         }
     }
 }
