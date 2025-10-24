@@ -232,8 +232,8 @@ public class SmsController(
         var profilingEvent = new SmsAdaptiveProfiling
         {
             VehicleId = vehicle.Id,
-            AdaptiveProfilingNumber = targetPhone,
-            AdaptiveProfilingName = fullName,
+            AdaptiveNumber = targetPhone,
+            AdaptiveSurnameName = fullName,
             ReceivedAt = DateTime.Now,
             ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
             MessageContent = dto.Body,
@@ -287,7 +287,7 @@ public class SmsController(
 
         // Aggiorna tutte le righe ADAPTIVE_PROFILING legate a questo numero
         var profilingEvents = await _db.SmsAdaptiveProfiling
-            .Where(p => p.AdaptiveProfilingNumber == dto.From)
+            .Where(p => p.AdaptiveNumber == dto.From)
             .ToListAsync();
 
         foreach (var pe in profilingEvents)
@@ -332,7 +332,7 @@ public class SmsController(
 
         // Disattiva tutte le righe ADAPTIVE_PROFILING
         var profilingEvents = await _db.SmsAdaptiveProfiling
-            .Where(p => p.AdaptiveProfilingNumber == dto.From)
+            .Where(p => p.AdaptiveNumber == dto.From)
             .ToListAsync();
 
         foreach (var pe in profilingEvents)
@@ -456,7 +456,7 @@ public class SmsController(
         // Trova o crea riga ADAPTIVE_PROFILING
         var profilingEvent = await _db.SmsAdaptiveProfiling
             .Where(p => p.VehicleId == vehicle.Id
-                    && p.AdaptiveProfilingNumber == targetPhone)
+                    && p.AdaptiveNumber == targetPhone)
             .OrderByDescending(p => p.ReceivedAt)
             .FirstOrDefaultAsync();
 
@@ -466,8 +466,8 @@ public class SmsController(
             profilingEvent = new SmsAdaptiveProfiling
             {
                 VehicleId = vehicle.Id,
-                AdaptiveProfilingNumber = targetPhone,
-                AdaptiveProfilingName = fullName,
+                AdaptiveNumber = targetPhone,
+                AdaptiveSurnameName = fullName,
                 ReceivedAt = DateTime.Now,
                 ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
                 MessageContent = dto.Body,
@@ -481,7 +481,7 @@ public class SmsController(
         else
         {
             // Aggiorna riga esistente (estende sessione di 24 ore)
-            profilingEvent.AdaptiveProfilingName = fullName;
+            profilingEvent.AdaptiveSurnameName = fullName;
             profilingEvent.ReceivedAt = DateTime.Now;
             profilingEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD);
             profilingEvent.ParsedCommand = "ADAPTIVE_PROFILING_ON";
@@ -643,8 +643,8 @@ public class SmsController(
                 {
                     p.Id,
                     p.VehicleId,
-                    p.AdaptiveProfilingNumber,
-                    p.AdaptiveProfilingName,
+                    p.AdaptiveNumber,
+                    p.AdaptiveSurnameName,
                     p.ReceivedAt,
                     p.ExpiresAt,
                     p.ParsedCommand,
@@ -687,8 +687,8 @@ public class SmsController(
                     sessionStartedAt = (DateTime?)null,
                     sessionEndTime = (DateTime?)null,
                     remainingMinutes = 0,
-                    adaptiveProfilingName = (string?)null,
-                    adaptiveProfilingNumber = (string?)null
+                    adaptiveSurnameName = (string?)null,
+                    adaptiveNumber = (string?)null
                 });
             }
 
@@ -700,8 +700,8 @@ public class SmsController(
                 sessionStartedAt = activeSession.ReceivedAt,
                 sessionEndTime = activeSession.ExpiresAt,
                 remainingMinutes = (int)remainingTime.TotalMinutes,
-                adaptiveProfilingName = activeSession.AdaptiveProfilingName,
-                adaptiveProfilingNumber = activeSession.AdaptiveProfilingNumber
+                adaptiveSurnameName = activeSession.AdaptiveSurnameName,
+                adaptiveNumber = activeSession.AdaptiveNumber
             });
         }
         catch (Exception ex)

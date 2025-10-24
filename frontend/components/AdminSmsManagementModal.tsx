@@ -27,8 +27,8 @@ interface SmsAuditLog {
 interface AdaptiveProfilingSession {
   id: number;
   vehicleId: number;
-  adaptiveProfilingNumber: string;
-  adaptiveProfilingName: string;
+  adaptiveNumber: string;
+  adaptiveSurnameName: string;
   receivedAt: string;
   expiresAt: string;
   parsedCommand: string;
@@ -222,10 +222,10 @@ export default function AdminSmsManagementModal({
                     <div className="flex items-center space-x-2">
                       <User size={16} className="text-blue-600" />
                       <span className="font-semibold text-polarNight dark:text-softWhite">
-                        {session.adaptiveProfilingName}
+                        {session.adaptiveSurnameName}
                       </span>
                       <span className="text-sm text-gray-600 dark:text-gray-400">
-                        ({session.adaptiveProfilingNumber})
+                        ({session.adaptiveNumber})
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
@@ -304,10 +304,10 @@ export default function AdminSmsManagementModal({
                       <div className="flex items-center space-x-2">
                         <User size={16} />
                         <span className="font-semibold text-polarNight dark:text-softWhite">
-                          {session.adaptiveProfilingName || "Nome non specificato"}
+                          {session.adaptiveSurnameName || "Nome non specificato"}
                         </span>
                         <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {session.adaptiveProfilingNumber}
+                          {session.adaptiveNumber}
                         </span>
                       </div>
                       <span

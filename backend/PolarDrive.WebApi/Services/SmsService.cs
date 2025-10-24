@@ -60,7 +60,7 @@ public class SmsService(IConfiguration configuration, ILogger<SmsService> logger
             var oneMinuteAgo = now.AddMinutes(-1);
 
             if (!_rateLimitTracker.ContainsKey(phoneNumber))
-                _rateLimitTracker[phoneNumber] = new List<DateTime>();
+                _rateLimitTracker[phoneNumber] = [];
 
             // Rimuovi timestamp più vecchi di 1 minuto
             _rateLimitTracker[phoneNumber].RemoveAll(t => t < oneMinuteAgo);

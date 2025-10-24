@@ -201,7 +201,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasForeignKey(e => e.SmsAdaptiveGdprId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasIndex(e => new { e.AdaptiveProfilingNumber, e.AdaptiveProfilingName });
+                entity.HasIndex(e => new { e.AdaptiveNumber, e.AdaptiveSurnameName });
             });
 
             modelBuilder.Entity<PhoneVehicleMapping>(entity =>

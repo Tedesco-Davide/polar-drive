@@ -10,11 +10,11 @@ public class SmsAdaptiveProfiling
 
     [Required]
     [StringLength(20)]
-    public string AdaptiveProfilingNumber { get; set; } = string.Empty;
+    public string AdaptiveNumber { get; set; } = string.Empty;
 
     [Required]
     [StringLength(200)]
-    public string AdaptiveProfilingName { get; set; } = string.Empty;
+    public string AdaptiveSurnameName { get; set; } = string.Empty;
 
     public DateTime ReceivedAt { get; set; }
 
