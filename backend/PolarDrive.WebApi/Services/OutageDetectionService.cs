@@ -31,14 +31,14 @@ public class OutageDetectionService(
     private string GetVehicleListEndpoint()
     {
         return _env.IsDevelopment()
-            ? "http://localhost:5071/api/1/vehicles"
+            ? "/api/1/vehicles"
             : "https://fleet-api.tesla.com/api/1/vehicles";
     }
 
     private string GetVehicleDataEndpoint(string vehicleId)
     {
         return _env.IsDevelopment()
-            ? $"http://localhost:5071/api/1/vehicles/{vehicleId}/vehicle_data"
+            ? $"/api/1/vehicles/{vehicleId}/vehicle_data"
             : $"https://fleet-api.tesla.com/api/1/vehicles/{vehicleId}/vehicle_data";
     }
 
@@ -388,7 +388,7 @@ public class OutageDetectionService(
         return brand.ToLower() switch
         {
             "tesla" => _env.IsDevelopment()
-                ? "http://localhost:5071/api/tesla/health"
+                ? "/api/tesla/health"
                 : "https://fleet-api.tesla.com/api/1/health",
 
             _ => throw new ArgumentException($"Unknown brand: {brand}")

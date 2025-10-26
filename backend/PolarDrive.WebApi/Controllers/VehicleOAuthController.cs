@@ -51,7 +51,7 @@ public class VehicleOAuthController : ControllerBase
                     clientId = "ownerapi";
                     scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
                     authBaseUrl = _env.IsDevelopment()
-                        ? "http://localhost:5071/oauth2/v3/authorize"
+                        ? "/api/oauth2/v3/authorize"
                         : "https://auth.tesla.com/oauth2/v3/authorize";
                     break;
 
@@ -233,8 +233,8 @@ public class VehicleOAuthController : ControllerBase
             string tokenUrl;
             if (env.IsDevelopment())
             {
-                // ✅ CASO MOCK → chiama il fake backend
-                tokenUrl = "http://localhost:5071/oauth2/v3/token";
+                // ✅ CASO MOCK → chiama il backend tramite proxy /api/
+                tokenUrl = "/api/oauth2/v3/token";
             }
             else
             {
@@ -270,8 +270,8 @@ public class VehicleOAuthController : ControllerBase
                 string apiUrl;
                 if (env.IsDevelopment())
                 {
-                    // ✅ CASO MOCK → chiama il fake backend
-                    apiUrl = "http://localhost:5071/api/1/vehicles";
+                    // ✅ CASO MOCK → chiama il backend tramite proxy /api/
+                    apiUrl = "/api/1/vehicles";
                 }
                 else
                 {
