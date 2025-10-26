@@ -9,4 +9,13 @@ public static class GenericHelpers
         var hashBytes = System.Security.Cryptography.SHA256.HashData(bytes);
         return Convert.ToHexStringLower(hashBytes);
     }
+
+    // Helper locale per garantire lo slash finale
+    public static string EnsureTrailingSlash(string? baseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            throw new InvalidOperationException("WebAPI:BaseUrl non configurato nelle variabili d’ambiente.");
+        
+        return baseUrl.EndsWith("/") ? baseUrl : baseUrl + "/";
+    }
 }

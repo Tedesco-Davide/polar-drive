@@ -2,43 +2,49 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.Data.Constants;
-using PolarDrive.WebApi.Services;
 using System.Text.Json;
 using System.Net;
 using static PolarDrive.WebApi.Constants.CommonConstants;
+using PolarDrive.WebApi.Helpers;
 
-namespace PolarDrive.Services;
+namespace PolarDrive.WebApi.Services;
 
 public class OutageDetectionService(
     PolarDriveDbContext db,
     IHttpClientFactory httpClientFactory,
+    IConfiguration cfg,
     IWebHostEnvironment env) : IOutageDetectionService
 {
     private readonly PolarDriveDbContext _db = db;
     private readonly PolarDriveLogger _logger = new PolarDriveLogger(db);
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly IWebHostEnvironment _env = env;
+    private readonly IConfiguration _cfg = cfg;
+
     private TimeSpan _vehicleInactivityThreshold => _env.IsDevelopment()
         ? TimeSpan.FromMinutes(DEV_GRACE_PERIOD_INACTIVITY_TRESHOLD_MINUTES)
         : TimeSpan.FromHours(PROD_GRACE_PERIOD_INACTIVITY_TRESHOLD_HOURS);
-    private TimeSpan _gracePeriod => _env.IsDevelopment() 
+
+    private TimeSpan _gracePeriod => _env.IsDevelopment()
         ? TimeSpan.FromMinutes(DEV_GRACE_PERIOD_MINUTES)
         : TimeSpan.FromHours(PROD_GRACE_PERIOD_HOURS);
+        
     private readonly TimeSpan _fleetApiTimeout = TimeSpan.FromSeconds(60);
 
     private readonly int _maxRetries = 3;
 
+    // Usa ENV Docker già esistente (WebAPI__BaseUrl=http://api:8080) per TEST DEV
     private string GetVehicleListEndpoint()
     {
         return _env.IsDevelopment()
-            ? "/api/1/vehicles"
+            ? GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])
             : "https://fleet-api.tesla.com/api/1/vehicles";
     }
 
     private string GetVehicleDataEndpoint(string vehicleId)
-    {
+    {    
         return _env.IsDevelopment()
-            ? $"/api/1/vehicles/{vehicleId}/vehicle_data"
+            ? $"{GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])}api/1/vehicles/{vehicleId}/vehicle_data"
             : $"https://fleet-api.tesla.com/api/1/vehicles/{vehicleId}/vehicle_data";
     }
 
@@ -388,8 +394,8 @@ public class OutageDetectionService(
         return brand.ToLower() switch
         {
             "tesla" => _env.IsDevelopment()
-                ? "/api/tesla/health"
-                : "https://fleet-api.tesla.com/api/1/health",
+                ? "http://mock-api:9090/api/tesla/health"
+                : $"{GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])}api/tesla/health",
 
             _ => throw new ArgumentException($"Unknown brand: {brand}")
         };

@@ -2,6 +2,34 @@
 # Configurazione SVILUPPO con SQL Server locale
 
 services:
+
+  initdb:
+    container_name: polardrive-initdb-dev
+    image: polardrive-initdb:latest
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - polardrive-network-dev
+    profiles:
+      - tools
+
+  mock-api:
+    container_name: polardrive-mock-api-dev
+    image: polardrive-mock:latest 
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - WebAPI__BaseUrl=http://api:8080
+    ports:
+      - "9090:9090"
+    networks:
+      - polardrive-network-dev
+
   api:
     container_name: polardrive-api-dev
     image: polardrive-api:latest
@@ -9,6 +37,7 @@ services:
       - ASPNETCORE_ENVIRONMENT=Development
       - POLAR_LOG_DIR=/app/Logs
       - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - WebAPI__BaseUrl=http://api:8080
       - TeslaApi__BaseUrl=${TESLA_API_BASE_URL}
       - TeslaApi__ClientId=${TESLA_CLIENT_ID}
       - TeslaApi__ClientSecret=${TESLA_CLIENT_SECRET}
@@ -35,17 +64,6 @@ services:
     networks:
       - polardrive-network-dev
 
-  mock-api:
-    container_name: polardrive-mock-api-dev
-    image: polardrive-mock:latest 
-    environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - WebAPI__BaseUrl=http://api:8080
-    ports:
-      - "9090:9090"
-    networks:
-      - polardrive-network-dev
-
   frontend:
     container_name: polardrive-frontend-dev
     image: polardrive-frontend:latest
@@ -56,20 +74,6 @@ services:
       - "3000:3000"
     networks:
       - polardrive-network-dev
-  
-  initdb:
-    container_name: polardrive-initdb-dev
-    image: polardrive-initdb:latest
-    environment:
-      - DOTNET_ENVIRONMENT=Development
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - polardrive-network-dev
-    profiles:
-      - tools
 
 networks:
   polardrive-network-dev:

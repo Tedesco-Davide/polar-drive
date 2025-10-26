@@ -8,37 +8,45 @@ Repository per il progetto **PolarDrive**.
 
 _(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
 
-Crea la rete con nome esplicito (comando da lanciare una sola volta)
+DEV/PROD => COMANDI GENERICI => CREA RETE CON NOME ESPLICITO (comando da lanciare una sola volta)
 
 - docker network create polardrive-network-dev
 - docker network create polardrive-network-prod
 
+DEV => COMANDI GENERICI => FULL DOWN ED UP
+
+- STOP ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml down
+- REBUILD ALL IMMAGINI DEV => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .;
+docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .;
+docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
+- RESTART ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+
 DEV => !!!UNA TANTUM!!! => LAUNCH INIT DB PER RESETTARE IL DB DataPolar_PolarDrive_DB_DEV =>
 
-- STOP CONTAINER DEV => docker compose -f docker-compose.dev.yml down
+- STOP CONTAINER DEV => docker rm -f polardrive-initdb-dev
 - REBUILD IMMAGINE INITDB => docker build -f backend/PolarDriveInitDB.Cli/Dockerfile -t polardrive-initdb:latest .
 - AZIONE INIT DB => docker compose -f docker-compose.dev.yml --env-file .env.dev run --rm initdb
 
-DEV => REBUILD FRONTEND POST MODIFICHE =>
-
-- STOP CONTAINER DEV => docker compose -f docker-compose.dev.yml down
-- REBUILD IMMAGINE DEV FRONTEND => docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
-- RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
-- LOGS => docker compose -f docker-compose.dev.yml logs -f frontend
-
 DEV => REBUILD TESLA-MOCK-API-SERVICE POST MODIFICHE =>
 
-- STOP CONTAINER DEV ⇒ docker compose -f docker-compose.dev.yml down
-- REBUILD IMMAGINE TESLA MOCK ⇒ docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
-- RESTART CONTAINER DEV ⇒ docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
-- LOGS ⇒ docker compose -f docker-compose.dev.yml logs -f mock
+- STOP CONTAINER DEV => docker rm -f polardrive-mock-api-dev
+- REBUILD IMMAGINE TESLA MOCK => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
+- RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d mock-api
+- LOGS => docker compose -f docker-compose.dev.yml logs -f mock
 
 DEV => REBUILD POLARDRIVE-WEB-API POST MODIFICHE =>
 
-- STOP CONTAINER DEV ⇒ docker compose -f docker-compose.dev.yml down
-- REBUILD IMMAGINE WEB-API ⇒ docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
-- RESTART CONTAINER DEV ⇒ docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
-- LOGS ⇒ docker compose -f docker-compose.dev.yml logs -f api
+- STOP CONTAINER DEV => docker rm -f polardrive-api-dev
+- REBUILD IMMAGINE WEB-API => docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
+- RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d api
+- LOGS => docker compose -f docker-compose.dev.yml logs -f api
+
+DEV => REBUILD FRONTEND POST MODIFICHE =>
+
+- STOP CONTAINER DEV => docker rm -f polardrive-frontend-dev
+- REBUILD IMMAGINE DEV FRONTEND => docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
+- RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d frontend
+- LOGS => docker compose -f docker-compose.dev.yml logs -f frontend
 
 ### 🔷 FRONTEND POLARDRIVE ADMIN
 

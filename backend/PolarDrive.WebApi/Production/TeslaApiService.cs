@@ -15,11 +15,13 @@ public class TeslaApiService
     private readonly PolarDriveLogger _logger;
     private readonly IWebHostEnvironment _env;
     private readonly HttpClient _httpClient;
+    private readonly IConfiguration _cfg;
 
-    public TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, HttpClient httpClient)
+    public TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, HttpClient httpClient,  IConfiguration cfg)
     {
         _db = db;
         _env = env;
+        _cfg = cfg;
         _httpClient = httpClient;
         _logger = new PolarDriveLogger(_db);
     }
@@ -602,7 +604,7 @@ public class TeslaApiService
     {
         try
         {
-            var newToken = await Controllers.VehicleOAuthController.TeslaOAuthService.RefreshAccessToken(token.RefreshToken, _env);
+            var newToken = await Controllers.VehicleOAuthController.TeslaOAuthService.RefreshAccessToken(token.RefreshToken, _cfg, _env);
 
             token.AccessToken = newToken;
             token.AccessTokenExpiresAt = DateTime.Now.AddHours(8);

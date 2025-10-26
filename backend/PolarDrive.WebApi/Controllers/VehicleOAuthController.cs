@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.Helpers;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -51,7 +52,7 @@ public class VehicleOAuthController : ControllerBase
                     clientId = "ownerapi";
                     scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
                     authBaseUrl = _env.IsDevelopment()
-                        ? "/api/oauth2/v3/authorize"
+                        ? $"{GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])}api/oauth2/v3/authorize"
                         : "https://auth.tesla.com/oauth2/v3/authorize";
                     break;
 
@@ -201,7 +202,7 @@ public class VehicleOAuthController : ControllerBase
             {
                 parameters["client_id"] = "ownerapi";
                 parameters["redirect_uri"] =
-                    configuration["PublicBaseUrl"]?.TrimEnd('/') + "/api/OAuthCallback";
+                configuration["PublicBaseUrl"]?.TrimEnd('/') + "/api/VehicleOAuth/OAuthCallback";
             }
 
             var content = new FormUrlEncodedContent(parameters);
@@ -220,33 +221,38 @@ public class VehicleOAuthController : ControllerBase
             );
         }
 
-        public static async Task<string> RefreshAccessToken(string refreshToken, IWebHostEnvironment env)
+        public static async Task<string> RefreshAccessToken(
+            string refreshToken,
+            IConfiguration configuration,
+            IWebHostEnvironment env)
         {
             using var client = new HttpClient();
 
-            var content = new FormUrlEncodedContent(new Dictionary<string, string>
-            {
-                ["grant_type"] = "refresh_token",
-                ["refresh_token"] = refreshToken
-            });
+            // Leggi la base URL della tua WebAPI (mock/proxy) da config
+            var baseUrl = configuration["WebAPI:BaseUrl"];
 
             string tokenUrl;
+            FormUrlEncodedContent content;
+
             if (env.IsDevelopment())
             {
                 // ✅ CASO MOCK → chiama il backend tramite proxy /api/
-                tokenUrl = "/api/oauth2/v3/token";
-            }
-            else
-            {
-                // ✅ CASO REALE → chiama Tesla
-                tokenUrl = "https://auth.tesla.com/oauth2/v3/token";
-
-                // Aggiungi client_id per Tesla reale
+                tokenUrl = $"{GenericHelpers.EnsureTrailingSlash(baseUrl)}api/oauth2/v3/token";
                 content = new FormUrlEncodedContent(new Dictionary<string, string>
                 {
                     ["grant_type"] = "refresh_token",
-                    ["client_id"] = "ownerapi",
                     ["refresh_token"] = refreshToken
+                });
+            }
+            else
+            {
+                // ✅ CASO REALE → Tesla
+                tokenUrl = "https://auth.tesla.com/oauth2/v3/token";
+                content = new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["grant_type"]   = "refresh_token",
+                    ["client_id"]    = "ownerapi",
+                    ["refresh_token"]= refreshToken
                 });
             }
 
@@ -259,7 +265,10 @@ public class VehicleOAuthController : ControllerBase
             return data.GetProperty("access_token").GetString()!;
         }
 
-        public static async Task<bool> ValidateToken(string accessToken, IWebHostEnvironment env)
+        public static async Task<bool> ValidateToken(
+            string accessToken,
+            IConfiguration configuration,
+            IWebHostEnvironment env)
         {
             try
             {
@@ -270,12 +279,13 @@ public class VehicleOAuthController : ControllerBase
                 string apiUrl;
                 if (env.IsDevelopment())
                 {
+                    var baseUrl = configuration["WebAPI:BaseUrl"];
                     // ✅ CASO MOCK → chiama il backend tramite proxy /api/
-                    apiUrl = "/api/1/vehicles";
+                    apiUrl = $"{GenericHelpers.EnsureTrailingSlash(baseUrl)}api/1/vehicles";
                 }
                 else
                 {
-                    // ✅ CASO REALE → chiama Tesla
+                    // ✅ CASO REALE → Tesla
                     apiUrl = "https://owner-api.teslamotors.com/api/1/vehicles";
                 }
 
