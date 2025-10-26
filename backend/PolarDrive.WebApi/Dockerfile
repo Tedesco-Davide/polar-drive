@@ -25,9 +25,79 @@ RUN dotnet publish -c Release -o /app/out /p:UseAppHost=false
 FROM base AS final
 WORKDIR /app
 
-# Utente non-root
-RUN adduser --disabled-password --gecos '' appuser && chown -R appuser /app
+# ============================================
+# INSTALLA NODE.JS + DIPENDENZE PER PDF
+# ============================================
+USER root
+
+# Installa Node.js 20.x e dipendenze di sistema necessarie per Puppeteer
+RUN apt-get update && apt-get install -y \
+    curl \
+    wget \
+    gnupg \
+    ca-certificates \
+    fonts-liberation \
+    libasound2 \
+    libatk-bridge2.0-0 \
+    libatk1.0-0 \
+    libc6 \
+    libcairo2 \
+    libcups2 \
+    libdbus-1-3 \
+    libexpat1 \
+    libfontconfig1 \
+    libgbm1 \
+    libgcc1 \
+    libglib2.0-0 \
+    libgtk-3-0 \
+    libnspr4 \
+    libnss3 \
+    libpango-1.0-0 \
+    libpangocairo-1.0-0 \
+    libstdc++6 \
+    libx11-6 \
+    libx11-xcb1 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    lsb-release \
+    xdg-utils \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+# Verifica installazione Node.js
+RUN node --version && npm --version
+
+# Installa i pacchetti npm globali necessari per la conversione PDF
+RUN npm install -g puppeteer@latest html-pdf-node@latest \
+    && npm cache clean --force
+
+# Crea directory per i report e assegna permessi
+RUN mkdir -p /app/storage/reports && \
+    mkdir -p /tmp && \
+    chmod 777 /tmp
+
+# ============================================
+# UTENTE NON-ROOT
+# ============================================
+RUN adduser --disabled-password --gecos '' appuser && \
+    chown -R appuser:appuser /app && \
+    chown -R appuser:appuser /tmp
+
 USER appuser
 
-COPY --from=build /app/out .
+# ============================================
+# COPIA APP E AVVIO
+# ============================================
+COPY --from=build --chown=appuser:appuser /app/out .
+
 ENTRYPOINT ["dotnet", "PolarDrive.WebApi.dll"]
