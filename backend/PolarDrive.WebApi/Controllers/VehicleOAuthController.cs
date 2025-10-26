@@ -48,13 +48,16 @@ public class VehicleOAuthController : ControllerBase
         {
             switch (brand)
             {
-                case "tesla":
-                    clientId = "ownerapi";
-                    scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
-                    authBaseUrl = _env.IsDevelopment()
-                        ? $"{GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])}api/oauth2/v3/authorize"
-                        : "https://auth.tesla.com/oauth2/v3/authorize";
-                    break;
+            case "tesla":
+                clientId = "ownerapi";
+                scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
+                
+                // In dev usa il mock-api pubblico (porta 9090), altrimenti Tesla reale
+                var teslaPublicBase = _cfg["TeslaApi:PublicBaseUrl"];
+                authBaseUrl = _env.IsDevelopment() && !string.IsNullOrWhiteSpace(teslaPublicBase)
+                    ? $"{teslaPublicBase.TrimEnd('/')}/oauth2/v3/authorize"
+                    : "https://auth.tesla.com/oauth2/v3/authorize";
+                break;
 
                 default:
                     await _logger.Warning(
