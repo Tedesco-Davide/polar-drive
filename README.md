@@ -13,6 +13,12 @@ DEV/PROD => COMANDI GENERICI => CREA RETE CON NOME ESPLICITO (comando da lanciar
 - docker network create polardrive-network-dev
 - docker network create polardrive-network-prod
 
+DEV/PROD => INFO SU OLLAMA 127.0.0.1:11434
+
+COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
+
+_(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
+
 DEV => COMANDI GENERICI => FULL DOWN ED UP
 
 - STOP ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml down

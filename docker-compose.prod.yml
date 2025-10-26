@@ -9,9 +9,13 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - POLAR_LOG_DIR=/app/Logs
       - ConnectionStrings__DefaultConnection=${CONNECTION_STRING}
+      - WebAPI__BaseUrl=http://api:8081
+      - PublicBaseUrl=${PUBLIC_BASE_URL}
       - TeslaApi__BaseUrl=${TESLA_API_BASE_URL}
+      - TeslaApi__PublicBaseUrl=${TESLA_API_PUBLIC_BASE_URL}
       - TeslaApi__ClientId=${TESLA_CLIENT_ID}
       - TeslaApi__ClientSecret=${TESLA_CLIENT_SECRET}
+      - Ollama__BaseUrl=${OLLAMA_BASE_URL}
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}

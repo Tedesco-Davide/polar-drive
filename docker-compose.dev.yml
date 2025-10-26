@@ -43,6 +43,7 @@ services:
       - TeslaApi__PublicBaseUrl=${TESLA_API_PUBLIC_BASE_URL}
       - TeslaApi__ClientId=${TESLA_CLIENT_ID}
       - TeslaApi__ClientSecret=${TESLA_CLIENT_SECRET}
+      - Ollama__BaseUrl=${OLLAMA_BASE_URL}
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}

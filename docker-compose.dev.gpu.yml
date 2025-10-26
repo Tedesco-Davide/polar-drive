@@ -1,0 +1,48 @@
+version: "3.9"
+
+services:
+  ollama:
+    container_name: polardrive-ollama-dev
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"                 # utile per test da host
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    volumes:
+      - ollama-models-dev:/root/.ollama
+    networks:
+      - polardrive-network-dev
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  # One-shot per pre-scaricare i modelli
+  ollama-init:
+    container_name: polardrive-ollama-init-dev
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    networks:
+      - polardrive-network-dev
+    entrypoint: ["/bin/sh","-lc"]
+    command: >
+      "set -e;
+       until nc -z ollama 11434; do sleep 1; done;
+       ollama pull llama3.1:8b;
+       ollama pull qwen2.5:7b;
+       echo 'Modelli DEV pronti.'"
+    restart: "no"
+
+volumes:
+  ollama-models-dev:
+
+networks:
+  polardrive-network-dev:
+    external: true
