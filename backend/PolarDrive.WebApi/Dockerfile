@@ -4,19 +4,16 @@
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 8080
-# Ascolta su
 ENV ASPNETCORE_URLS=http://+:8080
 
 # Build + publish
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copia solo i .csproj per sfruttare la cache di restore
 COPY backend/PolarDrive.WebApi/PolarDrive.WebApi.csproj backend/PolarDrive.WebApi/
 COPY backend/PolarDrive.Data/PolarDrive.Data.csproj backend/PolarDrive.Data/
 RUN dotnet restore backend/PolarDrive.WebApi/PolarDrive.WebApi.csproj
 
-# Copia tutti i sorgenti backend e pubblica
 COPY backend/ ./backend/
 WORKDIR /src/backend/PolarDrive.WebApi
 RUN dotnet publish -c Release -o /app/out /p:UseAppHost=false
@@ -26,11 +23,11 @@ FROM base AS final
 WORKDIR /app
 
 # ============================================
-# INSTALLA NODE.JS + DIPENDENZE PER PDF
+# INSTALLA NODE.JS + PUPPETEER
 # ============================================
 USER root
 
-# Installa Node.js 20.x e dipendenze di sistema necessarie per Puppeteer
+# Installa Node.js 20.x e dipendenze
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
@@ -74,30 +71,61 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Verifica installazione Node.js
-RUN node --version && npm --version
+# Verifica Node.js
+RUN echo "🔍 Verifying Node.js installation..." \
+    && node --version \
+    && npm --version
 
-# Installa i pacchetti npm globali necessari per la conversione PDF
-RUN npm install -g puppeteer@latest html-pdf-node@latest \
+# ============================================
+# INSTALLA PUPPETEER LOCALMENTE
+# ============================================
+WORKDIR /app
+
+# Crea package.json minimale
+RUN echo '{"name": "polardrive-pdf", "version": "1.0.0", "description": "PDF generation for PolarDrive"}' > package.json
+
+# Installa Puppeteer LOCALMENTE nella directory /app
+RUN echo "📦 Installing Puppeteer..." \
+    && npm install puppeteer@23.11.1 --save --no-optional \
     && npm cache clean --force
 
-# Crea directory per i report e assegna permessi
-RUN mkdir -p /app/storage/reports && \
-    mkdir -p /tmp && \
-    chmod 777 /tmp
+# Verifica che Puppeteer sia installato
+RUN echo "✅ Verifying Puppeteer installation..." \
+    && node -e "const puppeteer = require('puppeteer'); console.log('✅ Puppeteer installed successfully');"
+
+# Crea directory necessarie
+RUN mkdir -p /app/storage/reports \
+    && mkdir -p /app/logs/puppeteer \
+    && mkdir -p /tmp \
+    && chmod 777 /tmp \
+    && chmod 777 /app/logs
 
 # ============================================
 # UTENTE NON-ROOT
 # ============================================
-RUN adduser --disabled-password --gecos '' appuser && \
-    chown -R appuser:appuser /app && \
-    chown -R appuser:appuser /tmp
+RUN adduser --disabled-password --gecos '' appuser \
+    && chown -R appuser:appuser /app \
+    && chown -R appuser:appuser /tmp
 
 USER appuser
+
+# Scarica Chrome per Puppeteer (come appuser)
+RUN echo "🌐 Downloading Chrome for Puppeteer as appuser..." \
+    && cd /app \
+    && npx puppeteer browsers install chrome \
+    && echo "✅ Chrome downloaded successfully"
+
+# Verifica Chrome installato
+RUN echo "✅ Verifying Chrome installation..." \
+    && ls -la /home/appuser/.cache/puppeteer/chrome/ \
+    && echo "✅ Chrome verified"
 
 # ============================================
 # COPIA APP E AVVIO
 # ============================================
 COPY --from=build --chown=appuser:appuser /app/out .
+
+# Variabile d'ambiente per Node.js
+ENV NODE_PATH=/app/node_modules
 
 ENTRYPOINT ["dotnet", "PolarDrive.WebApi.dll"]

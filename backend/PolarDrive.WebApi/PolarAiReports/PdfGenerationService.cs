@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 
@@ -7,6 +8,7 @@ namespace PolarDrive.WebApi.PolarAiReports;
 /// <summary>
 /// Servizio semplificato dedicato SOLO alla conversione HTML -> PDF
 /// La generazione HTML è gestita da HtmlReportService
+/// Supporta Windows, Linux e Docker
 /// </summary>
 public class PdfGenerationService(PolarDriveDbContext dbContext)
 {
@@ -23,7 +25,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
         try
         {
             await _logger.Info(source, "Inizio conversione HTML -> PDF",
-                $"ReportId: {report.Id}, HTML size: {htmlContent.Length} chars");
+                $"ReportId: {report.Id}, HTML size: {htmlContent.Length} chars, OS: {GetOSInfo()}");
 
             // 1. Salva HTML temporaneo
             var tempHtmlPath = await SaveTemporaryHtmlAsync(htmlContent, report.Id);
@@ -31,16 +33,19 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
             // 2. Prepara path di output
             var outputPdfPath = GetOutputPdfPath(report);
 
-            // 3. Controlla disponibilità Node.js/NPX
-            if (!IsNodeJsAvailable())
+            // 3. Controlla disponibilità Node.js
+            var nodeInfo = GetNodeJsPath();
+            if (nodeInfo.nodePath == null)
             {
-                await _logger.Warning(source, "Node.js/NPX non disponibile, salvo come HTML",
-                    $"ReportId: {report.Id}");
+                await _logger.Warning(source, "Node.js non disponibile, salvo come HTML",
+                    $"ReportId: {report.Id}, OS: {GetOSInfo()}");
                 return await SaveAsHtmlFallback(htmlContent, report, source);
             }
 
+            await _logger.Info(source, $"Node.js trovato: {nodeInfo.nodePath}");
+
             // 4. Converti con Puppeteer
-            var pdfBytes = await ConvertWithPuppeteerAsync(tempHtmlPath, outputPdfPath, options);
+            var pdfBytes = await ConvertWithPuppeteerAsync(tempHtmlPath, outputPdfPath, nodeInfo.nodePath, options);
 
             // 5. Cleanup
             await CleanupTemporaryFiles(tempHtmlPath);
@@ -53,7 +58,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
         catch (Exception ex)
         {
             await _logger.Error(source, "Errore conversione PDF",
-                $"ReportId: {report.Id}, Error: {ex.Message}");
+                $"ReportId: {report.Id}, Error: {ex.Message}, StackTrace: {ex.StackTrace}");
 
             // Fallback: salva come HTML
             return await SaveAsHtmlFallback(htmlContent, report, source);
@@ -66,6 +71,109 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
             GC.Collect(2, GCCollectionMode.Forced, blocking: true);   
             await _logger.Debug("PdfGenerationService", "Garbage Collection forzato post-conversione");
         }
+    }
+
+    /// <summary>
+    /// Ottiene informazioni sul sistema operativo
+    /// </summary>
+    private string GetOSInfo()
+    {
+        return $"{RuntimeInformation.OSDescription} ({RuntimeInformation.OSArchitecture})";
+    }
+
+    /// <summary>
+    /// Trova il path di Node.js in modo cross-platform
+    /// </summary>
+    private (string? nodePath, string? npmPath) GetNodeJsPath()
+    {
+        try
+        {
+            // Prova con 'which' (Linux/Mac) o 'where' (Windows)
+            var command = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "where" : "which";
+            var nodeExecutable = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "node.exe" : "node";
+
+            var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = command,
+                    Arguments = nodeExecutable,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                }
+            };
+
+            process.Start();
+            var output = process.StandardOutput.ReadToEnd().Trim();
+            process.WaitForExit();
+
+            if (process.ExitCode == 0 && !string.IsNullOrEmpty(output))
+            {
+                var nodePath = output.Split('\n')[0].Trim(); // Prima riga se ci sono più risultati
+                
+                // Verifica che il file esista
+                if (File.Exists(nodePath))
+                {
+                    return (nodePath, null);
+                }
+            }
+
+            // Fallback: cerca in path comuni
+            return FindNodeInCommonPaths();
+        }
+        catch (Exception ex)
+        {
+            _logger.Warning("PdfGenerationService.GetNodeJsPath", 
+                "Errore ricerca Node.js", ex.Message).Wait();
+            return (null, null);
+        }
+    }
+
+    /// <summary>
+    /// Cerca Node.js in path comuni (fallback)
+    /// </summary>
+    private (string? nodePath, string? npmPath) FindNodeInCommonPaths()
+    {
+        var commonPaths = new List<string>();
+
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            // Windows paths
+            var programFiles = Environment.GetEnvironmentVariable("ProgramFiles") ?? @"C:\Program Files";
+            var programFilesX86 = Environment.GetEnvironmentVariable("ProgramFiles(x86)") ?? @"C:\Program Files (x86)";
+            var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+
+            commonPaths.AddRange(new[]
+            {
+                Path.Combine(programFiles, "nodejs", "node.exe"),
+                Path.Combine(programFilesX86, "nodejs", "node.exe"),
+                Path.Combine(appData, "npm", "node.exe")
+            });
+        }
+        else
+        {
+            // Linux/Mac paths
+            commonPaths.AddRange(new[]
+            {
+                "/usr/bin/node",
+                "/usr/local/bin/node",
+                "/opt/node/bin/node",
+                "/home/linuxbrew/.linuxbrew/bin/node",
+                Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".nvm", "current", "bin", "node")
+            });
+        }
+
+        foreach (var path in commonPaths)
+        {
+            if (File.Exists(path))
+            {
+                return (path, null);
+            }
+        }
+
+        return (null, null);
     }
 
     /// <summary>
@@ -100,27 +208,9 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
-    /// Controlla se Node.js/NPX è disponibile
+    /// Converte HTML in PDF usando Puppeteer
     /// </summary>
-    private bool IsNodeJsAvailable()
-    {
-        try
-        {
-            var programFiles = Environment.GetEnvironmentVariable("ProgramFiles") ?? @"C:\Program Files";
-            var npxPath = Path.Combine(programFiles, "nodejs", "npx.cmd");
-
-            return File.Exists(npxPath);
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    /// <summary>
-    /// Modifica anche ConvertWithPuppeteerAsync per usare la directory del progetto
-    /// </summary>
-    private async Task<byte[]> ConvertWithPuppeteerAsync(string htmlPath, string pdfPath, PdfConversionOptions options)
+    private async Task<byte[]> ConvertWithPuppeteerAsync(string htmlPath, string pdfPath, string nodePath, PdfConversionOptions options)
     {
         var source = "PdfGenerationService.ConvertWithPuppeteer";
         int maxRetries = options.MaxRetries;
@@ -133,17 +223,12 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
             {
                 await _logger.Info(source, $"Tentativo {attempt}/{maxRetries} conversione Puppeteer");
 
-                var programFiles = Environment.GetEnvironmentVariable("ProgramFiles") ?? @"C:\Program Files";
-                var nodePath = Path.Combine(programFiles, "nodejs", "node.exe");
-
-                // Script Puppeteer portabile
+                // Script Puppeteer
                 var puppeteerScript = GenerateOptimizedPuppeteerScript(options);
 
-                // ✅ CREA CARTELLA TempFiles SE NON ESISTE
-                var projectDirectory = FindProjectDirectory();
-                var tempFilesDir = Path.Combine(projectDirectory, "TempFiles");
-                Directory.CreateDirectory(tempFilesDir); 
-                scriptPath = Path.Combine(tempFilesDir, $"temp_puppeteer_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
+                // Salva script in directory temporanea
+                var tempDir = Path.GetTempPath();
+                scriptPath = Path.Combine(tempDir, $"temp_puppeteer_script_{DateTime.Now.Ticks}_attempt{attempt}.js");
                 await File.WriteAllTextAsync(scriptPath, puppeteerScript);
 
                 var process = new Process
@@ -156,12 +241,12 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
                         RedirectStandardError = true,
                         UseShellExecute = false,
                         CreateNoWindow = true,
-                        WorkingDirectory = projectDirectory
+                        WorkingDirectory = "/app" // Directory dove sono installati i node_modules
                     }
                 };
 
                 await _logger.Info(source, "Avvio conversione Puppeteer",
-                    $"Attempt: {attempt}, WorkingDir: {projectDirectory}, Script: {scriptPath}");
+                    $"Attempt: {attempt}, NodePath: {nodePath}, Script: {scriptPath}");
 
                 process.Start();
 
@@ -207,236 +292,218 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
                 await _logger.Debug(source, "Output Puppeteer STDOUT", $"Stdout:\n\n{stdout}");
                 if (!string.IsNullOrEmpty(stderr))
                 {
-                    await _logger.Debug(source, "Error Puppeteer STDERR", $"Stderr: {stderr}");
+                    await _logger.Warning(source, "Puppeteer STDERR", $"Stderr: {stderr}");
                 }
 
                 // Controlla risultato
                 if (File.Exists(pdfPath))
                 {
                     var pdfBytes = await File.ReadAllBytesAsync(pdfPath);
-                    await _logger.Info(source, $"Conversione riuscita al tentativo {attempt}",
-                        $"PDF size: {pdfBytes.Length} bytes");
 
-                    // Cleanup
-                    try { File.Delete(scriptPath); } catch { }
+                    // Verifica che non sia vuoto
+                    if (pdfBytes.Length > 0)
+                    {
+                        await _logger.Info(source, $"PDF generato con successo (tentativo {attempt})",
+                            $"Dimensione: {pdfBytes.Length} bytes");
 
-                    return pdfBytes;
+                        // Cleanup script temporaneo
+                        try { File.Delete(scriptPath); } catch { }
+
+                        return pdfBytes;
+                    }
+                    else
+                    {
+                        await _logger.Warning(source, $"PDF vuoto generato (tentativo {attempt})");
+                        File.Delete(pdfPath);
+                    }
                 }
                 else
                 {
-                    await _logger.Warning(source, $"Tentativo {attempt} fallito - file non creato",
-                        $"ExitCode: {process.ExitCode}, Stdout: {stdout}, Stderr: {stderr}");
-
-                    // Cleanup e retry
-                    try { File.Delete(scriptPath); } catch { }
-
-                    if (attempt == maxRetries)
-                    {
-                        throw new InvalidOperationException($"PDF file not created after {maxRetries} attempts. Last error: {stderr}");
-                    }
-
-                    await Task.Delay(2000);
+                    await _logger.Warning(source, $"File PDF non creato (tentativo {attempt})");
                 }
-            }
-            catch (Exception ex) when (attempt < maxRetries)
-            {
-                await _logger.Warning(source, $"Tentativo {attempt} fallito con eccezione", ex.Message);
-                await Task.Delay(2000);
-            }
-            finally
-            {
-                // ✅ CLEANUP GARANTITO
-                if (scriptPath != null && File.Exists(scriptPath))
+
+                // Cleanup e retry
+                try { File.Delete(scriptPath); } catch { }
+
+                if (attempt < maxRetries)
                 {
-                    try
-                    {
-                        File.Delete(scriptPath);
-                        await _logger.Debug(source, "Script temporaneo eliminato", scriptPath);
-                    }
-                    catch (Exception cleanupEx)
-                    {
-                        await _logger.Warning(source, "Impossibile eliminare script temporaneo",
-                            $"{scriptPath}: {cleanupEx.Message}");
-                    }
+                    await Task.Delay(2000 * attempt); // Backoff progressivo
                 }
+            }
+            catch (Exception ex)
+            {
+                await _logger.Error(source, $"Errore tentativo {attempt}", ex.ToString());
+
+                // Cleanup
+                try { if (scriptPath != null) File.Delete(scriptPath); } catch { }
+
+                if (attempt == maxRetries)
+                {
+                    throw;
+                }
+
+                await Task.Delay(2000 * attempt);
             }
         }
 
-        throw new InvalidOperationException($"PDF conversion failed after {maxRetries} attempts");
+        throw new Exception($"Impossibile generare PDF dopo {maxRetries} tentativi");
     }
 
     /// <summary>
-    /// Trova la directory del progetto in modo portabile
-    /// </summary>
-    private string FindProjectDirectory()
-    {
-        // Inizia dalla directory corrente
-        var currentDir = Directory.GetCurrentDirectory();
-
-        // Cerca verso l'alto per package.json
-        while (!string.IsNullOrEmpty(currentDir))
-        {
-            var packageJsonPath = Path.Combine(currentDir, "package.json");
-            if (File.Exists(packageJsonPath))
-            {
-                return currentDir;
-            }
-
-            // Cerca anche per .csproj o .sln (indicatori di progetto .NET)
-            var csprojFiles = Directory.GetFiles(currentDir, "*.csproj");
-            var slnFiles = Directory.GetFiles(currentDir, "*.sln");
-
-            if (csprojFiles.Length > 0 || slnFiles.Length > 0)
-            {
-                // Se c'è anche node_modules, questa è probabilmente la directory giusta
-                var nodeModulesPath = Path.Combine(currentDir, "node_modules");
-                if (Directory.Exists(nodeModulesPath))
-                {
-                    return currentDir;
-                }
-            }
-
-            var parentDir = Directory.GetParent(currentDir);
-            if (parentDir == null)
-                break;
-
-            currentDir = parentDir.FullName;
-        }
-
-        // Fallback: directory corrente
-        return Directory.GetCurrentDirectory();
-    }
-
-    /// <summary>
-    /// Script Puppeteer
+    /// Script Puppeteer ottimizzato per Docker/Linux con logging su file
     /// </summary>
     private string GenerateOptimizedPuppeteerScript(PdfConversionOptions options)
     {
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+        var logFile = $"/app/logs/puppeteer/pdf_{timestamp}.log";
+        
         return $@"
     const path = require('path');
     const fs = require('fs');
 
-    console.log('🔍 Using system Chrome...');
+    // 📁 Setup logging
+    const logFile = '{logFile}';
+    const logDir = path.dirname(logFile);
 
-    const systemChromePaths = [
-        'C:\\\\Program Files\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-        'C:\\\\Program Files (x86)\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-        'C:\\\\Users\\\\' + (process.env.USERNAME || 'Default') + '\\\\AppData\\\\Local\\\\Google\\\\Chrome\\\\Application\\\\chrome.exe',
-        'C:\\\\Program Files\\\\Chromium\\\\Application\\\\chrome.exe',
-        'C:\\\\Program Files (x86)\\\\Microsoft\\\\Edge\\\\Application\\\\msedge.exe'
-    ];
-
-    function findSystemChrome() {{
-        for (const chromePath of systemChromePaths) {{
-            if (fs.existsSync(chromePath)) {{
-                console.log(`✅ Found: ${{chromePath}}`);
-                return chromePath;
-            }}
-        }}
-        throw new Error('❌ No Chrome found');
+    if (!fs.existsSync(logDir)) {{
+        fs.mkdirSync(logDir, {{ recursive: true }});
     }}
+
+    function log(msg) {{
+        const timestamp = new Date().toISOString();
+        const line = `[${{timestamp}}] ${{msg}}\n`;
+        fs.appendFileSync(logFile, line);
+        console.log(msg);
+    }}
+
+    log('🔍 Starting PDF conversion...');
+    log(`📦 Platform: ${{process.platform}}`);
+    log(`📦 Node version: ${{process.version}}`);
+    log(`📁 Log file: ${{logFile}}`);
 
     let puppeteer;
     try {{
         puppeteer = require('puppeteer');
-        console.log('✅ Using Puppeteer');
+        log('✅ Using Puppeteer');
     }} catch (err1) {{
         try {{
             puppeteer = require('puppeteer-core');
-            console.log('✅ Using Puppeteer-core');
+            log('✅ Using Puppeteer-core');
         }} catch (err2) {{
-            console.error('💥 Puppeteer not found');
+            log(`💥 Puppeteer not found: ${{err2.message}}`);
             process.exit(1);
         }}
     }}
 
     (async () => {{
-    const [htmlPath, pdfPath] = process.argv.slice(2);
-    
-    if (!htmlPath || !pdfPath) {{
-        console.error('Usage: node script.js <htmlPath> <pdfPath>');
-        process.exit(1);
-    }}
-    
-    console.log(`Starting PDF conversion`);
-    console.log(`  HTML: ${{htmlPath}}`);
-    console.log(`  PDF: ${{pdfPath}}`);
-    
-    let browser;
-    let page;
-    try {{
-        console.log('🚀 Launching browser...');
+        const [htmlPath, pdfPath] = process.argv.slice(2);
         
-        const launchOptions = {{
-        headless: true,
-        args: [
-            '--no-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-gpu',
-            '--disable-web-security'
-        ],
-        timeout: 30000
-        }};
+        if (!htmlPath || !pdfPath) {{
+            log('❌ Usage: node script.js <htmlPath> <pdfPath>');
+            process.exit(1);
+        }}
         
+        log(`📄 HTML: ${{htmlPath}}`);
+        log(`📄 PDF: ${{pdfPath}}`);
+        
+        let browser;
+        let page;
         try {{
-            const systemChrome = findSystemChrome();
-            launchOptions.executablePath = systemChrome;
-        }} catch (chromeError) {{
-            console.log('⚠️ Using Puppeteer default Chrome');
+            log('🚀 Launching browser...');
+            
+            const launchOptions = {{
+                headless: 'new',
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-gpu',
+                    '--disable-web-security',
+                    '--disable-features=IsolateOrigins,site-per-process'
+                ],
+                timeout: 60000
+            }};
+            
+            browser = await puppeteer.launch(launchOptions);
+            log('✅ Browser launched');
+            
+            page = await browser.newPage();
+            await page.setViewport({{ width: 1024, height: 768 }});
+            log('✅ Page created');
+            
+            log('📄 Loading HTML...');
+            
+            // Verifica che il file esista
+            if (!fs.existsSync(htmlPath)) {{
+                throw new Error(`HTML file not found: ${{htmlPath}}`);
+            }}
+            
+            const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+            log(`📄 HTML size: ${{htmlContent.length}} bytes`);
+            
+            await page.setContent(htmlContent, {{ 
+                waitUntil: 'networkidle0',
+                timeout: 30000
+            }});
+            log('✅ HTML loaded');
+            
+            // Crea directory di output se necessaria
+            const outputDir = path.dirname(pdfPath);
+            if (!fs.existsSync(outputDir)) {{
+                fs.mkdirSync(outputDir, {{ recursive: true }});
+                log(`📁 Created output directory: ${{outputDir}}`);
+            }}
+            
+            log('🎨 Generating PDF...');
+            await page.pdf({{
+                path: pdfPath,
+                format: '{options.PageFormat}',
+                printBackground: {options.PrintBackground.ToString().ToLower()},
+                margin: {{
+                    top: '{options.MarginTop}',
+                    right: '{options.MarginRight}',
+                    bottom: '{options.MarginBottom}',
+                    left: '{options.MarginLeft}'
+                }},
+                displayHeaderFooter: {options.DisplayHeaderFooter.ToString().ToLower()},
+                headerTemplate: `{options.HeaderTemplate.Replace("`", "\\`")}`,
+                footerTemplate: `{options.FooterTemplate.Replace("`", "\\`")}`,
+                preferCSSPageSize: true
+            }});
+            log('✅ PDF generation command completed');
+            
+            // Verifica che il PDF sia stato creato
+            if (fs.existsSync(pdfPath)) {{
+                const stats = fs.statSync(pdfPath);
+                log(`🎉 PDF generated successfully: ${{stats.size}} bytes`);
+                
+                // Verifica header PDF
+                const pdfBuffer = fs.readFileSync(pdfPath);
+                const header = pdfBuffer.slice(0, 4).toString();
+                log(`📄 PDF header: ${{header}}`);
+                
+                if (header !== '%PDF') {{
+                    log(`⚠️ Warning: Invalid PDF header detected!`);
+                }}
+            }} else {{
+                throw new Error('❌ PDF file not created');
+            }}
+            
+        }} catch (error) {{
+            log(`💥 Conversion failed: ${{error.message}}`);
+            log(`Stack: ${{error.stack}}`);
+            process.exit(1);
+        }} finally {{
+            if (page) {{
+                await page.close();
+                log('✅ Page closed');
+            }}
+            if (browser) {{
+                await browser.close();
+                log('✅ Browser closed');
+            }}
+            log('🏁 Script completed');
         }}
-        
-        browser = await puppeteer.launch(launchOptions);
-        console.log('✅ Browser launched');
-        
-        page = await browser.newPage();
-        await page.setViewport({{ width: 1024, height: 768 }});
-        
-        console.log('📄 Loading HTML...');
-        const htmlContent = fs.readFileSync(htmlPath, 'utf8');
-        
-        await page.setContent(htmlContent, {{ 
-        waitUntil: 'domcontentloaded',
-        timeout: 30000
-        }});
-        console.log('✅ HTML loaded');
-        
-        const outputDir = path.dirname(pdfPath);
-        if (!fs.existsSync(outputDir)) {{
-        fs.mkdirSync(outputDir, {{ recursive: true }});
-        }}
-        
-        console.log('🎨 Generating PDF...');
-        await page.pdf({{
-        path: pdfPath,
-        format: '{options.PageFormat}',
-        printBackground: {options.PrintBackground.ToString().ToLower()},
-        margin: {{
-            top: '{options.MarginTop}',
-            right: '{options.MarginRight}',
-            bottom: '{options.MarginBottom}',
-            left: '{options.MarginLeft}'
-        }},
-        displayHeaderFooter: {options.DisplayHeaderFooter.ToString().ToLower()},
-        headerTemplate: `{options.HeaderTemplate.Replace("`", "\\`")}`,
-        footerTemplate: `{options.FooterTemplate.Replace("`", "\\`")}`,
-        preferCSSPageSize: true
-        }});
-        
-        if (fs.existsSync(pdfPath)) {{
-        const stats = fs.statSync(pdfPath);
-        console.log(`🎉 PDF generated: ${{stats.size}} bytes`);
-        }} else {{
-        throw new Error('❌ PDF not created');
-        }}
-        
-    }} catch (error) {{
-        console.error('💥 Failed:', error.message);
-        process.exit(1);
-    }} finally {{
-        if (page) await page.close();
-        if (browser) await browser.close();
-        console.log('✅ Browser closed');
-    }}
     }})();";
     }
 
@@ -447,9 +514,11 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     {
         try
         {
+            var generationDate = report.GeneratedAt ?? DateTime.Now;
+            
             var outputDir = Path.Combine("storage", "reports",
-                report.ReportPeriodStart.Year.ToString(),
-                report.ReportPeriodStart.Month.ToString("D2"));
+                generationDate.Year.ToString(),
+                generationDate.Month.ToString("D2"));
             var htmlPath = Path.Combine(outputDir, $"PolarDrive_PolarReport_{report.Id}.html");
 
             Directory.CreateDirectory(outputDir);
