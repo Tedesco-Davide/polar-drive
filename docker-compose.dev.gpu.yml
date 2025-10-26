@@ -1,12 +1,13 @@
 version: "3.9"
 
 services:
+
   ollama:
     container_name: polardrive-ollama-dev
     image: ollama/ollama:latest
     restart: unless-stopped
     ports:
-      - "11434:11434"                 # utile per test da host
+      - "11434:11434"
     environment:
       - OLLAMA_KEEP_ALIVE=24h
       - NVIDIA_VISIBLE_DEVICES=all
@@ -22,22 +23,30 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # One-shot per pre-scaricare i modelli
   ollama-init:
     container_name: polardrive-ollama-init-dev
     image: ollama/ollama:latest
     depends_on:
-      - ollama
+      ollama:
+        condition: service_healthy
     networks:
       - polardrive-network-dev
-    entrypoint: ["/bin/sh","-lc"]
-    command: >
-      "set -e;
-       until nc -z ollama 11434; do sleep 1; done;
-       ollama pull llama3.1:8b;
-       ollama pull qwen2.5:7b;
-       echo 'Modelli DEV pronti.'"
+    entrypoint: ["/bin/sh", "-c"]
+    command: |
+      set -e
+      export OLLAMA_HOST=http://ollama:11434
+      echo "⏳ Attendendo Ollama..."
+      until ollama list >/dev/null 2>&1; do sleep 2; done
+      echo "📥 Scaricamento modello deepseek-r1:8b..."
+      ollama pull deepseek-r1:8b
+      echo "✅ PolarAi Modello DEV pronto"
     restart: "no"
 
 volumes:

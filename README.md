@@ -4,55 +4,70 @@ Repository per il progetto **PolarDrive**.
 
 ---
 
-### 🐳 DOCKER
+### 🐳 DOCKER DEV
 
 _(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
 
-DEV/PROD => COMANDI GENERICI => CREA RETE CON NOME ESPLICITO (comando da lanciare una sola volta)
+DEV => INFO SU OLLAMA
 
-- docker network create polardrive-network-dev
-- docker network create polardrive-network-prod
+- COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
 
-DEV/PROD => INFO SU OLLAMA 127.0.0.1:11434
+- RIMUOVERE CONTAINER OLLAMA (DA NON FARE MAI) => docker compose -f docker-compose.dev.gpu.yml down
+- PULL MODELLO ANCHE SE SCARICATO => docker compose -f docker-compose.dev.gpu.yml run --rm ollama-init
 
-COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
-
-_(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
+- STOPPARE CONTAINER OLLAMA => docker compose -f docker-compose.dev.gpu.yml stop
+- AVVIO OLLAMA => docker compose -f docker-compose.dev.gpu.yml up -d ollama
+- VERIFICA STATO => docker compose -f docker-compose.dev.gpu.yml ps
+- VERIFICA HEALTH => docker inspect polardrive-ollama-dev --format='{{.State.Health.Status}}'
+- LISTA MODELLI => curl http://localhost:11434/api/tags
 
 DEV => COMANDI GENERICI => FULL DOWN ED UP
 
-- STOP ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml down
+- RIMUOVERE ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml down
 - REBUILD ALL IMMAGINI DEV => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .;
 docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .;
 docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
-- RESTART ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+- START ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
 
 DEV => !!!UNA TANTUM!!! => LAUNCH INIT DB PER RESETTARE IL DB DataPolar_PolarDrive_DB_DEV =>
 
-- STOP CONTAINER DEV => docker rm -f polardrive-initdb-dev
 - REBUILD IMMAGINE INITDB => docker build -f backend/PolarDriveInitDB.Cli/Dockerfile -t polardrive-initdb:latest .
 - AZIONE INIT DB => docker compose -f docker-compose.dev.yml --env-file .env.dev run --rm initdb
+- RIMUOVERE IMMAGINE INITDB => docker rmi -f polardrive-initdb:latest
 
 DEV => REBUILD TESLA-MOCK-API-SERVICE POST MODIFICHE =>
 
-- STOP CONTAINER DEV => docker rm -f polardrive-mock-api-dev
+- RIMUOVERE CONTAINER DEV => docker rm -f polardrive-mock-api-dev
 - REBUILD IMMAGINE TESLA MOCK => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
-- RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d mock-api
+- START CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d mock-api
 - LOGS => docker compose -f docker-compose.dev.yml logs -f mock
 
 DEV => REBUILD POLARDRIVE-WEB-API POST MODIFICHE =>
 
-- STOP CONTAINER DEV => docker rm -f polardrive-api-dev
+- RIMUOVERE CONTAINER DEV => docker rm -f polardrive-api-dev
 - REBUILD IMMAGINE WEB-API => docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
-- RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d api
+- START CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d api
 - LOGS => docker compose -f docker-compose.dev.yml logs -f api
 
 DEV => REBUILD FRONTEND POST MODIFICHE =>
 
-- STOP CONTAINER DEV => docker rm -f polardrive-frontend-dev
+- RIMUOVERE CONTAINER DEV => docker rm -f polardrive-frontend-dev
 - REBUILD IMMAGINE DEV FRONTEND => docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
-- RESTART CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d frontend
+- START CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d frontend
 - LOGS => docker compose -f docker-compose.dev.yml logs -f frontend
+
+### 🐳 DOCKER PROD
+
+_(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
+
+PROD => INFO SU OLLAMA
+
+- COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
+- PULL MODELLO ANCHE SE GIÀ SCARICATO => docker compose -f docker-compose.prod.gpu.yml run --rm ollama-init
+- AVVIO OLLAMA => docker compose -f docker-compose.prod.gpu.yml up -d ollama
+- VERIFICA STATO => docker compose -f docker-compose.prod.gpu.yml ps
+- VERIFICA RISPOSTA => docker exec -it polardrive-ollama-prod ollama list
+- RIMUOVERE CONTAINER OLLAMA => docker compose -f docker-compose.prod.gpu.yml down
 
 ### 🔷 FRONTEND POLARDRIVE ADMIN
 

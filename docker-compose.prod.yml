@@ -15,7 +15,6 @@ services:
       - TeslaApi__PublicBaseUrl=${TESLA_API_PUBLIC_BASE_URL}
       - TeslaApi__ClientId=${TESLA_CLIENT_ID}
       - TeslaApi__ClientSecret=${TESLA_CLIENT_SECRET}
-      - Ollama__BaseUrl=${OLLAMA_BASE_URL}
       - Jwt__SecretKey=${JWT_SECRET_KEY}
       - Jwt__Issuer=${JWT_ISSUER}
       - Jwt__Audience=${JWT_AUDIENCE}
@@ -30,6 +29,16 @@ services:
       - Vonage__WebhookSignature__Secret=${VONAGE_WEBHOOK_SIGNATURE_SECRET}
       - Vonage__WebhookSignature__Method=${VONAGE_WEBHOOK_SIGNATURE_METHOD}
       - Vonage__UseMessagesApi=${VONAGE_USE_MESSAGES_API}
+      - Ollama__Endpoint=${OLLAMA_ENDPOINT}
+      - Ollama__Model=${OLLAMA_MODEL}
+      - Ollama__Temperature=${OLLAMA_TEMPERATURE}
+      - Ollama__TopP=${OLLAMA_TOP_P}
+      - Ollama__ContextWindow=${OLLAMA_CONTEXT_WINDOW}
+      - Ollama__MaxTokens=${OLLAMA_MAX_TOKENS}
+      - Ollama__RepeatPenalty=${OLLAMA_REPEAT_PENALTY}
+      - Ollama__TopK=${OLLAMA_TOP_K}
+      - Ollama__MaxRetries=${OLLAMA_MAX_RETRIES}
+      - Ollama__RetryDelaySeconds=${OLLAMA_RETRY_DELAY_SECONDS}
     volumes:
       - ./LOGS_PROD:/app/Logs
     ports:
