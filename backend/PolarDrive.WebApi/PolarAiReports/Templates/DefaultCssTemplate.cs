@@ -452,8 +452,8 @@ public static class DefaultCssTemplate
             border-right: 1px solid rgba(139, 159, 242, 0.1);
         }
 
-        .detailed-log-badge-success-profiling, 
-        .detailed-log-badge-default-profiling,
+        .detailed-log-badge-success-profile, 
+        .detailed-log-badge-default-profile,
         .detailed-log-badge-success-dataValidated,
         .detailed-log-badge-warning-dataValidated {
             text-align: center;
@@ -462,8 +462,8 @@ public static class DefaultCssTemplate
             border-radius: 3px;
         }
 
-        .detailed-log-badge-success-profiling, 
-        .detailed-log-badge-default-profiling {
+        .detailed-log-badge-success-profile, 
+        .detailed-log-badge-default-profile {
             width: 20px;
         }
 
@@ -472,12 +472,12 @@ public static class DefaultCssTemplate
             width: 135px;
         }
 
-        .detailed-log-badge-default-profiling,
+        .detailed-log-badge-default-profile,
         .detailed-log-badge-success-dataValidated {
             background: #f5f5f5;
         }
 
-        .detailed-log-badge-success-profiling {
+        .detailed-log-badge-success-profile {
             background: #4a9a59;
         }
 

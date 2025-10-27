@@ -105,8 +105,8 @@ public class SmsController(
                 return await HandleAdaptiveGdprCommand(
                     new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command);
 
-            if (command.StartsWith("ADAPTIVE_PROFILING"))
-                return await HandleAdaptiveProfilingCommand(
+            if (command.StartsWith("ADAPTIVE_PROFILE"))
+                return await HandleAdaptiveProfileCommand(
                     new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command);
 
             if (command == "ACCETTO")
@@ -120,7 +120,7 @@ public class SmsController(
             // ❌ Comando non riconosciuto
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Comando non riconosciuto";
-            var errorResponse = GenerateSmsResponse("❌ Comando non valido. Usa ADAPTIVE_GDPR o ADAPTIVE_PROFILING.");
+            var errorResponse = GenerateSmsResponse("❌ Comando non valido. Usa ADAPTIVE_GDPR o ADAPTIVE_PROFILE.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
 
@@ -228,8 +228,8 @@ public class SmsController(
         _db.SmsAdaptiveGdpr.Add(gdprRequest);
         await _db.SaveChangesAsync();
 
-        // Crea riga ADAPTIVE_PROFILING (vuota, in attesa di attivazione)
-        var profilingEvent = new SmsAdaptiveProfiling
+        // Crea riga ADAPTIVE_PROFILE (vuota, in attesa di attivazione)
+        var profileEvent = new SmsAdaptiveProfile
         {
             VehicleId = vehicle.Id,
             AdaptiveNumber = targetPhone,
@@ -237,12 +237,12 @@ public class SmsController(
             ReceivedAt = DateTime.Now,
             ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
             MessageContent = dto.Body,
-            ParsedCommand = "ADAPTIVE_PROFILING_OFF",
+            ParsedCommand = "ADAPTIVE_PROFILE_OFF",
             ConsentAccepted = false,
             SmsAdaptiveGdprId = gdprRequest.Id
         };
 
-        _db.SmsAdaptiveProfiling.Add(profilingEvent);
+        _db.SmsAdaptiveProfile.Add(profileEvent);
         await _db.SaveChangesAsync();
 
         // Invia SMS al numero target
@@ -285,12 +285,12 @@ public class SmsController(
         gdprRequest.IpAddress = Request.HttpContext.Connection.RemoteIpAddress?.ToString();
         gdprRequest.UserAgent = Request.Headers["User-Agent"].ToString();
 
-        // Aggiorna tutte le righe ADAPTIVE_PROFILING legate a questo numero
-        var profilingEvents = await _db.SmsAdaptiveProfiling
+        // Aggiorna tutte le righe ADAPTIVE_PROFILE legate a questo numero
+        var profileEvents = await _db.SmsAdaptiveProfile
             .Where(p => p.AdaptiveNumber == dto.From)
             .ToListAsync();
 
-        foreach (var pe in profilingEvents)
+        foreach (var pe in profileEvents)
         {
             pe.ConsentAccepted = true;
         }
@@ -330,15 +330,15 @@ public class SmsController(
         // Revoca consenso GDPR
         gdprRequest.ConsentAccepted = false;
 
-        // Disattiva tutte le righe ADAPTIVE_PROFILING
-        var profilingEvents = await _db.SmsAdaptiveProfiling
+        // Disattiva tutte le righe ADAPTIVE_PROFILE
+        var profileEvents = await _db.SmsAdaptiveProfile
             .Where(p => p.AdaptiveNumber == dto.From)
             .ToListAsync();
 
-        foreach (var pe in profilingEvents)
+        foreach (var pe in profileEvents)
         {
             pe.ConsentAccepted = false;
-            pe.ParsedCommand = "ADAPTIVE_PROFILING_OFF";
+            pe.ParsedCommand = "ADAPTIVE_PROFILE_OFF";
         }
 
         await _db.SaveChangesAsync();
@@ -371,10 +371,10 @@ public class SmsController(
             return "ADAPTIVE_GDPR";
         }
 
-        // ADAPTIVE_PROFILING XXXXXXXXXX Nome Cognome
-        if (normalizedMessage.StartsWith("ADAPTIVE_PROFILING"))
+        // ADAPTIVE_PROFILE XXXXXXXXXX Nome Cognome
+        if (normalizedMessage.StartsWith("ADAPTIVE_PROFILE"))
         {
-            return "ADAPTIVE_PROFILING";
+            return "ADAPTIVE_PROFILE";
         }
 
         // ACCETTO
@@ -393,17 +393,17 @@ public class SmsController(
     }
 
     /// <summary>
-    /// Gestione comando ADAPTIVE_PROFILING
+    /// Gestione comando ADAPTIVE_PROFILE
     /// </summary>
-    private async Task<ActionResult> HandleAdaptiveProfilingCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
+    private async Task<ActionResult> HandleAdaptiveProfileCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
     {
-        // Estrai parametri: "ADAPTIVE_PROFILING Rossi Mario +393331234567"
+        // Estrai parametri: "ADAPTIVE_PROFILE Rossi Mario +393331234567"
         var parts = dto.Body.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 4)  // comando + cognome + nome + numero
         {
             auditLog.ProcessingStatus = "ERROR";
-            auditLog.ErrorMessage = "Formato comando ADAPTIVE_PROFILING non valido";
-            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILING Cognome Nome NUMERO-DI-TELEFONO");
+            auditLog.ErrorMessage = "Formato comando ADAPTIVE_PROFILE non valido";
+            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILE Cognome Nome NUMERO-DI-TELEFONO");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
@@ -453,17 +453,17 @@ public class SmsController(
             return OkSms(warningMessage);
         }
 
-        // Trova o crea riga ADAPTIVE_PROFILING
-        var profilingEvent = await _db.SmsAdaptiveProfiling
+        // Trova o crea riga ADAPTIVE_PROFILE
+        var profileEvent = await _db.SmsAdaptiveProfile
             .Where(p => p.VehicleId == vehicle.Id
                     && p.AdaptiveNumber == targetPhone)
             .OrderByDescending(p => p.ReceivedAt)
             .FirstOrDefaultAsync();
 
-        if (profilingEvent == null)
+        if (profileEvent == null)
         {
             // Crea nuova riga - INCLUDE SmsAdaptiveGdprId OBBLIGATORIO
-            profilingEvent = new SmsAdaptiveProfiling
+            profileEvent = new SmsAdaptiveProfile
             {
                 VehicleId = vehicle.Id,
                 AdaptiveNumber = targetPhone,
@@ -471,28 +471,28 @@ public class SmsController(
                 ReceivedAt = DateTime.Now,
                 ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
                 MessageContent = dto.Body,
-                ParsedCommand = "ADAPTIVE_PROFILING_ON",
+                ParsedCommand = "ADAPTIVE_PROFILE_ON",
                 ConsentAccepted = true,
                 SmsAdaptiveGdprId = gdprConsent.Id
             };
 
-            _db.SmsAdaptiveProfiling.Add(profilingEvent);
+            _db.SmsAdaptiveProfile.Add(profileEvent);
         }
         else
         {
             // Aggiorna riga esistente (estende sessione di 24 ore)
-            profilingEvent.AdaptiveSurnameName = fullName;
-            profilingEvent.ReceivedAt = DateTime.Now;
-            profilingEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD);
-            profilingEvent.ParsedCommand = "ADAPTIVE_PROFILING_ON";
-            profilingEvent.ConsentAccepted = true;
-            profilingEvent.SmsAdaptiveGdprId = gdprConsent.Id;
+            profileEvent.AdaptiveSurnameName = fullName;
+            profileEvent.ReceivedAt = DateTime.Now;
+            profileEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD);
+            profileEvent.ParsedCommand = "ADAPTIVE_PROFILE_ON";
+            profileEvent.ConsentAccepted = true;
+            profileEvent.SmsAdaptiveGdprId = gdprConsent.Id;
         }
 
         await _db.SaveChangesAsync();
 
         // Invia SMS di conferma al numero target
-        var confirmMessage = $@"Autorizzazione ADAPTIVE_PROFILING confermata 
+        var confirmMessage = $@"Autorizzazione ADAPTIVE_PROFILE confermata 
         Giorno: {DateTime.Now:dd/MM/yyyy} 
         Azienda: {vehicle.ClientCompany?.Name} 
         Brand: {vehicle.Brand} 
@@ -506,7 +506,7 @@ public class SmsController(
         auditLog.ResponseSent = confirmMessage;
         await SaveAuditLogAsync(auditLog);
 
-        await _logger.Info("Sms.PROFILING", "Adaptive Profiling activated",
+        await _logger.Info("Sms.PROFILE", "Adaptive Profile activated",
             $"VehicleId: {vehicle.Id}, Phone: {targetPhone}, Name: {fullName}");
 
         return OkSms(confirmMessage);
@@ -629,14 +629,14 @@ public class SmsController(
     // ============================================================================
 
     /// <summary>
-    /// Ottiene lo storico delle sessioni ADAPTIVE_PROFILING per un veicolo
+    /// Ottiene lo storico delle sessioni ADAPTIVE_PROFILE per un veicolo
     /// </summary>
-    [HttpGet("adaptive-profiling/{vehicleId}/history")]
-    public async Task<ActionResult> GetAdaptiveProfilingHistory(int vehicleId)
+    [HttpGet("adaptive-profile/{vehicleId}/history")]
+    public async Task<ActionResult> GetAdaptiveProfileHistory(int vehicleId)
     {
         try
         {
-            var sessions = await _db.SmsAdaptiveProfiling
+            var sessions = await _db.SmsAdaptiveProfile
                 .Where(p => p.VehicleId == vehicleId)
                 .OrderByDescending(p => p.ReceivedAt)
                 .Select(p => new
@@ -657,24 +657,24 @@ public class SmsController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("Sms.GetHistory", "Error fetching profiling history",
+            await _logger.Error("Sms.GetHistory", "Error fetching profile history",
                 $"VehicleId: {vehicleId}, Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero dello storico" });
         }
     }
 
     /// <summary>
-    /// Ottiene lo stato della sessione ADAPTIVE_PROFILING attiva per un veicolo
+    /// Ottiene lo stato della sessione ADAPTIVE_PROFILE attiva per un veicolo
     /// </summary>
-    [HttpGet("adaptive-profiling/{vehicleId}/status")]
-    public async Task<ActionResult> GetAdaptiveProfilingStatus(int vehicleId)
+    [HttpGet("adaptive-profile/{vehicleId}/status")]
+    public async Task<ActionResult> GetAdaptiveProfileStatus(int vehicleId)
     {
         try
         {
-            var activeSession = await _db.SmsAdaptiveProfiling
+            var activeSession = await _db.SmsAdaptiveProfile
                 .Where(p => p.VehicleId == vehicleId
                         && p.ConsentAccepted
-                        && p.ParsedCommand == "ADAPTIVE_PROFILING_ON"
+                        && p.ParsedCommand == "ADAPTIVE_PROFILE_ON"
                         && p.ExpiresAt > DateTime.Now)
                 .OrderByDescending(p => p.ReceivedAt)
                 .FirstOrDefaultAsync();
@@ -706,7 +706,7 @@ public class SmsController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("Sms.GetStatus", "Error fetching profiling status",
+            await _logger.Error("Sms.GetStatus", "Error fetching profile status",
                 $"VehicleId: {vehicleId}, Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero dello stato" });
         }
@@ -840,27 +840,27 @@ public class SmsController(
     }
 
     /// <summary>
-    /// Ottiene statistiche Adaptive Profiling per un veicolo
+    /// Ottiene statistiche Adaptive Profile per un veicolo
     /// </summary>
-    [HttpGet("adaptive-profiling/{vehicleId}/stats")]
-    public async Task<ActionResult> GetAdaptiveProfilingStats(int vehicleId)
+    [HttpGet("adaptive-profile/{vehicleId}/stats")]
+    public async Task<ActionResult> GetAdaptiveProfileStats(int vehicleId)
     {
         try
         {
-            var sessions = await _db.SmsAdaptiveProfiling
-                .Where(p => p.VehicleId == vehicleId && p.ParsedCommand == "ADAPTIVE_PROFILING_ON")
+            var sessions = await _db.SmsAdaptiveProfile
+                .Where(p => p.VehicleId == vehicleId && p.ParsedCommand == "ADAPTIVE_PROFILE_ON")
                 .ToListAsync();
 
             var totalSessions = sessions.Count;
             var activeSessions = sessions.Count(s => s.ConsentAccepted 
-                                                && s.ParsedCommand == "ADAPTIVE_PROFILING_ON" 
+                                                && s.ParsedCommand == "ADAPTIVE_PROFILE_ON" 
                                                 && s.ExpiresAt > DateTime.Now);
             var lastSession = sessions.MaxBy(s => s.ReceivedAt)?.ReceivedAt;
             var firstSession = sessions.MinBy(s => s.ReceivedAt)?.ReceivedAt;
 
-            // Conta i dati raccolti durante le sessioni (se hai il campo IsSmsAdaptiveProfiling in VehicleData)
+            // Conta i dati raccolti durante le sessioni (se hai il campo IsSmsAdaptiveProfe in VehicleData)
             var adaptiveDataCount = await _db.VehiclesData
-                .Where(d => d.VehicleId == vehicleId && d.IsSmsAdaptiveProfiling)
+                .Where(d => d.VehicleId == vehicleId && d.IsSmsAdaptiveProfile)
                 .CountAsync();
 
             return Ok(new
@@ -876,7 +876,7 @@ public class SmsController(
         }
         catch (Exception ex)
         {
-            await _logger.Error("Sms.GetStats", "Error fetching profiling stats",
+            await _logger.Error("Sms.GetStats", "Error fetching profile stats",
                 $"VehicleId: {vehicleId}, Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero delle statistiche" });
         }

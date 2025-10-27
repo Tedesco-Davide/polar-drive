@@ -5,7 +5,7 @@ namespace PolarDrive.WebApi.Constants
         // Ore corrispondenti a 30 giorni, per calcolo di mese intero
         public const int MONTHLY_HOURS_THRESHOLD = 720;
 
-        // Finestra di tempo in ore, utilizzata per SMS ADAPTIVE_GDPR ed ADAPTIVE_PROFILING
+        // Finestra di tempo in ore, utilizzata per SMS ADAPTIVE_GDPR ed ADAPTIVE_PROFILE
         public const int SMS_ADPATIVE_HOURS_THRESHOLD = 24;
 
         // Valori usati nel controller dei Reports, insieme anche a monthly, per determinare tipo cadenza Report

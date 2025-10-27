@@ -24,7 +24,7 @@ interface SmsAuditLog {
   responseSent: string | null;
 }
 
-interface AdaptiveProfilingSession {
+interface AdaptiveProfileSession {
   id: number;
   vehicleId: number;
   adaptiveNumber: string;
@@ -66,21 +66,21 @@ export default function AdminSmsManagementModal({
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
   const [auditLogs, setAuditLogs] = useState<SmsAuditLog[]>([]);
-  const [profilingSessions, setProfilingSessions] = useState<AdaptiveProfilingSession[]>([]);
+  const [profileSessions, setProfileSessions] = useState<AdaptiveProfileSession[]>([]);
   const [gdprConsents, setGdprConsents] = useState<GdprConsent[]>([]);
-  const [activeTab, setActiveTab] = useState<"profiling" | "gdpr" | "audit">("profiling");
+  const [activeTab, setActiveTab] = useState<"profile" | "gdpr" | "audit">("profile");
 
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
 
-      // Carica sessioni ADAPTIVE_PROFILING
-      const profilingResponse = await fetch(
-        `/api/SmsAdaptiveProfiling/${vehicleId}/history`
+      // Carica sessioni ADAPTIVE_PROFILE
+      const profileResponse = await fetch(
+        `/api/SmsAdaptiveProfile/${vehicleId}/history`
       );
-      if (profilingResponse.ok) {
-        const sessions = await profilingResponse.json();
-        setProfilingSessions(sessions);
+      if (profileResponse.ok) {
+        const sessions = await profileResponse.json();
+        setProfileSessions(sessions);
       }
 
       // Carica audit logs
@@ -108,7 +108,7 @@ export default function AdminSmsManagementModal({
         "AdminSmsManagement",
         "INFO",
         "SMS data loaded successfully",
-        "VehicleId: " + vehicleId + ", Sessions: " + profilingSessions.length + ", Logs: " + auditLogs.length
+        "VehicleId: " + vehicleId + ", Sessions: " + profileSessions.length + ", Logs: " + auditLogs.length
       );
     } catch (error) {
       logFrontendEvent(
@@ -145,10 +145,10 @@ export default function AdminSmsManagementModal({
     }
   };
 
-  const isSessionActive = (session: AdaptiveProfilingSession) => {
+  const isSessionActive = (session: AdaptiveProfileSession) => {
     return (
       session.consentAccepted &&
-      session.parsedCommand === "ADAPTIVE_PROFILING_ON" &&
+      session.parsedCommand === "ADAPTIVE_PROFILE_ON" &&
       new Date(session.expiresAt) > new Date()
     );
   };
@@ -164,7 +164,7 @@ export default function AdminSmsManagementModal({
 
   if (!isOpen) return null;
 
-  const activeSessions = profilingSessions.filter(isSessionActive);
+  const activeSessions = profileSessions.filter(isSessionActive);
 
   return (
     <div className="fixed top-[64px] md:top-[0px] inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm note-modal">
@@ -212,7 +212,7 @@ export default function AdminSmsManagementModal({
             <div className="flex items-center space-x-2 mb-3">
               <CheckCircle className="text-blue-500" size={20} />
               <span className="font-semibold text-blue-700 dark:text-blue-300">
-                {activeSessions.length} Sessione/i ADAPTIVE_PROFILING Attiva/e
+                {activeSessions.length} Sessione/i ADAPTIVE_PROFILE Attiva/e
               </span>
             </div>
             {activeSessions.map((session) => (
@@ -248,14 +248,14 @@ export default function AdminSmsManagementModal({
         <div className="flex mb-4 border-b border-gray-300 dark:border-gray-600">
           <button
             className={`px-4 py-2 font-medium ${
-              activeTab === "profiling"
+              activeTab === "profile"
                 ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite dark:border-articWhite"
                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
-            onClick={() => setActiveTab("profiling")}
+            onClick={() => setActiveTab("profile")}
           >
             <User size={16} className="inline mr-2" />
-            Profiling ({profilingSessions.length})
+            Profile ({profileSessions.length})
           </button>
           <button
             className={`px-4 py-2 font-medium ml-4 ${
@@ -283,15 +283,15 @@ export default function AdminSmsManagementModal({
 
         {/* Content */}
         <div className="min-h-[400px]">
-          {/* Tab PROFILING */}
-          {activeTab === "profiling" && (
+          {/* Tab PROFILE */}
+          {activeTab === "profile" && (
             <div>
-              {profilingSessions.length === 0 ? (
+              {profileSessions.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">
-                  Nessuna sessione ADAPTIVE_PROFILING registrata
+                  Nessuna sessione ADAPTIVE_PROFILE registrata
                 </p>
               ) : (
-                profilingSessions.map((session) => (
+                profileSessions.map((session) => (
                   <div
                     key={session.id}
                     className={`p-4 rounded-lg mb-3 ${

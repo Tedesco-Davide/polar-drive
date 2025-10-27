@@ -256,7 +256,7 @@ mantenendo tutte le informazioni essenziali per un'analisi approfondita:
 - **Alert mensili**: Anomalie o trend preoccupanti nel periodo
 
 ### 2. 📈 APPRENDIMENTO PROGRESSIVO (CONTESTO {analysisLevel.ToUpper()})
-- **Sessioni Adaptive Profiling**: Analisi delle sessioni negli ultimi 30 giorni
+- **Sessioni Adaptive Profile**: Analisi delle sessioni negli ultimi 30 giorni
 - **Pattern mensili identificati**: Cosa emerge dall'analisi mensile
 - **Correlazioni mensili**: Relazioni scoperte nei 30 giorni
 - **Evoluzione comportamentale**: Come il comportamento è cambiato nel mese
@@ -293,7 +293,7 @@ mantenendo tutte le informazioni essenziali per un'analisi approfondita:
 **PROFESSIONALITÀ**: Linguaggio tecnico ma accessibile
 **ACTIONABILITY**: Ogni insight mensile deve tradursi in azioni concrete
 **COMPARABILITÀ**: Fornire benchmark e confronti mensili
-**COMPLETEZZA**: Analizzare TUTTI i dati aggregati forniti, inclusi SMS Adaptive Profiling
+**COMPLETEZZA**: Analizzare TUTTI i dati aggregati forniti, inclusi SMS Adaptive Profile
 
 ## ELEMENTI OBBLIGATORI MENSILI
 

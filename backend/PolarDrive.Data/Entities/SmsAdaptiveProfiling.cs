@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PolarDrive.Data.Entities;
 
-public class SmsAdaptiveProfiling
+public class SmsAdaptiveProfile
 {
     public int Id { get; set; }
 
@@ -23,7 +23,7 @@ public class SmsAdaptiveProfiling
     public string MessageContent { get; set; } = string.Empty;
 
     [Required]
-    [RegularExpression("ADAPTIVE_PROFILING_ON|ADAPTIVE_PROFILING_OFF")]
+    [RegularExpression("ADAPTIVE_PROFILE_ON|ADAPTIVE_PROFILE_OFF")]
     public string ParsedCommand { get; set; } = string.Empty;
 
     [Required]

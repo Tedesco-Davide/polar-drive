@@ -99,10 +99,10 @@ BEGIN
             SELECT 
                 sap.VehicleId,
                 COUNT(*) AS TotalSmsEvents,
-                SUM(CASE WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' THEN 1 ELSE 0 END) AS AdaptiveOnEvents,
-                SUM(CASE WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILING_OFF'' THEN 1 ELSE 0 END) AS AdaptiveOffEvents,
+                SUM(CASE WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILE_ON'' THEN 1 ELSE 0 END) AS AdaptiveOnEvents,
+                SUM(CASE WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILE_OFF'' THEN 1 ELSE 0 END) AS AdaptiveOffEvents,
                 SUM(CASE 
-                    WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILING_ON'' 
+                    WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILE_ON'' 
                     AND sap.ConsentAccepted = 1 
                     AND sap.ExpiresAt > GETDATE() 
                     THEN 1 
@@ -110,13 +110,13 @@ BEGIN
                 END) AS ActiveSessions,
                 MAX(sap.ReceivedAt) AS LastSmsReceived,
                 MAX(CASE 
-                    WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILING_ON''
+                    WHEN sap.ParsedCommand = ''ADAPTIVE_PROFILE_ON''
                     AND sap.ConsentAccepted = 1 
                     AND sap.ExpiresAt > GETDATE() 
                     THEN sap.ExpiresAt 
                     ELSE NULL 
                 END) AS LastActiveSessionExpires
-            FROM SmsAdaptiveProfiling sap
+            FROM SmsAdaptiveProfile sap
             GROUP BY sap.VehicleId
         ) sms_stats ON cv.Id = sms_stats.VehicleId
     ),
@@ -261,8 +261,8 @@ BEGIN
     ON ClientConsents (VehicleId, UploadDate);
 END
 
-IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_smsevents_vehicle_date' AND object_id = OBJECT_ID('SmsAdaptiveProfiling'))
+IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = 'idx_smsevents_vehicle_date' AND object_id = OBJECT_ID('SmsAdaptiveProfile'))
 BEGIN
     CREATE INDEX idx_smsevents_vehicle_date 
-    ON SmsAdaptiveProfiling (VehicleId, ReceivedAt);
+    ON SmsAdaptiveProfile (VehicleId, ReceivedAt);
 END

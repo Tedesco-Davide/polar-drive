@@ -188,8 +188,8 @@ public class IntelligentDataAggregator
             }
         }
 
-        // Aggiungi dati SMS Adaptive Profiling
-        await AddAdaptiveProfilingDataComplete(vehicleId, aggregation);
+        // Aggiungi dati SMS Adaptive Profile
+        await AddAdaptiveProfileDataComplete(vehicleId, aggregation);
 
         // Genera output ottimizzato ma COMPLETO
         var result = await GenerateCompleteOptimizedPromptDataAsync(aggregation, processedRecords, vehicleId);
@@ -885,21 +885,21 @@ public class IntelligentDataAggregator
 
     #endregion
 
-    #region ADAPTIVE PROFILING SMS
+    #region ADAPTIVE PROFILE SMS
 
-    private async Task AddAdaptiveProfilingDataComplete(int vehicleId, CompleteTeslaDataAggregation aggregation)
+    private async Task AddAdaptiveProfileDataComplete(int vehicleId, CompleteTeslaDataAggregation aggregation)
     {
         try
         {
             var thirtyDaysAgo = DateTime.Now.AddDays(-30);
             var adaptiveSessions = await ExecuteWithRetry(() =>
-                _dbContext.SmsAdaptiveProfiling
+                _dbContext.SmsAdaptiveProfile
                     .Where(e => e.VehicleId == vehicleId && e.ReceivedAt >= thirtyDaysAgo)
                     .OrderByDescending(e => e.ReceivedAt)
                     .ToListAsync());
 
-            aggregation.AdaptiveSessionsCount = adaptiveSessions.Count(s => s.ParsedCommand == "ADAPTIVE_PROFILING_ON");
-            var offSessions = adaptiveSessions.Count(s => s.ParsedCommand == "ADAPTIVE_PROFILING_OFF");
+            aggregation.AdaptiveSessionsCount = adaptiveSessions.Count(s => s.ParsedCommand == "ADAPTIVE_PROFILE_ON");
+            var offSessions = adaptiveSessions.Count(s => s.ParsedCommand == "ADAPTIVE_PROFILE_OFF");
             aggregation.AdaptiveSessionsStoppedManually = offSessions;
             aggregation.AdaptiveSessionsStoppedAutomatically = Math.Max(0, aggregation.AdaptiveSessionsCount - offSessions);
 
@@ -909,7 +909,7 @@ public class IntelligentDataAggregator
             {
                 // Analisi pattern orari
                 var sessionsByHour = adaptiveSessions
-                    .Where(s => s.ParsedCommand == "ADAPTIVE_PROFILING_ON")
+                    .Where(s => s.ParsedCommand == "ADAPTIVE_PROFILE_ON")
                     .GroupBy(s => s.ReceivedAt.Hour)
                     .OrderByDescending(g => g.Count())
                     .FirstOrDefault();
@@ -937,7 +937,7 @@ public class IntelligentDataAggregator
             // Conteggio dati raccolti durante sessioni adaptive
             aggregation.AdaptiveDataRecordsCount =
                     await ExecuteWithRetry(() => _dbContext.VehiclesData
-                    .Where(d => d.VehicleId == vehicleId && d.IsSmsAdaptiveProfiling)
+                    .Where(d => d.VehicleId == vehicleId && d.IsSmsAdaptiveProfile)
                     .CountAsync());
 
         }
@@ -947,14 +947,14 @@ public class IntelligentDataAggregator
         }
     }
 
-    private async Task<SmsAdaptiveProfiling?> GetActiveAdaptiveSession(int vehicleId)
+    private async Task<SmsAdaptiveProfile?> GetActiveAdaptiveSession(int vehicleId)
     {
         var fourHoursAgo = DateTime.Now.AddHours(-4);
 
         return await ExecuteWithRetry(() =>
-            _dbContext.SmsAdaptiveProfiling
+            _dbContext.SmsAdaptiveProfile
                 .Where(e => e.VehicleId == vehicleId
-                        && e.ParsedCommand == "ADAPTIVE_PROFILING_ON"
+                        && e.ParsedCommand == "ADAPTIVE_PROFILE_ON"
                         && e.ReceivedAt >= fourHoursAgo)
                 .OrderByDescending(e => e.ReceivedAt)
                 .FirstOrDefaultAsync());
@@ -1125,10 +1125,10 @@ public class IntelligentDataAggregator
             }
         }
 
-        // 📊 ADAPTIVE PROFILING
+        // 📊 ADAPTIVE PROFILE
         if (aggregation.AdaptiveSessionsCount > 0 || aggregation.HasActiveAdaptiveSession)
         {
-            sb.AppendLine("### 📊 ADAPTIVE PROFILING COMPLETO");
+            sb.AppendLine("### 📊 ADAPTIVE PROFILE COMPLETO");
             sb.AppendLine($"- **Sessioni Adaptive**: {aggregation.AdaptiveSessionsCount} attivazioni nel periodo");
             sb.AppendLine($"- **Terminazioni**: {aggregation.AdaptiveSessionsStoppedManually} manuali, {aggregation.AdaptiveSessionsStoppedAutomatically} automatiche");
             sb.AppendLine($"- **Sessione attiva**: {(aggregation.HasActiveAdaptiveSession ? "🟢 Sì" : "⚪ No")}");
@@ -1985,7 +1985,7 @@ public class CompleteTeslaDataAggregation
     public EnergySiteInfo? EnergySiteInfo { get; set; }
     public List<VehicleChargeEntry> VehicleChargeHistory { get; set; } = new();
 
-    // Adaptive Profiling
+    // Adaptive Profile
     public int AdaptiveSessionsCount { get; set; }
     public int AdaptiveSessionsStoppedManually { get; set; }
     public int AdaptiveSessionsStoppedAutomatically { get; set; }

@@ -222,7 +222,7 @@ public class DataPolarCertification
         var actualRecords = await _dbContext.VehiclesData
             .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
             .OrderBy(vd => vd.Timestamp)
-            .Select(vd => new { vd.Timestamp, vd.IsSmsAdaptiveProfiling, vd.RawJsonAnonymized })
+            .Select(vd => new { vd.Timestamp, vd.IsSmsAdaptiveProfile, vd.RawJsonAnonymized })
             .ToListAsync();
 
         var recordLookup = actualRecords
@@ -234,7 +234,7 @@ public class DataPolarCertification
         sb.AppendLine("<thead>");
         sb.AppendLine("<tr>");
         sb.AppendLine("<th>Timestamp</th>");
-        sb.AppendLine("<th>Adaptive Profiling</th>");
+        sb.AppendLine("<th>Adaptive Profile</th>");
         sb.AppendLine("<th>Dati Operativi</th>");
         sb.AppendLine("</tr>");
         sb.AppendLine("</thead>");
@@ -246,9 +246,9 @@ public class DataPolarCertification
         {
             if (recordLookup.TryGetValue(currentTime, out var record))
             {
-                var adaptiveProfiling = record.IsSmsAdaptiveProfiling
-                    ? "<span class='detailed-log-badge-success-profiling'>Sì</span>"
-                    : "<span class='detailed-log-badge-default-profiling'>No</span>";
+                var adaptiveProfile = record.IsSmsAdaptiveProfile
+                    ? "<span class='detailed-log-badge-success-profile'>Sì</span>"
+                    : "<span class='detailed-log-badge-default-profile'>No</span>";
 
                 var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized)
                     ? "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>"
@@ -257,7 +257,7 @@ public class DataPolarCertification
                 
                 sb.AppendLine("<tr class='record-present'>");
                 sb.AppendLine($"<td>{formattedDate} - {record.Timestamp:HH:mm}</td>");
-                sb.AppendLine($"<td>{adaptiveProfiling}</td>");
+                sb.AppendLine($"<td>{adaptiveProfile}</td>");
                 sb.AppendLine($"<td>{datiOperativi}</td>");
                 sb.AppendLine("</tr>");
             }

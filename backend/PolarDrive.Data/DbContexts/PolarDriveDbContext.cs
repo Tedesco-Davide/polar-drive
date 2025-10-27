@@ -12,7 +12,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<PdfReport> PdfReports => Set<PdfReport>();
     public DbSet<VehicleData> VehiclesData => Set<VehicleData>();
     public DbSet<SmsAdaptiveGdpr> SmsAdaptiveGdpr { get; set; }
-    public DbSet<SmsAdaptiveProfiling> SmsAdaptiveProfiling => Set<SmsAdaptiveProfiling>();
+    public DbSet<SmsAdaptiveProfile> SmsAdaptiveProfile => Set<SmsAdaptiveProfile>();
     public DbSet<SmsAuditLog> SmsAuditLog { get; set; }
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
@@ -188,7 +188,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.ConsentAccepted);
             });
 
-            modelBuilder.Entity<SmsAdaptiveProfiling>(entity =>
+            modelBuilder.Entity<SmsAdaptiveProfile>(entity =>
             {
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()

@@ -42,7 +42,7 @@ try
             "ClientConsents",
             "VehiclesData",
             "AnonymizedVehiclesData",
-            "SmsAdaptiveProfiling",
+            "SmsAdaptiveProfile",
             "SmsAuditLog",
             "PhoneVehicleMappings",
             "ClientTokens",
@@ -78,10 +78,10 @@ try
                 "AdminFileManager",
                 "PhoneVehicleMappings",
                 "SmsAuditLog",
-                "SmsAdaptiveProfiling",
+                "SmsAdaptiveProfile",
                 "AnonymizedVehiclesData",
                 "VehiclesData",
-                "PolarDriveLogs"  // ← Se ha identity
+                "PolarDriveLogs"
             };
 
             Console.WriteLine("🔄 Resetting Identity counters...");
@@ -499,18 +499,18 @@ try
 
     var adaptiveEvents = new[]
     {
-        new SmsAdaptiveProfiling
+        new SmsAdaptiveProfile
         {
             VehicleId = vehicles[0].Id,
             ReceivedAt = DateTime.Now.AddMinutes(-15),
             MessageContent = "ADAPTIVE 0001 test session",
-            ParsedCommand = "ADAPTIVE_PROFILING_ON"
+            ParsedCommand = "ADAPTIVE_PROFILE_ON"
         }
     };
 
     db.PhoneVehicleMappings.AddRange(phoneMappings);
     db.SmsAuditLog.AddRange(smsLogs);
-    db.SmsAdaptiveProfiling.AddRange(adaptiveEvents);
+    db.SmsAdaptiveProfile.AddRange(adaptiveEvents);
     await db.SaveChangesAsync();
 
     Console.WriteLine($"✅ Created {phoneMappings.Length} phone mappings");
