@@ -1,1006 +1,512 @@
 <!DOCTYPE html>
 <html lang="it">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PolarDrive - Sistema di Pricing</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PolarDrive - Calcolatore Pricing</title>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-        min-height: 100vh;
-        padding: 20px;
-      }
-
-      .container {
-        max-width: 1400px;
-        margin: 0 auto;
-        background: white;
-        border-radius: 20px;
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-      }
-
-      .header {
-        background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
-        color: white;
-        padding: 30px;
-        text-align: center;
-      }
-
-      .header h1 {
-        font-size: 2.5em;
-        margin-bottom: 10px;
-        font-weight: 300;
-      }
-
-      .content {
-        padding: 40px;
-      }
-
-      .vehicle-selector {
-        background: #f8f9fa;
-        padding: 30px;
-        border-radius: 15px;
-        margin-bottom: 30px;
-      }
-
-      .vehicle-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 15px;
-        margin-top: 20px;
-      }
-
-      .vehicle-option {
-        background: white;
-        border: 2px solid #e9ecef;
-        border-radius: 10px;
-        padding: 20px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-align: center;
-      }
-
-      .vehicle-option:hover {
-        border-color: #3498db;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(52, 152, 219, 0.2);
-      }
-
-      .vehicle-option.selected {
-        border-color: #3498db;
-        background: #f0f8ff;
-      }
-
-      .vehicle-name {
-        font-weight: 600;
-        color: #2c3e50;
-        margin-bottom: 5px;
-      }
-
-      .vehicle-price {
-        color: #27ae60;
-        font-size: 1.2em;
-        font-weight: 700;
-      }
-
-      .tier-section {
-        margin-bottom: 40px;
-      }
-
-      .tier-cards {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-        gap: 30px;
-        margin-top: 20px;
-      }
-
-      .tier-card {
-        border-radius: 15px;
-        padding: 30px;
-        color: white;
-        position: relative;
-        overflow: hidden;
-      }
-
-      .tier-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: inherit;
-        opacity: 0.9;
-        z-index: 1;
-      }
-
-      .tier-content {
-        position: relative;
-        z-index: 2;
-      }
-
-      .tier-gold {
-        background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
-      }
-
-      .tier-platinum {
-        background: linear-gradient(135deg, #9b59b6 0%, #8e44ad 100%);
-      }
-
-      .tier-title {
-        font-size: 1.8em;
-        font-weight: 700;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-      }
-
-      .tier-description {
-        margin-bottom: 20px;
-        opacity: 0.9;
-        line-height: 1.5;
-      }
-
-      .pricing-breakdown {
-        background: rgba(255, 255, 255, 0.1);
-        padding: 20px;
-        border-radius: 10px;
-        margin-top: 20px;
-      }
-
-      .price-item {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 10px;
-        padding: 5px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-      }
-
-      .price-item:last-child {
-        border-bottom: none;
-        font-weight: 700;
-        font-size: 1.2em;
-        margin-top: 10px;
-      }
-
-      .monthly-fee {
-        background: rgba(255, 255, 255, 0.2);
-        padding: 15px;
-        border-radius: 8px;
-        text-align: center;
-        margin-top: 15px;
-      }
-
-      .monthly-fee .amount {
-        font-size: 2em;
-        font-weight: 700;
-        display: block;
-      }
-
-      .results-section {
-        background: #f8f9fa;
-        padding: 30px;
-        border-radius: 15px;
-        margin-top: 30px;
-      }
-
-      .comparison-table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-top: 20px;
-        background: white;
-        border-radius: 10px;
-        overflow: hidden;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-      }
-
-      .comparison-table th,
-      .comparison-table td {
-        padding: 15px;
-        text-align: left;
-        border-bottom: 1px solid #e9ecef;
-      }
-
-      .comparison-table th {
-        background: #2c3e50;
-        color: white;
-        font-weight: 600;
-      }
-
-      .comparison-table tr:hover {
-        background: #f8f9fa;
-      }
-
-      .white-space-pre {
-        white-space: pre;
-      }
-
-      .highlight {
-        font-weight: 700;
-        color: #27ae60;
-      }
+        :root {
+            --primary: #2c3e50;
+            --secondary: #3498db;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e1e8ed;
+        }
+        
+        .card h2 {
+            color: var(--primary);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light);
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border 0.3s;
+        }
+        
+        input:focus, select:focus {
+            border-color: var(--secondary);
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .slider-container input[type="range"] {
+            flex: 1;
+        }
+        
+        .slider-value {
+            min-width: 50px;
+            text-align: center;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+        
+        .results {
+            background: var(--light);
+            border-radius: 8px;
+            padding: 25px;
+        }
+        
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #dce4e9;
+        }
+        
+        .result-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .result-label {
+            font-weight: 600;
+        }
+        
+        .result-value {
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .highlight {
+            background: var(--secondary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        
+        .savings {
+            color: var(--success);
+            font-weight: bold;
+        }
+        
+        .costs {
+            color: var(--accent);
+            font-weight: bold;
+        }
+        
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .comparison-table th, .comparison-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e8ed;
+        }
+        
+        .comparison-table th {
+            background-color: var(--light);
+            font-weight: 600;
+        }
+        
+        .comparison-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .data-polar-row {
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+        
+        .footer-note {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff9e6;
+            border-left: 4px solid #f1c40f;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        .btn-calculate {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 14px 25px;
+            font-size: 1.1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+        
+        .btn-calculate:hover {
+            background: #2980b9;
+        }
+        
+        .section-title {
+            font-size: 1.4rem;
+            color: var(--primary);
+            margin: 25px 0 15px 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light);
+        }
+        
+        .explanation {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary);
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     <div class="container">
-      <div class="header">
-        <h1>PolarDrive</h1>
-        <p>Sistema di Pricing</p>
-      </div>
-
-      <div class="content">
-        <div class="vehicle-selector">
-          <h2 style="color: #2c3e50; margin-bottom: 20px">
-            📋 Seleziona Configurazione Tesla
-          </h2>
-
-          <div style="margin-bottom: 20px">
-            <h3 style="color: #2c3e50; margin-bottom: 15px">Model 3</h3>
-            <div class="vehicle-grid">
-              <div
-                class="vehicle-option"
-                data-canone="569"
-                data-nome="Model 3 - Trazione posteriore"
-              >
-                <div class="vehicle-name">Trazione posteriore</div>
-                <div class="vehicle-price">€569/mese</div>
-              </div>
-              <div
-                class="vehicle-option"
-                data-canone="619"
-                data-nome="Model 3 - Long Range posteriore"
-              >
-                <div class="vehicle-name">Long Range posteriore</div>
-                <div class="vehicle-price">€619/mese</div>
-              </div>
-              <div
-                class="vehicle-option"
-                data-canone="849"
-                data-nome="Model 3 - Long Range integrale"
-              >
-                <div class="vehicle-name">Long Range integrale</div>
-                <div class="vehicle-price">€849/mese</div>
-              </div>
-              <div
-                class="vehicle-option"
-                data-canone="989"
-                data-nome="Model 3 - Performance integrale"
-              >
-                <div class="vehicle-name">Performance integrale</div>
-                <div class="vehicle-price">€989/mese</div>
-              </div>
+        <header>
+            <h1>PolarDrive - Calcolatore Pricing</h1>
+            <p class="subtitle">Calcola il pricing basato sul risparmio fiscale del cliente</p>
+        </header>
+        
+        <div class="content">
+            <div>
+                <div class="card">
+                    <h2>Parametri di Input</h2>
+                    
+                    <div class="input-group">
+                        <label for="teslaCost">Costo mensile noleggio / leasing Tesla (IVA esclusa)</label>
+                        <input type="number" id="teslaCost" value="500" min="0" step="0.01">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="taxRate">Aliquota IRES + IRAP del cliente (%)</label>
+                        <input type="number" id="taxRate" value="28" min="0" max="100" step="1">
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="marginPercentage">Percentuale del risparmio fiscale come margine DataPolar (%)</label>
+                        <div class="slider-container">
+                            <input type="range" id="marginPercentage" min="0" max="100" value="50" step="1" style="padding: 12px 0px;">
+                            <span class="slider-value" id="marginValue">50%</span>
+                        </div>
+                    </div>
+                    
+                    <button class="btn-calculate" id="calculateBtn">Calcola Pricing</button>
+                </div>
+                
+                <div class="card">
+                    <h2>Risultati Pricing</h2>
+                    
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-label">Costo Tesla:</span>
+                            <span class="result-value" id="teslaCostResult">€ 553.00</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Costo PolarDrive (margine):</span>
+                            <span class="result-value" id="operationalCostResult">€ 101.12</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Costo Totale DataPolar:</span>
+                            <span class="result-value" id="totalCostResult">€ 654.12</span>
+                        </div>
+                        
+                        <div class="section-title">Pricing Finale</div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Prezzo Servizio (IVA escl.):</span>
+                            <span class="result-value" id="servicePriceResult">€ 654.12</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">IVA (22%):</span>
+                            <span class="result-value" id="vatAmountResult">€ 143.91</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Prezzo al Cliente:</span>
+                            <span class="result-value highlight" id="customerPriceResult">€ 798.03</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Margine DataPolar:</span>
+                            <span class="result-value savings" id="marginResult">€ 101.12</span>
+                        </div>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <div style="margin-bottom: 20px">
-            <h3 style="color: #2c3e50; margin-bottom: 15px">Model Y</h3>
-            <div class="vehicle-grid">
-              <div
-                class="vehicle-option"
-                data-canone="669"
-                data-nome="Model Y - Trazione posteriore"
-              >
-                <div class="vehicle-name">Trazione posteriore</div>
-                <div class="vehicle-price">€669/mese</div>
-              </div>
-              <div
-                class="vehicle-option"
-                data-canone="529"
-                data-nome="Model Y - Long Range posteriore"
-              >
-                <div class="vehicle-name">Long Range posteriore</div>
-                <div class="vehicle-price">€529/mese</div>
-              </div>
-              <div
-                class="vehicle-option"
-                data-canone="779"
-                data-nome="Model Y - Long Range integrale"
-              >
-                <div class="vehicle-name">Long Range integrale</div>
-                <div class="vehicle-price">€779/mese</div>
-              </div>
-              <div
-                class="vehicle-option"
-                data-canone="1012"
-                data-nome="Model Y - Performance integrale"
-              >
-                <div class="vehicle-name">Performance integrale</div>
-                <div class="vehicle-price">€1012/mese</div>
-              </div>
+            
+            <div>
+                <div class="card">
+                    <h2>Analisi Risparmio Fiscale</h2>
+                    
+                    <div class="results">
+                        <div class="result-item">
+                            <span class="result-label">Risparmio fiscale cliente SENZA PolarDrive</span>
+                            <span class="result-value" id="savingWithoutResult">€ 158.21</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Risparmio fiscale cliente CON PolarDrive</span>
+                            <span class="result-value savings" id="savingWithResult">€ 360.45</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Risparmio fiscale aggiuntivo</span>
+                            <span class="result-value savings" id="additionalSavingResult">€ 202.24</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Margine DataPolar (% del risparmio aggiuntivo)</span>
+                            <span class="result-value savings" id="marginFromSavingResult">€ 101.12</span>
+                        </div>
+                        
+                        <div class="result-item">
+                            <span class="result-label">Risparmio netto cliente</span>
+                            <span class="result-value savings" id="netCustomerSavingResult">€ 101.12</span>
+                        </div>
+                    </div>
+                    
+                    <div class="footer-note">
+                        <strong>Nota:</strong> Il cliente deduce il 100% del servizio come "Laboratorio Mobile" invece del 20% come "noleggio auto". L'IVA è detraibile al 100% invece del 40%.
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h2>Confronto Scenari</h2>
+                    
+                    <table class="comparison-table">
+                        <thead>
+                            <tr>
+                                <th>Scenario</th>
+                                <th>Costo Lordo Cliente</th>
+                                <th>Deducibilità Fiscale</th>
+                                <th>Detrazione IVA</th>
+                                <th>Costo Netto Cliente</th>
+                                <th>Risparmio vs Auto</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Auto Aziendale Normale</td>
+                                <td id="normalGross">€ 674.66</td>
+                                <td id="normalDeductibility">20% (€ 110.60)</td>
+                                <td id="normalVatDeduction">40% (€ 48.66)</td>
+                                <td id="normalNetCost">€ 599.45</td>
+                                <td>-</td>
+                            </tr>
+                            <tr class="data-polar-row">
+                                <td><strong>Servizio DataPolar</strong></td>
+                                <td id="polarGross"><strong>€ 798.03</strong></td>
+                                <td id="polarDeductibility"><strong>100% (€ 654.12)</strong></td>
+                                <td id="polarVatDeduction"><strong>100% (€ 143.91)</strong></td>
+                                <td id="polarNetCost"><strong>€ 498.33</strong></td>
+                                <td id="polarSaving" class="savings"><strong>€ 101.12</strong></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="explanation">
+                        <h3>Come funziona il calcolo:</h3>
+                        <p>Il costo operativo PolarDrive (il tuo margine) è calcolato come percentuale del risparmio fiscale aggiuntivo che il cliente ottiene grazie al tuo servizio.</p>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <div
-            style="
-              margin-top: 30px;
-              padding-top: 20px;
-              border-top: 1px solid #000000;
-            "
-          >
-            <h3 style="color: #2c3e50; margin-bottom: 15px">💰 Prezzi Tesla</h3>
-            <div
-              style="
-                display: grid;
-                grid-template-columns: repeat(3, 1fr);
-                gap: 15px;
-                margin-bottom: 30px;
-              "
-            >
-              <!-- Model 3 -->
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >Model 3 - Trazione posteriore</label
-                >
-                <input
-                  type="number"
-                  id="price-m3-rwd"
-                  value="569"
-                  min="1"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="updateVehiclePrices()"
-                />
-                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
-              </div>
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >Model 3 - Long Range posteriore</label
-                >
-                <input
-                  type="number"
-                  id="price-m3-lr-rwd"
-                  value="619"
-                  min="1"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="updateVehiclePrices()"
-                />
-                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
-              </div>
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >Model 3 - Long Range integrale</label
-                >
-                <input
-                  type="number"
-                  id="price-m3-lr-awd"
-                  value="849"
-                  min="1"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="updateVehiclePrices()"
-                />
-                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
-              </div>
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >Model 3 - Performance integrale</label
-                >
-                <input
-                  type="number"
-                  id="price-m3-perf"
-                  value="989"
-                  min="1"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="updateVehiclePrices()"
-                />
-                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
-              </div>
-              <!-- Model Y -->
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >Model Y - Trazione posteriore</label
-                >
-                <input
-                  type="number"
-                  id="price-my-rwd"
-                  value="669"
-                  min="1"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="updateVehiclePrices()"
-                />
-                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
-              </div>
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >Model Y - Long Range posteriore</label
-                >
-                <input
-                  type="number"
-                  id="price-my-lr-rwd"
-                  value="529"
-                  min="1"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="updateVehiclePrices()"
-                />
-                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
-              </div>
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >Model Y - Long Range integrale</label
-                >
-                <input
-                  type="number"
-                  id="price-my-lr-awd"
-                  value="779"
-                  min="1"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="updateVehiclePrices()"
-                />
-                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
-              </div>
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >Model Y - Performance integrale</label
-                >
-                <input
-                  type="number"
-                  id="price-my-perf-awd"
-                  value="1012"
-                  min="1"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="updateVehiclePrices()"
-                />
-                <small style="color: #6c757d; margin-top: 5px">€/mese</small>
-              </div>
-            </div>
-
-            <h3
-              style="
-                color: #2c3e50;
-                margin-bottom: 15px;
-                margin-top: 30px;
-                padding-top: 20px;
-                border-top: 1px solid #000000;
-              "
-            >
-              ⚙️ Parametri Commissione
-            </h3>
-            <div
-              style="
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 20px;
-              "
-            >
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >🥇 Commissione Gold (%)</label
-                >
-                <input
-                  type="number"
-                  id="gold-percentage"
-                  value="50"
-                  min="1"
-                  max="100"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="calculateTier('gold')"
-                />
-                <small style="color: #6c757d; margin-top: 5px"
-                  >% del delta fiscale (20% → 100%)</small
-                >
-              </div>
-              <div style="display: flex; flex-direction: column">
-                <label
-                  style="font-weight: 600; color: #2c3e50; margin-bottom: 8px"
-                  >💎 Commissione Platinum (%)</label
-                >
-                <input
-                  type="number"
-                  id="platinum-percentage"
-                  value="80"
-                  min="1"
-                  max="100"
-                  step="1"
-                  style="
-                    padding: 12px 15px;
-                    border: 2px solid #e9ecef;
-                    border-radius: 8px;
-                    font-size: 1em;
-                  "
-                  oninput="calculateTier('platinum')"
-                />
-                <small style="color: #6c757d; margin-top: 5px"
-                  >% del risparmio totale (0% → 100%)</small
-                >
-              </div>
-            </div>
-          </div>
         </div>
-
-        <div class="tier-section">
-          <h2 style="color: #2c3e50; margin-bottom: 20px">
-            💎 Tier di Clienti PolarDrive
-          </h2>
-
-          <div class="tier-cards">
-            <div class="tier-card tier-gold">
-              <div class="tier-content">
-                <div class="tier-title">🥇 GOLD</div>
-                <div class="tier-description">
-                    Client nuovo che inizia un leasing completo che può già ottenere 20% deducibilità + 40% detrazione IVA,
-                    e vuole passare al regime startup innovativa
-                </div>
-
-                <div class="pricing-breakdown">
-                  <h4 style="margin-bottom: 15px">💰 Calcolo Guadagno</h4>
-                  <div class="price-item">
-                    <span>Da:</span>
-                    <span>20% deduzione + 40% IVA → 100% + 100% IVA</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Formula:</span>
-                    <span id="gold-formula-display">50% × Delta completo</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Durata:</span>
-                    <span>48 mesi completi</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Tuo guadagno + IVA:</span>
-                    <span id="gold-total-iva">€ 0</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Risparmio Cliente:</span>
-                    <span id="gold-cliente-total">€ 0</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Tuo guadagno (IVA esclusa):</span>
-                    <span id="gold-total">€ 0</span>
-                  </div>
-                </div>
-
-                <div class="monthly-fee">
-                  <small>Guadagno mensile (+ IVA)</small>
-                  <span class="amount" id="gold-monthly-iva">€ 0</span>
-                  <small style="display: block; margin-top: 5px"
-                    >IVA esclusa: <span id="gold-monthly">€ 0</span></small
-                  >
-                </div>
-              </div>
-            </div>
-
-            <div class="tier-card tier-platinum">
-              <div class="tier-content">
-                <div class="tier-title">💎 PLATINUM</div>
-                <div class="tier-description">
-                  Cliente nuovo che inizia un leasing completo, che non può
-                  ottenere un'auto aziendale (nessuna deduzione o detrazione
-                  fiscale).
-                </div>
-
-                <div class="pricing-breakdown">
-                  <h4 style="margin-bottom: 15px">💰 Calcolo Guadagno</h4>
-                  <div class="price-item">
-                    <span>Da:</span>
-                    <span>0% deduzione + 0% IVA → 100% + 100% IVA</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Formula:</span>
-                    <span id="platinum-formula-display"
-                      >80% × Risparmio totale</span
-                    >
-                  </div>
-                  <div class="price-item">
-                    <span>Durata:</span>
-                    <span>48 mesi completi</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Tuo guadagno + IVA:</span>
-                    <span id="platinum-total-iva">€ 0</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Risparmio Cliente:</span>
-                    <span id="platinum-cliente-total">€ 0</span>
-                  </div>
-                  <div class="price-item">
-                    <span>Tuo guadagno (IVA esclusa):</span>
-                    <span id="platinum-total">€ 0</span>
-                  </div>
-                </div>
-
-                <div class="monthly-fee">
-                  <small>Guadagno mensile (+ IVA)</small>
-                  <span class="amount" id="platinum-monthly-iva">€ 0</span>
-                  <small style="display: block; margin-top: 5px"
-                    >IVA esclusa: <span id="platinum-monthly">€ 0</span></small
-                  >
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="results-section">
-          <h3 style="color: #2c3e50; margin-bottom: 20px">
-            📊 Confronto Guadagni per Configurazione Selezionata
-          </h3>
-          <table class="comparison-table">
-            <thead>
-              <tr>
-                <th>Tier Cliente</th>
-                <th>Transizione</th>
-                <th>Guadagno DataPolar + IVA</th>
-                <th>Guadagno DataPolar (IVA esclusa)</th>
-                <th>Mensile DataPolar + IVA</th>
-                <th>Mensile DataPolar (IVA esclusa)</th>
-              </tr>
-            </thead>
-            <tbody id="results-body"></tbody>
-          </table>
-        </div>
-      </div>
     </div>
 
     <script>
-      // Funzione per aggiornare i prezzi dei veicoli
-      function updateVehiclePrices() {
-        // Mappatura degli ID agli elementi DOM
-        const priceMapping = [
-          {
-            inputId: "price-m3-rwd",
-            elementSelector: '[data-nome="Model 3 - Trazione posteriore"]',
-          },
-          {
-            inputId: "price-m3-lr-rwd",
-            elementSelector: '[data-nome="Model 3 - Long Range posteriore"]',
-          },
-          {
-            inputId: "price-m3-lr-awd",
-            elementSelector: '[data-nome="Model 3 - Long Range integrale"]',
-          },
-          {
-            inputId: "price-m3-perf",
-            elementSelector: '[data-nome="Model 3 - Performance integrale"]',
-          },
-          {
-            inputId: "price-my-rwd",
-            elementSelector: '[data-nome="Model Y - Trazione posteriore"]',
-          },
-          {
-            inputId: "price-my-lr-rwd",
-            elementSelector: '[data-nome="Model Y - Long Range posteriore"]',
-          },
-          {
-            inputId: "price-my-lr-awd",
-            elementSelector: '[data-nome="Model Y - Long Range integrale"]',
-          },
-          {
-            inputId: "price-my-perf-awd",
-            elementSelector: '[data-nome="Model Y - Performance integrale"]',
-          },
-        ];
-
-        // Aggiorna i prezzi nelle card
-        priceMapping.forEach(({ inputId, elementSelector }) => {
-          const newPrice = document.getElementById(inputId).value;
-          const element = document.querySelector(elementSelector);
-
-          if (element) {
-            // Aggiorna l'attributo data-canone
-            element.setAttribute("data-canone", newPrice);
-
-            // Aggiorna il testo del prezzo visualizzato
-            const priceDisplay = element.querySelector(".vehicle-price");
-            if (priceDisplay) {
-              priceDisplay.textContent = `€${newPrice}/mese`;
-            }
-          }
-        });
-
-        // Se il veicolo attualmente selezionato è stato modificato, aggiorna selectedVehicle
-        const currentSelected = document.querySelector(
-          ".vehicle-option.selected"
-        );
-        if (currentSelected) {
-          selectedVehicle = {
-            canone: parseInt(currentSelected.getAttribute("data-canone")),
-            nome: currentSelected.getAttribute("data-nome"),
-          };
-          calculateAllTiers();
-        }
-      }
-
-      let selectedVehicle = null;
-
-      // Costanti
-      const ANTICIPO = 6000;
-      const MESI = 48;
-      const IVA_RATE = 0.22;
-      const ALIQUOTA_FISCALE = 0.279; // 27.9% (IRES 24% + IRAP 3.9%)
-
-      // Event listeners per selezione veicolo
-      document.querySelectorAll(".vehicle-option").forEach((option) => {
-        option.addEventListener("click", function () {
-          document
-            .querySelectorAll(".vehicle-option")
-            .forEach((opt) => opt.classList.remove("selected"));
-          this.classList.add("selected");
-
-          selectedVehicle = {
-            canone: parseInt(this.dataset.canone),
-            nome: this.dataset.nome,
-          };
-
-          // Ricalcola automaticamente tutti i tier
-          calculateAllTiers();
-        });
-      });
-
-      function calculateVehicleCosts(canone) {
-        const costoTotaleNoIva = ANTICIPO + canone * MESI;
-        const ivaTotale = costoTotaleNoIva * IVA_RATE;
-        const costoTotaleConIva = costoTotaleNoIva + ivaTotale;
-
-        return {
-          costoTotaleNoIva,
-          ivaTotale,
-          costoTotaleConIva,
-        };
-      }
-
-      function calculateSavings(costoTotaleNoIva, ivaTotale) {
-        // Scenario Startup (100% deducibile + 100% detrazione IVA per R&S)
-        const risparmioFiscaleStartup = costoTotaleNoIva * ALIQUOTA_FISCALE;
-        const risparmioTotaleStartup = risparmioFiscaleStartup + ivaTotale;
-
-        // Scenario Tradizionale (20% deducibile)
-        const risparmioFiscaleTradizionale =
-          costoTotaleNoIva * 0.2 * ALIQUOTA_FISCALE;
-        const risparmioTotaleTradizionale =
-          risparmioFiscaleTradizionale + ivaTotale * 0.4;
-
-        // Delta
-        const deltaRisparmio =
-          risparmioTotaleStartup - risparmioTotaleTradizionale;
-
-        return {
-          risparmioTotaleStartup,
-          risparmioTotaleTradizionale,
-          deltaRisparmio,
-        };
-      }
-
-      function calculateTier(tier) {
-        // Se non è selezionato nessun veicolo, non calcolare
-        if (!selectedVehicle) {
-          document.getElementById(`${tier}-total`).textContent = `€ 0`;
-          document.getElementById(`${tier}-monthly`).textContent = `€ 0`;
-          document.getElementById(`${tier}-total-iva`).textContent = `€ 0`;
-          document.getElementById(`${tier}-monthly-iva`).textContent = `€ 0`;
-          document.getElementById(`${tier}-cliente-total`).textContent = `€ 0`;
-          updateResultsTable();
-          return;
-        }
-
-        const costs = calculateVehicleCosts(selectedVehicle.canone);
-        const savings = calculateSavings(
-          costs.costoTotaleNoIva,
-          costs.ivaTotale
-        );
-
-        let guadagnoTotale,
-          guadagnoMensile,
-          risparmioCliente,
-          durata,
-          descrizione,
-          percentage;
-
-        switch (tier) {
-          case "gold":
-            // Percentuale configurabile del delta completo
-            percentage =
-              parseFloat(document.getElementById("gold-percentage").value) /
-              100;
-            guadagnoTotale = savings.deltaRisparmio * percentage;
-            risparmioCliente = savings.deltaRisparmio * (1 - percentage); // il resto va al cliente
-            guadagnoMensile = guadagnoTotale / MESI;
-            durata = MESI;
-            descrizione = "20% → 100%";
-
-            // Aggiorna la formula visualizzata
-            document.getElementById(
-              "gold-formula-display"
-            ).textContent = `${Math.round(percentage * 100)}% × Delta completo`;
-            break;
-
-          case "platinum":
-            // Percentuale configurabile del risparmio totale startup
-            percentage =
-              parseFloat(document.getElementById("platinum-percentage").value) /
-              100;
-            guadagnoTotale = savings.risparmioTotaleStartup * percentage;
-            risparmioCliente =
-              savings.risparmioTotaleStartup * (1 - percentage); // il resto va al cliente
-            guadagnoMensile = guadagnoTotale / MESI;
-            durata = MESI;
-            descrizione = "0% → 100%";
-
-            // Aggiorna la formula visualizzata
-            document.getElementById(
-              "platinum-formula-display"
-            ).textContent = `${Math.round(
-              percentage * 100
-            )}% × Risparmio totale`;
-            break;
-        }
-
-        // CORREZIONE: Calcola correttamente l'IVA
-        // Il guadagnoTotale è il risparmio fiscale del cliente, quindi non ha IVA
-        // Tu fatturi il tuo guadagno + IVA al cliente
-        const guadagnoTotaleConIva = guadagnoTotale * (1 + IVA_RATE);
-        const guadagnoMensileConIva = guadagnoMensile * (1 + IVA_RATE);
-
-        // Il cliente risparmia risparmioCliente (che è già un risparmio fiscale, quindi senza IVA aggiuntiva)
-        // Ma per confronto, mostriamo il valore equivalente
-
-        // Aggiorna UI
-        document.getElementById(`${tier}-total`).textContent = `€ ${Math.round(
-          guadagnoTotale
-        ).toLocaleString("it-IT")}`;
-        document.getElementById(
-          `${tier}-monthly`
-        ).textContent = `€ ${Math.round(guadagnoMensile)}`;
-        document.getElementById(
-          `${tier}-total-iva`
-        ).textContent = `€ ${Math.round(guadagnoTotaleConIva).toLocaleString(
-          "it-IT"
-        )}`;
-        document.getElementById(
-          `${tier}-monthly-iva`
-        ).textContent = `€ ${Math.round(guadagnoMensileConIva)}`;
-        document.getElementById(
-          `${tier}-cliente-total`
-        ).textContent = `€ ${Math.round(risparmioCliente).toLocaleString(
-          "it-IT"
-        )}`;
-
-        // Aggiorna anche la tabella
-        updateResultsTable();
-
-        return {
-          tier,
-          guadagnoTotale,
-          guadagnoMensile,
-          guadagnoTotaleConIva,
-          guadagnoMensileConIva,
-          risparmioCliente,
-          durata,
-          descrizione,
-        };
-      }
-
-      function calculateAllTiers() {
-        calculateTier("gold");
-        calculateTier("platinum");
-        updateResultsTable();
-      }
-
-      function updateResultsTable() {
-        const results = ["gold", "platinum"].map((tier) => {
-          const totalIva = document.getElementById(
-            `${tier}-total-iva`
-          ).textContent;
-          const total = document.getElementById(`${tier}-total`).textContent;
-          const monthlyIva = document.getElementById(
-            `${tier}-monthly-iva`
-          ).textContent;
-          const monthly = document.getElementById(
-            `${tier}-monthly`
-          ).textContent;
-
-          let descrizione, tierName;
-          switch (tier) {
-            case "gold":
-              tierName = "🥇 Gold";
-              descrizione = "20% → 100%";
-              break;
-            case "platinum":
-              tierName = "💎 Platinum";
-              descrizione = "0% → 100%";
-              break;
-          }
-
-          return {
-            tierName,
-            descrizione,
-            totalIva,
-            total,
-            monthlyIva,
-            monthly,
-          };
-        });
-
-        const tbody = document.getElementById("results-body");
-        tbody.innerHTML = results
-          .map(
-            (result) => `
-                <tr>
-                    <td class="white-space-pre"><strong>${result.tierName}</strong></td>
-                    <td class="white-space-pre">${result.descrizione}</td>
-                    <td class="highlight">${result.totalIva}</td>
-                    <td class="highlight">${result.total}</td>
-                    <td class="highlight">${result.monthlyIva}</td>
-                    <td class="highlight">${result.monthly}</td>
-                </tr>
-            `
-          )
-          .join("");
-      }
-
-      // Calcola automaticamente al caricamento
-      window.onload = function () {
-        calculateAllTiers();
-      };
+document.addEventListener('DOMContentLoaded', function() {
+    const marginSlider = document.getElementById('marginPercentage');
+    const marginValue = document.getElementById('marginValue');
+    const calculateBtn = document.getElementById('calculateBtn');
+    const marginLabel = document.getElementById('marginLabel');
+    
+    // Update slider value display
+    marginSlider.addEventListener('input', function() {
+        marginValue.textContent = this.value + '%';
+        marginLabel.textContent = `Margine DataPolar (${this.value}% del risparmio aggiuntivo):`;
+    });
+    
+    // Calculate pricing
+    calculateBtn.addEventListener('click', calculatePricing);
+    
+    // Initial calculation
+    calculatePricing();
+    
+    function calculatePricing() {
+        // Get input values
+        const teslaCost = parseFloat(document.getElementById('teslaCost').value) || 0;
+        const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
+        const marginPercentage = parseFloat(document.getElementById('marginPercentage').value) || 0;
+        
+        // Fixed parameters
+        const vatRate = 0.22;
+        const deductibilityWithout = 0.20; // 20% senza PolarDrive
+        const vatDeductionWithout = 0.40; // 40% IVA senza PolarDrive
+        const deductibilityWith = 1.00; // 100% con PolarDrive
+        const vatDeductionWith = 1.00; // 100% IVA con PolarDrive
+        
+        // Calculate fiscal benefits without PolarDrive
+        const taxSavingWithout = teslaCost * deductibilityWithout * (taxRate / 100);
+        const vatSavingWithout = teslaCost * vatRate * vatDeductionWithout;
+        const totalSavingWithout = taxSavingWithout + vatSavingWithout;
+        
+        // Calculate fiscal benefits with PolarDrive (initial estimate)
+        // We need to calculate the operational cost based on the additional saving
+        const additionalSavingEstimate = teslaCost * 0.3; // Initial estimate
+        const operationalCost = additionalSavingEstimate * (marginPercentage / 100);
+        
+        const servicePrice = teslaCost + operationalCost;
+        const vatAmount = servicePrice * vatRate;
+        const customerPrice = servicePrice + vatAmount;
+        
+        const taxSavingWith = servicePrice * deductibilityWith * (taxRate / 100);
+        const vatSavingWith = vatAmount * vatDeductionWith;
+        const totalSavingWith = taxSavingWith + vatSavingWith;
+        
+        // Now calculate the actual additional saving
+        const additionalSaving = totalSavingWith - totalSavingWithout;
+        
+        // Recalculate operational cost based on actual additional saving
+        const operationalCostFinal = additionalSaving * (marginPercentage / 100);
+        
+        // Recalculate all values with the final operational cost
+        const servicePriceFinal = teslaCost + operationalCostFinal;
+        const vatAmountFinal = servicePriceFinal * vatRate;
+        const customerPriceFinal = servicePriceFinal + vatAmountFinal;
+        
+        const taxSavingWithFinal = servicePriceFinal * deductibilityWith * (taxRate / 100);
+        const vatSavingWithFinal = vatAmountFinal * vatDeductionWith;
+        const totalSavingWithFinal = taxSavingWithFinal + vatSavingWithFinal;
+        
+        const additionalSavingFinal = totalSavingWithFinal - totalSavingWithout;
+        const netCustomerSaving = additionalSavingFinal - operationalCostFinal;
+        
+        // Calculate net costs for scenarios
+        const normalGrossCost = teslaCost * (1 + vatRate);
+        const normalDeductibility = teslaCost * deductibilityWithout;
+        const normalVatDeduction = teslaCost * vatRate * vatDeductionWithout;
+        const normalTaxSaving = normalDeductibility * (taxRate / 100);
+        const normalNetCost = normalGrossCost - normalTaxSaving - normalVatDeduction;
+        
+        // CORREZIONE: Calcolo corretto del costo netto con PolarDrive
+        const polarNetCost = customerPriceFinal - taxSavingWithFinal - vatSavingWithFinal;
+        
+        // CORREZIONE: Il risparmio deve essere normalNetCost - polarNetCost
+        const polarSaving = normalNetCost - polarNetCost;
+        
+        // Update results
+        document.getElementById('teslaCostResult').textContent = `€ ${teslaCost.toFixed(2)}`;
+        document.getElementById('operationalCostResult').textContent = `€ ${operationalCostFinal.toFixed(2)}`;
+        document.getElementById('totalCostResult').textContent = `€ ${(teslaCost + operationalCostFinal).toFixed(2)}`;
+        document.getElementById('servicePriceResult').textContent = `€ ${servicePriceFinal.toFixed(2)}`;
+        document.getElementById('vatAmountResult').textContent = `€ ${vatAmountFinal.toFixed(2)}`;
+        document.getElementById('customerPriceResult').textContent = `€ ${customerPriceFinal.toFixed(2)}`;
+        document.getElementById('marginResult').textContent = `€ ${operationalCostFinal.toFixed(2)}`;
+        
+        document.getElementById('savingWithoutResult').textContent = `€ ${totalSavingWithout.toFixed(2)}`;
+        document.getElementById('savingWithResult').textContent = `€ ${totalSavingWithFinal.toFixed(2)}`;
+        document.getElementById('additionalSavingResult').textContent = `€ ${additionalSavingFinal.toFixed(2)}`;
+        document.getElementById('marginFromSavingResult').textContent = `€ ${operationalCostFinal.toFixed(2)}`;
+        
+        // CORREZIONE: Usiamo lo stesso valore per entrambi i risparmi
+        document.getElementById('netCustomerSavingResult').textContent = `€ ${polarSaving.toFixed(2)}`;
+        
+        document.getElementById('normalGross').textContent = `€ ${normalGrossCost.toFixed(2)}`;
+        document.getElementById('normalDeductibility').textContent = `20% (€ ${normalDeductibility.toFixed(2)})`;
+        document.getElementById('normalVatDeduction').textContent = `40% (€ ${normalVatDeduction.toFixed(2)})`;
+        document.getElementById('normalNetCost').textContent = `€ ${normalNetCost.toFixed(2)}`;
+        
+        document.getElementById('polarGross').innerHTML = `<strong>€ ${customerPriceFinal.toFixed(2)}</strong>`;
+        document.getElementById('polarDeductibility').innerHTML = `<strong>100% (€ ${servicePriceFinal.toFixed(2)})</strong>`;
+        document.getElementById('polarVatDeduction').innerHTML = `<strong>100% (€ ${vatAmountFinal.toFixed(2)})</strong>`;
+        document.getElementById('polarNetCost').innerHTML = `<strong>€ ${polarNetCost.toFixed(2)}</strong>`;
+        document.getElementById('polarSaving').innerHTML = `<strong>€ ${polarSaving.toFixed(2)}</strong>`;
+    }
+});
     </script>
-  </body>
+</body>
 </html>
