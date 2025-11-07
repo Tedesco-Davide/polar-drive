@@ -13,13 +13,14 @@ DEV => INFO SU OLLAMA
 - COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
 
 - RIMUOVERE CONTAINER OLLAMA (DA NON FARE MAI) => docker compose -f docker-compose.dev.gpu.yml down
-- PULL MODELLO ANCHE SE SCARICATO => docker compose -f docker-compose.dev.gpu.yml run --rm ollama-init
+- PULL MODELLO ANCHE SE GIÀ SCARICATO => docker compose -f docker-compose.dev.gpu.yml run --rm ollama-init
 
 - STOPPARE CONTAINER OLLAMA => docker compose -f docker-compose.dev.gpu.yml stop
 - AVVIO OLLAMA => docker compose -f docker-compose.dev.gpu.yml up -d ollama
 - VERIFICA STATO => docker compose -f docker-compose.dev.gpu.yml ps
 - VERIFICA HEALTH => docker inspect polardrive-ollama-dev --format='{{.State.Health.Status}}'
 - LISTA MODELLI => curl http://localhost:11434/api/tags
+- SCARICARE MODELLO => ESEMPIO: docker exec -it polardrive-ollama-dev ollama pull deepseek-r1:8b
 
 DEV => COMANDI GENERICI => FULL DOWN ED UP
 
@@ -61,13 +62,6 @@ DEV => REBUILD FRONTEND POST MODIFICHE =>
 _(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
 
 PROD => INFO SU OLLAMA
-
-- COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
-- PULL MODELLO ANCHE SE GIÀ SCARICATO => docker compose -f docker-compose.prod.gpu.yml run --rm ollama-init
-- AVVIO OLLAMA => docker compose -f docker-compose.prod.gpu.yml up -d ollama
-- VERIFICA STATO => docker compose -f docker-compose.prod.gpu.yml ps
-- VERIFICA RISPOSTA => docker exec -it polardrive-ollama-prod ollama list
-- RIMUOVERE CONTAINER OLLAMA => docker compose -f docker-compose.prod.gpu.yml down
 
 ### 🔷 FRONTEND POLARDRIVE ADMIN
 
