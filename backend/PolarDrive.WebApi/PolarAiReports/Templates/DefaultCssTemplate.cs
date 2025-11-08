@@ -18,6 +18,7 @@ public static class DefaultCssTemplate
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
             print-color-adjust: exact;
+            font-family: 'Satoshi', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
         }
 
         * {
@@ -432,7 +433,7 @@ public static class DefaultCssTemplate
         .certification-table td:first-child, .statistics-table td:first-child, .detailed-log-table td:first-child {
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.05) 0%, rgba(156, 130, 199, 0.05) 100%);
             width: 45%;
-            font-weight: 500;
+            font-weight: 600;
             color: #8b9ff2;
             border-right: 1px solid rgba(139, 159, 242, 0.1);
             -webkit-print-color-adjust: exact;

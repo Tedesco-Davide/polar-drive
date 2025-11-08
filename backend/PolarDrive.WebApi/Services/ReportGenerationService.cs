@@ -188,7 +188,7 @@ namespace PolarDrive.WebApi.Services
                     var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                     var end = now;
                     var analysisType = GetAnalysisType(ScheduleType.Retry);
-                    
+
                     await GenerateReportForVehicle(db, id, analysisType, start, end);
 
                     results.SuccessCount++;
@@ -461,8 +461,8 @@ namespace PolarDrive.WebApi.Services
         /// Adatta il metodo GenerateReportForVehicle esistente per API
         /// </summary>
         private async Task<int?> GenerateReportForVehicleInternal(
-            PolarDriveDbContext db, 
-            int vehicleId, 
+            PolarDriveDbContext db,
+            int vehicleId,
             string analysisLevel)
         {
             try
@@ -497,10 +497,10 @@ namespace PolarDrive.WebApi.Services
         }
 
         private async Task GenerateReportForVehicle(
-            PolarDriveDbContext db, 
-            int vehicleId, 
+            PolarDriveDbContext db,
+            int vehicleId,
             string analysisType,
-            DateTime start, 
+            DateTime start,
             DateTime end)
         {
             var vehicle = await db.ClientVehicles
@@ -586,6 +586,25 @@ namespace PolarDrive.WebApi.Services
                                                ClientVehicle vehicle,
                                                int totalHistoricalRecords)
         {
+            // ✅ CARICA I FONT UNA VOLTA SOLA
+            var basePath = "/app/wwwroot/fonts/satoshi";
+            var satoshiRegular = File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
+            var satoshiBold = File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
+
+            var fontStyles = $@"
+            @font-face {{
+                font-family: 'Satoshi';
+                src: url(data:font/woff2;base64,{satoshiRegular}) format('woff2');
+                font-weight: 400;
+                font-style: normal;
+            }}
+            @font-face {{
+                font-family: 'Satoshi';
+                src: url(data:font/woff2;base64,{satoshiBold}) format('woff2');
+                font-weight: 700;
+                font-style: normal;
+            }}";
+
             // HTML
             var htmlSvc = new HtmlReportService(db);
             var htmlOpt = new HtmlReportOptions
@@ -606,61 +625,73 @@ namespace PolarDrive.WebApi.Services
             var pdfOpt = new PdfConversionOptions
             {
                 HeaderTemplate = $@"
-                                    <html>
-                                    <head>
-                                        <style>
-                                            body {{
-                                                margin: 0;
-                                                padding: 0;
-                                                width: 100%;
-                                                height: 100%;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                            }}
-                                            .header-content {{
-                                                font-size: 10px;
-                                                color: #ccc;
-                                                text-align: center;
-                                                border-bottom: 1px solid #ccc;
-                                                padding-bottom: 5px;
-                                                width: 100%;
-                                            }}
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <div class='header-content'>{vehicle.Vin} - {DateTime.Now:yyyy-MM-dd HH:mm}</div>
-                                    </body>
-                                    </html>",
-                FooterTemplate = @"
-                                    <html>
-                                    <head>
-                                        <style>
-                                            body {
-                                                margin: 0;
-                                                padding: 0;
-                                                width: 100%;
-                                                height: 100%;
-                                                display: flex;
-                                                align-items: center;
-                                                justify-content: center;
-                                            }
-                                            .footer-content {
-                                                font-size: 10px;
-                                                color: #ccc;
-                                                text-align: center;
-                                                border-top: 1px solid #ccc;
-                                                padding-top: 5px;
-                                                width: 100%;
-                                            }
-                                        </style>
-                                    </head>
-                                    <body>
-                                        <div class='footer-content'>
-                                            Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Analytics
-                                        </div>
-                                    </body>
-                                    </html>"
+            <html>
+            <head>
+                <style>
+                    {fontStyles}
+                    body {{
+                        margin: 0;
+                        padding: 0;
+                        width: 100%;
+                        height: 100%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-family: 'Satoshi', 'Noto Color Emoji', sans-serif;
+                        letter-spacing: normal;
+                        word-spacing: normal;
+                    }}
+                    .header-content {{
+                        font-size: 10px;
+                        color: #ccc;
+                        text-align: center;
+                        border-bottom: 1px solid #ccc;
+                        padding-bottom: 5px;
+                        width: 100%;
+                        letter-spacing: normal;
+                        word-spacing: normal;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class='header-content'>{vehicle.Vin} - {DateTime.Now:yyyy-MM-dd HH:mm}</div>
+            </body>
+            </html>",
+                FooterTemplate = $@"
+            <html>
+            <head>
+                <style>
+                    {fontStyles}
+                    body {{
+                        margin: 0;
+                        padding: 0;
+                        width: 100%;
+                        height: 100%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        font-family: 'Satoshi', 'Noto Color Emoji', sans-serif;
+                        letter-spacing: normal;
+                        word-spacing: normal;
+                    }}
+                    .footer-content {{
+                        font-size: 10px;
+                        color: #ccc;
+                        text-align: center;
+                        border-top: 1px solid #ccc;
+                        padding-top: 5px;
+                        width: 100%;
+                        letter-spacing: normal;
+                        word-spacing: normal;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class='footer-content'>
+                    Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Analytics
+                </div>
+            </body>
+            </html>"
             };
             var pdfBytes = await pdfSvc.ConvertHtmlToPdfAsync(html, report, pdfOpt);
 
@@ -704,7 +735,7 @@ namespace PolarDrive.WebApi.Services
         }
 
         private async Task<List<ClientVehicle>> GetVehiclesToProcess(
-            PolarDriveDbContext db, 
+            PolarDriveDbContext db,
             ScheduleType scheduleType)
         {
             var query = db.ClientVehicles
@@ -716,7 +747,7 @@ namespace PolarDrive.WebApi.Services
             {
                 var now = DateTime.Now;
                 var start = now.AddHours(-MONTHLY_HOURS_THRESHOLD);
-                
+
                 query = query.Where(v => db.VehiclesData
                     .Any(d => d.VehicleId == v.Id && d.Timestamp >= start && d.Timestamp <= now));
             }

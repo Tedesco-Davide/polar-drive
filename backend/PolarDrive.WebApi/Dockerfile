@@ -3,6 +3,17 @@
 # Runtime (.NET 9)
 FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
+
+# FONT EMOJI + TIMEZONE
+RUN apt-get update && apt-get install -y \
+    tzdata \
+    fonts-noto-color-emoji \
+    fontconfig \
+    && fc-cache -f \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV TZ=Europe/Rome
+
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
@@ -97,8 +108,15 @@ RUN echo "✅ Verifying Puppeteer installation..." \
 RUN mkdir -p /app/storage/reports \
     && mkdir -p /app/logs/puppeteer \
     && mkdir -p /tmp \
+    && mkdir -p /usr/share/fonts/truetype/satoshi \
+    && mkdir -p /app/wwwroot/fonts/satoshi \
     && chmod 777 /tmp \
     && chmod 777 /app/logs
+
+# ✅ COPIA FONT BASE64 DAL FRONTEND
+COPY frontend/public/fonts/satoshi/*.b64 /app/wwwroot/fonts/satoshi/
+COPY frontend/public/fonts/satoshi/*.woff2 /usr/share/fonts/truetype/satoshi/
+RUN fc-cache -fv
 
 # ============================================
 # UTENTE NON-ROOT

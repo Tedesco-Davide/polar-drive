@@ -395,7 +395,33 @@ public class HtmlReportService
     /// </summary>
     private static string GenerateErrorFallbackHtml(PdfReport report, string insights, string errorMessage)
     {
-        var styles = DefaultCssTemplate.Value;
+        // ✅ Path assoluto nel container Docker
+        var basePath = "/app/wwwroot/fonts/satoshi";
+        
+        var satoshiRegular = File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
+        var satoshiBold = File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
+        var satoshiBlack = File.ReadAllText(Path.Combine(basePath, "Satoshi-Black.b64"));
+
+        var styles = $@"
+            @font-face {{
+                font-family: 'Satoshi';
+                src: url(data:font/woff2;base64,{satoshiRegular}) format('woff2');
+                font-weight: 400;
+                font-style: normal;
+            }}
+            @font-face {{
+                font-family: 'Satoshi';
+                src: url(data:font/woff2;base64,{satoshiBold}) format('woff2');
+                font-weight: 700;
+                font-style: normal;
+            }}
+            body {{
+                font-family: 'Satoshi', 'Noto Color Emoji', sans-serif;
+                letter-spacing: normal;
+                word-spacing: normal;
+            }}
+            {DefaultCssTemplate.Value}
+        ";
 
         return $@"<!DOCTYPE html>
         <html>

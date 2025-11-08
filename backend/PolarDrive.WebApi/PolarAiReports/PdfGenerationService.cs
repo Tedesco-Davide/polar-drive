@@ -350,7 +350,7 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
-    /// Script Puppeteer ottimizzato per Docker/Linux con logging su file
+    /// Script Puppeteer ottimizzato per Docker/Linux con supporto font ed emoji
     /// </summary>
     private string GenerateOptimizedPuppeteerScript(PdfConversionOptions options)
     {
@@ -358,153 +358,171 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
         var logFile = $"/app/logs/puppeteer/pdf_{timestamp}.log";
         
         return $@"
-    const path = require('path');
-    const fs = require('fs');
+        const path = require('path');
+        const fs = require('fs');
 
-    // 📁 Setup logging
-    const logFile = '{logFile}';
-    const logDir = path.dirname(logFile);
+        // 📁 Setup logging
+        const logFile = '{logFile}';
+        const logDir = path.dirname(logFile);
 
-    if (!fs.existsSync(logDir)) {{
-        fs.mkdirSync(logDir, {{ recursive: true }});
-    }}
-
-    function log(msg) {{
-        const timestamp = new Date().toISOString();
-        const line = `[${{timestamp}}] ${{msg}}\n`;
-        fs.appendFileSync(logFile, line);
-        console.log(msg);
-    }}
-
-    log('🔍 Starting PDF conversion...');
-    log(`📦 Platform: ${{process.platform}}`);
-    log(`📦 Node version: ${{process.version}}`);
-    log(`📁 Log file: ${{logFile}}`);
-
-    let puppeteer;
-    try {{
-        puppeteer = require('puppeteer');
-        log('✅ Using Puppeteer');
-    }} catch (err1) {{
-        try {{
-            puppeteer = require('puppeteer-core');
-            log('✅ Using Puppeteer-core');
-        }} catch (err2) {{
-            log(`💥 Puppeteer not found: ${{err2.message}}`);
-            process.exit(1);
+        if (!fs.existsSync(logDir)) {{
+            fs.mkdirSync(logDir, {{ recursive: true }});
         }}
-    }}
 
-    (async () => {{
-        const [htmlPath, pdfPath] = process.argv.slice(2);
-        
-        if (!htmlPath || !pdfPath) {{
-            log('❌ Usage: node script.js <htmlPath> <pdfPath>');
-            process.exit(1);
+        function log(msg) {{
+            const timestamp = new Date().toISOString();
+            const line = `[${{timestamp}}] ${{msg}}\n`;
+            fs.appendFileSync(logFile, line);
+            console.log(msg);
         }}
-        
-        log(`📄 HTML: ${{htmlPath}}`);
-        log(`📄 PDF: ${{pdfPath}}`);
-        
-        let browser;
-        let page;
+
+        log('🔍 Starting PDF conversion...');
+        log(`📦 Platform: ${{process.platform}}`);
+        log(`📦 Node version: ${{process.version}}`);
+        log(`📁 Log file: ${{logFile}}`);
+
+        let puppeteer;
         try {{
-            log('🚀 Launching browser...');
+            puppeteer = require('puppeteer');
+            log('✅ Using Puppeteer');
+        }} catch (err1) {{
+            try {{
+                puppeteer = require('puppeteer-core');
+                log('✅ Using Puppeteer-core');
+            }} catch (err2) {{
+                log(`💥 Puppeteer not found: ${{err2.message}}`);
+                process.exit(1);
+            }}
+        }}
+
+        (async () => {{
+            const [htmlPath, pdfPath] = process.argv.slice(2);
             
-            const launchOptions = {{
-                headless: 'new',
-                args: [
-                    '--no-sandbox',
-                    '--disable-setuid-sandbox',
-                    '--disable-dev-shm-usage',
-                    '--disable-gpu',
-                    '--disable-web-security',
-                    '--disable-features=IsolateOrigins,site-per-process'
-                ],
-                timeout: 60000
-            }};
-            
-            browser = await puppeteer.launch(launchOptions);
-            log('✅ Browser launched');
-            
-            page = await browser.newPage();
-            await page.setViewport({{ width: 1024, height: 768 }});
-            log('✅ Page created');
-            
-            log('📄 Loading HTML...');
-            
-            // Verifica che il file esista
-            if (!fs.existsSync(htmlPath)) {{
-                throw new Error(`HTML file not found: ${{htmlPath}}`);
+            if (!htmlPath || !pdfPath) {{
+                log('❌ Usage: node script.js <htmlPath> <pdfPath>');
+                process.exit(1);
             }}
             
-            const htmlContent = fs.readFileSync(htmlPath, 'utf8');
-            log(`📄 HTML size: ${{htmlContent.length}} bytes`);
+            log(`📄 HTML: ${{htmlPath}}`);
+            log(`📄 PDF: ${{pdfPath}}`);
             
-            await page.setContent(htmlContent, {{ 
-                waitUntil: 'networkidle0',
-                timeout: 30000
-            }});
-            log('✅ HTML loaded');
-            
-            // Crea directory di output se necessaria
-            const outputDir = path.dirname(pdfPath);
-            if (!fs.existsSync(outputDir)) {{
-                fs.mkdirSync(outputDir, {{ recursive: true }});
-                log(`📁 Created output directory: ${{outputDir}}`);
-            }}
-            
-            log('🎨 Generating PDF...');
-            await page.pdf({{
-                path: pdfPath,
-                format: '{options.PageFormat}',
-                printBackground: {options.PrintBackground.ToString().ToLower()},
-                margin: {{
-                    top: '{options.MarginTop}',
-                    right: '{options.MarginRight}',
-                    bottom: '{options.MarginBottom}',
-                    left: '{options.MarginLeft}'
-                }},
-                displayHeaderFooter: {options.DisplayHeaderFooter.ToString().ToLower()},
-                headerTemplate: `{options.HeaderTemplate.Replace("`", "\\`")}`,
-                footerTemplate: `{options.FooterTemplate.Replace("`", "\\`")}`,
-                preferCSSPageSize: true
-            }});
-            log('✅ PDF generation command completed');
-            
-            // Verifica che il PDF sia stato creato
-            if (fs.existsSync(pdfPath)) {{
-                const stats = fs.statSync(pdfPath);
-                log(`🎉 PDF generated successfully: ${{stats.size}} bytes`);
+            let browser;
+            let page;
+            try {{
+                log('🚀 Launching browser...');
                 
-                // Verifica header PDF
-                const pdfBuffer = fs.readFileSync(pdfPath);
-                const header = pdfBuffer.slice(0, 4).toString();
-                log(`📄 PDF header: ${{header}}`);
+                const launchOptions = {{
+                    headless: 'new',
+                    args: [
+                        '--no-sandbox',
+                        '--disable-setuid-sandbox',
+                        '--disable-dev-shm-usage',
+                        '--disable-gpu',
+                        '--disable-web-security',
+                        '--font-render-hinting=none',
+                        '--enable-font-antialiasing',
+                        '--enable-features=FontCache',
+                        '--disable-features=IsolateOrigins,site-per-process'
+                    ],
+                    env: {{ TZ: 'Europe/Rome' }},
+                    timeout: 60000
+                }};
                 
-                if (header !== '%PDF') {{
-                    log(`⚠️ Warning: Invalid PDF header detected!`);
+                browser = await puppeteer.launch(launchOptions);
+                log('✅ Browser launched');
+                
+                page = await browser.newPage();
+                
+                // ✅ NUOVO: IMPOSTA USER AGENT E RISOLUZIONE OTTIMIZZATA
+                await page.setUserAgent('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36');
+                await page.setViewport({{ width: 1200, height: 1697 }}); // A4 in pixel a 96 DPI
+                log('✅ Page created with optimized viewport');
+                
+                log('📄 Loading HTML...');
+                
+                // Verifica che il file esista
+                if (!fs.existsSync(htmlPath)) {{
+                    throw new Error(`HTML file not found: ${{htmlPath}}`);
                 }}
-            }} else {{
-                throw new Error('❌ PDF file not created');
+                
+                const htmlContent = fs.readFileSync(htmlPath, 'utf8');
+                log(`📄 HTML size: ${{htmlContent.length}} bytes`);
+                
+                await page.setContent(htmlContent, {{ 
+                    waitUntil: 'networkidle0',
+                    timeout: 30000
+                }});
+                log('✅ HTML loaded');
+                
+                // ✅ NUOVO: ATTENDE ESPLICITAMENTE IL CARICAMENTO DEI FONT
+                log('🔤 Waiting for fonts to load...');
+                await page.evaluateHandle('document.fonts.ready');
+                log('✅ Fonts loaded');
+                
+                // ✅ NUOVO: ATTESA AGGIUNTIVA PER FONT E EMOJI
+                log('⏳ Additional wait for fonts and emojis...');
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                log('✅ Additional wait completed');
+                
+                // Crea directory di output se necessaria
+                const outputDir = path.dirname(pdfPath);
+                if (!fs.existsSync(outputDir)) {{
+                    fs.mkdirSync(outputDir, {{ recursive: true }});
+                    log(`📁 Created output directory: ${{outputDir}}`);
+                }}
+                
+                log('🎨 Generating PDF...');
+                await page.pdf({{
+                    path: pdfPath,
+                    format: '{options.PageFormat}',
+                    printBackground: {options.PrintBackground.ToString().ToLower()},
+                    margin: {{
+                        top: '{options.MarginTop}',
+                        right: '{options.MarginRight}',
+                        bottom: '{options.MarginBottom}',
+                        left: '{options.MarginLeft}'
+                    }},
+                    displayHeaderFooter: {options.DisplayHeaderFooter.ToString().ToLower()},
+                    headerTemplate: `{options.HeaderTemplate.Replace("`", "\\`")}`,
+                    footerTemplate: `{options.FooterTemplate.Replace("`", "\\`")}`,
+                    preferCSSPageSize: true,
+                    timeout: 30000  // ✅ AUMENTATO TIMEOUT
+                }});
+                log('✅ PDF generation command completed');
+                
+                // Verifica che il PDF sia stato creato
+                if (fs.existsSync(pdfPath)) {{
+                    const stats = fs.statSync(pdfPath);
+                    log(`🎉 PDF generated successfully: ${{stats.size}} bytes`);
+                    
+                    // Verifica header PDF
+                    const pdfBuffer = fs.readFileSync(pdfPath);
+                    const header = pdfBuffer.slice(0, 4).toString();
+                    log(`📄 PDF header: ${{header}}`);
+                    
+                    if (header !== '%PDF') {{
+                        log(`⚠️ Warning: Invalid PDF header detected!`);
+                    }}
+                }} else {{
+                    throw new Error('❌ PDF file not created');
+                }}
+                
+            }} catch (error) {{
+                log(`💥 Conversion failed: ${{error.message}}`);
+                log(`Stack: ${{error.stack}}`);
+                process.exit(1);
+            }} finally {{
+                if (page) {{
+                    await page.close();
+                    log('✅ Page closed');
+                }}
+                if (browser) {{
+                    await browser.close();
+                    log('✅ Browser closed');
+                }}
+                log('🏁 Script completed');
             }}
-            
-        }} catch (error) {{
-            log(`💥 Conversion failed: ${{error.message}}`);
-            log(`Stack: ${{error.stack}}`);
-            process.exit(1);
-        }} finally {{
-            if (page) {{
-                await page.close();
-                log('✅ Page closed');
-            }}
-            if (browser) {{
-                await browser.close();
-                log('✅ Browser closed');
-            }}
-            log('🏁 Script completed');
-        }}
-    }})();";
+        }})();";
     }
 
     /// <summary>

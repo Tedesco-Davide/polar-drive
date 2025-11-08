@@ -81,6 +81,25 @@ public class ClientProfileController : ControllerBase
                 return NotFound(new { message = "Dati del profilo non disponibili", errorCode = "PROFILE_DATA_NOT_FOUND" });
             }
 
+            // ✅ CARICA I FONT UNA VOLTA SOLA
+            var basePath = "/app/wwwroot/fonts/satoshi";
+            var satoshiRegular = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
+            var satoshiBold = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
+            
+            var fontStyles = $@"
+                @font-face {{
+                    font-family: 'Satoshi';
+                    src: url(data:font/woff2;base64,{satoshiRegular}) format('woff2');
+                    font-weight: 400;
+                    font-style: normal;
+                }}
+                @font-face {{
+                    font-family: 'Satoshi';
+                    src: url(data:font/woff2;base64,{satoshiBold}) format('woff2');
+                    font-weight: 700;
+                    font-style: normal;
+                }}";
+
             var htmlContent = GenerateProfileHtml(profileData);
 
             var tempReport = new PdfReport
@@ -98,6 +117,7 @@ public class ClientProfileController : ControllerBase
                     <html>
                     <head>
                         <style>
+                            {fontStyles}
                             body {{
                                 margin: 0;
                                 padding: 0;
@@ -106,6 +126,9 @@ public class ClientProfileController : ControllerBase
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
+                                font-family: 'Satoshi', 'Noto Color Emoji', sans-serif;
+                                letter-spacing: normal;
+                                word-spacing: normal;
                             }}
                             .header-content {{
                                 font-size: 10px;
@@ -114,6 +137,8 @@ public class ClientProfileController : ControllerBase
                                 border-bottom: 1px solid #ccc;
                                 padding-bottom: 5px;
                                 width: 100%;
+                                letter-spacing: normal;
+                                word-spacing: normal;
                             }}
                         </style>
                     </head>
@@ -121,11 +146,12 @@ public class ClientProfileController : ControllerBase
                         <div class='header-content'>Profilo Cliente - {company.Name} - {DateTime.Now:yyyy-MM-dd HH:mm}</div>
                     </body>
                     </html>",
-                FooterTemplate = @"
+                FooterTemplate = $@"
                     <html>
                     <head>
                         <style>
-                            body {
+                            {fontStyles}
+                            body {{
                                 margin: 0;
                                 padding: 0;
                                 width: 100%;
@@ -133,15 +159,20 @@ public class ClientProfileController : ControllerBase
                                 display: flex;
                                 align-items: center;
                                 justify-content: center;
-                            }
-                            .footer-content {
+                                font-family: 'Satoshi', 'Noto Color Emoji', sans-serif;
+                                letter-spacing: normal;
+                                word-spacing: normal;
+                            }}
+                            .footer-content {{
                                 font-size: 10px;
                                 color: #ccc;
                                 text-align: center;
                                 border-top: 1px solid #ccc;
                                 padding-top: 5px;
                                 width: 100%;
-                            }
+                                letter-spacing: normal;
+                                word-spacing: normal;
+                            }}
                         </style>
                     </head>
                     <body>
@@ -222,12 +253,12 @@ public class ClientProfileController : ControllerBase
                     FetchingVehicles = firstRow.FetchingVehicles,
                     AuthorizedVehicles = firstRow.AuthorizedVehicles,
                     UniqueBrands = firstRow.UniqueBrands,
-                    
+
                     // ✅ CORRETTO: Mappa i dati aggregati reali dalla view
                     TotalConsentsCompany = firstRow.TotalConsentsCompany,
                     TotalOutagesCompany = firstRow.TotalOutagesCompany,
                     TotalReportsCompany = firstRow.TotalReportsCompany,
-                    
+
                     // ✅ NUOVO: Statistiche SMS aggregate aziendali
                     TotalSmsEventsCompany = firstRow.TotalSmsEventsCompany,
                     AdaptiveOnEventsCompany = firstRow.AdaptiveOnEventsCompany,
@@ -235,7 +266,7 @@ public class ClientProfileController : ControllerBase
                     ActiveSessionsCompany = firstRow.ActiveSessionsCompany,
                     LastSmsReceivedCompany = firstRow.LastSmsReceivedCompany,
                     LastActiveSessionExpiresCompany = firstRow.LastActiveSessionExpiresCompany,
-                    
+
                     FirstVehicleActivation = firstRow.FirstVehicleActivation,
                     LastReportGeneratedCompany = firstRow.LastReportGeneratedCompany,
                     LandlineNumbers = firstRow.LandlineNumbers,
@@ -257,12 +288,12 @@ public class ClientProfileController : ControllerBase
                         VehicleCreatedAt = r.VehicleCreatedAt,
                         FirstActivationAt = r.VehicleFirstActivation,
                         LastDeactivationAt = r.VehicleLastDeactivation,
-                        
+
                         // ✅ CORRETTO: Statistiche reali dalla view
                         TotalConsents = r.VehicleConsents,
                         TotalOutages = r.VehicleOutages,
                         TotalReports = r.VehicleReports,
-                        
+
                         // ✅ NUOVO: Statistiche SMS dettagliate per veicolo
                         TotalSmsEvents = r.VehicleSmsEvents,
                         AdaptiveOnEvents = r.VehicleAdaptiveOn,
@@ -270,7 +301,7 @@ public class ClientProfileController : ControllerBase
                         ActiveSessions = r.VehicleActiveSessions,
                         LastSmsReceived = r.VehicleLastSms,
                         ActiveSessionExpires = r.VehicleActiveSessionExpires,
-                        
+
                         LastConsentDate = r.VehicleLastConsent,
                         LastOutageStart = r.VehicleLastOutage,
                         LastReportGenerated = r.VehicleLastReport,
@@ -297,188 +328,208 @@ public class ClientProfileController : ControllerBase
     {
         var generationDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
 
+        // ✅ Path assoluto nel container Docker
+        var basePath = "/app/wwwroot/fonts/satoshi";
+        
+        var satoshiRegular = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
+        var satoshiBold = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
+        var satoshiBlack = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Black.b64"));
+
         return $@"
-        <!DOCTYPE html>
-        <html lang='it'>
-            <head>
-                <meta charset='UTF-8'>
-                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-                <title>Profilo Cliente - {data.CompanyInfo.Name}</title>
-                <style>
-                    body {{
-                        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                        margin: 0;
-                        padding: 20px;
-                        color: #333;
-                        line-height: 1.4;
-                    }}
-                    .header {{
-                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                        color: white;
-                        padding: 30px;
-                        border-radius: 10px;
-                        margin-bottom: 30px;
-                        text-align: center;
-                    }}
-                    .header h1 {{
-                        margin: 0;
-                        font-size: 2.5em;
-                        font-weight: 300;
-                    }}
-                    .header .subtitle {{
-                        margin: 10px 0 0 0;
-                        font-size: 1.2em;
-                        opacity: 0.9;
-                    }}
+    <!DOCTYPE html>
+    <html lang='it'>
+        <head>
+            <meta charset='UTF-8'>
+            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+            <title>Profilo Cliente - {data.CompanyInfo.Name}</title>
+            <style>
+                @font-face {{
+                    font-family: 'Satoshi';
+                    src: url(data:font/woff2;base64,{satoshiRegular}) format('woff2');
+                    font-weight: 400;
+                    font-style: normal;
+                    font-display: swap;
+                }}
+                @font-face {{
+                    font-family: 'Satoshi';
+                    src: url(data:font/woff2;base64,{satoshiBold}) format('woff2');
+                    font-weight: 700;
+                    font-style: normal;
+                    font-display: swap;
+                }}
+                @font-face {{
+                    font-family: 'Satoshi';
+                    src: url(data:font/woff2;base64,{satoshiBlack}) format('woff2');
+                    font-weight: 800;
+                    font-style: normal;
+                    font-display: swap;
+                }}
 
-                    /* ✅ SEZIONI COMPATTE */
-                    .section {{
-                        background: #f8f9fa;
-                        border-radius: 8px;
-                        padding: 25px;
-                        margin-bottom: 20px;
-                        border-left: 5px solid #667eea;
-                        break-inside: avoid;
-                        page-break-inside: avoid;
-                    }}
-                    .section h2 {{
-                        color: #667eea;
-                        margin-top: 0;
-                        margin-bottom: 20px;
-                        font-size: 1.8em;
-                        font-weight: 600;
-                    }}
-
-                    /* ✅ GRIGLIE COMPATTE */
-                    .info-grid {{
-                        display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-                        gap: 15px;
-                        margin-bottom: 15px;
-                    }}
-                    .info-item {{
-                        background: white;
-                        padding: 15px;
-                        border-radius: 6px;
-                        border: 1px solid #e9ecef;
-                        height: auto;
-                        min-height: auto;
-                    }}
-                    .info-label {{
-                        font-weight: 600;
-                        color: #495057;
-                        margin-bottom: 5px;
-                    }}
-                    .info-value {{
-                        color: #212529;
-                        font-size: 1.1em;
-                        word-wrap: break-word;
-                        overflow-wrap: break-word;
-                    }}
-
-                    /* ✅ STATISTICHE COMPATTE */
-                    .stats-grid {{
-                        display: grid;
-                        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-                        gap: 15px;
-                        margin: 15px 0;
-                        align-items: start;
-                    }}
-                    .stat-card {{
-                        background: white;
-                        padding: 20px;
-                        border-radius: 8px;
-                        border: 2px solid #e9ecef;
-                        text-align: center;
-                        transition: all 0.3s;
-                        height: auto;
-                    }}
-                    .stat-number {{
-                        font-size: 2.5em;
-                        font-weight: 700;
-                        color: #667eea;
-                        margin-bottom: 5px;
-                    }}
-                    .stat-label {{
-                        color: #6c757d;
-                        font-size: 0.95em;
-                        text-transform: uppercase;
-                        letter-spacing: 1px;
-                    }}
-
-                    /* ✅ VEICOLI */
-                    .vehicle-card {{
-                        background: white;
-                        border: 1px solid #dee2e6;
-                        border-radius: 8px;
-                        padding: 20px;
-                        margin-bottom: 20px;
-                        break-inside: avoid;
-                        page-break-inside: avoid;
-                    }}
-                    .vehicle-header {{
-                        border-bottom: 2px solid #667eea;
-                        padding-bottom: 15px;
-                        margin-bottom: 20px;
-                    }}
-                    .vehicle-title {{
-                        font-size: 1.6em;
-                        font-weight: 600;
-                        color: #212529;
-                    }}
-                    .vehicle-vin {{
-                        font-family: 'Courier New', monospace;
-                        color: #6c757d;
-                        font-size: 0.95em;
-                        margin-top: 5px;
-                    }}
-
-                    /* ✅ BADGE STATO */
-                    .status-badges {{
-                        display: flex;
-                        flex-wrap: wrap;
-                        gap: 8px;
-                        margin: 15px 0;
-                    }}
-                    .badge {{
-                        padding: 6px 12px;
-                        border-radius: 6px;
-                        font-size: 0.85em;
-                        font-weight: 600;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    }}
-                    .badge.active {{
-                        background: #d4edda;
-                        color: #155724;
-                        border: 1px solid #c3e6cb;
-                    }}
-                    .badge.inactive {{
-                        background: #f8d7da;
-                        color: #721c24;
-                        border: 1px solid #f5c6cb;
-                    }}
-                    .badge.fetching {{
-                        background: #d1ecf1;
-                        color: #0c5460;
-                        border: 1px solid #bee5eb;
-                    }}
-                    .badge.authorized {{
-                        background: #fff3cd;
-                        color: #856404;
-                        border: 1px solid #ffeeba;
-                    }}
-
-                    .footer {{
-                        margin-top: 40px;
-                        padding-top: 20px;
-                        border-top: 2px solid #dee2e6;
-                        text-align: center;
-                        color: #6c757d;
-                        font-size: 0.9em;
-                    }}
-                </style>
-            </head>
+                body {{
+                    font-family: 'Satoshi', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', sans-serif;
+                    margin: 0;
+                    padding: 20px;
+                    color: #333;
+                    line-height: 1.4;
+                    letter-spacing: normal;
+                    word-spacing: normal;
+                }}
+                .header {{
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 30px;
+                    border-radius: 10px;
+                    margin-bottom: 30px;
+                    text-align: center;
+                }}
+                .header h1 {{
+                    margin: 0;
+                    font-size: 2.5em;
+                    font-weight: 300;
+                }}
+                .header .subtitle {{
+                    margin: 10px 0 0 0;
+                    font-size: 1.2em;
+                    opacity: 0.9;
+                }}
+                .section {{
+                    background: #f8f9fa;
+                    border-radius: 8px;
+                    padding: 25px;
+                    margin-bottom: 20px;
+                    border-left: 5px solid #667eea;
+                    break-inside: avoid;
+                    page-break-inside: avoid;
+                }}
+                .section h2 {{
+                    color: #667eea;
+                    margin-top: 0;
+                    margin-bottom: 20px;
+                    font-size: 1.8em;
+                    font-weight: 600;
+                }}
+                .info-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 15px;
+                    margin-bottom: 15px;
+                }}
+                .info-item {{
+                    background: white;
+                    padding: 15px;
+                    border-radius: 6px;
+                    border: 1px solid #e9ecef;
+                    height: auto;
+                    min-height: auto;
+                }}
+                .info-label {{
+                    font-weight: 600;
+                    color: #495057;
+                    margin-bottom: 5px;
+                }}
+                .info-value {{
+                    color: #212529;
+                    font-size: 1.1em;
+                    word-wrap: break-word;
+                    overflow-wrap: break-word;
+                }}
+                .stats-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                    gap: 15px;
+                    margin: 15px 0;
+                    align-items: start;
+                }}
+                .stat-card {{
+                    background: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    border: 2px solid #e9ecef;
+                    text-align: center;
+                    transition: all 0.3s;
+                    height: auto;
+                }}
+                .stat-number {{
+                    font-size: 2.5em;
+                    font-weight: 700;
+                    color: #667eea;
+                    margin-bottom: 5px;
+                }}
+                .stat-label {{
+                    color: #6c757d;
+                    font-size: 0.95em;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                }}
+                .vehicle-card {{
+                    background: white;
+                    border: 1px solid #dee2e6;
+                    border-radius: 8px;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                    break-inside: avoid;
+                    page-break-inside: avoid;
+                }}
+                .vehicle-header {{
+                    border-bottom: 2px solid #667eea;
+                    padding-bottom: 15px;
+                    margin-bottom: 20px;
+                }}
+                .vehicle-title {{
+                    font-size: 1.6em;
+                    font-weight: 600;
+                    color: #212529;
+                }}
+                .vehicle-vin {{
+                    font-family: 'Courier New', monospace;
+                    color: #6c757d;
+                    font-size: 0.95em;
+                    margin-top: 5px;
+                }}
+                .status-badges {{
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px;
+                    margin: 15px 0;
+                }}
+                .badge {{
+                    padding: 6px 12px;
+                    border-radius: 6px;
+                    font-size: 0.85em;
+                    font-weight: 600;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }}
+                .badge.active {{
+                    background: #d4edda;
+                    color: #155724;
+                    border: 1px solid #c3e6cb;
+                }}
+                .badge.inactive {{
+                    background: #f8d7da;
+                    color: #721c24;
+                    border: 1px solid #f5c6cb;
+                }}
+                .badge.fetching {{
+                    background: #d1ecf1;
+                    color: #0c5460;
+                    border: 1px solid #bee5eb;
+                }}
+                .badge.authorized {{
+                    background: #fff3cd;
+                    color: #856404;
+                    border: 1px solid #ffeeba;
+                }}
+                .footer {{
+                    margin-top: 40px;
+                    padding-top: 20px;
+                    border-top: 2px solid #dee2e6;
+                    text-align: center;
+                    color: #6c757d;
+                    font-size: 0.9em;
+                }}
+            </style>
+        </head>
             <body>
                 <div class='header'>
                     <h1>📊 Profilo Cliente Completo</h1>
@@ -841,7 +892,7 @@ public class ClientProfileController : ControllerBase
             <div class='info-value'>{string.Join(" • ", activities)}</div>
         </div>";
     }
-    
+
     /// <summary>
     /// Genera il nome del file PDF
     /// </summary>

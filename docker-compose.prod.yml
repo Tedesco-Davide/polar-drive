@@ -57,6 +57,7 @@ services:
     container_name: polardrive-frontend-prod
     image: polardrive-frontend:latest
     environment:
+      - TZ=Europe/Rome
       - NODE_ENV=production
       - API_BACKEND_URL=http://host.docker.internal:8081
     ports:
