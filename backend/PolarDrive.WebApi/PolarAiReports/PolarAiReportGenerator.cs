@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 using Microsoft.Extensions.Options;
+using PolarDrive.Data.Entities;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -22,7 +23,7 @@ public class PolarAiReportGenerator
         _httpClient = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
     }
 
-    public async Task<string> GeneratePolarAiInsightsAsync(int vehicleId)
+    public async Task<string> GeneratePolarAiInsightsAsync(int vehicleId, DateTime? periodStart = null, DateTime? periodEnd = null)
     {
         var source = "PolarAiReportGenerator.GenerateInsights";
         await _logger.Info(source, "Avvio analisi AI ottimizzata", $"VehicleId: {vehicleId}");
@@ -34,17 +35,22 @@ public class PolarAiReportGenerator
         // ✅ SEMPRE 720 ORE (30 GIORNI) - Finestra dati unificata
         const int dataHours = MONTHLY_HOURS_THRESHOLD;
 
-        await _logger.Info(source, $"Analisi {analysisLevel}",
-            $"Finestra unificata: {dataHours}h ({dataHours / 24} giorni) - Periodo totale: {monitoringPeriod.TotalDays:F1} giorni");
-
-        // 🚀 Recupero dati
-        var historicalData = await GetHistoricalData(vehicleId, dataHours);
-
+        // 🚀 Recupero dati passando i parametri del periodo
+        var historicalData = await GetHistoricalData(
+            vehicleId,
+            dataHours,
+            periodStart,
+            periodEnd
+        );
+        
         if (historicalData.Count == 0)
         {
-            await _logger.Warning(source, "Nessun dato nel periodo mensile specificato", null);
+            await _logger.Warning(source, "Nessun dato nel periodo specificato", null);
             return "Nessun dato disponibile per l'analisi mensile.";
         }
+
+        await _logger.Info(source, $"Analisi {analysisLevel}",
+            $"Finestra unificata: {dataHours}h ({dataHours / 24} giorni) - Periodo totale: {monitoringPeriod.TotalDays:F1} giorni");
 
         // 🎯 AGGREGAZIONE INTELLIGENTE - Riduzione drastica dei token
         var aggregator = new IntelligentDataAggregator(_dbContext);
@@ -56,6 +62,15 @@ public class PolarAiReportGenerator
         // 🧠 GENERAZIONE INSIGHTS AI con dati ottimizzati
         var aiInsights = await GenerateSummary(aggregatedData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
 
+        // 🧠 RIMUOVI REASONING (Sia nel Generate normale che in ForceRegenerate)
+        aiInsights = System.Text.RegularExpressions.Regex.Replace(
+            aiInsights,
+            @"<think>.*?</think>",
+            "",
+            System.Text.RegularExpressions.RegexOptions.Singleline |
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase
+        ).Trim();
+    
         // 🔗 ATTACH FINALE
         var aiInsightsSection = new StringBuilder();
         aiInsightsSection.AppendLine(aiInsights);
@@ -125,49 +140,66 @@ public class PolarAiReportGenerator
     /// Recupera gli ultimi N. record disponibili per il veicolo ( lo standard equivale a 720 record ),
     /// rispettando il loro periodo reale di riferimento e restituendoli in ordine cronologico crescente.
     /// </summary>
-    private async Task<List<string>> GetHistoricalData(int vehicleId, int recordsCount)
+    private async Task<List<string>> GetHistoricalData(
+        int vehicleId, 
+        int recordsCount,
+        DateTime? periodStart = null,
+        DateTime? periodEnd = null)
     {
         try
         {
-            // Prendo gli ultimi N. record in base al Timestamp (più recenti per primi)
-            var itemsDesc = await _dbContext.VehiclesData
+            IQueryable<VehicleData> query = _dbContext.VehiclesData
                 .AsNoTracking()
-                .Where(vd => vd.VehicleId == vehicleId)
-                .OrderByDescending(vd => vd.Timestamp)
+                .Where(vd => vd.VehicleId == vehicleId);
+
+            if (periodStart.HasValue && periodEnd.HasValue)
+            {
+                // 🔒 MODO REGENERATE: usa periodo fisso
+                await _logger.Info("GetHistoricalData",
+                    $"Using fixed period for regeneration",
+                    $"From: {periodStart:yyyy-MM-dd HH:mm} to {periodEnd:yyyy-MM-dd HH:mm}");
+
+                query = query.Where(vd => 
+                    vd.Timestamp >= periodStart.Value && 
+                    vd.Timestamp <= periodEnd.Value);
+            }
+            else
+            {
+                // 📊 MODO NORMALE: ultimi N record
+                await _logger.Info("GetHistoricalData",
+                    $"Using latest {recordsCount} records (normal mode)");
+
+                query = query.OrderByDescending(vd => vd.Timestamp)
+                            .Take(recordsCount);
+            }
+
+            // Ordina cronologicamente (dal più vecchio al più recente)
+            var itemsDesc = await query
+                .OrderBy(vd => vd.Timestamp)  // ✅ Cronologico ascendente
                 .Select(vd => new { vd.Timestamp, vd.RawJsonAnonymized })
-                .Take(recordsCount)
                 .ToListAsync();
 
-            // Se non ci sono dati, log e return vuoto
             if (itemsDesc.Count == 0)
             {
-                await _logger.Warning("PolarAiReportGenerator.GetHistoricalData",
-                    $"Nessun dato disponibile per VehicleId={vehicleId}", null);
+                await _logger.Warning("GetHistoricalData",
+                    $"No data found for VehicleId={vehicleId}", null);
                 return new List<string>();
             }
 
-            // Riordino in senso cronologico (dal più vecchio al più recente)
-            itemsDesc.Reverse();
-
             var firstTs = itemsDesc.First().Timestamp;
-            var lastTs  = itemsDesc.Last().Timestamp;
-            var span    = lastTs - firstTs;
+            var lastTs = itemsDesc.Last().Timestamp;
+            var span = lastTs - firstTs;
 
-            await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
-                $"Recupero ultimi {recordsCount} record disponibili (periodo effettivo)",
-                $"Da: {firstTs:yyyy-MM-dd HH:mm} a {lastTs:yyyy-MM-dd HH:mm} - Durata: {span.TotalDays:F1} giorni");
+            await _logger.Info("GetHistoricalData",
+                $"Retrieved {itemsDesc.Count} records",
+                $"From: {firstTs:yyyy-MM-dd HH:mm} to {lastTs:yyyy-MM-dd HH:mm} - Duration: {span.TotalDays:F1} days");
 
-            var data = itemsDesc.Select(x => x.RawJsonAnonymized).ToList();
-
-            await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
-                $"Recuperati {data.Count} record (copertura effettiva: {(int)Math.Round(span.TotalDays)} giorni)");
-
-            return data;
+            return itemsDesc.Select(x => x.RawJsonAnonymized).ToList();
         }
         catch (Exception ex)
         {
-            await _logger.Error("PolarAiReportGenerator.GetHistoricalData",
-                "Errore recupero ultimi N record", ex.ToString());
+            await _logger.Error("GetHistoricalData",
+                "Error retrieving data", ex.ToString());
             return new List<string>();
         }
     }

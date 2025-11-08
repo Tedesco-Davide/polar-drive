@@ -363,41 +363,21 @@ public class PdfReportsController : ControllerBase
     {
         // 1. Controlla se già in processing
         if (report.Status == "PROCESSING")
-        {
             return (false, "Il report è già in fase di rigenerazione", "ALREADY_PROCESSING");
-        }
 
-        // 2. Controlla se ci sono dati sufficienti
-        var dataCount = await CountDataRecordsForReport(report);
-        if (dataCount == 0)
-        {
-            return (false, "Non ci sono dati disponibili per questo periodo", "NO_DATA_AVAILABLE");
-        }
-
-        if (dataCount < MIN_RECORDS_FOR_GENERATION)
-        {
-            return (false, $"Dati insufficienti per la rigenerazione (trovati {dataCount}, richiesti almeno {MIN_RECORDS_FOR_GENERATION})", "INSUFFICIENT_DATA");
-        }
-
-        // 3. Controlla se il veicolo esiste ancora
+        // 2. Controlla se il veicolo esiste ancora
         var vehicleExists = await db.ClientVehicles.AnyAsync(v => v.Id == report.VehicleId);
         if (!vehicleExists)
-        {
             return (false, "Il veicolo associato al report non esiste più", "VEHICLE_DELETED");
-        }
 
-        // 4. Controlla se la company esiste ancora
+        // 3. Controlla se la company esiste ancora
         var companyExists = await db.ClientCompanies.AnyAsync(c => c.Id == report.ClientCompanyId);
         if (!companyExists)
-        {
             return (false, "L'azienda associata al report non esiste più", "COMPANY_DELETED");
-        }
 
-        // 5. Limite di rigenerazioni (opzionale)
+        // 4. Limite di rigenerazioni
         if (report.RegenerationCount >= 10)
-        {
             return (false, "Raggiunto il limite massimo di rigenerazioni per questo report", "MAX_REGENERATIONS_REACHED");
-        }
 
         return (true, "", "");
     }

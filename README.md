@@ -7,7 +7,8 @@ Repository per il progetto **PolarDrive**.
 ### ⚙️ GENERICHE COMUNI
 
 - backend/PolarDrive.WebApi/Constants/CommonConstants.cs => CONTIENE CONFIG PRINCIPALI APPLICATIVO => ESEMPIO: MONTHLY_HOURS_THRESHOLD
-- COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
+- DECOMMENTARE PER STAMPARE VELOCEMENTE => var insights = "TEST_INSIGHTS_NO_AI";
+- COMMENTARE PER STAMPARE REASONING NEI PDF => aiInsights = System.Text.RegularExpressions.Regex.Replace
 
 ### 🐳 DOCKER DEV
 

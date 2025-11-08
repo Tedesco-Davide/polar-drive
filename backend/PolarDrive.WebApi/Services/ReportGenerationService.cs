@@ -222,7 +222,7 @@ namespace PolarDrive.WebApi.Services
                                 .ThenInclude(v => v!.ClientCompany)
                                 .FirstOrDefaultAsync(r => r.Id == reportId)
                         ?? throw new InvalidOperationException($"Report {reportId} non trovato");
-
+    
             var vehicle = report.ClientVehicle;
 
             // Controlla se ci sono dati nel periodo del report
@@ -265,7 +265,7 @@ namespace PolarDrive.WebApi.Services
             var ollamaOptions = scope_ollama.ServiceProvider.GetRequiredService<IOptionsSnapshot<OllamaConfig>>();
             var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
 
-            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id);
+            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id, report.ReportPeriodStart, report.ReportPeriodEnd);
             //var insights = "TEST_INSIGHTS_NO_AI";
 
             if (string.IsNullOrWhiteSpace(insights))

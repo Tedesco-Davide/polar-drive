@@ -54,5 +54,10 @@ namespace PolarDrive.WebApi.Constants
         // Treshold per verificare OGNI QUANTO effettuare il processo "Check periodo di grazia"
         public const int DEV_GRACE_PERIOD_INACTIVITY_TRESHOLD_MINUTES = 10;
         public const int PROD_GRACE_PERIOD_INACTIVITY_TRESHOLD_HOURS = 6;
+
+        // Controllo di sicurezza per limitare il periodo massimo di dati da tenere in considerazione
+        // per la generazione delle statistiche mensili
+        // Numero massimo di anni impostato attualmente: 5 anni
+        public const int MAX_YEAR_DATA_PERIOD = 24 * 365 * 5;
     }
 }

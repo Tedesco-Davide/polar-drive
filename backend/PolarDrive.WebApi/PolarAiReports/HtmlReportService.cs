@@ -161,8 +161,8 @@ public class HtmlReportService
         {
             var vehicleId = report.VehicleId;
 
-            // ✅ Query unica ottimizzata: prende tutto in una volta sola
-            var timeRange = await _dbContext.VehiclesData
+            // ✅ DATI LIFETIME (per statistiche generali)
+            var lifetimeData = await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId)
                 .GroupBy(vd => vd.VehicleId)
                 .Select(g => new
@@ -173,22 +173,38 @@ public class HtmlReportService
                 })
                 .FirstOrDefaultAsync();
 
-            // Se non ci sono dati, restituisci un messaggio
-            if (timeRange == null || timeRange.TotalCount == 0)
+            // ✅ DATI DEL PERIODO (per statistiche mensili - IMMUTABILI)
+            var periodData = await _dbContext.VehiclesData
+                .Where(vd => vd.VehicleId == vehicleId &&
+                            vd.Timestamp >= report.ReportPeriodStart &&
+                            vd.Timestamp <= report.ReportPeriodEnd)
+                .GroupBy(vd => vd.VehicleId)
+                .Select(g => new
+                {
+                    FirstRecord = g.Min(vd => vd.Timestamp),
+                    LastRecord = g.Max(vd => vd.Timestamp),
+                    TotalCount = g.Count()
+                })
+                .FirstOrDefaultAsync();
+
+            if (lifetimeData == null || lifetimeData.TotalCount == 0)
             {
                 return "<div class='certification-warning'>⚠️ Nessun dato disponibile per la certificazione</div>";
             }
 
-            // Calcola periodo di monitoraggio totale (dal primo record ever fino ad ora)
-            var totalMonitoringPeriod = DateTime.Now - timeRange.FirstRecord;
+            // Calcola periodo di monitoraggio totale
+            var totalMonitoringPeriod = DateTime.Now - lifetimeData.FirstRecord;
 
-            // 🏆 CERTIFICAZIONE DATAPOLAR - Passa tutti i dati già calcolati
+            // 🏆 CERTIFICAZIONE - usa dati separati per lifetime e periodo
             return await _certification.GenerateCompleteCertificationHtmlAsync(
                 vehicleId,
                 totalMonitoringPeriod,
-                timeRange.FirstRecord,
-                timeRange.LastRecord,
-                timeRange.TotalCount,
+                lifetimeData.FirstRecord,      // ✅ Lifetime
+                lifetimeData.LastRecord,       // ✅ Lifetime
+                lifetimeData.TotalCount,       // ✅ Lifetime
+                periodData?.FirstRecord ?? report.ReportPeriodStart,   // ✅ PERIODO (immutabile)
+                periodData?.LastRecord ?? report.ReportPeriodEnd,      // ✅ PERIODO (immutabile)
+                periodData?.TotalCount ?? 0,   // ✅ PERIODO (immutabile)
                 report
             );
         }
@@ -271,54 +287,100 @@ public class HtmlReportService
 
     /// <summary>
     /// Formatta insights AI per HTML
+    /// Qui vengono gestiti anche eventuali simboli stampati erroneamente dall AI nei PDF
     /// </summary>
     private static string FormatInsightsForHtml(string insights)
     {
         if (string.IsNullOrWhiteSpace(insights))
             return "<p class='insight-empty'>Nessun insight disponibile.</p>";
 
-        var html = insights;
+        insights = System.Text.RegularExpressions.Regex.Replace(
+            insights,
+            @"\*\*(.+?)\*\*", // **bold**
+            "<strong>$1</strong>"
+        );
+        
+        insights = System.Text.RegularExpressions.Regex.Replace(
+            insights,
+            @"\*(.+?)\*", // *italic*
+            "<em>$1</em>"
+        );
 
-        // Headers
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^### (.+)$",
-            "<h4 class='insight-h4'>$1</h4>", System.Text.RegularExpressions.RegexOptions.Multiline);
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^## (.+)$",
-            "<h3 class='insight-h3'>$1</h3>", System.Text.RegularExpressions.RegexOptions.Multiline);
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^# (.+)$",
-            "<h2 class='insight-h2'>$1</h2>", System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        // Formattazione testo
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"\*\*(.+?)\*\*",
-            "<span class='emphasis'>$1</span>");
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"__(.+?)__",
-            "<span class='important'>$1</span>");
-
-        // Liste
-        html = System.Text.RegularExpressions.Regex.Replace(html, @"^- (.+)$",
-            "<li class='insight-li'>$1</li>", System.Text.RegularExpressions.RegexOptions.Multiline);
-
-        if (html.Contains("<li class='insight-li'>"))
-        {
-            html = "<ul class='insight-list'>\n" + html + "\n</ul>";
-        }
-
-        // Paragrafi
-        var lines = html.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        // Ora processa le righe normalmente
+        var lines = insights.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         var formattedLines = new List<string>();
-
+        bool inList = false;
+        
         foreach (var line in lines)
         {
             var trimmed = line.Trim();
-            if (!trimmed.StartsWith("<") && !string.IsNullOrEmpty(trimmed))
+            if (string.IsNullOrEmpty(trimmed)) continue;
+            
+            // ✅ 1. Gestione HEADERS - con validazione contenuto
+            if (trimmed.StartsWith("### "))
             {
+                var headerText = trimmed.Substring(4).Trim();
+                if (string.IsNullOrEmpty(headerText)) continue;
+                
+                if (inList) { formattedLines.Add("</ul>"); inList = false; }
+                formattedLines.Add($"<h4 class='insight-h4'>{headerText}</h4>");
+            }
+            else if (trimmed.StartsWith("## "))
+            {
+                var headerText = trimmed.Substring(3).Trim();
+                if (string.IsNullOrEmpty(headerText)) continue;
+                
+                if (inList) { formattedLines.Add("</ul>"); inList = false; }
+                formattedLines.Add($"<h3 class='insight-h3'>{headerText}</h3>");
+            }
+            else if (trimmed.StartsWith("# "))
+            {
+                var headerText = trimmed.Substring(2).Trim();
+                if (string.IsNullOrEmpty(headerText)) continue;
+                
+                if (inList) { formattedLines.Add("</ul>"); inList = false; }
+                formattedLines.Add($"<h2 class='insight-h2'>{headerText}</h2>");
+            }
+            // ✅ 2. Ignora simboli markdown orfani e separatori
+            else if (trimmed == "###" || trimmed == "##" || trimmed == "#" || 
+                    trimmed == "---" || trimmed == "___" || trimmed == "***")
+            {
+                continue; // ❌ Salta separatori markdown
+            }
+            // ✅ 3. Gestione LISTE - con validazione contenuto
+            else if (trimmed.StartsWith("- ") || trimmed.StartsWith("• ") || trimmed.StartsWith("* "))
+            {
+                var listItem = trimmed.Substring(2).Trim();
+                if (string.IsNullOrEmpty(listItem)) continue;
+                
+                if (!inList)
+                {
+                    formattedLines.Add("<ul class='insight-list'>");
+                    inList = true;
+                }
+                formattedLines.Add($"<li class='insight-li'>{listItem}</li>");
+            }
+            // ✅ 4. Ignora bullet points orfani
+            else if (trimmed == "-" || trimmed == "•" || trimmed == "*")
+            {
+                continue;
+            }
+            // ✅ 5. Paragrafi normali (solo se NON è già HTML)
+            else if (!trimmed.StartsWith("<"))
+            {
+                if (inList) { formattedLines.Add("</ul>"); inList = false; }
                 formattedLines.Add($"<p class='insight-p'>{trimmed}</p>");
             }
+            // ✅ 6. Mantieni HTML esistente
             else
             {
-                formattedLines.Add(line);
+                if (inList && !trimmed.StartsWith("<li")) { formattedLines.Add("</ul>"); inList = false; }
+                formattedLines.Add(trimmed);
             }
         }
-
+        
+        if (inList) formattedLines.Add("</ul>");
+        
         return string.Join("\n", formattedLines);
     }
 
