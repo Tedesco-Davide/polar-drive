@@ -4,13 +4,16 @@ Repository per il progetto **PolarDrive**.
 
 ---
 
+### ⚙️ GENERICHE COMUNI
+
+- backend/PolarDrive.WebApi/Constants/CommonConstants.cs => CONTIENE CONFIG PRINCIPALI APPLICATIVO => ESEMPIO: MONTHLY_HOURS_THRESHOLD
+- COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
+
 ### 🐳 DOCKER DEV
 
 _(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
 
 DEV => INFO SU OLLAMA
-
-- COMMENTARE O DECOMMENTARE PER TEST => var insights = "TEST_INSIGHTS_NO_AI";
 
 - RIMUOVERE CONTAINER OLLAMA (DA NON FARE MAI) => docker compose -f docker-compose.dev.gpu.yml down
 - PULL MODELLO ANCHE SE GIÀ SCARICATO => docker compose -f docker-compose.dev.gpu.yml run --rm ollama-init
