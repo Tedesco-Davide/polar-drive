@@ -161,8 +161,8 @@ public class HtmlReportService
         {
             var vehicleId = report.VehicleId;
 
-            // ✅ DATI LIFETIME (per statistiche generali)
-            var lifetimeData = await _dbContext.VehiclesData
+            // ✅ Query unica ottimizzata: prende tutto in una volta sola
+            var timeRange = await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId)
                 .GroupBy(vd => vd.VehicleId)
                 .Select(g => new
@@ -173,38 +173,22 @@ public class HtmlReportService
                 })
                 .FirstOrDefaultAsync();
 
-            // ✅ DATI DEL PERIODO (per statistiche mensili - IMMUTABILI)
-            var periodData = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId &&
-                            vd.Timestamp >= report.ReportPeriodStart &&
-                            vd.Timestamp <= report.ReportPeriodEnd)
-                .GroupBy(vd => vd.VehicleId)
-                .Select(g => new
-                {
-                    FirstRecord = g.Min(vd => vd.Timestamp),
-                    LastRecord = g.Max(vd => vd.Timestamp),
-                    TotalCount = g.Count()
-                })
-                .FirstOrDefaultAsync();
-
-            if (lifetimeData == null || lifetimeData.TotalCount == 0)
+            // Se non ci sono dati, restituisci un messaggio
+            if (timeRange == null || timeRange.TotalCount == 0)
             {
                 return "<div class='certification-warning'>⚠️ Nessun dato disponibile per la certificazione</div>";
             }
 
-            // Calcola periodo di monitoraggio totale
-            var totalMonitoringPeriod = DateTime.Now - lifetimeData.FirstRecord;
+            // Calcola periodo di monitoraggio totale (dal primo record ever fino ad ora)
+            var totalMonitoringPeriod = DateTime.Now - timeRange.FirstRecord;
 
-            // 🏆 CERTIFICAZIONE - usa dati separati per lifetime e periodo
+            // 🏆 CERTIFICAZIONE DATAPOLAR - Passa tutti i dati già calcolati
             return await _certification.GenerateCompleteCertificationHtmlAsync(
                 vehicleId,
                 totalMonitoringPeriod,
-                lifetimeData.FirstRecord,      // ✅ Lifetime
-                lifetimeData.LastRecord,       // ✅ Lifetime
-                lifetimeData.TotalCount,       // ✅ Lifetime
-                periodData?.FirstRecord ?? report.ReportPeriodStart,   // ✅ PERIODO (immutabile)
-                periodData?.LastRecord ?? report.ReportPeriodEnd,      // ✅ PERIODO (immutabile)
-                periodData?.TotalCount ?? 0,   // ✅ PERIODO (immutabile)
+                timeRange.FirstRecord,
+                timeRange.LastRecord,
+                timeRange.TotalCount,
                 report
             );
         }
@@ -342,7 +326,7 @@ public class HtmlReportService
                 formattedLines.Add($"<h2 class='insight-h2'>{headerText}</h2>");
             }
             // ✅ 2. Ignora simboli markdown orfani e separatori
-            else if (trimmed == "###" || trimmed == "##" || trimmed == "#" || 
+            else if (trimmed == "####" || trimmed == "###" || trimmed == "##" || trimmed == "#" || 
                     trimmed == "---" || trimmed == "___" || trimmed == "***")
             {
                 continue; // ❌ Salta separatori markdown

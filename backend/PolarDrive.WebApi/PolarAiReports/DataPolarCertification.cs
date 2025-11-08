@@ -28,39 +28,48 @@ public class DataPolarCertification
     public async Task<string> GenerateCompleteCertificationHtmlAsync(
         int vehicleId, 
         TimeSpan totalMonitoringPeriod, 
-        DateTime lifetimeFirstRecord,        // ✅ Rinominato per chiarezza
-        DateTime lifetimeLastRecord,         // ✅ Rinominato per chiarezza
-        int lifetimeTotalRecords,            // ✅ Rinominato per chiarezza
-        DateTime periodFirstRecord,          // ✅ NUOVO - periodo immutabile
-        DateTime periodLastRecord,           // ✅ NUOVO - periodo immutabile
-        int periodTotalRecords,              // ✅ NUOVO - periodo immutabile
+        DateTime firstRecord,
+        DateTime lastRecord,
+        int totalRecords, 
         PdfReport report)
     {
         try
         {
-            // ✅ Usa dati LIFETIME per certificazione generale
+            // Genera certificazione usando i dati lifetime
             var certification = GenerateDataCertificationHtml(
-                lifetimeTotalRecords, 
-                lifetimeFirstRecord, 
-                lifetimeLastRecord, 
+                totalRecords, 
+                firstRecord, 
+                lastRecord, 
                 totalMonitoringPeriod);
 
-            // ✅ Usa dati PERIODO per statistiche mensili (IMMUTABILI)
+            // Calcola first/last record mensili (ultimi 30 giorni)
+            var startTime = DateTime.Now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+            
+            var monthlyTimeRange = await _dbContext.VehiclesData
+                .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
+                .GroupBy(vd => vd.VehicleId)
+                .Select(g => new
+                {
+                    FirstRecord = g.Min(vd => vd.Timestamp),
+                    LastRecord = g.Max(vd => vd.Timestamp),
+                    TotalCount = g.Count()
+                })
+                .FirstOrDefaultAsync();
+
+            var monthlyDataCount = monthlyTimeRange?.TotalCount ?? 0;
+            var monthlyFirstRecord = monthlyTimeRange?.FirstRecord ?? DateTime.Now;
+            var monthlyLastRecord = monthlyTimeRange?.LastRecord ?? DateTime.Now;
+
             var statistics = await GenerateMonthlyStatisticsHtml(
-                periodTotalRecords,          // ✅ Dati del periodo
+                monthlyDataCount, 
                 totalMonitoringPeriod, 
-                periodFirstRecord,           // ✅ Dati del periodo
-                periodLastRecord,            // ✅ Dati del periodo
+                monthlyFirstRecord,
+                monthlyLastRecord,
                 vehicleId,
                 MONTHLY_HOURS_THRESHOLD
             );
             
-            // ✅ Tabella dettagliata usa sempre il periodo del report
-            var detailedTable = await GenerateDetailedLogTableAsync(
-                vehicleId, 
-                report.ReportPeriodStart,    // ✅ Periodo immutabile
-                report.ReportPeriodEnd       // ✅ Periodo immutabile
-            );
+            var detailedTable = await GenerateDetailedLogTableAsync(vehicleId, MONTHLY_HOURS_THRESHOLD);
 
             return $@"
                 <div class='certification-datapolar'>
@@ -70,7 +79,7 @@ public class DataPolarCertification
                     <h4>📊 Statistiche Analisi Mensile</h4>
                     {statistics}
                     
-                    <h4 class='detailed-log-table-title'>💽 Tabella Dettagliata Log Timestamp Certificati - Periodo Report</h4>
+                    <h4 class='detailed-log-table-title'>💽 Tabella Dettagliata Log Timestamp Certificati - Ultime 720 ore (30 giorni)</h4>
                     {detailedTable}
                 </div>";
         }
@@ -131,39 +140,13 @@ public class DataPolarCertification
     {
         const int monthlyThreshold = MONTHLY_HOURS_THRESHOLD;
         
-        // ✅ CONTROLLO SICUREZZA: Gestione valori di default
-        if (firstRecord == default || lastRecord == default || monthlyRecords == 0)
-        {
-            return "<div class='detailed-log-table'><p class='cert-warning'>⚠️ Dati insufficienti per le statistiche mensili</p></div>";
-        }
-
-        // ✅ CONTROLLO SICUREZZA: Evita date non valide
-        if (firstRecord > lastRecord)
-        {
-            // Se le date sono invertite, scambiale
-            var temp = firstRecord;
-            firstRecord = lastRecord;
-            lastRecord = temp;
-        }
-
-        // ✅ CONTROLLO SICUREZZA: Calcola le ore effettive con limiti ragionevoli
-        var timeDifference = lastRecord - firstRecord;
-        var actualMonthlyHours = Math.Max(timeDifference.TotalHours, 1);
-
-        // ✅ CONTROLLO SICUREZZA: Limita il periodo massimo per evitare calcoli eccessivi
-        var maxAllowedHours = MAX_YEAR_DATA_PERIOD;
-        actualMonthlyHours = Math.Min(actualMonthlyHours, maxAllowedHours);
+        // Calcola le ore effettive dei dati mensili
+        var actualMonthlyHours = Math.Max((lastRecord - firstRecord).TotalHours, 1);
         
-        // ✅ CONTROLLO SICUREZZA: Gestione periodi temporali validi
+        // Calcola periodo effettivo per tabella dettagliata
         var now = DateTime.Now;
         var maxStartTime = now.AddHours(-dataHours);
         var effectiveStartTime = firstRecord > maxStartTime ? firstRecord : maxStartTime;
-        
-        // ✅ CONTROLLO SICUREZZA: Evita date future
-        if (effectiveStartTime > now)
-        {
-            effectiveStartTime = now.AddHours(-1); // Usa un'ora indietro come fallback
-        }
         
         var startTime = new DateTime(
             effectiveStartTime.Year,
@@ -173,9 +156,7 @@ public class DataPolarCertification
             0, 0
         );
         
-        // ✅ CONTROLLO SICUREZZA: Limita le ore da mostrare
         var actualHoursToShow = (int)Math.Ceiling((now - startTime).TotalHours);
-        actualHoursToShow = Math.Max(1, Math.Min(actualHoursToShow, maxAllowedHours));
         
         // Conta record certificati nel periodo della tabella dettagliata
         var certifiedRecords = await _dbContext.VehiclesData
@@ -183,34 +164,18 @@ public class DataPolarCertification
             .CountAsync();
         
         var totalExpectedRecords = actualHoursToShow;
-        
-        // ✅ CONTROLLO SICUREZZA: Evita divisione per zero
         var completeness = totalExpectedRecords > 0 
             ? (certifiedRecords / (double)totalExpectedRecords * 100) 
             : 0;
-
-        // ✅ CONTROLLO SICUREZZA: Calcoli protetti per frequenza campionamento
-        var samplingFrequency = monthlyRecords > 0 && timeDifference.TotalMinutes > 0 
-            ? timeDifference.TotalMinutes / monthlyRecords 
-            : 0;
-
-        // ✅ CONTROLLO SICUREZZA: Calcolo densità dati sicuro
-        var dataDensity = actualMonthlyHours > 0 
-            ? monthlyRecords / actualMonthlyHours 
-            : 0;
-
-        // ✅ CONTROLLO SICUREZZA: Calcolo copertura dati sicuro
-        var totalMonitoringHours = Math.Max(totalMonitoringPeriod.TotalHours, 1);
-        var coveragePercentage = Math.Min(100, (actualMonthlyHours / totalMonitoringHours) * 100);
         
         return $@"
             <table class='statistics-table'>
                 <tr><td>Durata monitoraggio totale</td><td>{totalMonitoringPeriod.TotalDays:0} giorni</td></tr>
                 <tr><td>Campioni mensili analizzati</td><td>{monthlyRecords:N0}</td></tr>
-                <tr><td>Finestra unificada</td><td>{monthlyThreshold} ore ({PROD_MONTHLY_REPEAT_DAYS} giorni)</td></tr>
-                <tr><td>Densità dati mensile</td><td>{dataDensity:0} campioni/ora</td></tr>
-                <tr><td>Frequenza campionamento</td><td>{samplingFrequency:F2} min/campione</td></tr>
-                <tr><td>Copertura dati</td><td>{coveragePercentage:0}% del periodo totale</td></tr>
+                <tr><td>Finestra unificata</td><td>{monthlyThreshold} ore ({PROD_MONTHLY_REPEAT_DAYS} giorni)</td></tr>
+                <tr><td>Densità dati mensile</td><td>{monthlyRecords / actualMonthlyHours:0} campioni/ora</td></tr>
+                <tr><td>Frequenza campionamento</td><td>{(monthlyRecords > 0 ? (lastRecord - firstRecord).TotalMinutes / monthlyRecords : 0):F2} min/campione</td></tr>
+                <tr><td>Copertura dati</td><td>{Math.Min(100, (actualMonthlyHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):0}% del periodo totale</td></tr>
                 <tr><td>Ore monitorate</td><td>{actualHoursToShow} ore ({actualHoursToShow / 24.0:0} giorni)</td></tr>
                 <tr><td>N. Record certificati</td><td>{certifiedRecords:N0} su {totalExpectedRecords}</td></tr>
                 <tr><td>Percentuale completezza</td><td>{completeness:0}%</td></tr>
@@ -219,39 +184,46 @@ public class DataPolarCertification
     }
 
     /// <summary>
-    /// 📋 Genera tabella dettagliata dei record certificati per il periodo specifico
+    /// 📋 Genera tabella dettagliata dei record certificati
+    /// Mostra solo il periodo dal primo record effettivo fino ad oggi (max 30 giorni)
     /// </summary>
-    private async Task<string> GenerateDetailedLogTableAsync(
-        int vehicleId, 
-        DateTime reportStart,    // ✅ NUOVO - periodo immutabile
-        DateTime reportEnd)      // ✅ NUOVO - periodo immutabile
+    private async Task<string> GenerateDetailedLogTableAsync(int vehicleId, int dataHours)
     {
         var sb = new StringBuilder();
 
-        // ✅ Usa il periodo del report (immutabile)
+        // Trova il primo record effettivo del veicolo
+        var firstRecordTime = await _dbContext.VehiclesData
+            .Where(vd => vd.VehicleId == vehicleId)
+            .OrderBy(vd => vd.Timestamp)
+            .Select(vd => vd.Timestamp)
+            .FirstOrDefaultAsync();
+
+        // Se non ci sono dati, ritorna messaggio
+        if (firstRecordTime == default)
+        {
+            return "<div class='detailed-log-table'><p class='cert-warning'>⚠️ Nessun dato disponibile per la tabella dettagliata</p></div>";
+        }
+
+        // Calcola il periodo effettivo da mostrare
+        var now = DateTime.Now;
+        var maxStartTime = now.AddHours(-dataHours);
+        var effectiveStartTime = firstRecordTime > maxStartTime ? firstRecordTime : maxStartTime;
+
+        // Arrotonda all'ora precedente per avere timestamp puliti
         var startTime = new DateTime(
-            reportStart.Year,
-            reportStart.Month,
-            reportStart.Day,
-            reportStart.Hour,
+            effectiveStartTime.Year,
+            effectiveStartTime.Month,
+            effectiveStartTime.Day,
+            effectiveStartTime.Hour,
             0, 0
         );
 
-        var endTime = reportEnd;
-
-        // Recupera i record effettivi del periodo
+        // Recupera i record effettivi
         var actualRecords = await _dbContext.VehiclesData
-            .Where(vd => vd.VehicleId == vehicleId && 
-                        vd.Timestamp >= startTime && 
-                        vd.Timestamp <= endTime)
+            .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
             .OrderBy(vd => vd.Timestamp)
             .Select(vd => new { vd.Timestamp, vd.IsSmsAdaptiveProfile, vd.RawJsonAnonymized })
             .ToListAsync();
-
-        if (!actualRecords.Any())
-        {
-            return "<div class='detailed-log-table'><p class='cert-warning'>⚠️ Nessun dato disponibile per il periodo del report</p></div>";
-        }
 
         var recordLookup = actualRecords
             .GroupBy(r => new DateTime(r.Timestamp.Year, r.Timestamp.Month, r.Timestamp.Day, r.Timestamp.Hour, 0, 0))
@@ -268,9 +240,9 @@ public class DataPolarCertification
         sb.AppendLine("</thead>");
         sb.AppendLine("<tbody>");
 
-        // ✅ Genera righe solo per il periodo del report
+        // Genera righe solo per il periodo effettivo
         var currentTime = startTime;
-        while (currentTime <= endTime)
+        while (currentTime <= now)
         {
             if (recordLookup.TryGetValue(currentTime, out var record))
             {
@@ -281,7 +253,6 @@ public class DataPolarCertification
                 var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized)
                     ? "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>"
                     : "<span class='detailed-log-badge-warning-dataValidated'>Dati operativi da validare</span>";
-                
                 var formattedDate = $"{record.Timestamp:dd-MM-yyyy}".Replace("-", "/");
                 
                 sb.AppendLine("<tr class='record-present'>");
