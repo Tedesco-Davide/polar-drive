@@ -38,7 +38,6 @@ BEGIN
             -- Statistiche report per veicolo
             COALESCE(report_stats.TotalReports, 0) AS TotalReports,
             COALESCE(report_stats.GeneratedReports, 0) AS GeneratedReports,
-            COALESCE(report_stats.TotalRegenerations, 0) AS TotalRegenerations,
             report_stats.LastReportGenerated,
             
             -- Statistiche SMS per veicolo (CORRETTE)
@@ -88,7 +87,6 @@ BEGIN
                 pr.VehicleId,
                 COUNT(*) AS TotalReports,
                 SUM(CASE WHEN pr.GeneratedAt IS NOT NULL THEN 1 ELSE 0 END) AS GeneratedReports,
-                SUM(pr.RegenerationCount) AS TotalRegenerations,
                 MAX(pr.GeneratedAt) AS LastReportGenerated
             FROM PdfReports pr
             GROUP BY pr.VehicleId
@@ -156,7 +154,6 @@ BEGIN
             -- Statistiche aggregate report
             SUM(vs.TotalReports) AS TotalReportsCompany,
             SUM(vs.GeneratedReports) AS GeneratedReportsCompany,
-            SUM(vs.TotalRegenerations) AS TotalRegenerationsCompany,
             MAX(vs.LastReportGenerated) AS LastReportGeneratedCompany,
             
             -- Statistiche aggregate SMS (CORRETTE)
@@ -210,7 +207,6 @@ BEGIN
         
         vs.TotalReports AS VehicleReports,
         vs.GeneratedReports AS VehicleGeneratedReports,
-        vs.TotalRegenerations AS VehicleRegenerations,
         vs.LastReportGenerated AS VehicleLastReport,
         
         -- Statistiche SMS per veicolo (CORRETTE)

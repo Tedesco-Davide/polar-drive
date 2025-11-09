@@ -4,9 +4,8 @@ import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect, useRef } from "react";
-import { NotebookPen, FileBadge, RefreshCw } from "lucide-react";
+import { NotebookPen, FileBadge } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
-import { ApiErrorResponse, ApiResponse } from "@/types/apiResponse";
 import Chip from "@/components/chip";
 import AdminLoader from "@/components/adminLoader";
 import NotesModal from "@/components/notesModal";
@@ -31,7 +30,6 @@ export default function AdminPdfReports({
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
-  const [regeneratingId, setRegeneratingId] = useState<number | null>(null);
 
   useEffect(() => {
     refreshRef.current = refreshPdfReports;
@@ -180,170 +178,6 @@ export default function AdminPdfReports({
     }
   };
 
-  const handleRegenerate = async (report: PdfReport) => {
-    setRegeneratingId(report.id);
-
-    try {
-      logFrontendEvent(
-        "AdminPdfReports",
-        "INFO",
-        "Manual regeneration started",
-        "ReportId: " + report.id
-      );
-
-      const response = await fetch(
-        `/api/pdfreports/${report.id}/regenerate`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      let result: unknown;
-      try {
-        result = await response.json();
-      } catch {
-        // ✅ TRADUZIONE AGGIUNTA
-        throw new Error(
-          t("admin.vehicleReports.errors.serverError", { 0: response.status })
-        );
-      }
-
-      if (!response.ok) {
-        const errorMessage = getErrorMessage(result, response.status);
-        throw new Error(errorMessage);
-      }
-
-      // ✅ VERIFICA CHE LA RISPOSTA SIA UNA SUCCESS RESPONSE
-      if (result && typeof result === "object" && "success" in result) {
-        const apiResult = result as ApiResponse;
-
-        if (apiResult.success) {
-          setLocalReports((prev) =>
-            prev.map((r) =>
-              r.id === report.id
-                ? {
-                    ...r,
-                    status: "PROCESSING",
-                    regenerationCount: r.regenerationCount + 1,
-                  }
-                : r
-            )
-          );
-
-          alert(t("admin.vehicleReports.regenerateReportSuccess"));
-
-          if (refreshRef.current) {
-            await refreshRef.current();
-          }
-
-          logFrontendEvent(
-            "AdminPdfReports",
-            "INFO",
-            "Regeneration completed with immediate refresh",
-            "ReportId: " + report.id
-          );
-        } else {
-          throw new Error(
-            apiResult.message || t("admin.vehicleReports.regenerateReportFail")
-          );
-        }
-      } else {
-        // ✅ TRADUZIONE AGGIUNTA
-        throw new Error(t("admin.vehicleReports.errors.invalidServerResponse"));
-      }
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : t("admin.vehicleReports.errors.unknownRegeneration");
-
-      logFrontendEvent(
-        "AdminPdfReports",
-        "ERROR",
-        "Regeneration failed",
-        "ReportId: " + report.id + ", Error: " + errorMessage
-      );
-
-      alert(
-        `${t("admin.vehicleReports.regenerateReportError")}: ${errorMessage}`
-      );
-    } finally {
-      setRegeneratingId(null);
-    }
-  };
-
-  const isApiErrorResponse = (
-    response: unknown
-  ): response is ApiErrorResponse => {
-    return (
-      typeof response === "object" &&
-      response !== null &&
-      "success" in response &&
-      (response as ApiErrorResponse).success === false &&
-      "message" in response &&
-      typeof (response as ApiErrorResponse).message === "string"
-    );
-  };
-
-  // ✅ ENUM PER I CODICI DI ERRORE (OPZIONALE, MA ANCORA MEGLIO)
-  enum RegenerationErrorCode {
-    ALREADY_PROCESSING = "ALREADY_PROCESSING",
-    NO_DATA_AVAILABLE = "NO_DATA_AVAILABLE",
-    INSUFFICIENT_DATA = "INSUFFICIENT_DATA",
-    VEHICLE_DELETED = "VEHICLE_DELETED",
-    COMPANY_DELETED = "COMPANY_DELETED",
-    MAX_REGENERATIONS_REACHED = "MAX_REGENERATIONS_REACHED",
-    INTERNAL_ERROR = "INTERNAL_ERROR",
-  }
-
-  // ✅ VERSIONE CON ENUM (ANCORA PIÙ TYPE-SAFE)
-  const getErrorMessage = (result: unknown, statusCode: number): string => {
-    if (isApiErrorResponse(result) && result.code) {
-      switch (result.code as RegenerationErrorCode) {
-        case RegenerationErrorCode.ALREADY_PROCESSING:
-          return t("admin.vehicleReports.errors.alreadyProcessing");
-        case RegenerationErrorCode.NO_DATA_AVAILABLE:
-          return t("admin.vehicleReports.errors.noDataAvailable");
-        case RegenerationErrorCode.INSUFFICIENT_DATA:
-          return t("admin.vehicleReports.errors.insufficientData");
-        case RegenerationErrorCode.VEHICLE_DELETED:
-          return t("admin.vehicleReports.errors.vehicleDeleted");
-        case RegenerationErrorCode.COMPANY_DELETED:
-          return t("admin.vehicleReports.errors.companyDeleted");
-        case RegenerationErrorCode.MAX_REGENERATIONS_REACHED:
-          return t("admin.vehicleReports.errors.maxRegenerationsReached");
-        default:
-          return (
-            result.message ||
-            t("admin.vehicleReports.errors.unknownRegeneration")
-          );
-      }
-    }
-
-    if (isApiErrorResponse(result)) {
-      return result.message;
-    }
-
-    // Errori HTTP generici basati sul status code
-    switch (statusCode) {
-      case 404:
-        return t("admin.vehicleReports.errors.reportNotFound");
-      case 400:
-        return t("admin.vehicleReports.errors.badRequest");
-      case 401:
-        return t("admin.vehicleReports.errors.unauthorized");
-      case 403:
-        return t("admin.vehicleReports.errors.forbidden");
-      case 500:
-        return t("admin.vehicleReports.errors.internalServer");
-      case 503:
-        return t("admin.vehicleReports.errors.serviceUnavailable");
-      default:
-        return t("admin.vehicleReports.errors.defaultRegeneration");
-    }
-  };
-
   const handleNotesUpdate = async (updated: PdfReport) => {
     try {
       const response = await fetch(
@@ -485,32 +319,6 @@ export default function AdminPdfReports({
                         )}
                     </button>
 
-                    {/* Regenerate Button */}
-                    <button
-                        className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
-                        title={
-                        status.text === "PROCESSING"
-                            ? t("admin.vehicleReports.actionDisabledProcessing")
-                            : t("admin.vehicleReports.forceRegenerate")
-                        }
-                        disabled={
-                        regeneratingId === report.id ||
-                        status.text === "PROCESSING"
-                        }
-                        onClick={() => {
-                        const message = t("admin.vehicleReports.regenerateConfirmAction");
-                        if (window.confirm(message)) {
-                            handleRegenerate(report);
-                        }
-                        }}
-                    >
-                        {regeneratingId === report.id ? (
-                        <AdminLoader inline />
-                        ) : (
-                        <RefreshCw size={16} />
-                        )}
-                    </button>
-
                     {/* Notes Button */}
                     <button
                         className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
@@ -521,7 +329,6 @@ export default function AdminPdfReports({
                         }
                         disabled={
                         downloadingId === report.id ||
-                        regeneratingId === report.id ||
                         status.text === "PROCESSING"
                         }
                         onClick={() => setSelectedReportForNotes(report)}
@@ -594,12 +401,6 @@ export default function AdminPdfReports({
                     {report.reportType && (
                       <div className="text-xs text-gray-400 mt-1">
                         {t(report.reportType)}
-                      </div>
-                    )}
-                    {report.isRegenerated && (
-                      <div className="text-xs text-orange-600 font-medium mt-1">
-                        - {t("admin.vehicleReports.regenerated")}{" "}
-                        {report.regenerationCount}x
                       </div>
                     )}
                   </div>

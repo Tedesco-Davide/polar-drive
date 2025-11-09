@@ -1443,27 +1443,6 @@
         }
       }
     },
-    "/api/PdfReports/{id}/regenerate": {
-      "post": {
-        "tags": ["PdfReports"],
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          }
-        }
-      }
-    },
     "/api/TeslaFakeApi/GenerateReport": {
       "post": {
         "tags": ["TeslaFakeApi"],
@@ -2342,17 +2321,6 @@
           "monitoringDurationHours": {
             "type": "number",
             "format": "double"
-          },
-          "isRegenerated": {
-            "type": "boolean"
-          },
-          "regenerationCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "lastRegenerated": {
-            "type": "string",
-            "nullable": true
           },
           "reportType": {
             "type": "string",

@@ -16,8 +16,6 @@ public class PdfReport
 
     public string Notes { get; set; } = string.Empty;
 
-    public int RegenerationCount { get; set; } = 0;
-
     public string Status { get; set; } = string.Empty;
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;

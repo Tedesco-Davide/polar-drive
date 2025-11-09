@@ -15,7 +15,7 @@ namespace PolarDrive.WebApi.Constants
         // Valori usati per determinare se in stato WAITING-RECORDS
         public const int MIN_RECORDS_FOR_GENERATION = 5;
 
-        // Numero massimo di tentativi di rigenerazione report in caso di fallimento
+        // Numero massimo di tentativi di generazione report in caso di fallimento
         public const int MAX_RETRIES = 5;
 
         // Tempo di attesa in produzione prima di riprovare un report fallito

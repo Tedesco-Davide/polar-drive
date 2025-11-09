@@ -19,9 +19,6 @@ public class PdfReportDTO
     public long PdfFileSize { get; set; }
     public string Status { get; set; } = string.Empty;
     public double MonitoringDurationHours { get; set; }
-    public bool IsRegenerated { get; set; }
-    public int RegenerationCount { get; set; }
-    public string? LastRegenerated { get; set; }
     public string ReportType { get; set; } = string.Empty;
     public string PdfHash { get; set; } = string.Empty;
 }

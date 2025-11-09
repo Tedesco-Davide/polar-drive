@@ -13,7 +13,6 @@ namespace PolarDrive.WebApi.Services
         // ✅ METODI ESISTENTI (per scheduler automatico)
         Task<SchedulerResults> ProcessScheduledReportsAsync(ScheduleType scheduleType, CancellationToken stoppingToken = default);
         Task<RetryResults> ProcessRetriesAsync(CancellationToken stoppingToken = default);
-        Task ForceRegenerateFilesAsync(int reportId);
 
         // ✅ NUOVI METODI (per API controller)  
         Task<ReportGenerationResult> GenerateReportForVehicleAsync(int vehicleId, string analysisLevel = "Manual Generation");
@@ -207,92 +206,6 @@ namespace PolarDrive.WebApi.Services
             }
 
             return results;
-        }
-
-        public async Task ForceRegenerateFilesAsync(int reportId)
-        {
-            _logger.LogInformation("🔄 Rigenerazione file per report {ReportId}", reportId);
-
-            using var scope = _serviceProvider.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
-
-            // 1) Carica il report e il veicolo associato
-            var report = await db.PdfReports
-                                .Include(r => r.ClientVehicle!)
-                                .ThenInclude(v => v!.ClientCompany)
-                                .FirstOrDefaultAsync(r => r.Id == reportId)
-                        ?? throw new InvalidOperationException($"Report {reportId} non trovato");
-    
-            var vehicle = report.ClientVehicle;
-
-            // Controlla se ci sono dati nel periodo del report
-            var dataCount = await db.VehiclesData
-                .Where(vd => vd.VehicleId == vehicle!.Id &&
-                            vd.Timestamp >= report.ReportPeriodStart &&
-                            vd.Timestamp <= report.ReportPeriodEnd)
-                .CountAsync();
-
-            // Calcola anche  il totale storico per la certificazione
-            var totalHistoricalRecords = await db.VehiclesData
-                .Where(vd => vd.VehicleId == vehicle!.Id)
-                .CountAsync();
-
-            _logger.LogInformation("🔍 Report {ReportId} regeneration check: VIN={VIN}, Period={Start} to {End}, DataInPeriod={DataCount}, TotalHistorical={TotalHistorical}",
-                                reportId, vehicle!.Vin, report.ReportPeriodStart, report.ReportPeriodEnd, dataCount, totalHistoricalRecords);
-
-            // Se non ci sono dati, aggiorna status e non rigenerare file
-            if (dataCount == 0)
-            {
-                report.Status = "NO-DATA";
-                report.Notes = $"Ultima rigenerazione: {DateTime.Now:yyyy-MM-dd HH:mm} - numero rigenerazione #{report.RegenerationCount} - Nessun dato disponibile per il periodo";
-
-                // Elimina eventuali file esistenti (cleanup)
-                DeleteExistingFiles(report);
-
-                await db.SaveChangesAsync();
-
-                _logger.LogWarning("⚠️ Report {ReportId} rigenerazione saltata per {VIN} - Nessun dato disponibile nel periodo specificato",
-                                reportId, vehicle.Vin);
-                return; // ← ESCI SENZA CREARE NUOVI FILE
-            }
-
-            // Se ci sono dati, procedi con la rigenerazione normale
-            _logger.LogInformation("✅ Report {ReportId} ha {DataCount} record nel periodo - Totale storico: {TotalHistorical} - Procedendo con rigenerazione file",
-                                reportId, dataCount, totalHistoricalRecords);
-
-            // 2) Ricalcola gli insights
-            using var scope_ollama = _serviceProvider.CreateScope();
-            var ollamaOptions = scope_ollama.ServiceProvider.GetRequiredService<IOptionsSnapshot<OllamaConfig>>();
-            var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
-
-            var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicle.Id);
-            //var insights = "TEST_INSIGHTS_NO_AI";
-
-            if (string.IsNullOrWhiteSpace(insights))
-                throw new InvalidOperationException($"Nessun insight generato per {vehicle.Vin}");
-
-            // 3) Crea un ReportPeriodInfo a partire dal report esistente
-            var period = new ReportPeriodInfo
-            {
-                Start = report.ReportPeriodStart,
-                End = report.ReportPeriodEnd,
-                DataHours = (int)(report.ReportPeriodEnd - report.ReportPeriodStart).TotalHours,
-                AnalysisLevel = $"Rigenerazione #{report.RegenerationCount}",
-                MonitoringDays = (report.ReportPeriodEnd - report.ReportPeriodStart).TotalDays
-            };
-
-            // 4) Elimina i vecchi file prima di rigenerare
-            DeleteExistingFiles(report);
-
-            // 5) Rigenera i file passando il totale storico
-            await GenerateReportFiles(db, report, insights, period, vehicle, totalHistoricalRecords);
-
-            // 6) Aggiorna lo status del report
-            report.Status = "COMPLETED";
-            await db.SaveChangesAsync();
-
-            _logger.LogInformation("✅ File rigenerati con successo per report {ReportId} - VIN: {VIN}, DataInPeriod: {DataCount}, TotalHistorical: {TotalHistorical}",
-                                reportId, vehicle.Vin, dataCount, totalHistoricalRecords);
         }
 
         #endregion
@@ -577,6 +490,8 @@ namespace PolarDrive.WebApi.Services
 
             _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type} | Files: HTML+PDF | Total historical: {TotalCount}",
                                 report.Id, vehicle.Vin, period.DataHours, period.AnalysisLevel, totalHistoricalRecords);
+            
+            
         }
 
         private async Task GenerateReportFiles(PolarDriveDbContext db,

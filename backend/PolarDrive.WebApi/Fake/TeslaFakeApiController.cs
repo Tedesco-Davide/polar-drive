@@ -155,50 +155,6 @@ public class TeslaFakeApiController : ControllerBase
     }
 
     /// <summary>
-    /// Forza rigenerazione file per report esistente
-    /// ✅ DELEGATO al ReportGenerationService
-    /// </summary>
-    [HttpPost("RegenerateFiles/{reportId}")]
-    public async Task<IActionResult> RegenerateFiles(int reportId)
-    {
-        const string source = "TeslaFakeApiController.RegenerateFiles";
-
-        try
-        {
-            await _logger.Info(source, $"File regeneration triggered for report {reportId} via API");
-
-            await _reportService.ForceRegenerateFilesAsync(reportId);
-
-            var report = await _db.PdfReports
-                .Include(r => r.ClientVehicle)
-                .FirstOrDefaultAsync(r => r.Id == reportId);
-
-            var filesStatus = await _reportService.GetReportFileStatusAsync(reportId);
-
-            return Ok(new
-            {
-                success = true,
-                message = $"Files regenerated for report {reportId}",
-                reportId = reportId,
-                vehicleVin = report?.ClientVehicle?.Vin,
-                timestamp = DateTime.Now,
-                filesGenerated = filesStatus,
-                note = "Files regenerated via ReportGenerationService"
-            });
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error(source, $"Error regenerating files for report {reportId}", ex.ToString());
-            return StatusCode(500, new
-            {
-                success = false,
-                error = ex.Message,
-                reportId = reportId
-            });
-        }
-    }
-
-    /// <summary>
     /// Controlla e gestisce gli scheduler
     /// ✅ DELEGATO al ReportGenerationService per force_report
     /// </summary>

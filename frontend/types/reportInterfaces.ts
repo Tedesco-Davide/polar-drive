@@ -20,8 +20,6 @@ export interface PdfReport {
   htmlFileSize: number;
   monitoringDurationHours: number;
   lastModified?: string;
-  isRegenerated: boolean;
-  regenerationCount: number;
   reportType: string;
 
   // Proprietà calcolate dal backend
@@ -36,6 +34,5 @@ export interface ReportFileStatus {
   hasHtmlFile: boolean;
   pdfFileSize: number;
   htmlFileSize: number;
-  needsRegeneration: boolean;
   reportType: string;
 }

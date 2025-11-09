@@ -202,7 +202,6 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("🔧 API Endpoints available:");
             Console.WriteLine("   - GET  /api/PdfReports - List all reports");
             Console.WriteLine("   - GET  /api/PdfReports/{id}/download - Download report");
-            Console.WriteLine("   - POST /api/PdfReports/{id}/regenerate - Regenerate report manually");
             Console.WriteLine("   - PATCH /api/PdfReports/{id}/notes - Update notes");
             Console.WriteLine();
             Console.WriteLine("📦 File Manager Configuration:");
@@ -263,10 +262,6 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("   - Monthly reports on 1st at 05:00 UTC");
             Console.WriteLine("   - Retry checks every hour");
             Console.WriteLine("   - Max 5 retries with 5-hour delays");
-            Console.WriteLine();
-            Console.WriteLine("🔧 API Endpoints:");
-            Console.WriteLine("   - POST /api/PdfReports/{id}/regenerate available");
-            Console.WriteLine("     (uses IReportGenerationService)");
             Console.WriteLine();
             Console.WriteLine("📦 File Manager:");
             Console.WriteLine("   - PDF ZIP downloads available via /api/FileManager");

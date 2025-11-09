@@ -295,7 +295,6 @@ try
             GeneratedAt = DateTime.Now.AddDays(-2),
             Status = "Completed",
             Notes = "Test report for API testing",
-            RegenerationCount = 0
         },
         new PdfReport
         {
@@ -306,7 +305,6 @@ try
             GeneratedAt = null,
             Status = "Processing",
             Notes = "Monthly report in progress",
-            RegenerationCount = 1
         }
     };
 

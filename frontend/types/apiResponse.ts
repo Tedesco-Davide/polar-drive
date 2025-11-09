@@ -7,7 +7,6 @@ export interface ApiErrorResponse {
 export interface ApiSuccessResponse {
   success: true;
   message: string;
-  regenerationCount?: number;
 }
 
 export type ApiResponse = ApiErrorResponse | ApiSuccessResponse;
