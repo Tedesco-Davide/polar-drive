@@ -9,8 +9,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolarDrive.Data", "PolarDri
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolarDriveInitDB.Cli", "PolarDriveInitDB.Cli\PolarDriveInitDB.Cli.csproj", "{6826295D-501E-4A08-881D-C10738DE6493}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolarDriveInitDBMockData.Cli", "PolarDriveInitDBMockData.Cli\PolarDriveInitDBMockData.Cli.csproj", "{780B2C69-E09C-4538-8FD8-96893BBD26CE}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PolarDrive.TeslaMockApiService", "PolarDrive.TeslaMockApiService\PolarDrive.TeslaMockApiService.csproj", "{E5C87A70-B18B-4A8C-B5C8-83C2C0BC58B4}"
 EndProject
 Global

@@ -89,8 +89,6 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 
     - `dotnet run --project PolarDriveInitDB.Cli` → Crea un nuovo DB (mock, cancellabile, per tesing) da ZERO in Micrisoft SQL Server
 
-    - `dotnet run --project PolarDriveInitDBMockData.Cli` → Aggiunge dati di mock al DB creato (opzionale)
-
     - `dotnet run --project PolarDrive.WebApi` → Avvia la WebAPI principale in modalità sviluppo
 
     > Espone l'endpoint `http://localhost:3000/admin` per Dashboard Backend
