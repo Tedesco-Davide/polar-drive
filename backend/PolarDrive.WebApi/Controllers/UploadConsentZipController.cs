@@ -6,6 +6,7 @@ using PolarDrive.Data.Entities;
 using System.Globalization;
 using System.Text;
 using PolarDrive.WebApi.Helpers;
+using System.Security.Cryptography;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -24,7 +25,7 @@ public class UploadConsentZipController : ControllerBase
     }
 
     /// <summary>
-    ///  Upload consent con nuova gestione storage (mantenuto per compatibilità)
+    ///  Upload consent con nuova gestione storage
     /// </summary>
     [HttpPost]
     [Consumes("multipart/form-data")]
@@ -65,14 +66,7 @@ public class UploadConsentZipController : ControllerBase
             return BadRequest("SERVER ERROR → BAD REQUEST: Consent Type not valid!");
         }
 
-        // ✅ Ora passa il clientCompanyId al metodo ProcessZipFileAsync
-        var (zipFilePath, hash) = await ProcessZipFileAsync(zipFile, clientCompanyId);
-
-        if (zipFilePath == null)
-        {
-            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
-        }
-
+        // Company & Vehicle validation
         var company = await _db.ClientCompanies.FirstOrDefaultAsync(c => c.Id == clientCompanyId && c.VatNumber == companyVatNumber);
         if (company == null)
         {
@@ -87,6 +81,33 @@ public class UploadConsentZipController : ControllerBase
             return NotFound("SERVER ERROR → NOT FOUND: Vehicle not found or not associated with the company!");
         }
 
+        if (!DateTime.TryParseExact(uploadDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
+        {
+            await _logger.Warning("UploadConsentZipController", "Invalid upload date format.", uploadDate);
+            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid signature date format. Expected server-side format: 'yyyy-MM-dd'!");
+        }
+
+        // === Read ZIP into memory & validate
+        await using var ms = new MemoryStream();
+        await zipFile.CopyToAsync(ms);
+
+        ms.Position = 0;
+        try
+        {
+            using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true);
+        }
+        catch
+        {
+            await _logger.Warning("UploadConsentZipController", "Invalid ZIP payload.");
+            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
+        }
+
+        // === Hash (SHA-256)
+        ms.Position = 0;
+        using var sha = SHA256.Create();
+        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+
+        // Duplicate check
         var existingConsent = await _db.ClientConsents.FirstOrDefaultAsync(c => c.ConsentHash == hash);
         if (existingConsent != null)
         {
@@ -94,18 +115,14 @@ public class UploadConsentZipController : ControllerBase
             return Conflict(new { message = "CONFLICT - SERVER ERROR: This file has an existing and validated Hash, therefore has already been uploaded!", existingId = existingConsent.Id });
         }
 
-        if (!DateTime.TryParseExact(uploadDate, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedDate))
-        {
-            await _logger.Warning("UploadConsentZipController", "Invalid upload date format.", uploadDate);
-            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid signature date format. Expected server-side format: 'yyyy-MM-dd'!");
-        }
-
+        // Save to DB (BLOB)
+        ms.Position = 0;
         var consent = new ClientConsent
         {
             ClientCompanyId = clientCompanyId,
             VehicleId = vehicleId,
             UploadDate = DateTime.Now,
-            ZipFilePath = zipFilePath,
+            ZipContent = ms.ToArray(),
             ConsentHash = hash,
             ConsentType = consentType,
             Notes = ""
@@ -121,7 +138,6 @@ public class UploadConsentZipController : ControllerBase
             id = consent.Id,
             consentType,
             uploadDate = parsedDate.ToString("dd/MM/yyyy"),
-            zipFilePath = consent.ZipFilePath,
             consentHash = hash,
             companyVatNumber,
             vehicleVIN
@@ -142,11 +158,11 @@ public class UploadConsentZipController : ControllerBase
             return NotFound("SERVER ERROR → NOT FOUND: Consent not found!");
         }
 
-        // Controlla se esiste già un ZIP e se non è autorizzata la sostituzione
-        if (!string.IsNullOrWhiteSpace(consent.ZipFilePath) && !replaceExisting)
+        // Se c'è già un BLOB e non è autorizzata la sostituzione
+        if (consent.ZipContent != null && consent.ZipContent.Length > 0 && !replaceExisting)
         {
             await _logger.Warning("UploadZipToExistingConsent", "Consent already has ZIP, replacement not authorized.",
-                $"ConsentId: {consentId}, ExistingPath: {consent.ZipFilePath}");
+                $"ConsentId: {consentId}");
             return Conflict("SERVER ERROR → CONFLICT: Consent already has a ZIP file. Use replaceExisting=true to replace it.");
         }
 
@@ -155,39 +171,37 @@ public class UploadConsentZipController : ControllerBase
             return BadRequest("SERVER ERROR → BAD REQUEST: No ZIP file provided!");
         }
 
-        // Elimina il file precedente se esiste
-        if (!string.IsNullOrWhiteSpace(consent.ZipFilePath) && System.IO.File.Exists(consent.ZipFilePath))
+        if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
         {
-            try
-            {
-                System.IO.File.Delete(consent.ZipFilePath);
-                await _logger.Info("UploadZipToExistingConsent", "Old ZIP file deleted.", consent.ZipFilePath);
-            }
-            catch (Exception ex)
-            {
-                await _logger.Warning("UploadZipToExistingConsent", "Failed to delete old ZIP file.",
-                    $"Path: {consent.ZipFilePath}, Error: {ex.Message}");
-            }
+            await _logger.Warning("UploadZipToExistingConsent", "Invalid file extension.", zipFile.FileName);
+            return BadRequest("SERVER ERROR → BAD REQUEST: File type not valid. It must be a .zip!");
         }
 
-        // ✅ CORREZIONE: Passa prima il companyId, poi il filePrefix
-        var (zipFilePath, hash) = await ProcessZipFileAsync(zipFile, consent.ClientCompanyId, $"consent_{consentId}");
-        if (zipFilePath == null)
+        // Leggi & valida ZIP
+        await using var ms = new MemoryStream();
+        await zipFile.CopyToAsync(ms);
+
+        ms.Position = 0;
+        try
         {
+            using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true);
+        }
+        catch
+        {
+            await _logger.Warning("UploadZipToExistingConsent", "Invalid ZIP payload.");
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
         }
 
-        // Verifica hash duplicato (escludendo il consent corrente)
+        // Hash & dup check (escludendo il consenso corrente)
+        ms.Position = 0;
+        using var sha = SHA256.Create();
+        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+
         var existingWithHash = await _db.ClientConsents
             .FirstOrDefaultAsync(c => c.ConsentHash == hash && c.Id != consentId);
 
         if (existingWithHash != null)
         {
-            // Elimina il nuovo file caricato
-            if (System.IO.File.Exists(zipFilePath))
-            {
-                System.IO.File.Delete(zipFilePath);
-            }
             return Conflict(new
             {
                 message = "CONFLICT - This file has already been uploaded for another consent!",
@@ -195,69 +209,21 @@ public class UploadConsentZipController : ControllerBase
             });
         }
 
-        // Aggiorna il database
-        consent.ZipFilePath = zipFilePath;
+        // Aggiorna il BLOB
+        ms.Position = 0;
+        consent.ZipContent = ms.ToArray();
         consent.ConsentHash = hash;
         await _db.SaveChangesAsync();
 
         await _logger.Info("UploadZipToExistingConsent", "ZIP file uploaded successfully.",
-            $"ConsentId: {consentId}, File: {zipFilePath}, Replaced: {replaceExisting}");
+            $"ConsentId: {consentId}, Replaced: {replaceExisting}");
 
         return Ok(new
         {
             id = consent.Id,
-            zipFilePath = zipFilePath,
             consentHash = hash,
             replaced = replaceExisting,
             message = replaceExisting ? "ZIP file replaced successfully" : "ZIP file uploaded successfully"
-        });
-    }
-
-    /// <summary>
-    /// Elimina ZIP da consent esistente (allineato agli outages)
-    /// </summary>
-    [HttpDelete("{consentId}/delete-zip")]
-    public async Task<IActionResult> DeleteZipFromConsent(int consentId)
-    {
-        var consent = await _db.ClientConsents.FirstOrDefaultAsync(c => c.Id == consentId);
-        if (consent == null)
-        {
-            await _logger.Warning("DeleteZipFromConsent", "Consent not found.", $"ConsentId: {consentId}");
-            return NotFound("SERVER ERROR → NOT FOUND: Consent not found!");
-        }
-
-        if (string.IsNullOrWhiteSpace(consent.ZipFilePath))
-        {
-            await _logger.Warning("DeleteZipFromConsent", "No ZIP file to delete.", $"ConsentId: {consentId}");
-            return BadRequest("SERVER ERROR → BAD REQUEST: No ZIP file associated with this consent!");
-        }
-
-        // Elimina il file fisico
-        if (System.IO.File.Exists(consent.ZipFilePath))
-        {
-            try
-            {
-                System.IO.File.Delete(consent.ZipFilePath);
-                await _logger.Info("DeleteZipFromConsent", "ZIP file deleted from filesystem.", consent.ZipFilePath);
-            }
-            catch (Exception ex)
-            {
-                await _logger.Warning("DeleteZipFromConsent", "Failed to delete ZIP file from filesystem.",
-                    $"Path: {consent.ZipFilePath}, Error: {ex.Message}");
-            }
-        }
-
-        // Rimuovi il riferimento dal database
-        consent.ZipFilePath = "";
-        await _db.SaveChangesAsync();
-
-        await _logger.Info("DeleteZipFromConsent", "ZIP file reference removed from database.",
-            $"ConsentId: {consentId}");
-
-        return Ok(new
-        {
-            id = consent.Id,
-            message = "ZIP file deleted successfully"
         });
     }
 

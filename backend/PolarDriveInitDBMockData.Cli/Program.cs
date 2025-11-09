@@ -237,7 +237,6 @@ try
             VehicleId = vehicles[0].Id,
             ConsentType = "DataProcessingConsent",
             UploadDate = DateTime.Today.AddDays(-10),
-            ZipFilePath = Path.Combine("companies", $"company-{companies[0].Id}", "consents-zips", $"consent_{companies[0].Id}.zip").Replace("\\", "/"),
             ConsentHash = $"hash-{companies[0].Id}-{Guid.NewGuid():N}",
             Notes = "Test consent for TESTVIN123456789"
         },
@@ -247,7 +246,6 @@ try
             VehicleId = vehicles[1].Id,
             ConsentType = "Consent Activation",
             UploadDate = DateTime.Today.AddDays(-5),
-            ZipFilePath = Path.Combine("companies", $"company-{companies[1].Id}", "consents-zips", $"consent_{companies[1].Id}.zip").Replace("\\", "/"),
             ConsentHash = $"hash-{companies[1].Id}-{Guid.NewGuid():N}",
             Notes = "Mock consent for Paninoteca"
         }
@@ -261,20 +259,6 @@ try
     // 4.1. 🔐 CREATE REAL ZIP FILES FOR CONSENTS
     // ───────────────────────────────
     Console.WriteLine("🗜️ Creating real ZIP files for consents...");
-
-    foreach (var consent in consents)
-    {
-        if (!string.IsNullOrEmpty(consent.ZipFilePath))
-        {
-            var fullZipPath = Path.Combine(wwwRoot, "storage", consent.ZipFilePath);
-            var zipDir = Path.GetDirectoryName(fullZipPath);
-            Directory.CreateDirectory(zipDir!);
-
-            // ✅ FIX: Chiudi correttamente i ZIP stream
-            await CreateMockConsentZip(fullZipPath, consent.ClientCompanyId, consent.VehicleId);
-            Console.WriteLine($"✅ Created real ZIP: {consent.ZipFilePath}");
-        }
-    }
 
     // ───────────────────────────────
     // 5. 📊 PDF REPORTS

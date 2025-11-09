@@ -11,7 +11,7 @@ public class ClientConsent
 
     public DateTime UploadDate { get; set; }
 
-    public string ZipFilePath { get; set; } = string.Empty;
+    public byte[]? ZipContent { get; set; }
 
     public string ConsentHash { get; set; } = string.Empty;
 

@@ -18,7 +18,6 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
             {
                 await CleanupOldFileManagerFiles();
                 await CleanupOldOutageFiles();
-                await CleanupOldConsentFiles(); 
 
                 // Esegui ogni 24 ore
                 await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
@@ -183,48 +182,6 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
             {
                 _logger.LogWarning(ex, $"Impossibile eliminare il file ZIP orfano dell'outage: {orphanedFile}");
             }
-        }
-    }
-
-    /// <summary>
-    /// Cleanup dei Consent ZIP (mantiene record database, cancella solo file fisici)
-    /// Retention: 30 giorni
-    /// </summary>
-    private async Task CleanupOldConsentFiles()
-    {
-        using var scope = _serviceProvider.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
-
-        var cutoffDate = DateTime.Now.AddDays(-30); // 30 giorni
-
-        var oldConsents = await db.ClientConsents
-            .Where(c => c.UploadDate < cutoffDate && !string.IsNullOrEmpty(c.ZipFilePath))
-            .ToListAsync();
-
-        foreach (var consent in oldConsents)
-        {
-            // ✅ Elimina il file ZIP se esiste
-            if (!string.IsNullOrEmpty(consent.ZipFilePath) && File.Exists(consent.ZipFilePath))
-            {
-                try
-                {
-                    File.Delete(consent.ZipFilePath);
-                    _logger.LogInformation($"Consent ZIP eliminato: {consent.ZipFilePath}");
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, $"Impossibile eliminare consent ZIP: {consent.ZipFilePath}");
-                    continue;
-                }
-            }
-
-            consent.ZipFilePath = "";
-        }
-
-        if (oldConsents.Count != 0)
-        {
-            await db.SaveChangesAsync();
-            _logger.LogInformation($"Consent ZIP cleanup: {oldConsents.Count} file ZIP rimossi, record mantenuti");
         }
     }
 }

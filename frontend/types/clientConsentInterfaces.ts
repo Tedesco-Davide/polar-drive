@@ -5,7 +5,6 @@ export interface ClientConsent {
   clientCompanyId: number;
   vehicleId: number;
   uploadDate: string;
-  zipFilePath: string;
   consentHash: string;
   consentType:
     | ""
@@ -18,7 +17,6 @@ export interface ClientConsent {
   notes?: string;
   //  Campo dal DTO come negli outages
   hasZipFile: boolean;
-  zipFile?: File | null;
 }
 
 // Form data per creazione consent (allineato agli outages)

@@ -28,6 +28,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
 
         try
         {
+            // === Company ===
             var company = await _dbContext.ClientCompanies
                 .FirstOrDefaultAsync(c => c.VatNumber == request.CompanyVatNumber);
 
@@ -37,7 +38,6 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 {
                     Name = request.CompanyName,
                     VatNumber = request.CompanyVatNumber,
-
                 };
                 _dbContext.ClientCompanies.Add(company);
                 await _dbContext.SaveChangesAsync();
@@ -45,6 +45,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 await _logger.Info("AdminFullClientInsertController.Post", "Created new client company.", $"VAT: {company.VatNumber}");
             }
 
+            // === Vehicle uniqueness ===
             var existingVehicle = await _dbContext.ClientVehicles
                 .FirstOrDefaultAsync(v => v.Vin == request.VehicleVIN);
 
@@ -60,10 +61,10 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                     : ErrorCodes.VehicleAlreadyAssociatedToSameCompany;
 
                 await transaction.RollbackAsync();
-
                 return BadRequest(new { errorCode });
             }
 
+            // === Create Vehicle (inactive, awaiting OAuth) ===
             var vehicle = new ClientVehicle
             {
                 ClientCompanyId = company.Id,
@@ -82,11 +83,12 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 VehicleMobileNumber = request.VehicleMobileNumber,
             };
             _dbContext.ClientVehicles.Add(vehicle);
-
             await _dbContext.SaveChangesAsync();
+
             await _logger.Info("AdminFullClientInsertController.Post", "New vehicle registered.", $"VIN: {vehicle.Vin}, ClientCompanyId: {company.Id}");
             await _logger.Info("AdminFullClientInsertController.Post", "New client setup pending OAuth", $"VIN: {vehicle.Vin}, ClientCompanyId: {company.Id}");
 
+            // === ZIP presence + extension ===
             if (request.ConsentZip == null || !string.Equals(Path.GetExtension(request.ConsentZip.FileName), ".zip", StringComparison.OrdinalIgnoreCase))
             {
                 await _logger.Warning("AdminFullClientInsertController.Post", "Uploaded file is not a valid ZIP.");
@@ -94,64 +96,60 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWeb
                 return BadRequest(new { errorCode = ErrorCodes.InvalidZipFormat });
             }
 
+            // === Load ZIP to memory ===
             await using var memoryStream = new MemoryStream();
             await request.ConsentZip.CopyToAsync(memoryStream);
+
+            // === Validate ZIP structure ===
             memoryStream.Position = 0;
-
-            // Usa storage invece di wwwroot
-            var storageBasePath = Path.Combine(Directory.GetCurrentDirectory(), "storage");
-            var companiesBasePath = Path.Combine(storageBasePath, "companies"); 
-            var companyBasePath = Path.Combine(companiesBasePath, $"company-{company.Id}");
-            Directory.CreateDirectory(companyBasePath);
-
-            var consentsDir = Path.Combine(companyBasePath, "consents-zip");
-            Directory.CreateDirectory(consentsDir);
-
-            var zipFilename = Path.GetFileNameWithoutExtension(request.ConsentZip.FileName);
-            var uniqueName = $"{zipFilename}_{DateTime.Now:ddMMyyyy_HHmmss}.zip";
-            var zipPath = Path.Combine(consentsDir, uniqueName);
-
-            memoryStream.Position = 0;
-            await using (var fs = new FileStream(zipPath, FileMode.Create))
+            try
             {
-                await memoryStream.CopyToAsync(fs);
+                using var _ = new ZipArchive(memoryStream, ZipArchiveMode.Read, leaveOpen: true);
+            }
+            catch
+            {
+                await _logger.Warning("AdminFullClientInsertController.Post", "Invalid ZIP payload.");
+                await transaction.RollbackAsync();
+                return BadRequest(new { errorCode = ErrorCodes.InvalidZipFormat });
             }
 
-            // Calcola l'hash del file ZIP
+            // === Compute SHA-256 hash ===
             memoryStream.Position = 0;
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            using var sha256 = SHA256.Create();
             byte[] hashBytes = await sha256.ComputeHashAsync(memoryStream);
             string hash = Convert.ToHexStringLower(hashBytes);
 
-            // Controlla se esiste già un consenso con lo stesso hash
+            // === Duplicate check on hash ===
             var existingConsent = await _dbContext.ClientConsents
                 .FirstOrDefaultAsync(c => c.ConsentHash == hash);
 
             if (existingConsent != null)
             {
-                await _logger.Warning("AdminFullClientInsertController.Post", 
-                    "Consent PDF already exists.", 
+                await _logger.Warning("AdminFullClientInsertController.Post",
+                    "Consent already exists (duplicate hash).",
                     $"Hash: {hash}");
                 await transaction.RollbackAsync();
                 return BadRequest(new { errorCode = ErrorCodes.DuplicateConsentHash });
             }
 
-            // Crea nuovo consenso
+            // === Save consent as DB BLOB ===
+            memoryStream.Position = 0;
             var consent = new ClientConsent
             {
                 ClientCompanyId = company.Id,
                 VehicleId = vehicle.Id,
                 ConsentType = "Consent Activation",
                 UploadDate = DateTime.Now,
-                ZipFilePath = zipPath,
+                ZipContent = memoryStream.ToArray(), 
                 ConsentHash = hash,
                 Notes = ""
             };
 
             _dbContext.ClientConsents.Add(consent);
             await _dbContext.SaveChangesAsync();
-            await _logger.Info("AdminFullClientInsertController.Post", "Consent PDF stored and hash verified.", $"Hash: {hash}");
+            await _logger.Info("AdminFullClientInsertController.Post", "Consent stored as DB BLOB and hash verified.", $"Hash: {hash}");
 
+            // === Commit ===
             await transaction.CommitAsync();
             await _logger.Info("AdminFullClientInsertController.Post", "Full client workflow completed successfully.");
 

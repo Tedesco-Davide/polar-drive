@@ -107,7 +107,7 @@ export default function NotesModal<T>({
               <Trash2 size={16} />
             </button>
             <textarea
-              className="w-full h-52 md:h-9 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-softWhite dark:bg-polarNight text-sm text-polarNight dark:text-softWhite"
+              className="w-full h-52 md:h-10 p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-softWhite dark:bg-polarNight text-sm text-polarNight dark:text-softWhite"
               value={note}
               onChange={(e) => handleEditNote(index, e.target.value)}
             />
