@@ -5,6 +5,7 @@ using PolarDrive.Data.Entities;
 using PolarDrive.Data.Constants;
 using System.Text.Json;
 using System.IO.Compression;
+using System.Security.Cryptography;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -50,19 +51,16 @@ public class OutagePeriodsController : ControllerBase
                 o.OutageStart,
                 o.OutageEnd,
                 o.Notes,
-                o.ZipFilePath,
                 o.VehicleId,
                 o.ClientCompanyId,
-                // Campi calcolati per il frontend
                 Status = o.OutageEnd.HasValue ? "OUTAGE-RESOLVED" : "OUTAGE-ONGOING",
                 Vin = o.ClientVehicle != null ? o.ClientVehicle.Vin : null,
                 CompanyVatNumber = o.ClientCompany != null ? o.ClientCompany.VatNumber : null,
-                // Durata calcolata - usa DateTime.Now per coerenza
                 DurationMinutes = o.OutageEnd.HasValue
                     ? (int)(o.OutageEnd.Value - o.OutageStart).TotalMinutes
                     : (int)(DateTime.Now - o.OutageStart).TotalMinutes,
-                // Informazioni di display
-                HasZipFile = !string.IsNullOrWhiteSpace(o.ZipFilePath)
+                HasZipFile = o.ZipContent != null && o.ZipContent.Length > 0,
+                ZipHash = string.IsNullOrEmpty(o.ZipHash) ? null : o.ZipHash
             })
             .ToListAsync();
 
@@ -105,6 +103,9 @@ public class OutagePeriodsController : ControllerBase
                     : request.OutageEnd.Value.ToUniversalTime();
             }
 
+            ClientVehicle? vehicle = null;
+            ClientCompany? company = null;
+        
             // Validazioni specifiche per Outage Vehicle
             if (request.OutageType == "Outage Vehicle")
             {
@@ -113,7 +114,7 @@ public class OutagePeriodsController : ControllerBase
                     return BadRequest("Vehicle ID and Company ID are required for Outage Vehicle");
                 }
 
-                var vehicle = await _db.ClientVehicles
+                vehicle = await _db.ClientVehicles
                     .Include(v => v.ClientCompany)
                     .FirstOrDefaultAsync(v => v.Id == request.VehicleId);
 
@@ -174,7 +175,26 @@ public class OutagePeriodsController : ControllerBase
             await _logger.Info("OutagePeriodsController.Post",
                 $"Created new manual outage with ID {outage.Id}");
 
-            return CreatedAtAction(nameof(Get), new { id = outage.Id }, outage);
+            return CreatedAtAction(nameof(Get), new { id = outage.Id }, new
+            {
+                outage.Id,
+                outage.AutoDetected,
+                outage.OutageType,
+                outage.OutageBrand,
+                outage.CreatedAt,
+                outage.OutageStart,
+                outage.OutageEnd,
+                outage.Notes,
+                outage.VehicleId,
+                outage.ClientCompanyId,
+                Status = outage.OutageEnd.HasValue ? "OUTAGE-RESOLVED" : "OUTAGE-ONGOING",
+                Vin = vehicle?.Vin,
+                CompanyVatNumber = company?.VatNumber,
+                DurationMinutes = outage.OutageEnd.HasValue
+                    ? (int)(outage.OutageEnd.Value - outage.OutageStart).TotalMinutes
+                    : (int)(DateTime.Now - outage.OutageStart).TotalMinutes,
+                HasZipFile = outage.ZipContent != null && outage.ZipContent.Length > 0
+            });
         }
         catch (Exception ex)
         {
@@ -226,56 +246,40 @@ public class OutagePeriodsController : ControllerBase
     [HttpPost("{id}/upload-zip")]
     public async Task<IActionResult> UploadZip(int id, IFormFile zipFile)
     {
-        try
-        {
-            var outage = await _db.OutagePeriods.FindAsync(id);
-            if (outage == null)
-            {
-                return NotFound("Outage not found");
-            }
+        var outage = await _db.OutagePeriods.FindAsync(id);
+        if (outage == null) return NotFound("Outage not found");
+        if (zipFile == null || zipFile.Length == 0) return BadRequest("No file provided");
+        if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+            return BadRequest("Invalid ZIP file");
 
-            if (zipFile == null || zipFile.Length == 0)
-            {
-                return BadRequest("No file provided");
-            }
+        // ✅ Blocca sostituzioni: ZIP immutabile
+        if (outage.ZipContent != null && outage.ZipContent.Length > 0)
+            return Conflict("ZIP already exists for this outage and cannot be replaced.");
 
-            // ✅ Usa il metodo helper per processare il file ZIP
-            var zipFilePath = await ProcessZipFileAsync(zipFile, $"outage_{id}_");
-            if (zipFilePath == null)
-            {
-                return BadRequest("Invalid ZIP file");
-            }
+        using var ms = new MemoryStream();
+        await zipFile.CopyToAsync(ms);
 
-            // Elimina il file precedente se esiste
-            if (!string.IsNullOrWhiteSpace(outage.ZipFilePath) && System.IO.File.Exists(outage.ZipFilePath))
-            {
-                try
-                {
-                    System.IO.File.Delete(outage.ZipFilePath);
-                    await _logger.Info("OutagePeriodsController.UploadZip", "Old ZIP file deleted.", outage.ZipFilePath);
-                }
-                catch (Exception ex)
-                {
-                    await _logger.Warning("OutagePeriodsController.UploadZip", "Failed to delete old ZIP file.",
-                        $"Path: {outage.ZipFilePath}, Error: {ex.Message}");
-                }
-            }
+        ms.Position = 0;
+        try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
+        catch { return BadRequest("Corrupted or invalid ZIP"); }
 
-            // Aggiorna il database con il path completo
-            outage.ZipFilePath = zipFilePath;
-            await _db.SaveChangesAsync();
+        ms.Position = 0;
+        using var sha = SHA256.Create();
+        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
 
-            await _logger.Info("OutagePeriodsController.UploadZip",
-                $"Uploaded ZIP file for outage {id}: {Path.GetFileName(zipFilePath)}");
+        // Evita duplicati tra outage diversi
+        var duplicate = await _db.OutagePeriods.FirstOrDefaultAsync(o => o.ZipHash == hash);
+        if (duplicate != null)
+            return Conflict(new { message = "This ZIP already exists for another outage!", existingId = duplicate.Id });
 
-            return Ok(new { zipFilePath = zipFilePath });
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("OutagePeriodsController.UploadZip",
-                $"Error uploading ZIP for outage {id}", ex.ToString());
-            return StatusCode(500, "Internal server error");
-        }
+        ms.Position = 0;
+        outage.ZipContent = ms.ToArray();
+        outage.ZipHash = hash;
+        await _db.SaveChangesAsync();
+
+        await _logger.Info("OutagePeriodsController.UploadZip", $"ZIP saved to DB for outage {id}, Hash: {hash}");
+
+        return Ok(new { outageId = id, zipHash = hash, size = outage.ZipContent.Length });
     }
 
     /// <summary>
@@ -284,90 +288,17 @@ public class OutagePeriodsController : ControllerBase
     [HttpGet("{id}/download-zip")]
     public async Task<IActionResult> DownloadZip(int id)
     {
-        try
-        {
-            var outage = await _db.OutagePeriods.FindAsync(id);
-            if (outage == null)
-            {
-                return NotFound("Outage not found");
-            }
-
-            if (string.IsNullOrWhiteSpace(outage.ZipFilePath))
-            {
-                return NotFound("No ZIP file associated with this outage");
-            }
-
-            //  usa il path completo direttamente
-            if (!System.IO.File.Exists(outage.ZipFilePath))
-            {
-                return NotFound("ZIP file not found on server");
-            }
-
-            var fileName = Path.GetFileName(outage.ZipFilePath);
-            var fileBytes = await System.IO.File.ReadAllBytesAsync(outage.ZipFilePath);
-
-            await _logger.Info("OutagePeriodsController.DownloadZip",
-                $"Downloaded ZIP file for outage {id}: {fileName}");
-
-            return File(fileBytes, "application/zip", fileName);
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("OutagePeriodsController.DownloadZip",
-                $"Error downloading ZIP for outage {id}", ex.ToString());
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
-    /// <summary>
-    /// Elimina il file ZIP di un outage
-    /// </summary>
-    [HttpDelete("{id}/delete-zip")]
-    public async Task<IActionResult> DeleteZip(int id)
-    {
-        try
-        {
-            var outage = await _db.OutagePeriods.FindAsync(id);
-            if (outage == null)
-            {
-                return NotFound("Outage not found");
-            }
-
-            if (string.IsNullOrWhiteSpace(outage.ZipFilePath))
-            {
-                return BadRequest("No ZIP file associated with this outage");
-            }
-
-            //  usa il path completo direttamente
-            if (System.IO.File.Exists(outage.ZipFilePath))
-            {
-                try
-                {
-                    System.IO.File.Delete(outage.ZipFilePath);
-                    await _logger.Info("OutagePeriodsController.DeleteZip", "ZIP file deleted from filesystem.", outage.ZipFilePath);
-                }
-                catch (Exception ex)
-                {
-                    await _logger.Warning("OutagePeriodsController.DeleteZip", "Failed to delete ZIP file from filesystem.",
-                        $"Path: {outage.ZipFilePath}, Error: {ex.Message}");
-                }
-            }
-
-            // Rimuovi il riferimento dal database
-            outage.ZipFilePath = null;
-            await _db.SaveChangesAsync();
-
-            await _logger.Info("OutagePeriodsController.DeleteZip", "ZIP file reference removed from database.",
-                $"OutageId: {id}");
-
-            return Ok(new { message = "ZIP file deleted successfully" });
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("OutagePeriodsController.DeleteZip",
-                $"Error deleting ZIP for outage {id}", ex.ToString());
-            return StatusCode(500, "Internal server error");
-        }
+        var outage = await _db.OutagePeriods.FindAsync(id);
+        if (outage == null) return NotFound("Outage not found");
+        if (outage.ZipContent == null || outage.ZipContent.Length == 0)
+            return NotFound("No ZIP file associated with this outage");
+        
+        var fileName = $"outage_{id}_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
+        
+        await _logger.Info("OutagePeriodsController.DownloadZip",
+            $"Downloaded ZIP for outage {id}");
+        
+        return File(outage.ZipContent, "application/zip", fileName);
     }
 
     /// <summary>

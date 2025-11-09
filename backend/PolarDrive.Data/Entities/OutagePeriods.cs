@@ -23,7 +23,9 @@ public class OutagePeriod
 
     public int? ClientCompanyId { get; set; }
 
-    public string? ZipFilePath { get; set; }
+    public byte[]? ZipContent { get; set; }
+    
+    public string ZipHash { get; set; } = string.Empty;
 
     public string Notes { get; set; } = string.Empty;
 

@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   CircleX,
   CircleCheck,
-  Trash2,
 } from "lucide-react";
 import { usePagination } from "@/utils/usePagination";
 import { useSearchFilter } from "@/utils/useSearchFilter";
@@ -232,46 +231,6 @@ export default function AdminOutagePeriodsTable({
     }
   };
 
-  const handleZipDelete = async (outageId: number) => {
-    if (!confirm(t("admin.confirmDeleteZip"))) {
-      return;
-    }
-
-    try {
-      const response = await fetch(
-        `/api/outageperiods/${outageId}/delete-zip`,
-        { method: "DELETE" }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to delete ZIP file");
-      }
-
-      // Refresh dei dati
-      const updatedOutages = await refreshOutagePeriods();
-      setLocalOutages(updatedOutages);
-
-      logFrontendEvent(
-        "AdminOutagePeriodsTable",
-        "INFO",
-        "ZIP file deleted successfully",
-        "Outage ID: " + outageId
-      );
-
-      alert(t("admin.successDeleteZip"));
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Delete failed";
-      logFrontendEvent(
-        "AdminOutagePeriodsTable",
-        "ERROR",
-        "Failed to delete ZIP",
-        errorMessage
-      );
-      alert(`${t("admin.errorDeletingZip")}: ${errorMessage}`);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Loader full-page fuori dalla tabella */}
@@ -368,86 +327,63 @@ export default function AdminOutagePeriodsTable({
               >
                 {/* Azioni */}
                 <td className="px-4 py-3">
-                  <div className="flex items-center space-x-2">
-                    {/* Upload ZIP - sempre disponibile */}
+                <div className="flex items-center space-x-2">
+                    {/* ✅ Upload solo se NON esiste ZIP */}
+                    {!outage.hasZipFile && (
                     <label
-                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer"
-                      title={
-                        outage.hasZipFile
-                          ? t("admin.replaceZip")
-                          : t("admin.uploadZip")
-                      }
+                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer"
+                        title={t("admin.uploadZip")}
                     >
-                      <input
+                        <input
                         type="file"
                         accept=".zip"
                         className="hidden"
                         onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) {
-                            // Aggiungi conferma se sta sostituendo un file esistente
-                            if (outage.hasZipFile) {
-                              const confirmReplace = confirm(
-                                t("admin.confirmReplaceZip")
-                              );
-                              if (!confirmReplace) {
-                                e.target.value = "";
-                                return;
-                              }
-                            }
+                            const file = e.target.files?.[0];
+                            if (file) {
                             handleZipUpload(outage.id, file);
                             e.target.value = "";
-                          }
+                            }
                         }}
                         disabled={uploadingZip.has(outage.id)}
-                      />
-                      {uploadingZip.has(outage.id) ? (
+                        />
+                        {uploadingZip.has(outage.id) ? (
                         <Clock size={16} className="animate-spin" />
-                      ) : (
+                        ) : (
                         <Upload size={16} />
-                      )}
+                        )}
                     </label>
-
-                    {/* Download ZIP - solo se presente */}
-                    {outage.hasZipFile && (
-                      <>
-                        <button
-                          onClick={() => handleZipDownload(outage.id)}
-                          className="p-2 bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
-                          title={t("admin.downloadZip")}
-                        >
-                          <Download size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleZipDelete(outage.id)}
-                          className="p-2 bg-red-500 hover:bg-red-600 text-white rounded transition-colors"
-                          title={t("admin.deleteZip")}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </>
                     )}
 
-                    {/* Risolvi manualmente (solo per ongoing) */}
+                    {/* ✅ Download se esiste ZIP */}
+                    {outage.hasZipFile && (
+                    <button
+                        onClick={() => handleZipDownload(outage.id)}
+                        className="p-2 bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
+                        title={t("admin.downloadZip")}
+                    >
+                        <Download size={16} />
+                    </button>
+                    )}
+
+                    {/* Resolve & Notes */}
                     {outage.status === "OUTAGE-ONGOING" && (
-                      <button
+                    <button
                         onClick={() => handleResolveOutage(outage.id)}
                         className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
                         title={t("admin.outagePeriods.resolveManually")}
-                      >
-                        <ShieldCheck size={16} />
-                      </button>
-                    )}
-
-                    {/* Note */}
-                    <button
-                      onClick={() => setSelectedOutageForNotes(outage)}
-                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                      title={t("admin.openNotesModal")}
                     >
-                      <NotebookPen size={16} />
+                        <ShieldCheck size={16} />
                     </button>
-                  </div>
+                    )}
+                    <button
+                    onClick={() => setSelectedOutageForNotes(outage)}
+                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
+                    title={t("admin.openNotesModal")}
+                    >
+                    <NotebookPen size={16} />
+                    </button>
+                </div>
                 </td>
 
                 {/* Auto rilevato */}

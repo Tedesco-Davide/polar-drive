@@ -8,7 +8,7 @@ Repository per il progetto **PolarDrive**.
 
 - backend/PolarDrive.WebApi/Constants/CommonConstants.cs => CONTIENE CONFIG PRINCIPALI APPLICATIVO => ESEMPIO: MONTHLY_HOURS_THRESHOLD
 - DECOMMENTARE PER STAMPARE VELOCEMENTE => var insights = "TEST_INSIGHTS_NO_AI";
-- COMMENTARE PER STAMPARE REASONING NEI PDF => aiInsights = System.Text.RegularExpressions.Regex.Replace
+- CONTIENE FORMATTING PER EVENTUALI SBAGLI STAMPA AI => private static string FormatInsightsForHtml(string insights)
 
 ### 🐳 DOCKER DEV
 

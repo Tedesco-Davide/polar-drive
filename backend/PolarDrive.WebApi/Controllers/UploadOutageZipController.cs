@@ -1,10 +1,11 @@
-using System.IO.Compression;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Globalization;
 using PolarDrive.Data.Constants;
+using System.IO.Compression;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -14,9 +15,6 @@ namespace PolarDrive.WebApi.Controllers;
 public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 {
     private readonly PolarDriveLogger _logger = new(db);
-
-    //  usa la stessa struttura del FileManager
-    private readonly string _outageZipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "outages-zips");
 
     [HttpPost]
     public async Task<IActionResult> UploadOutage(
@@ -90,16 +88,30 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
             }
         }
 
-        string? zipFilePath = null;
+        byte[]? zipContent = null;
+        string zipHash = "";
+
         if (zipFile != null && zipFile.Length > 0)
         {
-            zipFilePath = await ProcessZipFileAsync(zipFile);
-            if (zipFilePath == null)
-            {
-                return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
-            }
-        }
+            using var ms = new MemoryStream();
+            await zipFile.CopyToAsync(ms);
 
+            ms.Position = 0;
+            try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
+            catch { return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!"); }
+
+            ms.Position = 0;
+            using var sha = SHA256.Create();
+            zipHash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+
+            var duplicate = await db.OutagePeriods.FirstOrDefaultAsync(o => o.ZipHash == zipHash);
+            if (duplicate != null)
+                return BadRequest($"SERVER ERROR → File already exists for outage ID {duplicate.Id}!");
+
+            ms.Position = 0;
+            zipContent = ms.ToArray();
+        }
+        
         var allOutages = await db.OutagePeriods.ToListAsync();
 
         var existingOutage = allOutages.FirstOrDefault(o =>
@@ -118,18 +130,19 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 
         if (existingOutage != null)
         {
-            if (zipFile != null && !string.IsNullOrWhiteSpace(existingOutage.ZipFilePath))
+            if (zipFile != null && existingOutage.ZipContent != null && existingOutage.ZipContent.Length > 0)
             {
                 await _logger.Warning("UploadOutageZipController", "Outage already has a ZIP file.");
                 return BadRequest("SERVER ERROR → OUTAGE ALREADY HAS A ZIP FILE!");
             }
 
-            if (zipFile != null && !string.IsNullOrWhiteSpace(zipFilePath))
+            if (zipFile != null && zipContent != null)
             {
-                existingOutage.ZipFilePath = zipFilePath;
+                existingOutage.ZipContent = zipContent;
+                existingOutage.ZipHash = zipHash;
                 await db.SaveChangesAsync();
 
-                await _logger.Info("UploadOutageZipController", "ZIP file added to existing outage.", $"OutageId: {existingOutage.Id}, File: {zipFilePath}");
+                await _logger.Info("UploadOutageZipController", "ZIP file added to existing outage.", $"OutageId: {existingOutage.Id}, File: {existingOutage.ZipContent}");
 
                 return Ok(new
                 {
@@ -138,7 +151,8 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
                     outageBrand,
                     outageStart = parsedStart.ToString("dd/MM/yyyy"),
                     outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
-                    zipFilePath = existingOutage.ZipFilePath,
+                    hasZip = existingOutage.ZipContent != null && existingOutage.ZipContent.Length > 0,
+                    zipSize = existingOutage.ZipContent?.Length ?? 0,
                     isNew = false
                 });
             }
@@ -150,7 +164,8 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
                 outageBrand,
                 outageStart = parsedStart.ToString("dd/MM/yyyy"),
                 outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
-                zipFilePath = existingOutage.ZipFilePath,
+                hasZip = existingOutage.ZipContent != null && existingOutage.ZipContent.Length > 0,
+                zipSize = existingOutage.ZipContent?.Length ?? 0,
                 isNew = false
             });
         }
@@ -166,7 +181,8 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
                 AutoDetected = autoDetected,
                 ClientCompanyId = clientCompanyId,
                 VehicleId = vehicleId,
-                ZipFilePath = zipFilePath,
+                ZipContent = zipContent,
+                ZipHash = zipHash,
                 Notes = ""
             };
 
@@ -181,7 +197,8 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
                 outageType,
                 outageStart = parsedStart.ToString("dd/MM/yyyy"),
                 outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
-                zipFilePath = zipFilePath,
+                hasZip = outage.ZipContent != null && outage.ZipContent.Length > 0,
+                zipSize = outage.ZipContent?.Length ?? 0,
                 isNew = true
             });
         }
@@ -195,164 +212,42 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
     {
         var outage = await db.OutagePeriods.FirstOrDefaultAsync(o => o.Id == outageId);
         if (outage == null)
-        {
-            await _logger.Warning("UploadZipToExistingOutage", "Outage not found.", $"OutageId: {outageId}");
             return NotFound("SERVER ERROR → NOT FOUND: Outage not found!");
-        }
 
-        // Controlla se esiste già un ZIP e se non è autorizzata la sostituzione
-        if (!string.IsNullOrWhiteSpace(outage.ZipFilePath) && !replaceExisting)
-        {
-            await _logger.Warning("UploadZipToExistingOutage", "Outage already has ZIP, replacement not authorized.",
-                $"OutageId: {outageId}, ExistingPath: {outage.ZipFilePath}");
+        if (outage.ZipContent != null && outage.ZipContent.Length > 0 && !replaceExisting)
             return Conflict("SERVER ERROR → CONFLICT: Outage already has a ZIP file. Use replaceExisting=true to replace it.");
-        }
 
         if (zipFile == null || zipFile.Length == 0)
-        {
             return BadRequest("SERVER ERROR → BAD REQUEST: No ZIP file provided!");
-        }
 
-        // Elimina il file precedente se esiste
-        if (!string.IsNullOrWhiteSpace(outage.ZipFilePath) && System.IO.File.Exists(outage.ZipFilePath))
-        {
-            try
-            {
-                System.IO.File.Delete(outage.ZipFilePath);
-                await _logger.Info("UploadZipToExistingOutage", "Old ZIP file deleted.", outage.ZipFilePath);
-            }
-            catch (Exception ex)
-            {
-                await _logger.Warning("UploadZipToExistingOutage", "Failed to delete old ZIP file.",
-                    $"Path: {outage.ZipFilePath}, Error: {ex.Message}");
-            }
-        }
+        using var ms = new MemoryStream();
+        await zipFile.CopyToAsync(ms);
 
-        // Processa il nuovo file
-        var zipFilePath = await ProcessZipFileAsync(zipFile, $"outage_{outageId}_");
-        if (zipFilePath == null)
-        {
-            return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
-        }
+        ms.Position = 0;
+        try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
+        catch { return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!"); }
 
-        // Aggiorna il database
-        outage.ZipFilePath = zipFilePath;
+        ms.Position = 0;
+        using var sha = SHA256.Create();
+        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+
+        var duplicate = await db.OutagePeriods
+            .FirstOrDefaultAsync(o => o.ZipHash == hash && o.Id != outageId);
+        if (duplicate != null)
+            return Conflict($"SERVER ERROR → File already exists for outage ID {duplicate.Id}!");
+
+        ms.Position = 0;
+        outage.ZipContent = ms.ToArray();
+        outage.ZipHash = hash;
         await db.SaveChangesAsync();
-
-        await _logger.Info("UploadZipToExistingOutage", "ZIP file uploaded successfully.",
-            $"OutageId: {outageId}, File: {zipFilePath}, Replaced: {replaceExisting}");
 
         return Ok(new
         {
             id = outage.Id,
-            zipFilePath = zipFilePath,
+            zipHash = hash,
+            size = outage.ZipContent.Length,
             replaced = replaceExisting,
             message = replaceExisting ? "ZIP file replaced successfully" : "ZIP file uploaded successfully"
         });
-    }
-
-    [HttpDelete("{outageId}/delete-zip")]
-    public async Task<IActionResult> DeleteZipFromOutage(int outageId)
-    {
-        var outage = await db.OutagePeriods.FirstOrDefaultAsync(o => o.Id == outageId);
-        if (outage == null)
-        {
-            await _logger.Warning("DeleteZipFromOutage", "Outage not found.", $"OutageId: {outageId}");
-            return NotFound("SERVER ERROR → NOT FOUND: Outage not found!");
-        }
-
-        if (string.IsNullOrWhiteSpace(outage.ZipFilePath))
-        {
-            await _logger.Warning("DeleteZipFromOutage", "No ZIP file to delete.", $"OutageId: {outageId}");
-            return BadRequest("SERVER ERROR → BAD REQUEST: No ZIP file associated with this outage!");
-        }
-
-        // Elimina il file fisico
-        if (System.IO.File.Exists(outage.ZipFilePath))
-        {
-            try
-            {
-                System.IO.File.Delete(outage.ZipFilePath);
-                await _logger.Info("DeleteZipFromOutage", "ZIP file deleted from filesystem.", outage.ZipFilePath);
-            }
-            catch (Exception ex)
-            {
-                await _logger.Warning("DeleteZipFromOutage", "Failed to delete ZIP file from filesystem.",
-                    $"Path: {outage.ZipFilePath}, Error: {ex.Message}");
-            }
-        }
-
-        // Rimuovi il riferimento dal database
-        outage.ZipFilePath = null;
-        await db.SaveChangesAsync();
-
-        await _logger.Info("DeleteZipFromOutage", "ZIP file reference removed from database.",
-            $"OutageId: {outageId}");
-
-        return Ok(new
-        {
-            id = outage.Id,
-            message = "ZIP file deleted successfully"
-        });
-    }
-
-    // ✅ MODIFICATO: ProcessZipFileAsync ora accetta qualsiasi contenuto
-    private async Task<string?> ProcessZipFileAsync(IFormFile zipFile, string? filePrefix = null)
-    {
-        // ✅ Controlla solo che sia un file .zip
-        if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
-        {
-            await _logger.Warning("ProcessZipFileAsync", "Uploaded file is not a .zip.", zipFile.FileName);
-            return null;
-        }
-
-        using var zipStream = new MemoryStream();
-        await zipFile.CopyToAsync(zipStream);
-        zipStream.Position = 0;
-
-        try
-        {
-            // ✅ Verifica solo che sia un ZIP valido, senza controllare il contenuto
-            using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
-
-            // ✅ Log del contenuto per debug (opzionale)
-            var fileCount = archive.Entries.Count(e => !e.FullName.EndsWith("/"));
-            await _logger.Info("ProcessZipFileAsync", "ZIP file processed successfully.",
-                $"FileName: {zipFile.FileName}, Files count: {fileCount}");
-        }
-        catch (InvalidDataException ex)
-        {
-            await _logger.Error("ProcessZipFileAsync", "ZIP file corrupted or invalid.", ex.Message);
-            return null;
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("ProcessZipFileAsync", "Unexpected error processing ZIP file.", ex.Message);
-            return null;
-        }
-
-        zipStream.Position = 0;
-
-        // ✅ Crea la directory se non esiste
-        if (!Directory.Exists(_outageZipStoragePath))
-        {
-            Directory.CreateDirectory(_outageZipStoragePath);
-        }
-
-        // ✅ Genera il nome del file
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        var fileName = string.IsNullOrWhiteSpace(filePrefix)
-            ? $"outage_{timestamp}.zip"
-            : $"{filePrefix}{timestamp}.zip";
-
-        var finalPath = Path.Combine(_outageZipStoragePath, fileName);
-
-        // ✅ Salva il file
-        await using var fileStream = new FileStream(finalPath, FileMode.Create);
-        await zipStream.CopyToAsync(fileStream);
-
-        await _logger.Info("ProcessZipFileAsync", "ZIP file saved successfully.", finalPath);
-
-        return finalPath;
     }
 }

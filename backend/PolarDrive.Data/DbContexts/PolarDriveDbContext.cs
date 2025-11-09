@@ -52,6 +52,8 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .WithMany()
                     .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.NoAction);
+
+                entity.HasIndex(e => e.ConsentHash);
             });
 
             modelBuilder.Entity<PdfReport>(entity =>
@@ -97,6 +99,8 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
                 entity.HasIndex(e => new { e.VehicleId, e.ClientCompanyId, e.OutageStart, e.OutageEnd })
                     .IsUnique();
+
+                entity.HasIndex(e => e.ZipHash);
             });
 
             modelBuilder.Entity<ClientToken>(entity =>
