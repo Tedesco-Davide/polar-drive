@@ -3,7 +3,9 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
 using PolarDrive.WebApi.PolarAiReports.Templates;
+using System.Net;
 using System.Text;
+using System.Text.RegularExpressions;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
@@ -103,23 +105,6 @@ public class HtmlReportService
             effectiveStartTime.Hour,
             0, 0
         );
-
-        // Se l'HASH non esiste, viene calcolato adesso, prima di preparare i dati
-        if (string.IsNullOrEmpty(report.PdfHash))
-        {
-            // Crea un "contenuto deterministico" da cui calcolare l'hash
-            var contentForHash = $"{report.Id}|{report.VehicleId}|{report.ClientCompanyId}|" +
-                            $"{startTime:O}|{now:O}|{aiReportContentInsights}|" +
-                            $"{report.ClientCompany?.Name}|{report.ClientVehicle?.Vin}";
-            
-            var contentHash = GenericHelpers.ComputeContentHash(contentForHash);
-            
-            report.PdfHash = contentHash;
-            await _dbContext.SaveChangesAsync();
-            
-            await _logger.Info("PrepareTemplateDataAsync", "Hash calcolato e salvato",
-                $"ReportId: {report.Id}, Hash: {contentHash}");
-        }
 
         var data = new Dictionary<string, object>
         {
@@ -278,94 +263,139 @@ public class HtmlReportService
         if (string.IsNullOrWhiteSpace(insights))
             return "<p class='insight-empty'>Nessun insight disponibile.</p>";
 
-        insights = System.Text.RegularExpressions.Regex.Replace(
-            insights,
-            @"\*\*(.+?)\*\*", // **bold**
-            "<strong>$1</strong>"
-        );
-        
-        insights = System.Text.RegularExpressions.Regex.Replace(
-            insights,
-            @"\*(.+?)\*", // *italic*
-            "<em>$1</em>"
-        );
+        // ========= PRE-CLEAN =========
+        // 1) Normalizza e rimuove caratteri invisibili / sporchi
+        insights = insights
+            .Replace("\uFEFF", "")   // BOM
+            .Replace("\u200B", "")   // zero-width space
+            .Replace("\u200C", "")
+            .Replace("\u200D", "")
+            .Replace("\u00A0", " "); // NBSP -> spazio normale
 
-        // Ora processa le righe normalmente
-        var lines = insights.Split('\n', StringSplitOptions.RemoveEmptyEntries);
-        var formattedLines = new List<string>();
+        // 2) Rimuove code fences tipo ```markdown / ```json / ``` e ~~~
+        insights = Regex.Replace(insights, @"^\s*```[a-zA-Z0-9_-]*\s*$", "", RegexOptions.Multiline);
+        insights = Regex.Replace(insights, @"^\s*```\s*$", "", RegexOptions.Multiline);
+        insights = Regex.Replace(insights, @"^\s*~~~[a-zA-Z0-9_-]*\s*$", "", RegexOptions.Multiline);
+        insights = Regex.Replace(insights, @"^\s*~~~\s*$", "", RegexOptions.Multiline);
+
+        // 3) Rimuove la parola 'markdown' o 'md' “orfana” su una linea da sola (spesso lasciata dall’AI)
+        insights = Regex.Replace(insights, @"^\s*`?markdown`?\s*$", "", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+        insights = Regex.Replace(insights, @"^\s*`?md`?\s*$", "", RegexOptions.Multiline | RegexOptions.IgnoreCase);
+
+        // 4) Rimuove separatori markdown isolati
+        insights = Regex.Replace(insights, @"^\s*(?:####|###|##|#|---|___|\*\*\*)\s*$", "", RegexOptions.Multiline);
+
+        // 5) Converte **bold** prima (sicuro)
+        insights = Regex.Replace(insights, @"\*\*(.+?)\*\*", "<strong>$1</strong>", RegexOptions.Singleline);
+
+        // 6) Converte *corsivo* ma NON i bullet "* " a inizio riga
+        //    - no match se l'asterisco è seguito da spazio o inizio riga
+        insights = Regex.Replace(
+            insights,
+            @"(?<!\*)\*(?!\s)(.+?)(?<!\s)\*(?!\*)",
+            "<em>$1</em>",
+            RegexOptions.Singleline);
+
+        // 7) Converte `inline code` (se ti piace visualizzarlo)
+        insights = Regex.Replace(insights, @"`([^`\n]+)`", "<code>$1</code>");
+
+        // ========= PARSING RIGA-PER-RIGA =========
+        var lines = insights.Split('\n');
+        var formatted = new List<string>();
         bool inList = false;
-        
-        foreach (var line in lines)
+
+        foreach (var raw in lines)
         {
-            var trimmed = line.Trim();
+            var trimmed = raw.Trim();
             if (string.IsNullOrEmpty(trimmed)) continue;
-            
-            // ✅ 1. Gestione HEADERS - con validazione contenuto
+
+            // Headers
             if (trimmed.StartsWith("### "))
             {
-                var headerText = trimmed.Substring(4).Trim();
-                if (string.IsNullOrEmpty(headerText)) continue;
-                
-                if (inList) { formattedLines.Add("</ul>"); inList = false; }
-                formattedLines.Add($"<h4 class='insight-h4'>{headerText}</h4>");
-            }
-            else if (trimmed.StartsWith("## "))
-            {
-                var headerText = trimmed.Substring(3).Trim();
-                if (string.IsNullOrEmpty(headerText)) continue;
-                
-                if (inList) { formattedLines.Add("</ul>"); inList = false; }
-                formattedLines.Add($"<h3 class='insight-h3'>{headerText}</h3>");
-            }
-            else if (trimmed.StartsWith("# "))
-            {
-                var headerText = trimmed.Substring(2).Trim();
-                if (string.IsNullOrEmpty(headerText)) continue;
-                
-                if (inList) { formattedLines.Add("</ul>"); inList = false; }
-                formattedLines.Add($"<h2 class='insight-h2'>{headerText}</h2>");
-            }
-            // ✅ 2. Ignora simboli markdown orfani e separatori
-            else if (trimmed == "####" || trimmed == "###" || trimmed == "##" || trimmed == "#" || 
-                    trimmed == "---" || trimmed == "___" || trimmed == "***")
-            {
-                continue; // ❌ Salta separatori markdown
-            }
-            // ✅ 3. Gestione LISTE - con validazione contenuto
-            else if (trimmed.StartsWith("- ") || trimmed.StartsWith("• ") || trimmed.StartsWith("* "))
-            {
-                var listItem = trimmed.Substring(2).Trim();
-                if (string.IsNullOrEmpty(listItem)) continue;
-                
-                if (!inList)
-                {
-                    formattedLines.Add("<ul class='insight-list'>");
-                    inList = true;
-                }
-                formattedLines.Add($"<li class='insight-li'>{listItem}</li>");
-            }
-            // ✅ 4. Ignora bullet points orfani
-            else if (trimmed == "-" || trimmed == "•" || trimmed == "*")
-            {
+                var t = trimmed.Substring(4).Trim();
+                if (t.Length == 0) continue;
+                if (inList) { formatted.Add("</ul>"); inList = false; }
+                formatted.Add($"<h4 class='insight-h4'>{t}</h4>");
                 continue;
             }
-            // ✅ 5. Paragrafi normali (solo se NON è già HTML)
-            else if (!trimmed.StartsWith("<"))
+            if (trimmed.StartsWith("## "))
             {
-                if (inList) { formattedLines.Add("</ul>"); inList = false; }
-                formattedLines.Add($"<p class='insight-p'>{trimmed}</p>");
+                var t = trimmed.Substring(3).Trim();
+                if (t.Length == 0) continue;
+                if (inList) { formatted.Add("</ul>"); inList = false; }
+                formatted.Add($"<h3 class='insight-h3'>{t}</h3>");
+                continue;
             }
-            // ✅ 6. Mantieni HTML esistente
-            else
+            if (trimmed.StartsWith("# "))
             {
-                if (inList && !trimmed.StartsWith("<li")) { formattedLines.Add("</ul>"); inList = false; }
-                formattedLines.Add(trimmed);
+                var t = trimmed.Substring(2).Trim();
+                if (t.Length == 0) continue;
+                if (inList) { formatted.Add("</ul>"); inList = false; }
+                formatted.Add($"<h2 class='insight-h2'>{t}</h2>");
+                continue;
             }
+
+            // Ignora separatori residui
+            if (trimmed is "####" or "###" or "##" or "#" or "---" or "___" or "***")
+                continue;
+
+            // Liste (accetta "- ", "• ", "* " e "– ")
+            if (trimmed.StartsWith("- ") || trimmed.StartsWith("• ") || trimmed.StartsWith("* ") || trimmed.StartsWith("– "))
+            {
+                var item = trimmed.Substring(2).Trim();
+                if (item.Length == 0) continue;
+                if (!inList) { formatted.Add("<ul class='insight-list'>"); inList = true; }
+                // HtmlEncode ma lascia i tag <strong>/<em>/<code> già inseriti
+                item = PreserveKnownTagsEncode(item);
+                formatted.Add($"<li class='insight-li'>{item}</li>");
+                continue;
+            }
+
+            // Bullet orfani
+            if (trimmed is "-" or "•" or "*" or "–")
+                continue;
+
+            // Mantieni HTML già presente (es. <table> etc.)
+            if (trimmed.StartsWith("<"))
+            {
+                if (inList && !trimmed.StartsWith("<li")) { formatted.Add("</ul>"); inList = false; }
+                formatted.Add(trimmed);
+                continue;
+            }
+
+            // Paragrafo normale
+            if (inList) { formatted.Add("</ul>"); inList = false; }
+            var encoded = PreserveKnownTagsEncode(trimmed);
+            formatted.Add($"<p class='insight-p'>{encoded}</p>");
         }
-        
-        if (inList) formattedLines.Add("</ul>");
-        
-        return string.Join("\n", formattedLines);
+
+        if (inList) formatted.Add("</ul>");
+
+        // Collassa righe vuote multiple eventualmente rimaste
+        var html = string.Join("\n", formatted);
+        html = Regex.Replace(html, @"(\r?\n){3,}", "\n\n");
+        return html;
+
+        // --- helper: encoda il testo ma preserva <strong>/<em>/<code> già inseriti dalle regex ---
+        static string PreserveKnownTagsEncode(string input)
+        {
+            // segnaposto temporanei
+            var map = new Dictionary<string, string>();
+            string Stash(string tag, Match m)
+            {
+                var key = $"__TAG_{map.Count}__";
+                map[key] = m.Value;
+                return key;
+            }
+
+            // stasha tag noti
+            var tmp = Regex.Replace(input, @"</?(?:strong|em|code)>", m => Stash("t", m));
+            tmp = WebUtility.HtmlEncode(tmp);
+            // ripristina
+            foreach (var kv in map)
+                tmp = tmp.Replace(kv.Key, kv.Value);
+            return tmp;
+        }
     }
 
     /// <summary>
@@ -496,7 +526,6 @@ public class HtmlReportService
 public class HtmlReportOptions
 {
     public string TemplateName { get; set; } = "default";
-    public string StyleName { get; set; } = "default";
     public string ReportType { get; set; } = "Standard";
     public string DateTimeFormatDays { get; set; } = "dd/MM/yyyy";
     public string DateTimeFormatHours { get; set; } = "HH:mm";

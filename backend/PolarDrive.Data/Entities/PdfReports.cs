@@ -22,6 +22,8 @@ public class PdfReport
 
     public string PdfHash { get; set; } = string.Empty;
 
+    public byte[]? PdfContent { get; set; }
+
     public ClientCompany? ClientCompany { get; set; }
 
     public ClientVehicle? ClientVehicle { get; set; }

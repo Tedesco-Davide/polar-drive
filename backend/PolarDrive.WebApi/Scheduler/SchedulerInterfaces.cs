@@ -3,8 +3,7 @@ namespace PolarDrive.WebApi.Scheduler;
 public enum ScheduleType
 {
     Development,
-    Monthly,
-    Retry
+    Monthly
 }
 
 public class SchedulerResults

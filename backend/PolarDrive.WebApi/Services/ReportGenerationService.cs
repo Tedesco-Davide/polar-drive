@@ -5,6 +5,7 @@ using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Scheduler;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 using Microsoft.Extensions.Options;
+using PolarDrive.WebApi.Helpers;
 
 namespace PolarDrive.WebApi.Services
 {
@@ -186,7 +187,7 @@ namespace PolarDrive.WebApi.Services
 
                     var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                     var end = now;
-                    var analysisType = GetAnalysisType(ScheduleType.Retry);
+                    var analysisType = GetAnalysisType(ScheduleType.Monthly);
 
                     await GenerateReportForVehicle(db, id, analysisType, start, end);
 
@@ -347,21 +348,18 @@ namespace PolarDrive.WebApi.Services
 
             var report = await db.PdfReports.FindAsync(reportId);
             if (report == null)
-            {
                 return new ReportFileStatus();
-            }
 
-            var pdfPath = GetFilePath(report, "pdf", "reports");
-            var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
+            var hasPdf = report.PdfContent != null && report.PdfContent.Length > 0;
 
             return new ReportFileStatus
             {
-                PdfExists = File.Exists(pdfPath),
-                HtmlExists = File.Exists(htmlPath),
-                PdfPath = pdfPath,
-                HtmlPath = htmlPath,
-                PdfSize = File.Exists(pdfPath) ? new FileInfo(pdfPath).Length : 0,
-                HtmlSize = File.Exists(htmlPath) ? new FileInfo(htmlPath).Length : 0
+                PdfExists = hasPdf,
+                HtmlExists = false,
+                PdfPath = null,
+                HtmlPath = null,
+                PdfSize = hasPdf ? report.PdfContent!.Length : 0,
+                HtmlSize = 0
             };
         }
 
@@ -439,13 +437,8 @@ namespace PolarDrive.WebApi.Services
                             vd.Timestamp <= period.End)
                 .CountAsync();
 
-            // Record totali storici (per certificazione)
-            var totalHistoricalRecords = await db.VehiclesData
-                .Where(vd => vd.VehicleId == vehicleId)
-                .CountAsync();
-
-            _logger.LogInformation("🧠 Generating {Level} for {VIN} | {Start:yyyy-MM-dd HH:mm} to {End:yyyy-MM-dd HH:mm} | Report #{Count} | DataRecords in period: {DataCount} | Total historical: {TotalCount}",
-                                period.AnalysisLevel, vehicle.Vin, period.Start, period.End, reportCount + 1, dataCountInPeriod, totalHistoricalRecords);
+            _logger.LogInformation("🧠 Generating {Level} for {VIN} | {Start:yyyy-MM-dd HH:mm} to {End:yyyy-MM-dd HH:mm} | Report #{Count} | DataRecords in period: {DataCount}",
+                                period.AnalysisLevel, vehicle.Vin, period.Start, period.End, reportCount + 1, dataCountInPeriod);
 
             // Crea sempre il record del report per tracking
             var report = new PdfReport
@@ -486,20 +479,18 @@ namespace PolarDrive.WebApi.Services
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"No insights for {vehicle.Vin}");
 
-            await GenerateReportFiles(db, report, insights, period, vehicle, totalHistoricalRecords);
+            await GenerateReportFiles(db, report, insights, period, vehicle);
 
-            _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type} | Files: HTML+PDF | Total historical: {TotalCount}",
-                                report.Id, vehicle.Vin, period.DataHours, period.AnalysisLevel, totalHistoricalRecords);
-            
-            
+            _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type} | Storage: PDF in DB",
+                report.Id, vehicle.Vin, period.DataHours, period.AnalysisLevel);
+      
         }
 
         private async Task GenerateReportFiles(PolarDriveDbContext db,
                                                PdfReport report,
                                                string insights,
                                                ReportPeriodInfo period,
-                                               ClientVehicle vehicle,
-                                               int totalHistoricalRecords)
+                                               ClientVehicle vehicle)
         {
             // ✅ CARICA I FONT UNA VOLTA SOLA
             var basePath = "/app/wwwroot/fonts/satoshi";
@@ -520,7 +511,7 @@ namespace PolarDrive.WebApi.Services
                 font-style: normal;
             }}";
 
-            // HTML
+            // HTML in memoria (nessun salvataggio su disco)
             var htmlSvc = new HtmlReportService(db);
             var htmlOpt = new HtmlReportOptions
             {
@@ -529,13 +520,7 @@ namespace PolarDrive.WebApi.Services
             };
             var html = await htmlSvc.GenerateHtmlReportAsync(report, insights, htmlOpt);
 
-            if (_env.IsDevelopment())
-            {
-                var path = GetFilePath(report, "html", "dev-reports");
-                await SaveFile(path, html);
-            }
-
-            // PDF
+            // PDF con Puppeteer → otteniamo byte[]
             var pdfSvc = new PdfGenerationService(db);
             var pdfOpt = new PdfConversionOptions
             {
@@ -608,35 +593,49 @@ namespace PolarDrive.WebApi.Services
             </body>
             </html>"
             };
-            var pdfBytes = await pdfSvc.ConvertHtmlToPdfAsync(html, report, pdfOpt);
 
-            var pdfPath = GetFilePath(report, "pdf", "reports");
-            await SaveFile(pdfPath, pdfBytes);
-        }
-
-        private void DeleteExistingFiles(PdfReport report)
-        {
-            try
+            // ⛔️ Se già presente, non rigenerare
+            if (report.PdfContent is { Length: > 0 })
             {
-                var htmlPath = GetFilePath(report, "html", _env.IsDevelopment() ? "dev-reports" : "reports");
-                var pdfPath = GetFilePath(report, "pdf", "reports");
-
-                if (File.Exists(htmlPath))
-                {
-                    File.Delete(htmlPath);
-                    _logger.LogDebug("🗑️ Eliminato file HTML esistente: {Path}", htmlPath);
-                }
-
-                if (File.Exists(pdfPath))
-                {
-                    File.Delete(pdfPath);
-                    _logger.LogDebug("🗑️ Eliminato file PDF esistente: {Path}", pdfPath);
-                }
+                _logger.LogInformation("Report {Id} already has a PDF ({Size} bytes). Skipping.", report.Id, report.PdfContent.Length);
+                return;
             }
-            catch (Exception ex)
+
+            // ========== PASSO 1: PDF PROVVISORIO (senza hash stampato) ==========
+            var html1 = await htmlSvc.GenerateHtmlReportAsync(report, insights, htmlOpt);
+            var pdf1  = await pdfSvc.ConvertHtmlToPdfAsync(html1, report, pdfOpt);
+
+            if (pdf1 == null || pdf1.Length == 0)
+                throw new InvalidOperationException("PDF provvisorio vuoto/non generato.");
+
+            // Calcola l'hash DAL FILE (univoco)
+            var fileHash = GenericHelpers.ComputeContentHash(pdf1);
+
+            // Aggiorna entità con hash e GeneratedAt
+            report.PdfHash     = fileHash;
+            report.GeneratedAt = DateTime.Now;
+
+            // Nota: non persisto pdf1; serve solo per estrarre l'hash del file
+            await db.SaveChangesAsync();
+
+            // ========== PASSO 2: PDF FINALE (hash valorizzato e stampato) ==========
+            var html2 = await htmlSvc.GenerateHtmlReportAsync(report, insights, htmlOpt); // ora {{pdfHash}} ha valore
+            var pdf2  = await pdfSvc.ConvertHtmlToPdfAsync(html2, report, pdfOpt);
+
+            if (pdf2 == null || pdf2.Length == 0)
+                throw new InvalidOperationException("PDF finale vuoto/non generato.");
+
+            // 🛡️ Double-check anti-race
+            if (report.PdfContent is { Length: > 0 })
             {
-                _logger.LogWarning(ex, "⚠️ Errore durante eliminazione file esistenti per report {ReportId}", report.Id);
+                _logger.LogWarning("Race detected for report {Id}. Another worker saved the PDF meanwhile. Discarding generated bytes.", report.Id);
+                return;
             }
+
+            // ✅ Persisti il PDF finale + stato
+            report.PdfContent = pdf2;
+            report.Status     = "PDF-READY";
+            await db.SaveChangesAsync();
         }
 
         private bool ShouldGenerateReports(ScheduleType scheduleType, DateTime now)
@@ -676,36 +675,8 @@ namespace PolarDrive.WebApi.Services
             {
                 ScheduleType.Development => "Development Analysis",
                 ScheduleType.Monthly => "Analisi Mensile",
-                ScheduleType.Retry => "Analysis post Retry",
                 _ => "Analisi Mensile"
             };
-        }
-
-        private static string GetFilePath(PdfReport report, string ext, string folder)
-        {
-            // ✅ USA LA DATA DI GENERAZIONE, NON IL PERIODO DEI DATI
-            var generationDate = report.GeneratedAt ?? DateTime.Now;
-
-            return Path.Combine("storage", folder,
-                generationDate.Year.ToString(),
-                generationDate.Month.ToString("D2"),
-                $"PolarDrive_PolarReport_{report.Id}.{ext}");
-        }
-
-        private async Task SaveFile(string path, object content)
-        {
-            var dir = Path.GetDirectoryName(path);
-            if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-
-            switch (content)
-            {
-                case string txt:
-                    await File.WriteAllTextAsync(path, txt);
-                    break;
-                case byte[] data:
-                    await File.WriteAllBytesAsync(path, data);
-                    break;
-            }
         }
 
         #endregion

@@ -35,12 +35,6 @@ LOGS_PROD/*
 !LOGS_DEV/.gitkeep
 !LOGS_PROD/.gitkeep
 
-# Storage
-STORAGE_DEV/*
-STORAGE_PROD/*
-!STORAGE_DEV/.gitkeep
-!STORAGE_PROD/.gitkeep
-
 # Environment files ( MAI committare credenziali )
 .env.*
 !.env.example

@@ -10,6 +10,13 @@ public static class GenericHelpers
         return Convert.ToHexStringLower(hashBytes);
     }
 
+    // Overload per calcolare hash univoco da byte[]
+    public static string ComputeContentHash(byte[] contentBytes)
+    {
+        var hashBytes = System.Security.Cryptography.SHA256.HashData(contentBytes);
+        return Convert.ToHexStringLower(hashBytes);
+    }
+
     // Helper locale per garantire lo slash finale
     public static string EnsureTrailingSlash(string? baseUrl)
     {

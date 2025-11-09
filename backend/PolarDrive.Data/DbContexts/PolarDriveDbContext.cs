@@ -71,6 +71,8 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
                 entity.Property(e => e.GeneratedAt)
                     .IsRequired(false);
+
+                entity.Property(e => e.PdfContent).HasColumnType("VARBINARY(MAX)").IsRequired(false);
             });
 
             modelBuilder.Entity<VehicleData>(entity =>

@@ -1,10 +1,8 @@
 using System.Text.Json;
-using Hangfire;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
-using PolarDrive.WebApi.Services;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
@@ -15,18 +13,13 @@ public class PdfReportsController : ControllerBase
 {
     private readonly PolarDriveDbContext db;
     private readonly PolarDriveLogger _logger;
-    private readonly IServiceProvider _serviceProvider;
-    private readonly IWebHostEnvironment _env;
 
     public PdfReportsController(
-        PolarDriveDbContext context,
-        IServiceProvider serviceProvider,
-        IWebHostEnvironment env)
+        PolarDriveDbContext context
+    )
     {
         db = context;
         _logger = new PolarDriveLogger(db);
-        _serviceProvider = serviceProvider;
-        _env = env;
     }
 
     [HttpGet]
@@ -53,7 +46,7 @@ public class PdfReportsController : ControllerBase
             var filesMissingCount = result.Count(r => r.Status == "FILE-MISSING");
 
             await _logger.Info(source, "Mapping DTO completato",
-                $"Total: {result.Count}, PDF: {pdfCount}, HTML: {htmlCount}, Processing: {processingCount}, FilesMissing: {filesMissingCount}");
+                $"Total: {result.Count}, PDF: {pdfCount}, Processing: {processingCount}, FilesMissing: {filesMissingCount}");
 
             return Ok(result);
         }
@@ -116,69 +109,52 @@ public class PdfReportsController : ControllerBase
             .Include(r => r.ClientCompany)
             .Include(r => r.ClientVehicle)
             .OrderByDescending(r => r.GeneratedAt)
+            .ThenByDescending(r => r.Id)
             .ToListAsync();
     }
 
     private async Task<PdfReportDTO> MapReportToDto(Data.Entities.PdfReport report)
     {
-        var (htmlPath, pdfPath) = GetReportFilePaths(report);
-        var fileInfo = GetFileInfo(htmlPath, pdfPath);
-        
         var dataCountInPeriod = await CountDataRecordsForReport(report);
         var totalHistoricalRecords = await db.VehiclesData
             .Where(vd => vd.VehicleId == report.VehicleId)
             .CountAsync();
-        
-        // Calcola il tempo totale di monitoraggio, dal primo record mai registrato
+
         var firstRecordEver = await db.VehiclesData
             .Where(vd => vd.VehicleId == report.VehicleId)
             .OrderBy(vd => vd.Timestamp)
             .Select(vd => vd.Timestamp)
             .FirstOrDefaultAsync();
-        
-        var totalMonitoringHours = firstRecordEver != default 
-            ? (DateTime.Now - firstRecordEver).TotalHours 
+
+        var totalMonitoringHours = firstRecordEver != default
+            ? (DateTime.Now - firstRecordEver).TotalHours
             : 0;
+
+        var hasPdf = report.PdfContent != null && report.PdfContent.Length > 0;
+        var pdfSize = hasPdf ? report.PdfContent!.Length : 0;
 
         return new PdfReportDTO
         {
             Id = report.Id,
             ReportPeriodStart = report.ReportPeriodStart.ToString("o"),
-            ReportPeriodEnd = report.ReportPeriodEnd.ToString("o"),
-            GeneratedAt = report.GeneratedAt?.ToString("o"),
-            CompanyVatNumber = report.ClientCompany?.VatNumber ?? "",
-            CompanyName = report.ClientCompany?.Name ?? "",
-            VehicleVin = report.ClientVehicle?.Vin ?? "",
-            VehicleModel = report.ClientVehicle?.Model ?? "",
-            VehicleBrand = report.ClientVehicle?.Brand ?? "",
-            Notes = report.Notes,
-            HasPdfFile = fileInfo.PdfExists,
-            HasHtmlFile = fileInfo.HtmlExists,
-            DataRecordsCount = totalHistoricalRecords,
-            PdfFileSize = fileInfo.PdfSize,
-            HtmlFileSize = fileInfo.HtmlSize,
+            ReportPeriodEnd   = report.ReportPeriodEnd.ToString("o"),
+            GeneratedAt       = report.GeneratedAt?.ToString("o"),
+            CompanyVatNumber  = report.ClientCompany?.VatNumber ?? "",
+            CompanyName       = report.ClientCompany?.Name ?? "",
+            VehicleVin        = report.ClientVehicle?.Vin ?? "",
+            VehicleModel      = report.ClientVehicle?.Model ?? "",
+            VehicleBrand      = report.ClientVehicle?.Brand ?? "",
+            Notes             = report.Notes,
+            HasPdfFile        = hasPdf,
+            HasHtmlFile       = false,
+            DataRecordsCount  = totalHistoricalRecords,
+            PdfFileSize       = pdfSize,
+            HtmlFileSize      = 0,
             MonitoringDurationHours = Math.Max(0, Math.Floor(totalMonitoringHours)),
-            ReportType = DetermineReportType(totalHistoricalRecords),
-            Status = await DetermineReportStatusAsync(report, fileInfo.PdfExists, fileInfo.HtmlExists, dataCountInPeriod),
-            PdfHash = report.PdfHash
+            ReportType        = DetermineReportType(totalHistoricalRecords),
+            Status            = await DetermineReportStatusAsync(report, hasPdf, false, dataCountInPeriod),
+            PdfHash           = report.PdfHash
         };
-    }
-
-    private (string HtmlPath, string PdfPath) GetReportFilePaths(Data.Entities.PdfReport report)
-    {
-        var htmlPath = GetReportFilePath(report, "html");
-        var pdfPath = GetReportFilePath(report, "pdf");
-        return (htmlPath, pdfPath);
-    }
-
-    private static (bool PdfExists, bool HtmlExists, long PdfSize, long HtmlSize) GetFileInfo(string htmlPath, string pdfPath)
-    {
-        var pdfExists = System.IO.File.Exists(pdfPath);
-        var htmlExists = System.IO.File.Exists(htmlPath);
-        var pdfSize = pdfExists ? new FileInfo(pdfPath).Length : 0;
-        var htmlSize = htmlExists ? new FileInfo(htmlPath).Length : 0;
-
-        return (pdfExists, htmlExists, pdfSize, htmlSize);
     }
 
     private static string DetermineReportType(int totalHistoricalRecords)
@@ -193,7 +169,7 @@ public class PdfReportsController : ControllerBase
             >= MONTHLY_HOURS_THRESHOLD => "Mensile",
             >= WEEKLY_HOURS_THRESHOLD => "Settimanale",
             >= DAILY_HOURS_THRESHOLD => "Giornaliero",
-            _ => "Giornaliero_Parizale"
+            _ => "Giornaliero_Parziale"
         };
     }
 
@@ -248,52 +224,35 @@ public class PdfReportsController : ControllerBase
                 return NotFound();
             }
 
-            var htmlPath = GetReportFilePath(report, "html");
-            var pdfPath = GetReportFilePath(report, "pdf");
-
-            if (System.IO.File.Exists(pdfPath))
+            if (report.PdfContent != null && report.PdfContent.Length > 0)
             {
-                var pdfBytes = await System.IO.File.ReadAllBytesAsync(pdfPath);
                 var fileName = $"PolarDrive_PolarReport_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.pdf";
 
-                await _logger.Info("PdfReportsController.DownloadPdf", "PDF downloaded successfully.",
-                    $"ReportId: {id}, Size: {pdfBytes.Length} bytes, FileName: {fileName}");
+                await _logger.Info("PdfReportsController.DownloadPdf",
+                    "Serving PDF from DB",
+                    $"ReportId: {id}, Size: {report.PdfContent.Length} bytes, PdfHash(DB): {report.PdfHash}");
 
-                return File(pdfBytes, "application/pdf", fileName);
+                // ✅ No cache intermediari
+                Response.Headers.CacheControl = "no-store, no-cache, must-revalidate, max-age=0";
+                Response.Headers.Pragma = "no-cache";
+                Response.Headers.Expires = "0";
+                Response.Headers.ContentDisposition = $"attachment; filename=\"{fileName}\"";
+                Response.Headers.ContentType = "application/pdf";
+
+                // ✅ ETag con il tuo hash salvato nel DB
+                if (!string.IsNullOrWhiteSpace(report.PdfHash))
+                    Response.Headers.ETag = $"W/\"{report.PdfHash}\"";
+
+                return File(report.PdfContent, "application/pdf", fileName);
             }
-            else if (System.IO.File.Exists(htmlPath))
-            {
-                var htmlBytes = await System.IO.File.ReadAllBytesAsync(htmlPath);
-                var fileName = $"PolarDrive_PolarReport_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.html";
 
-                await _logger.Info("PdfReportsController.DownloadPdf", "HTML downloaded as fallback.",
-                    $"ReportId: {id}, Size: {htmlBytes.Length} bytes");
-
-                return File(htmlBytes, "text/html", fileName);
-            }
-
-            await _logger.Warning("PdfReportsController.DownloadPdf", "No file available for download.", $"ReportId: {id}");
-            return NotFound("SERVER ERROR → NOT FOUND: Report file not available!");
+            await _logger.Warning("PdfReportsController.DownloadPdf", "No PDF content available in DB.", $"ReportId: {id}");
+            return NotFound("Report PDF non disponibile.");
         }
         catch (Exception ex)
         {
             await _logger.Error("PdfReportsController.DownloadPdf", "Download error occurred.", $"ReportId: {id}, Error: {ex}");
             return StatusCode(500, "SERVER ERROR → INTERNAL ERROR: Download failed!");
         }
-    }
-
-    private string GetReportFilePath(Data.Entities.PdfReport report, string extension)
-    {
-        var folder = extension == "html" && _env.IsDevelopment() ? "dev-reports" : "reports";
-        var generationDate = report.GeneratedAt ?? DateTime.Now;
-
-        var storageDir = Path.Combine("storage", folder,
-            generationDate.Year.ToString(),
-            generationDate.Month.ToString("D2"));
-
-        var storageFileName = $"PolarDrive_PolarReport_{report.Id}.{extension}";
-        var storagePath = Path.Combine(storageDir, storageFileName);
-
-        return storagePath;
     }
 }

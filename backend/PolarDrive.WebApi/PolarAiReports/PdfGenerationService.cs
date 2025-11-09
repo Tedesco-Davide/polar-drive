@@ -532,35 +532,18 @@ public class PdfGenerationService(PolarDriveDbContext dbContext)
     {
         try
         {
-            var generationDate = report.GeneratedAt ?? DateTime.Now;
-            
-            var outputDir = Path.Combine("storage", "reports",
-                generationDate.Year.ToString(),
-                generationDate.Month.ToString("D2"));
-            var htmlPath = Path.Combine(outputDir, $"PolarDrive_PolarReport_{report.Id}.html");
-
-            Directory.CreateDirectory(outputDir);
-            await File.WriteAllTextAsync(htmlPath, htmlContent);
-
             var htmlBytes = System.Text.Encoding.UTF8.GetBytes(htmlContent);
-
-            await _logger.Info(source, "Report salvato come HTML fallback",
-                $"Dimensione: {htmlBytes.Length} bytes, Path: {htmlPath}");
-
-            return htmlBytes;
+            await _logger.Info(source, "Fallback HTML in-memory (NO FS)", $"Size: {htmlBytes.Length} bytes");
+            return htmlBytes; // 👈 niente più scrittura su disco
         }
         catch (Exception fallbackEx)
         {
             await _logger.Error(source, "Errore anche nel fallback HTML", fallbackEx.ToString());
-
-            // Ultimo fallback: HTML minimo in memoria
-            var emergencyHtml = $@"
-                <html><body>
-                    <h1>Errore Report {report.Id}</h1>
-                    <p>Impossibile generare il report. Vedere i log per dettagli.</p>
-                    <p>Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm}</p>
-                </body></html>";
-
+            var emergencyHtml = $@"<html><body>
+                <h1>Errore Report {report.Id}</h1>
+                <p>Impossibile generare il report. Vedere i log per dettagli.</p>
+                <p>Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm}</p>
+            </body></html>";
             return System.Text.Encoding.UTF8.GetBytes(emergencyHtml);
         }
     }

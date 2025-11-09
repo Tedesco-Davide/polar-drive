@@ -41,7 +41,6 @@ services:
       - Ollama__RetryDelaySeconds=${OLLAMA_RETRY_DELAY_SECONDS}
     volumes:
       - ./LOGS_PROD:/app/Logs
-      - ./STORAGE_PROD:/app/storage/reports
     ports:
       - "8081:8080"
     extra_hosts:
