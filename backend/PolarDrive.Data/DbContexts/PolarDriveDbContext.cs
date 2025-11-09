@@ -62,7 +62,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.ClientVehicle)
-                    .WithMany()
+                    .WithMany(v => v.PdfReports)
                     .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.NoAction);
 
