@@ -4,7 +4,7 @@ import { isAfter, isValid, parseISO } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 type Props = {
   t: TFunction;
@@ -24,6 +24,7 @@ export default function AdminClientConsentAddForm({
   onSubmitSuccess,
   refreshClientConsents,
 }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<{
     consentType: string;
     companyVatNumber: string;
@@ -162,106 +163,84 @@ export default function AdminClientConsentAddForm({
     return true;
   };
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (isSubmitting) return;
 
     try {
-      setIsSubmitting(true);
+        setIsSubmitting(true);
 
-      await logFrontendEvent(
+        await logFrontendEvent(
         "AdminClientConsentAddForm",
         "INFO",
         "Attempting to submit new consent"
-      );
-
-      if (!validateForm()) {
-        return;
-      }
-
-      // ✅ Prepara payload per il nuovo endpoint unificato
-      const payload = {
-        clientCompanyId: resolvedIds.clientCompanyId,
-        vehicleId: resolvedIds.vehicleId,
-        consentType: formData.consentType,
-        uploadDate: formData.uploadDate,
-        notes: formData.notes || "Manually inserted consent",
-      };
-
-      // ✅ Crea il consent prima
-        const consentResponse = await fetch(
-        `/api/clientconsents`,
-        {
-            method: "POST",
-            headers: {
-            "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-        }
         );
 
-      if (!consentResponse.ok) {
-        const errorText = await consentResponse.text();
+        if (!validateForm()) return;
+
+        // ✅ Una singola chiamata atomica con FormData
+        const formDataToSend = new FormData();
+        formDataToSend.append("clientCompanyId", resolvedIds.clientCompanyId!.toString());
+        formDataToSend.append("vehicleId", resolvedIds.vehicleId!.toString());
+        formDataToSend.append("consentType", formData.consentType);
+        formDataToSend.append("uploadDate", formData.uploadDate);
+        formDataToSend.append("notes", formData.notes || "Manually inserted");
+        formDataToSend.append("zipFile", formData.zipFile!);
+
+        const response = await fetch(`/api/clientconsents`, {
+        method: "POST",
+        body: formDataToSend, // NO Content-Type header con FormData
+        });
+
+        if (!response.ok) {
+        const errorText = await response.text();
         throw new Error(errorText);
-      }
-
-      const newConsent = await consentResponse.json();
-      const consentId = newConsent.id;
-
-      // ✅ Upload ZIP
-      if (formData.zipFile) {
-        const zipFormData = new FormData();
-        zipFormData.append("zipFile", formData.zipFile);
-
-        const zipResponse = await fetch(
-        `/api/clientconsents/${consentId}/upload-zip`,
-        {
-            method: "POST",
-            body: zipFormData,
         }
-        );
 
-        if (!zipResponse.ok) {
-          console.warn("ZIP upload failed, but consent was created");
-        }
-      }
+        const newConsent = await response.json();
 
-      await logFrontendEvent(
+        await logFrontendEvent(
         "AdminClientConsentAddForm",
         "INFO",
         "Consent successfully created",
-        "Consent ID: " + consentId
-      );
+        "Consent ID: " + newConsent.id
+        );
 
-      alert(t("admin.clientConsents.successAddNewConsent"));
-      await refreshClientConsents();
-      onSubmitSuccess();
+        alert(t("admin.clientConsents.successAddNewConsent"));
+        await refreshClientConsents();
+        onSubmitSuccess();
 
-      // ✅ Reset form
-      setFormData({
+        // Reset form
+        setFormData({
         consentType: "",
         companyVatNumber: "",
         vehicleVIN: "",
         uploadDate: "",
         notes: "",
         zipFile: null,
-      });
-      setResolvedIds({ clientCompanyId: null, vehicleId: null });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+        });
+        setResolvedIds({ clientCompanyId: null, vehicleId: null });
 
-      await logFrontendEvent(
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        await logFrontendEvent(
         "AdminClientConsentAddForm",
         "ERROR",
         "Failed to create consent",
         errorMessage
-      );
-
-      alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
+        );
+        alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
+        setFormData((prev) => ({ ...prev, zipFile: null }));
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }        
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  };
+    };
 
   return (
     <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
@@ -359,6 +338,7 @@ export default function AdminClientConsentAddForm({
             {t("admin.uploadZipSignedConsentGeneric")}
           </span>
           <input
+            ref={fileInputRef}
             name="zipFile"
             type="file"
             accept=".zip"

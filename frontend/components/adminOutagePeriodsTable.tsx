@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { TFunction } from "i18next";
 import {
   NotebookPen,
@@ -72,6 +72,7 @@ export default function AdminOutagePeriodsTable({
   const [selectedOutageForNotes, setSelectedOutageForNotes] =
     useState<OutagePeriod | null>(null);
   const [uploadingZip, setUploadingZip] = useState<Set<number>>(new Set());
+  const fileInputRefs = useRef<Map<number, HTMLInputElement | null>>(new Map());
 
   useEffect(() => {
     setLocalOutages(outages);
@@ -118,69 +119,88 @@ export default function AdminOutagePeriodsTable({
     setCurrentPage,
   } = usePagination<OutagePeriod>(filteredData, 10);
 
-  const handleZipUpload = async (outageId: number, file: File) => {
-    // ✅ Verifica solo che sia un file .zip
+    const handleZipUpload = async (outageId: number, file: File) => {
     if (!file.name.endsWith(".zip")) {
-      alert(t("admin.validation.invalidZipType"));
-      return;
+        alert(t("admin.validation.invalidZipType"));
+        const inputEl = fileInputRefs.current.get(outageId);
+        if (inputEl) inputEl.value = "";
+        return;
     }
 
-    // ✅ Verifica dimensione (manteniamo il limite di sicurezza)
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
-      alert(t("admin.outagePeriods.validation.zipTooLarge"));
-      return;
+        alert(t("admin.outagePeriods.validation.zipTooLarge"));
+        const inputEl = fileInputRefs.current.get(outageId);
+        if (inputEl) inputEl.value = "";
+        return;
     }
 
     setUploadingZip((prev) => new Set(prev).add(outageId));
 
     try {
-      const formData = new FormData();
-      formData.append("zipFile", file);
+        const formData = new FormData();
+        formData.append("zipFile", file);
 
-      const response = await fetch(
+        const response = await fetch(
         `/api/outageperiods/${outageId}/upload-zip`,
         {
-          method: "POST",
-          body: formData,
+            method: "POST",
+            body: formData,
         }
-      );
+        );
 
-      if (!response.ok) {
+        if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText);
-      }
+        
+        // ✅ Prova a parsare come JSON
+        try {
+            const errorJson = JSON.parse(errorText);
+            throw new Error(errorJson.message || errorText);
+        } catch {
+            // Se non è JSON valido, usa il testo grezzo
+            throw new Error(errorText);
+        }
+        }
 
-      // Refresh dei dati
-      const updatedOutages = await refreshOutagePeriods();
-      setLocalOutages(updatedOutages);
+        const updatedOutages = await refreshOutagePeriods();
+        setLocalOutages(updatedOutages);
 
-      logFrontendEvent(
+        logFrontendEvent(
         "AdminOutagePeriodsTable",
         "INFO",
         "ZIP uploaded successfully",
         "Outage ID: " + outageId + ", File: " + file.name
-      );
+        );
 
-      alert(t("admin.successUploadZip"));
+        alert(t("admin.successUploadZip"));
+        
+        const inputEl = fileInputRefs.current.get(outageId);
+        if (inputEl) inputEl.value = "";
+
     } catch (error) {
-      const errorMessage =
+        const errorMessage =
         error instanceof Error ? error.message : "Upload failed";
-      logFrontendEvent(
+        
+        await logFrontendEvent(
         "AdminOutagePeriodsTable",
         "ERROR",
         "Failed to upload ZIP",
         errorMessage
-      );
-      alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
+        );
+        
+        alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
+        
+        const inputEl = fileInputRefs.current.get(outageId);
+        if (inputEl) inputEl.value = "";
+
     } finally {
-      setUploadingZip((prev) => {
+        setUploadingZip((prev) => {
         const newSet = new Set(prev);
         newSet.delete(outageId);
         return newSet;
-      });
+        });
     }
-  };
+    };
 
   const handleZipDownload = (outageId: number) => {
     window.open(
@@ -335,6 +355,9 @@ export default function AdminOutagePeriodsTable({
                         title={t("admin.uploadZip")}
                     >
                         <input
+                        ref={(el) => {
+                        fileInputRefs.current.set(outage.id, el);
+                        }}
                         type="file"
                         accept=".zip"
                         className="hidden"
@@ -342,7 +365,6 @@ export default function AdminOutagePeriodsTable({
                             const file = e.target.files?.[0];
                             if (file) {
                             handleZipUpload(outage.id, file);
-                            e.target.value = "";
                             }
                         }}
                         disabled={uploadingZip.has(outage.id)}

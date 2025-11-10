@@ -243,43 +243,90 @@ public class OutagePeriodsController : ControllerBase
     /// <summary>
     /// Upload di un file ZIP per un outage
     /// </summary>
-    [HttpPost("{id}/upload-zip")]
-    public async Task<IActionResult> UploadZip(int id, IFormFile zipFile)
+    [HttpPost]
+    [Consumes("multipart/form-data")]
+    [RequestSizeLimit(100_000_000)]
+    [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000)]
+    public async Task<IActionResult> Post(
+        [FromForm] string outageType,
+        [FromForm] string outageBrand,
+        [FromForm] DateTime outageStart,
+        [FromForm] DateTime? outageEnd,
+        [FromForm] int? vehicleId,
+        [FromForm] int? clientCompanyId,
+        [FromForm] string? notes,
+        [FromForm] IFormFile? zipFile) // ✅ Opzionale per outages
     {
-        var outage = await _db.OutagePeriods.FindAsync(id);
-        if (outage == null) return NotFound("Outage not found");
-        if (zipFile == null || zipFile.Length == 0) return BadRequest("No file provided");
-        if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
-            return BadRequest("Invalid ZIP file");
+        try {
+            // Validazioni esistenti...
+            var validTypes = new[] { "Outage Vehicle", "Outage All Tesla Brand" };
+            if (!validTypes.Contains(outageType))
+                return BadRequest("Invalid outage type");
 
-        // ✅ Blocca sostituzioni: ZIP immutabile
-        if (outage.ZipContent != null && outage.ZipContent.Length > 0)
-            return Conflict("ZIP already exists for this outage and cannot be replaced.");
+            if (vehicleId.HasValue) {
+                var vehicle = await _db.ClientVehicles.FindAsync(vehicleId.Value);
+                if (vehicle == null) return NotFound("Vehicle not found");
+            }
 
-        using var ms = new MemoryStream();
-        await zipFile.CopyToAsync(ms);
+            // ✅ Gestione ZIP opzionale
+            byte[]? zipContent = null;
+            string? hash = null;
 
-        ms.Position = 0;
-        try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
-        catch { return BadRequest("Corrupted or invalid ZIP"); }
+            if (zipFile != null && zipFile.Length > 0) {
+                if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+                    return BadRequest("Invalid ZIP file");
 
-        ms.Position = 0;
-        using var sha = SHA256.Create();
-        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+                await using var ms = new MemoryStream();
+                await zipFile.CopyToAsync(ms);
+                ms.Position = 0;
 
-        // Evita duplicati tra outage diversi
-        var duplicate = await _db.OutagePeriods.FirstOrDefaultAsync(o => o.ZipHash == hash);
-        if (duplicate != null)
-            return Conflict(new { message = "This ZIP already exists for another outage!", existingId = duplicate.Id });
+                try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
+                catch (Exception ex) {
+                    await _logger.Error("OutagePeriodsController.Post", "Invalid ZIP", ex.ToString());
+                    return BadRequest("Corrupted or invalid ZIP");
+                }
 
-        ms.Position = 0;
-        outage.ZipContent = ms.ToArray();
-        outage.ZipHash = hash;
-        await _db.SaveChangesAsync();
+                ms.Position = 0;
+                using var sha = SHA256.Create();
+                hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
 
-        await _logger.Info("OutagePeriodsController.UploadZip", $"ZIP saved to DB for outage {id}, Hash: {hash}");
+                var duplicate = await _db.OutagePeriods.FirstOrDefaultAsync(o => o.ZipHash == hash);
+                if (duplicate != null) {
+                    await _logger.Warning("OutagePeriodsController.Post", "Duplicate ZIP", $"ExistingId: {duplicate.Id}");
+                    return Conflict(new { 
+                        message = $"File ZIP già caricato (hash: {hash.Substring(0, 8)}...)", 
+                        existingId = duplicate.Id 
+                    });
+                }
 
-        return Ok(new { outageId = id, zipHash = hash, size = outage.ZipContent.Length });
+                ms.Position = 0;
+                zipContent = ms.ToArray();
+            }
+
+            // ✅ Crea outage atomicamente
+            var outage = new OutagePeriod {
+                OutageType = outageType,
+                OutageBrand = outageBrand,
+                OutageStart = outageStart,
+                OutageEnd = outageEnd,
+                VehicleId = vehicleId,
+                ClientCompanyId = clientCompanyId,
+                Notes = notes ?? "Manually inserted",
+                ZipContent = zipContent,
+                ZipHash = hash ?? ""
+            };
+
+            _db.OutagePeriods.Add(outage);
+            await _db.SaveChangesAsync();
+
+            await _logger.Info("OutagePeriodsController.Post", $"Created outage {outage.Id}");
+
+            return CreatedAtAction(nameof(Get), new { id = outage.Id }, new { id = outage.Id });
+        }
+        catch (Exception ex) {
+            await _logger.Error("OutagePeriodsController.Post", "Error", ex.ToString());
+            return StatusCode(500, "Internal server error");
+        }
     }
 
     /// <summary>

@@ -154,55 +154,90 @@ public class ClientConsentsController : ControllerBase
     /// <summary>
     /// Upload di un file ZIP per un consent (allineato agli outages)
     /// </summary>
-    [HttpPost("{id:int}/upload-zip")]
+    [HttpPost]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(100_000_000)] // 100MB
+    [RequestSizeLimit(100_000_000)]
     [RequestFormLimits(MultipartBodyLengthLimit = 100_000_000)]
-    public async Task<IActionResult> UploadZip(int id, [FromForm] IFormFile zipFile)
+    public async Task<IActionResult> Post(
+        [FromForm] int clientCompanyId,
+        [FromForm] int vehicleId,
+        [FromForm] string consentType,
+        [FromForm] string uploadDate,
+        [FromForm] string? notes,
+        [FromForm] IFormFile zipFile)
     {
-        var consent = await _db.ClientConsents
-            .Include(c => c.ClientVehicle)
-            .FirstOrDefaultAsync(c => c.Id == id);
-        if (consent == null) return NotFound("Consent not found");
+        try {
+            // Validazioni company e vehicle
+            var company = await _db.ClientCompanies.FindAsync(clientCompanyId);
+            if (company == null) return NotFound("Company not found");
 
-        if (zipFile == null || zipFile.Length == 0)
-            return BadRequest("No file provided");
+            var vehicle = await _db.ClientVehicles
+                .FirstOrDefaultAsync(v => v.Id == vehicleId && v.ClientCompanyId == clientCompanyId);
+            if (vehicle == null) return NotFound("Vehicle not found");
 
-        if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
-            return BadRequest("Invalid ZIP file");
+            var validTypes = new[] { "Consent Activation", "Consent Deactivation", 
+                                    "Consent Stop Data Fetching", "Consent Reactivation" };
+            if (!validTypes.Contains(consentType))
+                return BadRequest("Invalid consent type");
 
-        using var ms = new MemoryStream();
-        await zipFile.CopyToAsync(ms);
+            // Validazione ZIP obbligatoria
+            if (zipFile == null || zipFile.Length == 0)
+                return BadRequest("ZIP file required");
 
-        // (opzionale) log diagnostico
-        await _logger.Info("ClientConsentsController.UploadZip",
-            "Received ZIP file",
-            $"ConsentId: {id}, Name: {zipFile.FileName}, Size: {zipFile.Length}");
+            if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
+                return BadRequest("Invalid ZIP file");
 
-        ms.Position = 0;
-        try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
-        catch { return BadRequest("Corrupted or invalid ZIP"); }
+            // Valida ZIP
+            await using var ms = new MemoryStream();
+            await zipFile.CopyToAsync(ms);
+            ms.Position = 0;
 
-        ms.Position = 0;
-        using var sha = SHA256.Create();
-        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+            try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
+            catch (Exception ex) {
+                await _logger.Error("ClientConsentsController.Post", "Invalid ZIP", ex.ToString());
+                return BadRequest("Corrupted or invalid ZIP");
+            }
 
-        // dup check escludendo il consenso corrente
-        var duplicate = await _db.ClientConsents
-            .FirstOrDefaultAsync(c => c.ConsentHash == hash && c.Id != id);
-        if (duplicate != null)
-            return Conflict(new { message = "This file has already been uploaded for another consent!", existingId = duplicate.Id });
+            // Hash & duplicate check
+            ms.Position = 0;
+            using var sha = SHA256.Create();
+            var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
 
-        ms.Position = 0;
-        consent.ZipContent = ms.ToArray();
-        consent.ConsentHash = hash;
-        await _db.SaveChangesAsync();
+            var duplicate = await _db.ClientConsents.FirstOrDefaultAsync(c => c.ConsentHash == hash);
+            if (duplicate != null) {
+                await _logger.Warning("ClientConsentsController.Post", "Duplicate ZIP", $"ExistingId: {duplicate.Id}");
+                return Conflict(new { 
+                    message = $"File ZIP già caricato (hash: {hash.Substring(0, 8)}...)", 
+                    existingId = duplicate.Id,
+                    hash = hash
+                });
+            }
 
-        await _logger.Info("ClientConsentsController.UploadZip",
-            "ZIP saved to DB",
-            $"ConsentId: {id}, Hash: {hash}, BlobSize: {consent.ZipContent.Length}");
+            // ✅ Crea consent CON ZIP in una transazione atomica
+            ms.Position = 0;
+            var consent = new ClientConsent {
+                ClientCompanyId = clientCompanyId,
+                VehicleId = vehicleId,
+                UploadDate = DateTime.Now,
+                ConsentType = consentType,
+                Notes = notes ?? "Manually inserted",
+                ZipContent = ms.ToArray(),
+                ConsentHash = hash
+            };
 
-        return Ok(new { consentId = id, consentHash = hash, size = consent.ZipContent.Length });
+            _db.ClientConsents.Add(consent);
+            await _db.SaveChangesAsync();
+
+            await _logger.Info("ClientConsentsController.Post", 
+                $"Created consent {consent.Id} with ZIP", 
+                $"Hash: {hash}, Size: {consent.ZipContent.Length}");
+
+            return CreatedAtAction(nameof(Get), new { id = consent.Id }, new { id = consent.Id });
+        }
+        catch (Exception ex) {
+            await _logger.Error("ClientConsentsController.Post", "Error", ex.ToString());
+            return StatusCode(500, "Internal server error");
+        }
     }
 
     /// <summary>

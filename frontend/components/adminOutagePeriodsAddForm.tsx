@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { TFunction } from "i18next";
 import { parseISO, isValid, isAfter } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
@@ -22,6 +22,7 @@ export default function AdminOutagePeriodsAddForm({
   onSubmitSuccess,
   refreshOutagePeriods,
 }: Props) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<OutageFormData>({
     outageType: "",
     outageBrand: "",
@@ -203,88 +204,70 @@ export default function AdminOutagePeriodsAddForm({
     return true;
   };
 
-  const handleSubmit = async () => {
+    const handleSubmit = async () => {
     if (isSubmitting) return;
 
     try {
-      setIsSubmitting(true);
+        setIsSubmitting(true);
 
-      await logFrontendEvent(
+        await logFrontendEvent(
         "AdminOutagePeriodsAddForm",
         "INFO",
         "Attempting to submit new outage period"
-      );
-
-      if (!validateForm()) {
-        return;
-      }
-
-      // ✅ Prepara payload per la nuova API
-      const payload = {
-        outageType: formData.outageType,
-        outageBrand: formData.outageBrand,
-        outageStart: formData.outageStart,
-        outageEnd: formData.outageEnd || null,
-        vehicleId:
-          formData.outageType === "Outage Vehicle"
-            ? resolvedIds.vehicleId
-            : null,
-        clientCompanyId:
-          formData.outageType === "Outage Vehicle"
-            ? resolvedIds.clientCompanyId
-            : null,
-        notes:
-          formData.notes || t("admin.outagePeriods.resolveManuallyInserted"),
-      };
-
-      // ✅ Crea l'outage prima
-      const outageResponse = await fetch(`/api/outageperiods`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!outageResponse.ok) {
-        const errorText = await outageResponse.text();
-        throw new Error(errorText);
-      }
-
-      const newOutage = await outageResponse.json();
-      const outageId = newOutage.id;
-
-      // ✅ Upload ZIP se presente
-      if (formData.zipFile) {
-        const zipFormData = new FormData();
-        zipFormData.append("zipFile", formData.zipFile);
-
-        const zipResponse = await fetch(
-          `/api/outageperiods/${outageId}/upload-zip`,
-          {
-            method: "POST",
-            body: zipFormData,
-          }
         );
 
-        if (!zipResponse.ok) {
-          console.warn("ZIP upload failed, but outage was created");
-        }
-      }
+        if (!validateForm()) return;
 
-      await logFrontendEvent(
+        // ✅ Una singola chiamata atomica con FormData
+        const formDataToSend = new FormData();
+        formDataToSend.append("outageType", formData.outageType);
+        formDataToSend.append("outageBrand", formData.outageBrand);
+        formDataToSend.append("outageStart", formData.outageStart);
+        
+        if (formData.outageEnd) {
+        formDataToSend.append("outageEnd", formData.outageEnd);
+        }
+
+        if (formData.outageType === "Outage Vehicle") {
+        formDataToSend.append("vehicleId", resolvedIds.vehicleId!.toString());
+        formDataToSend.append("clientCompanyId", resolvedIds.clientCompanyId!.toString());
+        }
+
+        formDataToSend.append(
+        "notes",
+        formData.notes || t("admin.outagePeriods.resolveManuallyInserted")
+        );
+
+        // ✅ ZIP opzionale per outages
+        if (formData.zipFile) {
+        formDataToSend.append("zipFile", formData.zipFile);
+        }
+
+        const response = await fetch(`/api/outageperiods`, {
+        method: "POST",
+        body: formDataToSend, // NO Content-Type header
+        });
+
+        if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText);
+        }
+
+        const newOutage = await response.json();
+
+        await logFrontendEvent(
         "AdminOutagePeriodsAddForm",
         "INFO",
         "Outage period successfully created",
-        "Outage ID: " + outageId
-      );
+        "Outage ID: " + newOutage.id
+        );
 
-      alert(t("admin.outagePeriods.successAddNewOutage"));
-      await refreshOutagePeriods();
-      onSubmitSuccess();
+        alert(t("admin.outagePeriods.successAddNewOutage"));
+        await refreshOutagePeriods();
+        onSubmitSuccess();
 
-      // ✅ Reset form
-      setFormData({
+        // Reset form
+        setFormData({
         outageType: "",
         outageBrand: "",
         outageStart: "",
@@ -293,23 +276,32 @@ export default function AdminOutagePeriodsAddForm({
         vin: "",
         notes: "",
         zipFile: null,
-      });
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error";
+        });
+        setResolvedIds({ clientCompanyId: null, vehicleId: null });
 
-      await logFrontendEvent(
+      // ✅ Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }        
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Unknown error";
+        await logFrontendEvent(
         "AdminOutagePeriodsAddForm",
         "ERROR",
         "Failed to create outage",
         errorMessage
-      );
-
-      alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
+        );
+        alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
+        // ✅ Reset file input dopo errore
+        setFormData((prev) => ({ ...prev, zipFile: null }));
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }        
     } finally {
-      setIsSubmitting(false);
+        setIsSubmitting(false);
     }
-  };
+    };
 
   return (
     <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
@@ -467,6 +459,7 @@ export default function AdminOutagePeriodsAddForm({
             {t("admin.uploadZip")}
           </span>
           <input
+            ref={fileInputRef}
             name="zipFile"
             type="file"
             accept=".zip"

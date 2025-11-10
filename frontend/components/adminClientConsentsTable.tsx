@@ -164,8 +164,8 @@ export default function AdminClientConsents({
           }}
         >
           {showForm
-            ? t("admin.clientConsents.undoAddNewConsent")
-            : t("admin.clientConsents.addNewConsent")}
+            ? t("admin.clientConsents.addNewConsent")
+            : t("admin.clientConsents.undoAddNewConsent")}
         </button>
       </div>
 
