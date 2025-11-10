@@ -4,8 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Globalization;
-using System.Text;
-using PolarDrive.WebApi.Helpers;
 using System.Security.Cryptography;
 
 namespace PolarDrive.WebApi.Controllers;
@@ -226,90 +224,4 @@ public class UploadConsentZipController : ControllerBase
             message = replaceExisting ? "ZIP file replaced successfully" : "ZIP file uploaded successfully"
         });
     }
-
-    #region Private Methods
-
-    /// <summary>
-    /// ProcessZipFileAsync ora accetta qualsiasi contenuto (allineato agli outages)
-    /// </summary>
-    private async Task<(string? zipFilePath, string hash)> ProcessZipFileAsync(IFormFile zipFile, int companyId, string? filePrefix = null)
-    {
-        // ✅ Controlla che sia un file .zip
-        if (!Path.GetExtension(zipFile.FileName).Equals(".zip", StringComparison.OrdinalIgnoreCase))
-        {
-            await _logger.Warning("ProcessZipFileAsync", "Uploaded file is not a .zip.", zipFile.FileName);
-            return (null, "");
-        }
-
-        using var zipStream = new MemoryStream();
-        await zipFile.CopyToAsync(zipStream);
-        zipStream.Position = 0;
-
-        try
-        {
-            // ✅ Verifica solo che sia un ZIP valido, senza controllare il contenuto
-            using var archive = new ZipArchive(zipStream, ZipArchiveMode.Read, leaveOpen: true);
-
-            // ✅ Log del contenuto per debug (opzionale)
-            var fileCount = archive.Entries.Count(e => !e.FullName.EndsWith("/"));
-            await _logger.Info("ProcessZipFileAsync", "ZIP file processed successfully.",
-                $"FileName: {zipFile.FileName}, Files count: {fileCount}");
-        }
-        catch (InvalidDataException ex)
-        {
-            await _logger.Error("ProcessZipFileAsync", "ZIP file corrupted or invalid.", ex.Message);
-            return (null, "");
-        }
-        catch (Exception ex)
-        {
-            await _logger.Error("ProcessZipFileAsync", "Unexpected error processing ZIP file.", ex.Message);
-            return (null, "");
-        }
-
-        zipStream.Position = 0;
-
-        // Calcola l'hash del file ZIP
-        string hash;
-        using var sha256 = System.Security.Cryptography.SHA256.Create();
-        byte[] hashBytes = await sha256.ComputeHashAsync(zipStream);
-        hash = Convert.ToHexStringLower(hashBytes);
-
-        zipStream.Position = 0;
-
-        // ✅ Usa il percorso specifico della company
-        var companyConsentsPath = GetCompanyConsentsPath(companyId);
-
-        // ✅ Genera il nome del file
-        var timestamp = DateTime.Now.ToString("ddMMyyyy_HHmmss");
-        var fileName = string.IsNullOrWhiteSpace(filePrefix)
-            ? $"consent_{timestamp}.zip"
-            : $"{filePrefix}_{timestamp}.zip"; // Aggiunto underscore per coerenza
-
-        var finalPath = Path.Combine(companyConsentsPath, fileName);
-
-        // ✅ Salva il file
-        await using var fileStream = new FileStream(finalPath, FileMode.Create);
-        await zipStream.CopyToAsync(fileStream);
-
-        await _logger.Info("ProcessZipFileAsync", "ZIP file saved successfully.", finalPath);
-
-        return (finalPath, hash);
-    }
-
-    /// <summary>
-    /// Helper method per ottenere il percorso della company
-    /// </summary>
-    private string GetCompanyConsentsPath(int companyId)
-    {
-        var storageBasePath = Path.Combine(Directory.GetCurrentDirectory(), "storage");
-        var companiesBasePath = Path.Combine(storageBasePath, "companies");
-        var companyConsentsPath = Path.Combine(companiesBasePath, $"company-{companyId}", "consents-zip");
-        
-        // Crea la directory se non esiste
-        Directory.CreateDirectory(companyConsentsPath);
-        
-        return companyConsentsPath;
-    }
-
-    #endregion
 }
