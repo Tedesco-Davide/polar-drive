@@ -1,5 +1,5 @@
 # backend/PolarDriveInitDB.Cli/Dockerfile
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY backend/PolarDriveInitDB.Cli/PolarDriveInitDB.Cli.csproj backend/PolarDriveInitDB.Cli/
@@ -10,7 +10,7 @@ COPY backend/ ./backend/
 WORKDIR /src/backend/PolarDriveInitDB.Cli
 RUN dotnet publish -c Release -o /app/out /p:UseAppHost=false
 
-FROM mcr.microsoft.com/dotnet/runtime:9.0 AS final
+FROM mcr.microsoft.com/dotnet/runtime:10.0 AS final
 WORKDIR /app
 
 # utente non-root come negli altri

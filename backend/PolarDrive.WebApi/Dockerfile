@@ -1,7 +1,7 @@
 # backend/PolarDrive.WebApi/Dockerfile
 
-# Runtime (.NET 9)
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+# Runtime (.NET 10)
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 
 # FONT EMOJI + TIMEZONE
@@ -18,7 +18,7 @@ EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 
 # Build + publish
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY backend/PolarDrive.WebApi/PolarDrive.WebApi.csproj backend/PolarDrive.WebApi/
@@ -38,14 +38,14 @@ WORKDIR /app
 # ============================================
 USER root
 
-# Installa Node.js 20.x e dipendenze
+# Installa Node.js 20.x e dipendenze (incluso libasound2t64)
 RUN apt-get update && apt-get install -y \
     curl \
     wget \
     gnupg \
     ca-certificates \
     fonts-liberation \
-    libasound2 \
+    libasound2t64 \
     libatk-bridge2.0-0 \
     libatk1.0-0 \
     libc6 \
@@ -82,68 +82,63 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y nodejs \
     && rm -rf /var/lib/apt/lists/*
 
-# Verifica Node.js
 RUN echo "🔍 Verifying Node.js installation..." \
     && node --version \
     && npm --version
 
-# ============================================
-# INSTALLA PUPPETEER LOCALMENTE
-# ============================================
+# package.json minimale + Puppeteer
 WORKDIR /app
-
-# Crea package.json minimale
 RUN echo '{"name": "polardrive-pdf", "version": "1.0.0", "description": "PDF generation for PolarDrive"}' > package.json
 
-# Installa Puppeteer LOCALMENTE nella directory /app
 RUN echo "📦 Installing Puppeteer..." \
     && npm install puppeteer@23.11.1 --save --no-optional \
     && npm cache clean --force
 
-# Verifica che Puppeteer sia installato
 RUN echo "✅ Verifying Puppeteer installation..." \
     && node -e "const puppeteer = require('puppeteer'); console.log('✅ Puppeteer installed successfully');"
 
-# Crea directory necessarie
+# Directory che usi nel codice + font
 RUN mkdir -p /app/storage/reports \
+    && mkdir -p /app/storage/filemanager-zips \
+    && mkdir -p /app/TempFiles \
     && mkdir -p /app/logs/puppeteer \
+    && mkdir -p /app/logs \
+    && mkdir -p /app/Logs \
     && mkdir -p /tmp \
     && mkdir -p /usr/share/fonts/truetype/satoshi \
-    && mkdir -p /app/wwwroot/fonts/satoshi \
-    && chmod 777 /tmp \
-    && chmod 777 /app/logs
+    && mkdir -p /app/wwwroot/fonts/satoshi
 
-# ✅ COPIA FONT BASE64 DAL FRONTEND
+# Copia font e ricostruisci cache font
 COPY frontend/public/fonts/satoshi/*.b64 /app/wwwroot/fonts/satoshi/
 COPY frontend/public/fonts/satoshi/*.woff2 /usr/share/fonts/truetype/satoshi/
 RUN fc-cache -fv
 
-# ============================================
-# UTENTE NON-ROOT
-# ============================================
-RUN adduser --disabled-password --gecos '' appuser \
-    && chown -R appuser:appuser /app \
-    && chown -R appuser:appuser /tmp
+# Permessi per l'utente 'app'
+RUN chmod 777 /tmp \
+    && chmod -R 775 /app/storage /app/TempFiles /app/logs /app/Logs \
+    && chown -R app:app /app/storage /app/TempFiles /app/logs /app/Logs /app/wwwroot
 
-USER appuser
+# Usa l'utente non-root
+USER app
 
-# Scarica Chrome per Puppeteer (come appuser)
-RUN echo "🌐 Downloading Chrome for Puppeteer as appuser..." \
+# Scarica Chrome per Puppeteer come utente 'app'
+RUN echo "🌐 Downloading Chrome for Puppeteer as app..." \
     && cd /app \
     && npx puppeteer browsers install chrome \
     && echo "✅ Chrome downloaded successfully"
 
-# Verifica Chrome installato
+# Verifica Chrome installato usando la HOME corretta
 RUN echo "✅ Verifying Chrome installation..." \
-    && ls -la /home/appuser/.cache/puppeteer/chrome/ \
+    && echo "HOME is: $HOME" \
+    && ls -la "$HOME/.cache/puppeteer" \
+    && ls -la "$HOME/.cache/puppeteer/chrome" \
     && echo "✅ Chrome verified"
 
 # ============================================
 # COPIA APP E AVVIO
 # ============================================
-COPY --from=build --chown=appuser:appuser /app/out .
+COPY --from=build --chown=app:app /app/out .
 
-# Variabile d'ambiente per Node.js
 ENV NODE_PATH=/app/node_modules
 
 ENTRYPOINT ["dotnet", "PolarDrive.WebApi.dll"]

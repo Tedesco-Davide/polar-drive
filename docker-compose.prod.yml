@@ -5,6 +5,7 @@ services:
   api:
     container_name: polardrive-api-prod
     image: polardrive-api:latest
+    user: "0:0" 
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - POLAR_LOG_DIR=/app/Logs
