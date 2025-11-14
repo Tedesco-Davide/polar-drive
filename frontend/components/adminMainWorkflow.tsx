@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "next-i18next";
 import { FileArchive, UserSearch, Link, MessageSquare } from "lucide-react";
-import { usePagination } from "@/utils/usePagination";
-import { useSearchFilter } from "@/utils/useSearchFilter";
 import { FuelType } from "@/types/fuelTypes";
-
 import {
   adminWorkflowTypesInputForm,
   WorkflowRow,
@@ -19,13 +16,31 @@ import VehicleStatusToggle from "./vehicleStatusToggle";
 import Chip from "./chip";
 import AdminSmsManagementModal from "./adminSmsManagementModal";
 
-export default function AdminMainWorkflow({
-  workflowData,
-  refreshWorkflowData,
-}: {
-  workflowData: WorkflowRow[];
-  refreshWorkflowData: () => Promise<void>;
-}) {
+export default function AdminMainWorkflow() {
+  const { t } = useTranslation("");
+  const [workflowData, setWorkflowData] = useState<WorkflowRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isStatusChanging, setIsStatusChanging] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [generatingProfileId, setGeneratingProfileId] = useState<number | null>(
+    null
+  );
+  const [smsModalOpen, setSmsModalOpen] = useState(false);
+  const [selectedVehicleForSms, setSelectedVehicleForSms] = useState<{
+    id: number;
+    vin: string;
+    brand: string;
+    companyName: string;
+    isActive: boolean;
+  } | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [query, setQuery] = useState("");
+  const pageSize = 5;
+
   const [formData, setFormData] = useState<adminWorkflowTypesInputForm>({
     companyId: 0,
     companyVatNumber: "",
@@ -46,65 +61,97 @@ export default function AdminMainWorkflow({
     clientOAuthAuthorized: false,
   });
 
-  const [internalWorkflowData, setInternalWorkflowData] =
-    useState<WorkflowRow[]>(workflowData);
-  const [showForm, setShowForm] = useState(false);
-  const [isStatusChanging, setIsStatusChanging] = useState(false);
-  const { t } = useTranslation("");
-  const [generatingProfileId, setGeneratingProfileId] = useState<number | null>(
-    null
-  );
+  const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      });
+      if (searchQuery) params.append("search", searchQuery);
 
-  const { query, setQuery, filteredData } = useSearchFilter<WorkflowRow>(
-    internalWorkflowData,
-    [
-      "companyVatNumber",
-      "companyName",
-      "vehicleMobileNumber",
-      "referentEmail",
-      "vehicleVIN",
-    ]
-  );
+      const res = await fetch(`/api/clientvehicles?${params}`);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+
+      const response = await res.json();
+
+      const mapped: WorkflowRow[] = response.data.map(
+        (entry: {
+          id: number;
+          vin: string;
+          fuelType: string;
+          brand: string;
+          model: string;
+          trim?: string;
+          color?: string;
+          isActive: boolean;
+          isFetching: boolean;
+          firstActivationAt?: string;
+          clientOAuthAuthorized?: boolean;
+          referentName?: string;
+          vehicleMobileNumber?: string;
+          referentEmail?: string;
+          clientCompany?: {
+            id: number;
+            vatNumber: string;
+            name: string;
+          };
+        }) => ({
+          id: entry.id,
+          companyId: entry.clientCompany?.id ?? 0,
+          companyVatNumber: entry.clientCompany?.vatNumber ?? "",
+          companyName: entry.clientCompany?.name ?? "",
+          referentName: entry.referentName ?? "",
+          vehicleMobileNumber: entry.vehicleMobileNumber ?? "",
+          referentEmail: entry.referentEmail ?? "",
+          zipFilePath: "",
+          uploadDate: entry.firstActivationAt ?? "",
+          model: entry.model ?? "",
+          fuelType: entry.fuelType ?? "",
+          vehicleVIN: entry.vin ?? "",
+          color: entry.color ?? "",
+          trim: entry.trim ?? "",
+          accessToken: "",
+          refreshToken: "",
+          brand: entry.brand ?? "",
+          isVehicleActive: entry.isActive,
+          isVehicleFetchingData: entry.isFetching,
+          clientOAuthAuthorized: entry.clientOAuthAuthorized ?? false,
+        })
+      );
+
+      setWorkflowData(mapped);
+      setTotalCount(response.totalCount);
+      setTotalPages(response.totalPages);
+      setCurrentPage(response.page);
+
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "INFO",
+        "Workflow data loaded",
+        `Page: ${response.page}, Total: ${response.totalCount}`
+      );
+    } catch (err) {
+      logFrontendEvent(
+        "AdminMainWorkflow",
+        "ERROR",
+        "Failed to load workflow data",
+        String(err)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    logFrontendEvent(
-      "AdminMainWorkflow",
-      "DEBUG",
-      "Search query updated",
-      "Query: " + query
-    );
-  }, [query]);
-
-  const {
-    currentPage,
-    totalPages,
-    currentData: currentPageData,
-    nextPage,
-    prevPage,
-    setCurrentPage,
-  } = usePagination<WorkflowRow>(filteredData, 5);
-
-  useEffect(() => {
-    logFrontendEvent(
-      "AdminMainWorkflow",
-      "DEBUG",
-      "Pagination or search interaction",
-      "Current page: " + currentPage + ", Query: " + query
-    );
+    fetchWorkflowData(currentPage, query);
   }, [currentPage, query]);
 
-  useEffect(() => {
-    setInternalWorkflowData(workflowData);
-    setCurrentPage(1);
-  }, [workflowData, setCurrentPage]);
-
-  useEffect(() => {
-    logFrontendEvent(
-      "AdminMainWorkflow",
-      "INFO",
-      "Component mounted and initialized with workflow data"
-    );
-  }, []);
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchWorkflowData(currentPage, query);
+    setIsRefreshing(false);
+  };
 
   const handleSubmit = async () => {
     logFrontendEvent("AdminMainWorkflow", "INFO", "Form submission triggered");
@@ -135,12 +182,6 @@ export default function AdminMainWorkflow({
     });
 
     if (missing.length > 0) {
-      logFrontendEvent(
-        "AdminMainWorkflow",
-        "WARNING",
-        "Form validation failed: missing required fields",
-        JSON.stringify(missing)
-      );
       const translatedLabels = missing.map((field) =>
         t(`admin.mainWorkflow.labels.${field}`)
       );
@@ -148,41 +189,35 @@ export default function AdminMainWorkflow({
       return;
     }
 
-    // ✅ Validazione Alimentazaione
     if (!formData.fuelType) {
       alert(t("admin.clientVehicle.validation.fuelTypeRequired"));
       return;
     }
 
-    // ✅ Validazione Partita IVA (regex: 11 cifre)
     const partitaIVARegex = /^[0-9]{11}$/;
     if (!partitaIVARegex.test(formData.companyVatNumber)) {
       alert(t("admin.validation.invalidVat"));
       return;
     }
 
-    // ✅ Validazione Cellulare Referente
     const vehicleMobileNumberRegex = /^[0-9]{10}$/;
     if (!vehicleMobileNumberRegex.test(formData.vehicleMobileNumber)) {
       alert(t("admin.validation.invalidMobile"));
       return;
     }
 
-    // ✅ Validazione Email Aziendale
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.referentEmail)) {
       alert(t("admin.validation.invalidEmail"));
       return;
     }
 
-    // ✅ Validazione VIN Vehicle (regex: 17 caratteri alfanumerici, senza I/O/Q)
     const vinRegex = /^[A-HJ-NPR-Z0-9]{17}$/;
     if (!vinRegex.test(formData.vehicleVIN)) {
       alert(t("admin.validation.invalidVehicleVIN"));
       return;
     }
 
-    // ✅ Validazione Data Firma
     const firmaDate = parseISO(formData.uploadDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -191,16 +226,16 @@ export default function AdminMainWorkflow({
       return;
     }
 
-    setCurrentPage(1);
-
-    // ✅ Invio dati al backend
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("CompanyName", formData.companyName);
       formDataToSend.append("CompanyVatNumber", formData.companyVatNumber);
       formDataToSend.append("ReferentName", formData.referentName);
       formDataToSend.append("ReferentEmail", formData.referentEmail);
-      formDataToSend.append("VehicleMobileNumber", formData.vehicleMobileNumber);
+      formDataToSend.append(
+        "VehicleMobileNumber",
+        formData.vehicleMobileNumber
+      );
       formDataToSend.append("VehicleVIN", formData.vehicleVIN);
       formDataToSend.append("VehicleFuelType", formData.fuelType);
       formDataToSend.append("VehicleBrand", formData.brand);
@@ -210,13 +245,10 @@ export default function AdminMainWorkflow({
       formDataToSend.append("UploadDate", formData.uploadDate);
       formDataToSend.append("ConsentZip", formData.zipFilePath);
 
-      const response = await fetch(
-        `/api/adminfullclientinsert`,
-        {
-          method: "POST",
-          body: formDataToSend,
-        }
-      );
+      const response = await fetch(`/api/adminfullclientinsert`, {
+        method: "POST",
+        body: formDataToSend,
+      });
 
       if (!response.ok) {
         let errorCode = "";
@@ -224,150 +256,73 @@ export default function AdminMainWorkflow({
           const json = await response.json();
           errorCode = json.errorCode || "";
         } catch {
-          logFrontendEvent(
-            "AdminMainWorkflow",
-            "ERROR",
-            "Error during form submission",
-            "Status: " + response.status + ", VIN: " + formData.vehicleVIN
-          );
           alert(`${t("admin.genericError")} ${await response.text()}`);
           return;
         }
 
         switch (errorCode) {
           case "VEHICLE_ALREADY_ASSOCIATED_TO_SAME_COMPANY":
-            logFrontendEvent(
-              "AdminMainWorkflow",
-              "WARNING",
-              "Form submission failed with known backend error",
-              "ErrorCode: " + errorCode
-            );
             alert(t("admin.vehicleAlreadyAssociatedToSameCompany"));
             return;
           case "VEHICLE_ALREADY_ASSOCIATED_TO_ANOTHER_COMPANY":
-            logFrontendEvent(
-              "AdminMainWorkflow",
-              "WARNING",
-              "Form submission failed with known backend error",
-              "ErrorCode: " + errorCode
-            );
             alert(t("admin.vehicleAlreadyAssociatedToAnotherCompany"));
             return;
           case "DUPLICATE_CONSENT_HASH":
-            logFrontendEvent(
-              "AdminMainWorkflow",
-              "WARNING",
-              "Form submission failed with known backend error",
-              "ErrorCode: " + errorCode
-            );
             alert(t("admin.duplicatePdfHash"));
             return;
           case "INVALID_ZIP_FORMAT":
-            logFrontendEvent(
-              "AdminMainWorkflow",
-              "WARNING",
-              "Form submission failed with known backend error",
-              "ErrorCode: " + errorCode
-            );
             alert(t("admin.validation.invalidZipType"));
             return;
           default:
-            logFrontendEvent(
-              "AdminMainWorkflow",
-              "WARNING",
-              "Form submission failed with known backend error",
-              "ErrorCode: " + errorCode
-            );
             alert(`${t("admin.genericError")} ${errorCode}`);
             return;
         }
       }
 
-      // ✅ Mostri alert ed aggiorni i dati
-      try {
-        alert(t("admin.mainWorkflow.button.successAddNewVehicle"));
-        await refreshWorkflowData();
-      } catch (error) {
-        logFrontendEvent(
-          "AdminMainWorkflow",
-          "ERROR",
-          "Error during workflow refresh after insert",
-          error instanceof Error ? error.message : String(error)
-        );
-        alert(t("admin.genericError"));
-        console.error("Errore POST:", error);
-      }
+      alert(t("admin.mainWorkflow.button.successAddNewVehicle"));
+      await fetchWorkflowData(currentPage, query);
+
+      setFormData({
+        companyId: 0,
+        companyVatNumber: "",
+        companyName: "",
+        referentName: "",
+        vehicleMobileNumber: "",
+        referentEmail: "",
+        zipFilePath: new File([""], ""),
+        uploadDate: "",
+        model: "",
+        fuelType: FuelType.Electric,
+        vehicleVIN: "",
+        brand: "",
+        trim: "",
+        color: "",
+        isVehicleActive: true,
+        isVehicleFetchingData: true,
+        clientOAuthAuthorized: false,
+      });
+      setShowForm(false);
     } catch (error) {
       alert(`Errore durante l'inserimento: ${error}`);
-      console.error("Errore POST:", error);
-      return;
     }
-
-    logFrontendEvent(
-      "AdminMainWorkflow",
-      "INFO",
-      "Form reset after successful submission"
-    );
-
-    // ✅ Reset del form
-    setFormData({
-      companyId: 0,
-      companyVatNumber: "",
-      companyName: "",
-      referentName: "",
-      vehicleMobileNumber: "",
-      referentEmail: "",
-      zipFilePath: new File([""], ""),
-      uploadDate: "",
-      model: "",
-      fuelType: FuelType.Electric,
-      vehicleVIN: "",
-      brand: "",
-      trim: "",
-      color: "",
-      isVehicleActive: true,
-      isVehicleFetchingData: true,
-      clientOAuthAuthorized: false,
-    });
-
-    setShowForm(false);
   };
 
   const handleDownloadAllConsents = async (
     companyVatNumber: string,
-    companyName: string,
-    vehicleVin: string
+    companyName: string
   ) => {
     try {
-      // Validazione preliminare
       if (!companyVatNumber || !companyName) {
         alert(t("admin.mainWorkflow.alerts.missingCompanyData"));
         return;
       }
 
-      logFrontendEvent(
-        "AdminMainWorkflow",
-        "INFO",
-        "Download all consents triggered",
-        "Company VAT: " + companyVatNumber + ", VIN: " + vehicleVin
-      );
-
-      // Conferma dall'utente per operazioni su grandi volumi
       const confirmDownload = confirm(
         `${t(
           "admin.mainWorkflow.alerts.confirmDownloadAllConsents"
         )} ${companyName} (${companyVatNumber})?`
       );
-
-      if (!confirmDownload) {
-        logFrontendEvent(
-          "AdminMainWorkflow",
-          "INFO",
-          "Download all consents cancelled by user",
-          "Company VAT: " + companyVatNumber
-        );
-        return;
-      }
+      if (!confirmDownload) return;
 
       setIsStatusChanging(true);
 
@@ -377,113 +332,55 @@ export default function AdminMainWorkflow({
         )}`,
         { method: "GET" }
       );
-
-      // Gestisci risposte JSON (messaggi informativi)
       const contentType = response.headers.get("content-type");
 
       if (contentType && contentType.includes("application/json")) {
         const result = await response.json();
-
-        if (!result.success) {
+        if (!result.success)
           throw new Error(result.message || "Download failed");
-        }
-
         if (!result.hasData) {
           alert(
             result.message || t("admin.mainWorkflow.alerts.noConsentsFound")
-          );
-          logFrontendEvent(
-            "AdminMainWorkflow",
-            "INFO",
-            "No consents available for download",
-            "Company VAT: " + companyVatNumber + ", Message: " + result.message
           );
           return;
         }
       }
 
-      if (!response.ok) {
-        let errorMessage = "Unknown error";
-        try {
-          const errorText = await response.text();
-          errorMessage = errorText;
-        } catch {
-          errorMessage = "HTTP " + response.status + ": " + response.statusText;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Verifica che sia effettivamente un file ZIP
-      if (!contentType?.includes("application/zip")) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      if (!contentType?.includes("application/zip"))
         throw new Error("Server did not return a ZIP file");
-      }
 
       const blob = await response.blob();
-
-      // Verifica dimensione minima del file (dovrebbe essere > 22 bytes per un ZIP vuoto)
-      if (blob.size < 22) {
+      if (blob.size < 22)
         throw new Error("Downloaded file appears to be empty or corrupted");
-      }
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-
       const timestamp = new Date()
         .toISOString()
         .slice(0, 19)
         .replace(/[:-]/g, "");
       const sanitizedCompanyName = companyName.replace(/[^a-zA-Z0-9]/g, "_");
       link.download = `consensi_${sanitizedCompanyName}_${companyVatNumber}_${timestamp}.zip`;
-
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      logFrontendEvent(
-        "AdminMainWorkflow",
-        "INFO",
-        "All consents downloaded successfully",
-        "Company VAT: " + companyVatNumber + ", File size: " + blob.size + " bytes"
-      );
-
       alert(t("admin.mainWorkflow.alerts.allConsentsDownloaded"));
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Download failed";
-      logFrontendEvent(
-        "AdminMainWorkflow",
-        "ERROR",
-        "Failed to download all consents",
-        "Company VAT: " + companyVatNumber + ", Error: " + errorMessage
+      alert(
+        `${t(
+          "admin.mainWorkflow.alerts.downloadAllConsentsFail"
+        )}: ${errorMessage}`
       );
-
-      // Messaggi di errore più specifici
-      if (errorMessage.includes("not found")) {
-        alert(t("admin.mainWorkflow.alerts.noConsentsFound"));
-      } else if (errorMessage.includes("HTTP 500")) {
-        alert(t("admin.mainWorkflow.alerts.serverErrorDownload"));
-      } else {
-        alert(
-          `${t(
-            "admin.mainWorkflow.alerts.downloadAllConsentsFail"
-          )}: ${errorMessage}`
-        );
-      }
     } finally {
       setIsStatusChanging(false);
     }
   };
-
-  const [smsModalOpen, setSmsModalOpen] = useState(false);
-  const [selectedVehicleForSms, setSelectedVehicleForSms] = useState<{
-    id: number;
-    vin: string;
-    brand: string;
-    companyName: string;
-    isActive: boolean;
-  } | null>(null);
 
   const handleGenerateClientProfile = async (
     companyId: number,
@@ -491,167 +388,97 @@ export default function AdminMainWorkflow({
     vatNumber: string
   ) => {
     try {
-      // Validazione preliminare
       if (!companyId || !companyName) {
         alert(t("admin.mainWorkflow.alerts.missingCompanyData"));
         return;
       }
 
-      logFrontendEvent(
-        "AdminMainWorkflow",
-        "INFO",
-        "Client profile PDF generation triggered",
-        "ClientCompanyId: " + companyId + ", VAT: " + vatNumber
-      );
-
-      // Conferma dall'utente
       const confirmGeneration = confirm(
         `${t(
           "admin.mainWorkflow.alerts.confirmGenerateProfile"
         )} ${companyName} (${vatNumber})?`
       );
+      if (!confirmGeneration) return;
 
-      if (!confirmGeneration) {
-        logFrontendEvent(
-          "AdminMainWorkflow",
-          "INFO",
-          "Client profile generation cancelled by user",
-          "ClientCompanyId: " + companyId
-        );
-        return;
-      }
-
-      // ✅ Imposta il loader specifico per questo companyId invece del loader globale
       setGeneratingProfileId(companyId);
 
       const response = await fetch(
         `/api/ClientProfile/${companyId}/generate-profile-pdf`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         }
       );
 
-      // Gestisci risposte JSON (messaggi di errore)
       const contentType = response.headers.get("content-type");
-
       if (contentType && contentType.includes("application/json")) {
         const result = await response.json();
-
-        if (!response.ok) {
+        if (!response.ok)
           throw new Error(result.message || "Errore nella generazione del PDF");
-        }
-
-        // Se la risposta è JSON ma ok, potrebbe essere un messaggio informativo
         if (result.message) {
           alert(result.message);
           return;
         }
       }
 
-      if (!response.ok) {
-        let errorMessage = "Errore sconosciuto";
-        try {
-          const errorText = await response.text();
-          errorMessage = errorText;
-        } catch {
-          errorMessage = "HTTP " + response.status + ": " + response.statusText;
-        }
-        throw new Error(errorMessage);
-      }
-
-      // Verifica che sia effettivamente un file PDF
-      if (!contentType?.includes("application/pdf")) {
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      if (!contentType?.includes("application/pdf"))
         throw new Error("Il server non ha restituito un file PDF valido");
-      }
 
       const blob = await response.blob();
-
-      // Verifica dimensione minima del file
-      if (blob.size < 100) {
+      if (blob.size < 100)
         throw new Error("Il file PDF generato sembra essere vuoto o corrotto");
-      }
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-
       const timestamp = new Date()
         .toISOString()
         .slice(0, 19)
         .replace(/[:-]/g, "");
       const sanitizedCompanyName = companyName.replace(/[^a-zA-Z0-9]/g, "_");
       link.download = `Profilo_Cliente_${sanitizedCompanyName}_${vatNumber}_${timestamp}.pdf`;
-
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      logFrontendEvent(
-        "AdminMainWorkflow",
-        "INFO",
-        "Client profile PDF downloaded successfully",
-        "ClientCompanyId: " + companyId + ", File size: " + blob.size + " bytes"
-      );
-
       alert(t("admin.mainWorkflow.alerts.clientProfileGenerated"));
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Generazione PDF fallita";
-
-      logFrontendEvent(
-        "AdminMainWorkflow",
-        "ERROR",
-        "Failed to generate client profile PDF",
-        "ClientCompanyId: " + companyId + ", Error: " + errorMessage
+      alert(
+        `${t("admin.mainWorkflow.alerts.generateProfileFail")}: ${errorMessage}`
       );
-
-      // Messaggi di errore più specifici
-      if (errorMessage.includes("not found")) {
-        alert(t("admin.mainWorkflow.alerts.companyNotFound"));
-      } else if (errorMessage.includes("no data")) {
-        alert(t("admin.mainWorkflow.alerts.noProfileDataAvailable"));
-      } else if (errorMessage.includes("HTTP 500")) {
-        alert(t("admin.mainWorkflow.alerts.serverErrorGeneration"));
-      } else {
-        alert(
-          `${t(
-            "admin.mainWorkflow.alerts.generateProfileFail"
-          )}: ${errorMessage}`
-        );
-      }
     } finally {
-      // ✅ Reset del loader specifico
       setGeneratingProfileId(null);
     }
   };
 
   return (
     <div>
-      {isStatusChanging && <AdminLoader />}
+      {(loading || isRefreshing || isStatusChanging) && <AdminLoader />}
+
       <div className="flex items-center mb-12 space-x-3">
-        <h1 className="text-2xl  font-bold text-polarNight dark:text-softWhite">
-          {t("admin.mainWorkflow.tableHeader")}
+        <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
+          {t("admin.mainWorkflow.tableHeader")}: {totalCount}
         </h1>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="px-6 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50"
+        >
+          <span className="uppercase text-xs tracking-widest">
+            {t("admin.tableRefreshButton")}
+          </span>
+        </button>
         <button
           className={`${
             showForm
               ? "bg-dataRed hover:bg-red-600"
               : "bg-blue-500 hover:bg-blue-600"
           } text-softWhite px-6 py-2 rounded`}
-          onClick={() => {
-            const newValue = !showForm;
-            setShowForm(newValue);
-            logFrontendEvent(
-              "AdminMainWorkflow",
-              "INFO",
-              "Form visibility toggled",
-              "Now showing form: " + newValue
-            );
-          }}
+          onClick={() => setShowForm(!showForm)}
         >
           {showForm
             ? t("admin.mainWorkflow.button.undoAddNewVehicle")
@@ -694,7 +521,7 @@ export default function AdminMainWorkflow({
           </tr>
         </thead>
         <tbody>
-          {currentPageData.map((entry, index) => (
+          {workflowData.map((entry, index) => (
             <tr
               key={entry.id}
               className="border-b border-gray-300 dark:border-gray-600"
@@ -704,48 +531,28 @@ export default function AdminMainWorkflow({
                   className={`p-2 ${
                     !entry.clientOAuthAuthorized
                       ? "bg-cyan-500 hover:bg-cyan-600"
-                      : "bg-slate-400 cursor-not-allowed opacity-20 text-slate-200"
+                      : "bg-slate-400 cursor-not-allowed opacity-20"
                   } text-softWhite rounded`}
                   disabled={entry.clientOAuthAuthorized}
                   title={t("admin.mainWorkflow.alerts.urlGenerationTooltip")}
                   onClick={async () => {
+                    if (entry.clientOAuthAuthorized || !entry.brand) return;
                     try {
-                      if (entry.clientOAuthAuthorized) return;
-                      if (!entry.brand) {
-                        alert(
-                          t(
-                            "admin.mainWorkflow.alerts.urlGenerationMissingBrand"
-                          )
-                        );
-                        return;
-                      }
-                      const brand = entry.brand.toLowerCase();
                       const res = await fetch(
-                        `/api/VehicleOAuth/GenerateUrl?brand=${brand}&vin=${entry.vehicleVIN}`
+                        `/api/VehicleOAuth/GenerateUrl?brand=${entry.brand.toLowerCase()}&vin=${
+                          entry.vehicleVIN
+                        }`
                       );
                       const data = await res.json();
                       if (data?.url) {
                         await navigator.clipboard.writeText(data.url);
-                        logFrontendEvent(
-                          "AdminMainWorkflow",
-                          "INFO",
-                          "OAuth URL generated and copied to clipboard",
-                          "VIN: " + entry.vehicleVIN
-                        );
                         alert(
                           t("admin.mainWorkflow.alerts.urlGenerationConfirm")
                         );
                       } else {
                         alert(t("admin.mainWorkflow.alerts.urlGenerationFail"));
                       }
-                    } catch (err) {
-                      logFrontendEvent(
-                        "AdminMainWorkflow",
-                        "ERROR",
-                        "OAuth URL generation failed",
-                        err instanceof Error ? err.message : String(err)
-                      );
-                      console.error("Errore OAuth:", err);
+                    } catch {
                       alert(
                         t("admin.mainWorkflow.alerts.urlGenerationOAuthFail")
                       );
@@ -761,11 +568,6 @@ export default function AdminMainWorkflow({
                       : "bg-gray-400 cursor-not-allowed opacity-20"
                   } text-softWhite rounded`}
                   disabled={!entry.isVehicleActive}
-                  title={
-                    entry.isVehicleActive
-                      ? "Gestisci SMS per questo veicolo"
-                      : "Veicolo non attivo - SMS disabilitato"
-                  }
                   onClick={() => {
                     if (entry.isVehicleActive) {
                       setSelectedVehicleForSms({
@@ -776,28 +578,21 @@ export default function AdminMainWorkflow({
                         isActive: entry.isVehicleActive,
                       });
                       setSmsModalOpen(true);
-                      logFrontendEvent(
-                        "AdminMainWorkflow",
-                        "INFO",
-                        "SMS management modal opened",
-                        "VIN: " + entry.vehicleVIN + ", Active: " + entry.isVehicleActive
-                      );
                     }
                   }}
                 >
                   <MessageSquare size={16} />
                 </button>
                 <button
-                  className="p-2 text-softWhite rounded bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
-                  title={t("admin.mainWorkflow.button.pdfUserAndVehicle")}
+                  className="p-2 text-softWhite rounded bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
                   disabled={generatingProfileId === entry.companyId}
-                  onClick={() => {
+                  onClick={() =>
                     handleGenerateClientProfile(
                       entry.companyId,
                       entry.companyName,
                       entry.companyVatNumber
-                    );
-                  }}
+                    )
+                  }
                 >
                   {generatingProfileId === entry.companyId ? (
                     <AdminLoader inline />
@@ -807,14 +602,12 @@ export default function AdminMainWorkflow({
                 </button>
                 <button
                   className="p-2 bg-orange-500 hover:bg-orange-600 text-softWhite rounded"
-                  title={t("admin.mainWorkflow.button.zipConsents")}
-                  onClick={() => {
+                  onClick={() =>
                     handleDownloadAllConsents(
                       entry.companyVatNumber,
-                      entry.companyName,
-                      entry.vehicleVIN
-                    );
-                  }}
+                      entry.companyName
+                    )
+                  }
                 >
                   <FileArchive size={16} />
                 </button>
@@ -839,19 +632,22 @@ export default function AdminMainWorkflow({
                   isFetching={entry.isVehicleFetchingData}
                   field="IsActive"
                   onStatusChange={(newIsActive, newIsFetching) => {
-                    const updated = [...workflowData];
-                    updated[index].isVehicleActive = newIsActive;
-                    updated[index].isVehicleFetchingData = newIsFetching;
-                    setInternalWorkflowData(updated);
-                    logFrontendEvent(
-                      "AdminMainWorkflow",
-                      "INFO",
-                      "Vehicle status changed",
-                      "VIN: " + entry.vehicleVIN + ", Active: " + newIsActive + ", Fetching: " + newIsFetching
+                    setWorkflowData((prev) =>
+                      prev.map((w, i) =>
+                        i === index
+                          ? {
+                              ...w,
+                              isVehicleActive: newIsActive,
+                              isVehicleFetchingData: newIsFetching,
+                            }
+                          : w
+                      )
                     );
                   }}
                   setLoading={setIsStatusChanging}
-                  refreshWorkflowData={refreshWorkflowData}
+                  refreshWorkflowData={async () =>
+                    await fetchWorkflowData(currentPage, query)
+                  }
                   disabled={!entry.clientOAuthAuthorized}
                 />
               </td>
@@ -862,19 +658,22 @@ export default function AdminMainWorkflow({
                   isFetching={entry.isVehicleFetchingData}
                   field="IsFetching"
                   onStatusChange={(newIsActive, newIsFetching) => {
-                    const updated = [...workflowData];
-                    updated[index].isVehicleActive = newIsActive;
-                    updated[index].isVehicleFetchingData = newIsFetching;
-                    setInternalWorkflowData(updated);
-                    logFrontendEvent(
-                      "AdminMainWorkflow",
-                      "INFO",
-                      "Vehicle status changed",
-                      "VIN: " + entry.vehicleVIN + ", Active: " + newIsActive + ", Fetching: " + newIsFetching
+                    setWorkflowData((prev) =>
+                      prev.map((w, i) =>
+                        i === index
+                          ? {
+                              ...w,
+                              isVehicleActive: newIsActive,
+                              isVehicleFetchingData: newIsFetching,
+                            }
+                          : w
+                      )
                     );
                   }}
                   setLoading={setIsStatusChanging}
-                  refreshWorkflowData={refreshWorkflowData}
+                  refreshWorkflowData={async () =>
+                    await fetchWorkflowData(currentPage, query)
+                  }
                   disabled={!entry.clientOAuthAuthorized}
                 />
               </td>
@@ -886,12 +685,13 @@ export default function AdminMainWorkflow({
           ))}
         </tbody>
       </table>
+
       <div className="flex flex-wrap items-center gap-4 mt-4">
         <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
-          onPrev={prevPage}
-          onNext={nextPage}
+          onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
         <SearchBar
           query={query}

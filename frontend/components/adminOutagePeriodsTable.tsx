@@ -1,18 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { TFunction } from "i18next";
-import {
-  NotebookPen,
-  Clock,
-  Upload,
-  Download,
-  ShieldCheck,
-  CircleX,
-  CircleCheck,
-} from "lucide-react";
-import { usePagination } from "@/utils/usePagination";
-import { useSearchFilter } from "@/utils/useSearchFilter";
+import { NotebookPen, Clock, Upload, Download, ShieldCheck, CircleX, CircleCheck } from "lucide-react";
 import { format } from "date-fns";
-
 import { logFrontendEvent } from "@/utils/logger";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
 import PaginationControls from "@/components/paginationControls";
@@ -22,16 +11,7 @@ import NotesModal from "./notesModal";
 import AdminOutagePeriodsAddForm from "./adminOutagePeriodsAddForm";
 import AdminLoader from "./adminLoader";
 
-interface Props {
-  t: TFunction;
-  outages: OutagePeriod[];
-  refreshOutagePeriods: () => Promise<OutagePeriod[]>;
-  isRefreshing?: boolean;
-  setIsRefreshing?: (value: boolean) => void;
-}
-
 const formatDateTime = (dateTime: string): string => {
-  // Forza interpretazione come ora locale invece che UTC
   const date = new Date(dateTime.replace("Z", ""));
   return format(date, "dd/MM/yyyy HH:mm");
 };
@@ -40,238 +20,180 @@ const formatDuration = (minutes: number): string => {
   const days = Math.floor(minutes / 1440);
   const hours = Math.floor((minutes % 1440) / 60);
   const mins = minutes % 60;
-
   const parts: string[] = [];
-    if (days > 0) parts.push(days + "g");
-    if (hours > 0) parts.push(hours + "h");
-    if (mins > 0 || parts.length === 0) parts.push(mins + "m");
-
+  if (days > 0) parts.push(days + "g");
+  if (hours > 0) parts.push(hours + "h");
+  if (mins > 0 || parts.length === 0) parts.push(mins + "m");
   return parts.join(" ");
 };
 
 const getStatusColor = (status: string): string => {
-  switch (status) {
-    case "OUTAGE-ONGOING":
-      return "bg-red-100 text-red-700 border-red-500";
-    case "OUTAGE-RESOLVED":
-      return "bg-green-100 text-green-700 border-green-500";
-    default:
-      return "bg-gray-100 text-gray-700 border-gray-400";
-  }
+  return status === "OUTAGE-ONGOING"
+    ? "bg-red-100 text-red-700 border-red-500"
+    : "bg-green-100 text-green-700 border-green-500";
 };
 
-export default function AdminOutagePeriodsTable({
-  t,
-  outages,
-  refreshOutagePeriods,
-  isRefreshing,
-  setIsRefreshing,
-}: Props) {
-  const [localOutages, setLocalOutages] = useState<OutagePeriod[]>([]);
+export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
+  const [outages, setOutages] = useState<OutagePeriod[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedOutageForNotes, setSelectedOutageForNotes] =
-    useState<OutagePeriod | null>(null);
+  const [selectedOutageForNotes, setSelectedOutageForNotes] = useState<OutagePeriod | null>(null);
   const [uploadingZip, setUploadingZip] = useState<Set<number>>(new Set());
   const fileInputRefs = useRef<Map<number, HTMLInputElement | null>>(new Map());
 
-  useEffect(() => {
-    setLocalOutages(outages);
-    logFrontendEvent(
-      "AdminOutagePeriodsTable",
-      "INFO",
-      "Component mounted and outages data initialized",
-      "Loaded " + outages.length + " outage records"
-    );
-  }, [outages]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [query, setQuery] = useState("");
+  const pageSize = 5;
+
+  const fetchOutages = async (page: number, searchQuery: string = "") => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      });
+      if (searchQuery) params.append("search", searchQuery);
+
+      const res = await fetch(`/api/outageperiods?${params}`);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+
+      const data = await res.json();
+      setOutages(data.data);
+      setTotalCount(data.totalCount);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.page);
+
+      logFrontendEvent("AdminOutagePeriodsTable", "INFO", "Outages loaded", `Page: ${data.page}, Total: ${data.totalCount}`);
+    } catch (err) {
+      logFrontendEvent("AdminOutagePeriodsTable", "ERROR", "Failed to load outages", String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    // Auto-refresh ogni 60 secondi
-    const interval = setInterval(async () => {
-      try {
-        const updatedOutages = await refreshOutagePeriods();
-        setLocalOutages(updatedOutages);
+    fetchOutages(currentPage, query);
+  }, [currentPage, query]);
 
-        logFrontendEvent(
-          "AdminOutagePeriodsTable",
-          "INFO",
-          "Auto-refreshed outage data",
-          "Updated " + updatedOutages.length + " outage records"
-        );
-      } catch (error) {
-        console.warn("Auto-refresh failed:", error);
-      }
-    }, 60000); // 60 secondi
-
+  useEffect(() => {
+    const interval = setInterval(() => fetchOutages(currentPage, query), 60000);
     return () => clearInterval(interval);
-  }, [refreshOutagePeriods]);
+  }, [currentPage, query]);
 
-  const { query, setQuery, filteredData } = useSearchFilter<OutagePeriod>(
-    localOutages,
-    ["outageType", "notes", "companyVatNumber", "vin", "outageBrand"]
-  );
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchOutages(currentPage, query);
+    setIsRefreshing(false);
+  };
 
-  const {
-    currentPage,
-    totalPages,
-    currentData: currentPageData,
-    nextPage,
-    prevPage,
-    setCurrentPage,
-  } = usePagination<OutagePeriod>(filteredData, 10);
-
-    const handleZipUpload = async (outageId: number, file: File) => {
+  const handleZipUpload = async (outageId: number, file: File) => {
     if (!file.name.endsWith(".zip")) {
-        alert(t("admin.validation.invalidZipType"));
-        const inputEl = fileInputRefs.current.get(outageId);
-        if (inputEl) inputEl.value = "";
-        return;
+      alert(t("admin.validation.invalidZipType"));
+      const inputEl = fileInputRefs.current.get(outageId);
+      if (inputEl) inputEl.value = "";
+      return;
     }
 
     const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
-        alert(t("admin.outagePeriods.validation.zipTooLarge"));
-        const inputEl = fileInputRefs.current.get(outageId);
-        if (inputEl) inputEl.value = "";
-        return;
+      alert(t("admin.outagePeriods.validation.zipTooLarge"));
+      const inputEl = fileInputRefs.current.get(outageId);
+      if (inputEl) inputEl.value = "";
+      return;
     }
 
     setUploadingZip((prev) => new Set(prev).add(outageId));
 
     try {
-        const formData = new FormData();
-        formData.append("zipFile", file);
+      const formData = new FormData();
+      formData.append("zipFile", file);
 
-        const response = await fetch(
-        `/api/outageperiods/${outageId}/upload-zip`,
-        {
-            method: "POST",
-            body: formData,
-        }
-        );
+      const response = await fetch(`/api/outageperiods/${outageId}/upload-zip`, {
+        method: "POST",
+        body: formData,
+      });
 
-        if (!response.ok) {
+      if (!response.ok) {
         const errorText = await response.text();
-        
-        // ✅ Prova a parsare come JSON
         try {
-            const errorJson = JSON.parse(errorText);
-            throw new Error(errorJson.message || errorText);
+          const errorJson = JSON.parse(errorText);
+          throw new Error(errorJson.message || errorText);
         } catch {
-            // Se non è JSON valido, usa il testo grezzo
-            throw new Error(errorText);
+          throw new Error(errorText);
         }
-        }
+      }
 
-        const updatedOutages = await refreshOutagePeriods();
-        setLocalOutages(updatedOutages);
+      await fetchOutages(currentPage, query);
+      alert(t("admin.successUploadZip"));
 
-        logFrontendEvent(
-        "AdminOutagePeriodsTable",
-        "INFO",
-        "ZIP uploaded successfully",
-        "Outage ID: " + outageId + ", File: " + file.name
-        );
-
-        alert(t("admin.successUploadZip"));
-        
-        const inputEl = fileInputRefs.current.get(outageId);
-        if (inputEl) inputEl.value = "";
-
+      const inputEl = fileInputRefs.current.get(outageId);
+      if (inputEl) inputEl.value = "";
     } catch (error) {
-        const errorMessage =
-        error instanceof Error ? error.message : "Upload failed";
-        
-        await logFrontendEvent(
-        "AdminOutagePeriodsTable",
-        "ERROR",
-        "Failed to upload ZIP",
-        errorMessage
-        );
-        
-        alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
-        
-        const inputEl = fileInputRefs.current.get(outageId);
-        if (inputEl) inputEl.value = "";
-
+      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+      alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
+      const inputEl = fileInputRefs.current.get(outageId);
+      if (inputEl) inputEl.value = "";
     } finally {
-        setUploadingZip((prev) => {
+      setUploadingZip((prev) => {
         const newSet = new Set(prev);
         newSet.delete(outageId);
         return newSet;
-        });
+      });
     }
-    };
+  };
 
   const handleZipDownload = (outageId: number) => {
-    window.open(
-      `/api/outageperiods/${outageId}/download-zip`,
-      "_blank"
-    );
-    logFrontendEvent(
-      "AdminOutagePeriodsTable",
-      "INFO",
-      "ZIP download triggered",
-      "Outage ID: " + outageId
-    );
+    window.open(`/api/outageperiods/${outageId}/download-zip`, "_blank");
   };
 
   const handleResolveOutage = async (outageId: number) => {
-    if (!confirm(t("admin.outagePeriods.confirmResolveManually"))) {
-      return;
-    }
+    if (!confirm(t("admin.outagePeriods.confirmResolveManually"))) return;
 
     try {
-      const response = await fetch(
-        `/api/outageperiods/${outageId}/resolve`,
-        { method: "PATCH" }
-      );
+      const response = await fetch(`/api/outageperiods/${outageId}/resolve`, { method: "PATCH" });
+      if (!response.ok) throw new Error("Failed to resolve outage");
 
-      if (!response.ok) {
-        throw new Error("Failed to resolve outage");
-      }
-
-      const updatedOutages = await refreshOutagePeriods();
-      setLocalOutages(updatedOutages);
-
-      logFrontendEvent(
-        "AdminOutagePeriodsTable",
-        "INFO",
-        "Outage resolved manually",
-        "Outage ID: " + outageId
-      );
+      await fetchOutages(currentPage, query);
       alert(t("admin.outagePeriods.confirmResolveSuccess"));
-    } catch (error) {
-      logFrontendEvent(
-        "AdminOutagePeriodsTable",
-        "ERROR",
-        "Failed to resolve outage",
-        error instanceof Error ? error.message : "Unknown error"
-      );
+    } catch {
       alert(t("admin.outagePeriods.confirmResolveError"));
+    }
+  };
+
+  const handleNotesUpdate = async (updated: OutagePeriod) => {
+    try {
+      const response = await fetch(`/api/outageperiods/${updated.id}/notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: updated.notes }),
+      });
+
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      setOutages(prev => prev.map(o => o.id === updated.id ? { ...o, notes: updated.notes } : o));
+      setSelectedOutageForNotes(null);
+      setTimeout(() => fetchOutages(currentPage, query), 200);
+    } catch {
+      alert(t("admin.notesGenericError"));
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Loader full-page fuori dalla tabella */}
-      {isRefreshing && <AdminLoader />}
+      {(loading || isRefreshing) && <AdminLoader />}
 
-      {/* Header */}
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.outagePeriods.tableHeader")}
+          {t("admin.outagePeriods.tableHeader")}: {totalCount}
         </h1>
         <button
-          className={`px-6 py-2 rounded font-medium transition-colors ${
-            showAddForm
-              ? "bg-red-500 hover:bg-red-600 text-white"
-              : "bg-blue-500 hover:bg-blue-600 text-white"
-          }`}
+          className={`px-6 py-2 rounded font-medium transition-colors ${showAddForm ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"} text-white`}
           onClick={() => setShowAddForm(!showAddForm)}
         >
-          {showAddForm
-            ? t("admin.outagePeriods.undoAddNewOutage")
-            : t("admin.outagePeriods.addNewOutage")}
+          {showAddForm ? t("admin.outagePeriods.undoAddNewOutage") : t("admin.outagePeriods.addNewOutage")}
         </button>
       </div>
 
@@ -279,278 +201,104 @@ export default function AdminOutagePeriodsTable({
         <AdminOutagePeriodsAddForm
           t={t}
           onSubmitSuccess={() => setShowAddForm(false)}
-          refreshOutagePeriods={async () => {
-            await refreshOutagePeriods();
-          }}
+          refreshOutagePeriods={async () => await fetchOutages(currentPage, query)}
         />
       )}
 
-      {/* Tabella */}
       <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">
-              {setIsRefreshing && (
-                <button
-                  onClick={async () => {
-                    setIsRefreshing(true);
-                    try {
-                      await refreshOutagePeriods();
-                      alert(t("admin.outagePeriods.tableRefreshSuccess"));
-                    } catch {
-                      alert(t("admin.outagePeriods.tableRefreshFail"));
-                    } finally {
-                      setIsRefreshing(false);
-                    }
-                  }}
-                  disabled={isRefreshing}
-                  className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="uppercase text-xs tracking-widest">
-                    {t("admin.tableRefreshButton")}
-                  </span>
-                </button>
-              )}{" "}
-              {t("admin.actions")}
+              <button onClick={handleRefresh} disabled={isRefreshing} className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50">
+                <span className="uppercase text-xs tracking-widest">{t("admin.tableRefreshButton")}</span>
+              </button> {t("admin.actions")}
             </th>
-            <th className="p-4 text-left font-semibold">
-              {t("admin.outagePeriods.autoDetected")}
-            </th>
-            <th className="p-4 text-left font-semibold">
-              {t("admin.outagePeriods.status")}
-            </th>
-            <th className="p-4 text-left font-semibold">
-              {t("admin.outagePeriods.outageType")}
-            </th>
-            <th className="p-4 text-left font-semibold">
-              {t("admin.outagePeriods.outageBrand")}
-            </th>
-            <th className="p-4 text-left font-semibold">
-              {t("admin.outagePeriods.outageStart")} -{" "}
-              {t("admin.outagePeriods.outageEnd")}
-            </th>
-            <th className="p-4 text-left font-semibold">
-              {t("admin.outagePeriods.duration")}
-            </th>
-            <th className="p-4 text-left font-semibold">
-              {t("admin.outagePeriods.companyVatNumber")} —{" "}
-              {t("admin.outagePeriods.vehicleVIN")}
-            </th>
+            <th className="p-4">{t("admin.outagePeriods.autoDetected")}</th>
+            <th className="p-4">{t("admin.outagePeriods.status")}</th>
+            <th className="p-4">{t("admin.outagePeriods.outageType")}</th>
+            <th className="p-4">{t("admin.outagePeriods.outageBrand")}</th>
+            <th className="p-4">{t("admin.outagePeriods.outageStart")} - {t("admin.outagePeriods.outageEnd")}</th>
+            <th className="p-4">{t("admin.outagePeriods.duration")}</th>
+            <th className="p-4">{t("admin.outagePeriods.companyVatNumber")} — {t("admin.outagePeriods.vehicleVIN")}</th>
           </tr>
         </thead>
         <tbody>
-          {currentPageData.map((outage) => {
-            return (
-              <tr
-                key={outage.id}
-                className="border-b border-gray-300 dark:border-gray-600"
-              >
-                {/* Azioni */}
-                <td className="px-4 py-3">
+          {outages.map((outage) => (
+            <tr key={outage.id} className="border-b border-gray-300 dark:border-gray-600">
+              <td className="px-4 py-3">
                 <div className="flex items-center space-x-2">
-                    {/* ✅ Upload solo se NON esiste ZIP */}
-                    {!outage.hasZipFile && (
-                    <label
-                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors cursor-pointer"
-                        title={t("admin.uploadZip")}
-                    >
-                        <input
+                  {!outage.hasZipFile && (
+                    <label className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded cursor-pointer" title={t("admin.uploadZip")}>
+                      <input
                         ref={(el) => {
-                        fileInputRefs.current.set(outage.id, el);
+                            fileInputRefs.current.set(outage.id, el);
                         }}
                         type="file"
                         accept=".zip"
                         className="hidden"
                         onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            if (file) {
-                            handleZipUpload(outage.id, file);
-                            }
+                          const file = e.target.files?.[0];
+                          if (file) handleZipUpload(outage.id, file);
                         }}
                         disabled={uploadingZip.has(outage.id)}
-                        />
-                        {uploadingZip.has(outage.id) ? (
-                        <Clock size={16} className="animate-spin" />
-                        ) : (
-                        <Upload size={16} />
-                        )}
+                      />
+                      {uploadingZip.has(outage.id) ? <Clock size={16} className="animate-spin" /> : <Upload size={16} />}
                     </label>
-                    )}
-
-                    {/* ✅ Download se esiste ZIP */}
-                    {outage.hasZipFile && (
-                    <button
-                        onClick={() => handleZipDownload(outage.id)}
-                        className="p-2 bg-green-500 hover:bg-green-600 text-white rounded transition-colors"
-                        title={t("admin.downloadZip")}
-                    >
-                        <Download size={16} />
+                  )}
+                  {outage.hasZipFile && (
+                    <button onClick={() => handleZipDownload(outage.id)} className="p-2 bg-green-500 hover:bg-green-600 text-white rounded" title={t("admin.downloadZip")}>
+                      <Download size={16} />
                     </button>
-                    )}
-
-                    {/* Resolve & Notes */}
-                    {outage.status === "OUTAGE-ONGOING" && (
-                    <button
-                        onClick={() => handleResolveOutage(outage.id)}
-                        className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                        title={t("admin.outagePeriods.resolveManually")}
-                    >
-                        <ShieldCheck size={16} />
+                  )}
+                  {outage.status === "OUTAGE-ONGOING" && (
+                    <button onClick={() => handleResolveOutage(outage.id)} className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded" title={t("admin.outagePeriods.resolveManually")}>
+                      <ShieldCheck size={16} />
                     </button>
-                    )}
-                    <button
-                    onClick={() => setSelectedOutageForNotes(outage)}
-                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition-colors"
-                    title={t("admin.openNotesModal")}
-                    >
+                  )}
+                  <button onClick={() => setSelectedOutageForNotes(outage)} className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded" title={t("admin.openNotesModal")}>
                     <NotebookPen size={16} />
-                    </button>
+                  </button>
                 </div>
-                </td>
-
-                {/* Auto rilevato */}
-                <td className="px-4 py-3">
-                  <div className="flex">
-                    {outage.autoDetected ? (
-                      <div className="flex items-center text-green-600">
-                        <CircleCheck size={30} />
-                      </div>
-                    ) : (
-                      <div className="flex items-center text-red-600">
-                        <CircleX size={30} />
-                      </div>
-                    )}
-                  </div>
-                </td>
-
-                {/* Status */}
-                <td className="px-4 py-3">
-                  <Chip className={getStatusColor(outage.status)}>
-                    {outage.status}
-                  </Chip>
-                </td>
-
-                {/* Tipo */}
-                <td className="px-4 py-3">{outage.outageType}</td>
-
-                {/* Brand */}
-                <td className="px-4 py-3">
-                  <span>{outage.outageBrand}</span>
-                </td>
-
-                {/* Periodo */}
-                <td className="px-4 py-3">
+              </td>
+              <td className="px-4 py-3">
+                {outage.autoDetected ? <CircleCheck size={30} className="text-green-600" /> : <CircleX size={30} className="text-red-600" />}
+              </td>
+              <td className="px-4 py-3">
+                <Chip className={getStatusColor(outage.status)}>{outage.status}</Chip>
+              </td>
+              <td className="px-4 py-3">{outage.outageType}</td>
+              <td className="px-4 py-3">{outage.outageBrand}</td>
+              <td className="px-4 py-3">
+                <div className="text-sm">
+                  <div>{formatDateTime(outage.outageStart)}</div>
+                  <div className="text-gray-500">↓</div>
+                  <div>{outage.outageEnd ? formatDateTime(outage.outageEnd) : <Chip className="bg-red-100 text-red-700 border-red-500 text-xs">ONGOING</Chip>}</div>
+                </div>
+              </td>
+              <td className="px-4 py-3">
+                {outage.outageEnd ? <span>{formatDuration(outage.durationMinutes)}</span> : <Chip className="bg-red-100 text-red-700 border-red-500">ONGOING</Chip>}
+              </td>
+              <td className="px-4 py-3">
+                {outage.outageType === "Outage Vehicle" ? (
                   <div className="text-sm">
-                    <div>{formatDateTime(outage.outageStart)}</div>
-                    <div className="text-gray-500">↓</div>
-                    <div>
-                      {outage.outageEnd ? (
-                        formatDateTime(outage.outageEnd)
-                      ) : (
-                        <Chip className="bg-red-100 text-red-700 border-red-500 text-xs">
-                          OUTAGE-ONGOING
-                        </Chip>
-                      )}
-                    </div>
+                    <div className="font-mono">{outage.companyVatNumber}</div>
+                    <div className="text-gray-500">—</div>
+                    <div className="font-mono">{outage.vin}</div>
                   </div>
-                </td>
-
-                {/* Durata */}
-                <td className="px-4 py-3">
-                  {outage.outageEnd ? (
-                    <span>{formatDuration(outage.durationMinutes)}</span>
-                  ) : (
-                    <Chip className="bg-red-100 text-red-700 border-red-500">
-                      OUTAGE-ONGOING
-                    </Chip>
-                  )}
-                </td>
-
-                {/* Partita IVA — VIN */}
-                <td className="px-4 py-3">
-                  {outage.outageType === "Outage Vehicle" ? (
-                    <div className="text-sm">
-                      <div className="font-mono">{outage.companyVatNumber}</div>
-                      <div className="text-gray-500">—</div>
-                      <div className="font-mono">{outage.vin}</div>
-                    </div>
-                  ) : (
-                    <span className="text-gray-500">—</span>
-                  )}
-                </td>
-              </tr>
-            );
-          })}
+                ) : <span className="text-gray-500">—</span>}
+              </td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        {/* Paginazione */}
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPrev={prevPage}
-          onNext={nextPage}
-        />
-        {/* Controlli di ricerca e paginazione */}
-        <SearchBar
-          query={query}
-          setQuery={setQuery}
-          resetPage={() => setCurrentPage(1)}
-        />
+        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPrev={() => setCurrentPage(p => Math.max(1, p - 1))} onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))} />
+        <SearchBar query={query} setQuery={setQuery} resetPage={() => setCurrentPage(1)} />
       </div>
 
-      {/* Modal Note */}
       {selectedOutageForNotes && (
-        <NotesModal
-          entity={selectedOutageForNotes}
-          isOpen={!!selectedOutageForNotes}
-          title={t("admin.outagePeriods.notes.modalTitle")}
-          notesField="notes"
-          onSave={async (updated) => {
-            try {
-              const response = await fetch(
-                `/api/outageperiods/${updated.id}/notes`,
-                {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ notes: updated.notes }),
-                }
-              );
-
-              if (!response.ok) {
-                throw new Error("Failed to update notes");
-              }
-
-              setLocalOutages((prev) =>
-                prev.map((o) =>
-                  o.id === updated.id ? { ...o, notes: updated.notes } : o
-                )
-              );
-              setSelectedOutageForNotes(null);
-
-              logFrontendEvent(
-                "AdminOutagePeriodsTable",
-                "INFO",
-                "Notes updated for outage",
-                "Outage ID: " + updated.id
-              );
-            } catch (err) {
-              const details = err instanceof Error ? err.message : String(err);
-              logFrontendEvent(
-                "AdminOutagePeriodsTable",
-                "ERROR",
-                "Failed to update notes for outage",
-                details
-              );
-              alert(
-                `${t("admin.outagePeriods.notes.genericError")}: ${details}`
-              );
-            }
-          }}
-          onClose={() => setSelectedOutageForNotes(null)}
-          t={t}
-        />
+        <NotesModal entity={selectedOutageForNotes} isOpen={!!selectedOutageForNotes} title={t("admin.outagePeriods.notes.modalTitle")} notesField="notes" onSave={handleNotesUpdate} onClose={() => setSelectedOutageForNotes(null)} t={t} />
       )}
     </div>
   );

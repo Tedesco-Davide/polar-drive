@@ -2,8 +2,6 @@ import { useState, useEffect } from "react";
 import { Pencil } from "lucide-react";
 import { TFunction } from "i18next";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
-import { usePagination } from "@/utils/usePagination";
-import { useSearchFilter } from "@/utils/useSearchFilter";
 import { logFrontendEvent } from "@/utils/logger";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
@@ -11,95 +9,91 @@ import EditModal from "@/components/adminEditModal";
 import AdminClientCompanyEditForm from "@/components/adminClientCompanyEditForm";
 import AdminLoader from "@/components/adminLoader";
 
-type Props = {
-  t: TFunction;
-  clients: ClientCompany[];
-  refreshWorkflowData: () => Promise<void>;
-};
-
-export default function AdminClientCompaniesTable({
-  t,
-  clients,
-  refreshWorkflowData,
-}: Props) {
-  const [loading, setLoading] = useState(true);
+export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
   const [clientData, setClientData] = useState<ClientCompany[]>([]);
-
-  useEffect(() => {
-    setClientData(clients);
-    setLoading(false);
-    logFrontendEvent(
-      "AdminClientCompaniesTable",
-      "INFO",
-      "Component mounted and client data loaded",
-      "Loaded " + clients.length + " clients".replace(/\r?\n|\r/g, " ")
-    );
-  }, [clients]);
-
-  const { query, setQuery, filteredData } = useSearchFilter<ClientCompany>(
-    clientData,
-    [
-      "vatNumber",
-      "name",
-      "address",
-      "email",
-      "pecAddress",
-      "displayReferentName",
-      "displayReferentEmail",
-      "displayVehicleMobileNumber",
-    ]
-  );
-
-  useEffect(() => {
-    logFrontendEvent(
-      "AdminClientCompaniesTable",
-      "DEBUG",
-      "Search query updated",
-      "Query: " + query
-    );
-  }, [query]);
-
-  const {
-    currentPage,
-    totalPages,
-    currentData: currentPageData,
-    nextPage,
-    prevPage,
-    setCurrentPage,
-  } = usePagination<ClientCompany>(filteredData, 5);
-
-  useEffect(() => {
-    logFrontendEvent(
-      "AdminClientCompaniesTable",
-      "DEBUG",
-      "Pagination changed",
-      "Current page: " + currentPage
-    );
-  }, [currentPage]);
-
-  const [selectedClient, setSelectedClient] = useState<ClientCompany | null>(
-    null
-  );
+  const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [selectedClient, setSelectedClient] = useState<ClientCompany | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [query, setQuery] = useState("");
+  const pageSize = 5;
+
+  const fetchClients = async (page: number, searchQuery: string = "") => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      });
+      if (searchQuery) params.append("search", searchQuery);
+
+      const res = await fetch(`/api/clientcompanies?${params}`);
+      if (!res.ok) throw new Error("HTTP " + res.status);
+
+      const data = await res.json();
+      setClientData(data.data);
+      setTotalCount(data.totalCount);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.page);
+
+      logFrontendEvent("AdminClientCompaniesTable", "INFO", "Clients loaded", 
+        `Page: ${data.page}, Total: ${data.totalCount}`);
+    } catch (err) {
+      logFrontendEvent("AdminClientCompaniesTable", "ERROR", "Failed to load clients", String(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchClients(currentPage, query);
+  }, [currentPage, query]);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchClients(currentPage, query);
+    setIsRefreshing(false);
+  };
 
   const handleEditClick = (client: ClientCompany) => {
     setSelectedClient(client);
     setShowEditModal(true);
-    logFrontendEvent(
-      "AdminClientCompaniesTable",
-      "INFO",
-      "Edit modal opened for client",
-      "ClientId: " + client.id + ", VAT: " + client.vatNumber
+    logFrontendEvent("AdminClientCompaniesTable", "INFO", "Edit modal opened for client",
+      `ClientId: ${client.id}, VAT: ${client.vatNumber}`);
+  };
+
+  const handleSave = (updatedClient: ClientCompany) => {
+    setClientData(prev =>
+      prev.map(c =>
+        c.id === updatedClient.id && c.correspondingVehicleId === updatedClient.correspondingVehicleId
+          ? updatedClient
+          : c
+      )
     );
+    setShowEditModal(false);
+    setTimeout(() => fetchClients(currentPage, query), 200);
   };
 
   return (
     <div>
-      {loading && <AdminLoader />}
+      {(loading || isRefreshing) && <AdminLoader />}
 
-      <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite mb-12">
-        {t("admin.clientCompany.tableHeader")}
-      </h1>
+      <div className="flex items-center mb-12 space-x-3">
+        <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
+          {t("admin.clientCompany.tableHeader")}: {totalCount}
+        </h1>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          <span className="uppercase text-xs tracking-widest">{t("admin.tableRefreshButton")}</span>
+        </button>
+      </div>
 
       <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
@@ -118,17 +112,10 @@ export default function AdminClientCompaniesTable({
           </tr>
         </thead>
         <tbody>
-          {currentPageData.map((client) => (
-            <tr
-              key={`${client.id}-${client.correspondingVehicleId}`}
-              className="border-b border-gray-300 dark:border-gray-600"
-            >
+          {clientData.map((client) => (
+            <tr key={`${client.id}-${client.correspondingVehicleId}`} className="border-b border-gray-300 dark:border-gray-600">
               <td className="p-4 space-x-2">
-                <button
-                  className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
-                  onClick={() => handleEditClick(client)}
-                  title={t("admin.edit")}
-                >
+                <button onClick={() => handleEditClick(client)} className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600" title={t("admin.edit")}>
                   <Pencil size={16} />
                 </button>
               </td>
@@ -148,48 +135,17 @@ export default function AdminClientCompaniesTable({
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPrev={prevPage}
-          onNext={nextPage}
-        />
-        <SearchBar
-          query={query}
-          setQuery={setQuery}
-          resetPage={() => setCurrentPage(1)}
-        />
+        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPrev={() => setCurrentPage(p => Math.max(1, p - 1))} onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))} />
+        <SearchBar query={query} setQuery={setQuery} resetPage={() => setCurrentPage(1)} />
       </div>
 
-      {/* 🔽 MODALE DI EDIT */}
       {showEditModal && selectedClient && (
-        <EditModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          title={t("admin.clientCompany.editModal")}
-        >
+        <EditModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title={t("admin.clientCompany.editModal")}>
           <AdminClientCompanyEditForm
             client={selectedClient}
             onClose={() => setShowEditModal(false)}
-            onSave={(updatedClient: ClientCompany) => {
-              setClientData((prev) =>
-                prev.map((c) =>
-                  c.id === updatedClient.id &&
-                  c.correspondingVehicleId ===
-                    updatedClient.correspondingVehicleId
-                    ? updatedClient
-                    : c
-                )
-              );
-              setShowEditModal(false);
-              logFrontendEvent(
-                "AdminClientCompaniesTable",
-                "INFO",
-                "Client update saved successfully",
-                "ClientId: " + updatedClient.id + ", VehicleId: " + updatedClient.correspondingVehicleId
-              );
-            }}
-            refreshWorkflowData={refreshWorkflowData}
+            onSave={handleSave}
+            refreshWorkflowData={async () => await fetchClients(currentPage, query)}
             t={t}
           />
         </EditModal>

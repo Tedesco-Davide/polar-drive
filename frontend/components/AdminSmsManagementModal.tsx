@@ -70,57 +70,55 @@ export default function AdminSmsManagementModal({
   const [gdprConsents, setGdprConsents] = useState<GdprConsent[]>([]);
   const [activeTab, setActiveTab] = useState<"profile" | "gdpr" | "audit">("profile");
 
-  const loadData = useCallback(async () => {
+    const loadData = useCallback(async () => {
     try {
-      setLoading(true);
+        setLoading(true);
 
-      // Carica sessioni ADAPTIVE_PROFILE
-      const profileResponse = await fetch(
-        `/api/SmsAdaptiveProfile/${vehicleId}/history`
-      );
-      if (profileResponse.ok) {
-        const sessions = await profileResponse.json();
+        let sessions: AdaptiveProfileSession[] = [];
+        let vehicleLogs: SmsAuditLog[] = [];
+        let consents: GdprConsent[] = [];
+
+        // Carica sessioni ADAPTIVE_PROFILE
+        const profileResponse = await fetch(`/api/SmsAdaptiveProfile/${vehicleId}/history`);
+        if (profileResponse.ok) {
+        sessions = await profileResponse.json();
         setProfileSessions(sessions);
-      }
+        }
 
-      // Carica audit logs
-      const auditResponse = await fetch(
-        `/api/Sms/audit-logs?pageSize=50`
-      );
-      if (auditResponse.ok) {
+        // Carica audit logs
+        const auditResponse = await fetch(`/api/Sms/audit-logs?pageSize=50`);
+        if (auditResponse.ok) {
         const auditData = await auditResponse.json();
-        const vehicleLogs = auditData.logs.filter(
-          (log: SmsAuditLog) => log.vehicleIdResolved === vehicleId
+        vehicleLogs = auditData.logs.filter(
+            (log: SmsAuditLog) => log.vehicleIdResolved === vehicleId
         );
         setAuditLogs(vehicleLogs);
-      }
+        }
 
-      // Carica consensi GDPR per il Brand
-      const gdprResponse = await fetch(
-        `/api/Sms/gdpr/consents?brand=${vehicleBrand}`
-      );
-      if (gdprResponse.ok) {
-        const consents = await gdprResponse.json();
+        // Carica consensi GDPR
+        const gdprResponse = await fetch(`/api/Sms/gdpr/consents?brand=${vehicleBrand}`);
+        if (gdprResponse.ok) {
+        consents = await gdprResponse.json();
         setGdprConsents(consents);
-      }
+        }
 
-      logFrontendEvent(
-        "AdminSmsManagement",
-        "INFO",
-        "SMS data loaded successfully",
-        "VehicleId: " + vehicleId + ", Sessions: " + profileSessions.length + ", Logs: " + auditLogs.length
-      );
+        logFrontendEvent(
+            "AdminSmsManagement",
+            "INFO",
+            "SMS data loaded successfully",
+            "VehicleId: " + vehicleId + ", Sessions: " + sessions.length + ", Logs: " + vehicleLogs.length
+        );
     } catch (error) {
-      logFrontendEvent(
-        "AdminSmsManagement",
-        "ERROR",
-        "Failed to load SMS data",
-        error instanceof Error ? error.message : String(error)
-      );
+        logFrontendEvent(
+            "AdminSmsManagement",
+            "ERROR",
+            "Failed to load SMS data",
+            error instanceof Error ? error.message : String(error)
+        );
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  }, [vehicleId, vehicleBrand]);
+    }, [vehicleId, vehicleBrand]);
 
   useEffect(() => {
     if (isOpen) {

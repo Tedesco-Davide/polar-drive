@@ -13,37 +13,72 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     private readonly PolarDriveLogger _logger = new(db);
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<object>>> Get()
+    public async Task<ActionResult<PaginatedResponse<object>>> Get(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 5,
+        [FromQuery] string? search = null)
     {
-        await _logger.Info("ClientCompaniesController.Get", "Requested list of client companies.");
-
         try
         {
-            var result = await (from company in db.ClientCompanies
-                                join vehicle in db.ClientVehicles on company.Id equals vehicle.ClientCompanyId
-                                select new
-                                {
-                                    Id = company.Id,
-                                    VatNumber = company.VatNumber,
-                                    Name = company.Name,
-                                    Address = company.Address ?? "",
-                                    Email = company.Email ?? "",
-                                    PecAddress = company.PecAddress ?? "",
-                                    LandlineNumber = company.LandlineNumber ?? "",
-                                    DisplayReferentName = vehicle.ReferentName ?? "—",
-                                    DisplayVehicleMobileNumber = vehicle.VehicleMobileNumber ?? "—",
-                                    DisplayReferentEmail = vehicle.ReferentEmail ?? "—",
-                                    CorrespondingVehicleId = vehicle.Id,
-                                    CorrespondingVehicleVin = vehicle.Vin
-                                }).ToListAsync();
+            await _logger.Info("ClientCompaniesController.Get", "Requested list of client companies",
+                $"Page: {page}, PageSize: {pageSize}, Search: {search ?? "none"}");
 
-            await _logger.Info("ClientCompaniesController.Get", $"Successfully returned {result.Count} company-vehicle combinations");
-            return Ok(result);
+            var query = from company in db.ClientCompanies
+                        join vehicle in db.ClientVehicles on company.Id equals vehicle.ClientCompanyId
+                        select new
+                        {
+                            Id = company.Id,
+                            VatNumber = company.VatNumber,
+                            Name = company.Name,
+                            Address = company.Address ?? "",
+                            Email = company.Email ?? "",
+                            PecAddress = company.PecAddress ?? "",
+                            LandlineNumber = company.LandlineNumber ?? "",
+                            DisplayReferentName = vehicle.ReferentName ?? "—",
+                            DisplayVehicleMobileNumber = vehicle.VehicleMobileNumber ?? "—",
+                            DisplayReferentEmail = vehicle.ReferentEmail ?? "—",
+                            CorrespondingVehicleId = vehicle.Id,
+                            CorrespondingVehicleVin = vehicle.Vin
+                        };
+
+            // Filtro ricerca
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(c =>
+                    c.VatNumber.Contains(search) ||
+                    c.Name.Contains(search) ||
+                    c.Address.Contains(search) ||
+                    c.Email.Contains(search) ||
+                    c.DisplayReferentName.Contains(search) ||
+                    c.DisplayReferentEmail.Contains(search) ||
+                    c.CorrespondingVehicleVin.Contains(search));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var result = await query
+                .OrderBy(c => c.Name)
+                .ThenBy(c => c.VatNumber)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            await _logger.Info("ClientCompaniesController.Get",
+                $"Successfully returned {result.Count} company-vehicle combinations");
+
+            return Ok(new PaginatedResponse<object>
+            {
+                Data = result.Cast<object>().ToList(),
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            });
         }
         catch (Exception ex)
         {
             await _logger.Error("ClientCompaniesController.Get", "Error retrieving companies with vehicles", ex.ToString());
-            return StatusCode(500, "Internal server error");
+            return StatusCode(500, new { error = "Errore interno server", details = ex.Message });
         }
     }
 
@@ -71,7 +106,6 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         await _logger.Info("ClientCompaniesController.Post", "New client company inserted successfully.", $"ClientCompanyId: {entity.Id}, VAT: {entity.VatNumber}");
-
         return CreatedAtAction(nameof(Get), new { id = entity.Id }, entity.Id);
     }
 
@@ -101,7 +135,6 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         await _logger.Info("ClientCompaniesController.Put", "Client company updated successfully.", $"ClientCompanyId: {id}");
-
         return Ok();
     }
 }

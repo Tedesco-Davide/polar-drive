@@ -1,9 +1,7 @@
 import { TFunction } from "i18next";
 import { PdfReport } from "@/types/reportInterfaces";
-import { usePagination } from "@/utils/usePagination";
-import { useSearchFilter } from "@/utils/useSearchFilter";
 import { formatDateToDisplay } from "@/utils/date";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { NotebookPen, FileBadge } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
 import Chip from "@/components/chip";
@@ -12,140 +10,90 @@ import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 
-export default function AdminPdfReports({
-  t,
-  reports,
-  refreshPdfReports,
-  isRefreshing,
-  setIsRefreshing,
-}: {
-  t: TFunction;
-  reports: PdfReport[];
-  refreshPdfReports?: () => Promise<PdfReport[] | void>;
-  isRefreshing?: boolean;
-  setIsRefreshing?: (value: boolean) => void;
-}) {
+export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
-  const refreshRef = useRef(refreshPdfReports);
-  const [selectedReportForNotes, setSelectedReportForNotes] =
-    useState<PdfReport | null>(null);
+  const [selectedReportForNotes, setSelectedReportForNotes] = useState<PdfReport | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  // Paginazione server-side
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [query, setQuery] = useState("");
+  const pageSize = 5;
 
-  useEffect(() => {
-    refreshRef.current = refreshPdfReports;
-  }, [refreshPdfReports]);
+  const fetchReports = async (page: number, searchQuery: string = "") => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: pageSize.toString(),
+      });
+      if (searchQuery) params.append("search", searchQuery);
 
-  useEffect(() => {
-    setLocalReports(reports);
-    logFrontendEvent(
-      "AdminPdfReports",
-      "INFO",
-      "Component reports updated from parent",
-      "Loaded " + reports.length + " reports"
-    );
-  }, [reports]);
+      const res = await fetch(`/api/pdfreports?${params}`);
+      if (!res.ok) throw new Error("HTTP " + res.status);
 
-  useEffect(() => {
-    const processingReports = localReports.filter(
-      (r) => getReportStatus(r).text === "PROCESSING"
-    );
+      const data = await res.json();
+      setLocalReports(data.data);
+      setTotalCount(data.totalCount);
+      setTotalPages(data.totalPages);
+      setCurrentPage(data.page);
 
-    let interval: NodeJS.Timeout;
-
-    if (processingReports.length > 0) {
-      // Se ci sono report in processing, refresh ogni 10 secondi
-      interval = setInterval(() => {
-        refreshRef.current?.();
-      }, 10000);
-    } else {
-      // Se non ci sono report in processing, refresh ogni 60 secondi per nuovi report
-      interval = setInterval(() => {
-        refreshRef.current?.();
-      }, 60000);
+      logFrontendEvent("AdminPdfReports", "INFO", "Reports loaded", 
+        `Page: ${data.page}, Total: ${data.totalCount}`);
+    } catch (err) {
+      logFrontendEvent("AdminPdfReports", "ERROR", "Failed to load reports", String(err));
+    } finally {
+      setLoading(false);
     }
+  };
+
+  useEffect(() => {
+    fetchReports(currentPage, query);
+  }, [currentPage, query]);
+
+  useEffect(() => {
+    const processingReports = localReports.filter(r => r.status === "PROCESSING");
+    const interval = setInterval(() => {
+      fetchReports(currentPage, query);
+    }, processingReports.length > 0 ? 10000 : 60000);
 
     return () => clearInterval(interval);
-  }, [localReports]);
+  }, [localReports, currentPage, query]);
 
-  const { query, setQuery, filteredData } = useSearchFilter<PdfReport>(
-    localReports,
-    [
-      "companyVatNumber",
-      "companyName",
-      "vehicleVin",
-      "vehicleModel",
-      "vehicleBrand",
-      "reportPeriodStart",
-      "reportPeriodEnd",
-    ]
-  );
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchReports(currentPage, query);
+    setIsRefreshing(false);
+  };
 
   const getStatusColor = (statusText: string) => {
     switch (statusText) {
-      case "PDF-READY":
-        return "bg-green-100 text-green-700 border-green-500";
-      case "HTML-ONLY":
-        return "bg-yellow-100 text-yellow-700 border-yellow-500";
-      case "NO-DATA":
-        return "bg-red-100 text-red-700 border-red-500";
-      case "WAITING-RECORDS":
-        return "bg-orange-100 text-orange-700 border-orange-500";
-      case "PROCESSING":
-        return "bg-blue-100 text-blue-700 border-blue-500";
-      case "ERROR":
-        return "bg-red-100 text-red-700 border-red-500";
-      case "FILE-MISSING":
-        return "bg-purple-100 text-purple-700 border-purple-500";
-      default:
-        return "bg-gray-100 text-polarNight border-gray-400";
+      case "PDF-READY": return "bg-green-100 text-green-700 border-green-500";
+      case "HTML-ONLY": return "bg-yellow-100 text-yellow-700 border-yellow-500";
+      case "NO-DATA": return "bg-red-100 text-red-700 border-red-500";
+      case "WAITING-RECORDS": return "bg-orange-100 text-orange-700 border-orange-500";
+      case "PROCESSING": return "bg-blue-100 text-blue-700 border-blue-500";
+      case "ERROR": return "bg-red-100 text-red-700 border-red-500";
+      case "FILE-MISSING": return "bg-purple-100 text-purple-700 border-purple-500";
+      default: return "bg-gray-100 text-polarNight border-gray-400";
     }
   };
 
-  const hasIssues = (report: PdfReport) => {
-    return ["FILE-MISSING", "ERROR", "NO-DATA"].includes(report.status);
-  };
-
-  const {
-    currentPage,
-    totalPages,
-    currentData: currentPageData,
-    nextPage,
-    prevPage,
-    setCurrentPage,
-  } = usePagination<PdfReport>(filteredData, 5);
-
   const handleDownload = async (report: PdfReport) => {
     setDownloadingId(report.id);
-
     try {
-      logFrontendEvent(
-        "AdminPdfReports",
-        "INFO",
-        "Download started",
-        "ReportId: " + report.id + ", Type: " + report.reportType + ", HasPDF: " + report.hasPdfFile
-      );
-
-      const downloadUrl = `/api/pdfreports/${report.id}/download`;
-
-      const response = await fetch(downloadUrl, {
-        method: "GET",
-        headers: { Accept: "application/pdf,text/html,*/*" },
-      });
-
-      if (!response.ok) {
-        throw new Error("HTTP " + response.status + ": " + response.statusText);
-      }
+      const response = await fetch(`/api/pdfreports/${report.id}/download`);
+      if (!response.ok) throw new Error("HTTP " + response.status);
 
       const blob = await response.blob();
       const contentType = response.headers.get("Content-Type") || "";
       const isHtml = contentType.includes("text/html");
-      const fileName = `PolarDrive_PolarReport_${report.reportType.replace(/\s+/g, "_")}_${
-        report.id
-      }_${report.vehicleVin}_${report.reportPeriodStart.split("T")[0]}${
-        isHtml ? ".html" : ".pdf"
-      }`;
+      const fileName = `PolarDrive_PolarReport_${report.reportType.replace(/\s+/g, "_")}_${report.id}_${report.vehicleVin}_${report.reportPeriodStart.split("T")[0]}${isHtml ? ".html" : ".pdf"}`;
 
-      // Download
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -155,23 +103,8 @@ export default function AdminPdfReports({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      logFrontendEvent(
-        "AdminPdfReports",
-        "INFO",
-        "Download completed",
-        "ReportId: " + report.id + ", Size: " + blob.size + " bytes, Type: " + (isHtml ? "HTML" : "PDF")
-      );
-
-      if (isHtml) {
-        alert(t("admin.vehicleReports.pdfNotAvailable"));
-      }
+      if (isHtml) alert(t("admin.vehicleReports.pdfNotAvailable"));
     } catch (error) {
-      logFrontendEvent(
-        "AdminPdfReports",
-        "ERROR",
-        "Download failed",
-        "ReportId: " + report.id + ", Error: " + error
-      );
       alert(`Errore download: ${error}`);
     } finally {
       setDownloadingId(null);
@@ -180,65 +113,30 @@ export default function AdminPdfReports({
 
   const handleNotesUpdate = async (updated: PdfReport) => {
     try {
-      const response = await fetch(
-        `/api/pdfreports/${updated.id}/notes`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ notes: updated.notes }),
-        }
-      );
+      const response = await fetch(`/api/pdfreports/${updated.id}/notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes: updated.notes }),
+      });
 
-        if (!response.ok) {
-            throw new Error(
-                "HTTP " + response.status + ": " + t("admin.vehicleReports.failedUpdateNotes")
-            );
-        }
+      if (!response.ok) throw new Error("HTTP " + response.status);
 
-      setLocalReports((prev) =>
-        prev.map((r) =>
-          r.id === updated.id ? { ...r, notes: updated.notes } : r
-        )
-      );
-
+      setLocalReports(prev => prev.map(r => r.id === updated.id ? { ...r, notes: updated.notes } : r));
       setSelectedReportForNotes(null);
-
-      logFrontendEvent(
-        "AdminPdfReports",
-        "INFO",
-        "Notes updated",
-        "ReportId: " + updated.id
-      );
-
-      if (refreshRef.current) {
-        setTimeout(() => refreshRef.current?.(), 200);
-      }
-    } catch (err) {
-      const details = err instanceof Error ? err.message : String(err);
-      logFrontendEvent(
-        "AdminPdfReports",
-        "ERROR",
-        "Failed to update notes",
-        details
-      );
-      alert(t("admin.notesGenericError"));
+      
+      setTimeout(() => fetchReports(currentPage, query), 200);
+    } catch {
+        alert(t("admin.notesGenericError"));
     }
-  };
-
-  const getReportStatus = (report: PdfReport) => {
-    return { text: report.status || "UNKNOWN" };
   };
 
   return (
     <div>
-      {/* ✅ Loader fuori dalla tabella, come overlay full-page */}
-      {isRefreshing && <AdminLoader />}
+      {(loading || isRefreshing) && <AdminLoader />}
 
-      {/* Header con statistiche */}
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.vehicleReports.tableHeader")}: {localReports.length}{" "}
-          {t("admin.vehicleReports.tableHeaderTotals")}
+          {t("admin.vehicleReports.tableHeader")}: {totalCount} {t("admin.vehicleReports.tableHeaderTotals")}
         </h1>
       </div>
 
@@ -246,175 +144,85 @@ export default function AdminPdfReports({
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">
-              {refreshRef.current && setIsRefreshing && (
-                <button
-                  onClick={async () => {
-                    setIsRefreshing(true);
-                    try {
-                      await refreshRef.current?.();
-                      alert(t("admin.vehicleReports.tableRefreshSuccess"));
-                    } catch {
-                      alert(t("admin.vehicleReports.tableRefreshFail"));
-                    } finally {
-                      setIsRefreshing(false);
-                    }
-                  }}
-                  disabled={isRefreshing}
-                  className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <span className="uppercase text-xs tracking-widest">
-                    {t("admin.tableRefreshButton")}
-                  </span>
-                </button>
-              )}{" "}
-              {t("admin.actions")}
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+              >
+                <span className="uppercase text-xs tracking-widest">{t("admin.tableRefreshButton")}</span>
+              </button> {t("admin.actions")}
             </th>
             <th className="p-4">{t("admin.vehicleReports.generatedAt")}</th>
             <th className="p-4">{t("admin.vehicleReports.fileInfo")}</th>
             <th className="p-4">{t("admin.vehicleReports.reportPeriod")}</th>
-            <th className="p-4">
-              {t("admin.vehicleReports.clientCompanyVATName")}
-            </th>
-            <th className="p-4">
-              {t("admin.vehicleReports.vehicleVinDisplay")}
-            </th>
+            <th className="p-4">{t("admin.vehicleReports.clientCompanyVATName")}</th>
+            <th className="p-4">{t("admin.vehicleReports.vehicleVinDisplay")}</th>
           </tr>
         </thead>
         <tbody>
-          {currentPageData.map((report) => {
-            const status = getReportStatus(report);
-            const needsAttention = hasIssues(report);
-            const dataCount = report.dataRecordsCount;
+          {localReports.map((report) => {
             const isDownloadable = report.hasPdfFile || report.hasHtmlFile;
-            const fileSize = report.hasPdfFile
-              ? report.pdfFileSize
-              : report.htmlFileSize;
+            const fileSize = report.hasPdfFile ? report.pdfFileSize : report.htmlFileSize;
             return (
-              <tr
-                key={report.id}
-                className="border-b border-gray-300 dark:border-gray-600"
-              >
-
-                {/* Actions Column */}
+              <tr key={report.id} className="border-b border-gray-300 dark:border-gray-600">
                 <td className="p-4 space-x-2">
-                    {/* Download Button */}
-                    <button
-                        className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
-                        title={
-                        status.text === "PROCESSING"
-                            ? t("admin.vehicleReports.actionDisabledProcessing")
-                            : t("admin.vehicleReports.downloadSinglePdf")
-                        }
-                        disabled={
-                        !isDownloadable ||
-                        downloadingId === report.id ||
-                        status.text === "PROCESSING"
-                        }
-                        onClick={() => handleDownload(report)}
-                    >
-                        {downloadingId === report.id ? (
-                        <AdminLoader inline />
-                        ) : (
-                        <FileBadge size={16} />
-                        )}
-                    </button>
-
-                    {/* Notes Button */}
-                    <button
-                        className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
-                        title={
-                        status.text === "PROCESSING"
-                            ? t("admin.vehicleReports.actionDisabledProcessing")
-                            : t("admin.openNotesModal")
-                        }
-                        disabled={
-                        downloadingId === report.id ||
-                        status.text === "PROCESSING"
-                        }
-                        onClick={() => setSelectedReportForNotes(report)}
-                    >
-                        <NotebookPen size={16} />
-                    </button>
+                  <button
+                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
+                    disabled={!isDownloadable || downloadingId === report.id || report.status === "PROCESSING"}
+                    onClick={() => handleDownload(report)}
+                  >
+                    {downloadingId === report.id ? <AdminLoader inline /> : <FileBadge size={16} />}
+                  </button>
+                  <button
+                    className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
+                    disabled={downloadingId === report.id || report.status === "PROCESSING"}
+                    onClick={() => setSelectedReportForNotes(report)}
+                  >
+                    <NotebookPen size={16} />
+                  </button>
                 </td>
-
-                {/* Generated At */}
                 <td className="p-4">
-                  {report.generatedAt
-                    ? formatDateToDisplay(report.generatedAt)
-                    : "-"}
+                  {report.generatedAt ? formatDateToDisplay(report.generatedAt) : "-"}
                   {report.monitoringDurationHours >= 0 && (
                     <div className="text-xs text-gray-400 mt-1">
-                        {report.monitoringDurationHours < 1
-                        ? "< 1h"
-                        : Math.round(report.monitoringDurationHours) + "h"}{" "}
-                        {t("admin.vehicleReports.monitored")}
+                      {report.monitoringDurationHours < 1 ? "< 1h" : Math.round(report.monitoringDurationHours) + "h"} {t("admin.vehicleReports.monitored")}
                     </div>
                   )}
                 </td>
-
-                {/* File Info */}
                 <td className="p-4">
                   <div className="space-y-1 flex flex-col w-[150px]">
-                    <Chip className={getStatusColor(status.text)}>
-                      {status.text}
-                      {needsAttention}
-                    </Chip>
+                    <Chip className={getStatusColor(report.status)}>{report.status}</Chip>
                     {fileSize > 0 && (
                       <div className="text-xs text-gray-400 flex gap-1 items-center">
                         {report.pdfHash && (
-                            <span 
-                                className="text-xs bg-gray-400 text-gray-200 font-mono cursor-pointer px-1 rounded"
-                                title={`${t("admin.vehicleReports.fullHash")}: ${report.pdfHash}\n${t("admin.clickToCopy")}`}
-                                    onClick={() => {
-                                    if (report.pdfHash) {
-                                        navigator.clipboard.writeText(report.pdfHash);
-                                        alert(t("admin.vehicleReports.hashCopied"));
-                                    }
-                                }}
-                            >
-                                HASH 
-                            </span>
+                          <span className="text-xs bg-gray-400 text-gray-200 font-mono cursor-pointer px-1 rounded"
+                            title={`${t("admin.vehicleReports.fullHash")}: ${report.pdfHash}\n${t("admin.clickToCopy")}`}
+                            onClick={() => {
+                              navigator.clipboard.writeText(report.pdfHash!);
+                              alert(t("admin.vehicleReports.hashCopied"));
+                            }}>HASH</span>
                         )}
-                        → {(fileSize / (1024 * 1024)).toFixed(2)} MB 
+                        → {(fileSize / (1024 * 1024)).toFixed(2)} MB
                       </div>
                     )}
                   </div>
                 </td>
-
-                {/* Period */}
                 <td className="p-4">
                   <div>
-                    {formatDateToDisplay(report.reportPeriodStart)} -{" "}
-                    {formatDateToDisplay(report.reportPeriodEnd)}
-                    <div className="text-xs text-gray-400">
-                      {dataCount} {t("admin.vehicleReports.totalRecords")}
-                    </div>
+                    {formatDateToDisplay(report.reportPeriodStart)} - {formatDateToDisplay(report.reportPeriodEnd)}
+                    <div className="text-xs text-gray-400">{report.dataRecordsCount} {t("admin.vehicleReports.totalRecords")}</div>
                   </div>
                 </td>
-
-                {/* Company */}
                 <td className="p-4">
-                  <div>
-                    {report.companyVatNumber} - {report.companyName}
-                  </div>
+                  <div>{report.companyVatNumber} - {report.companyName}</div>
                   <div className="flex flex-wrap items-center gap-1">
-                    {report.reportType && (
-                      <div className="text-xs text-gray-400 mt-1">
-                        {t(report.reportType)}
-                      </div>
-                    )}
+                    {report.reportType && <div className="text-xs text-gray-400 mt-1">{t(report.reportType)}</div>}
                   </div>
                 </td>
-
-                {/* Vehicle */}
                 <td className="p-4">
                   <div>
                     {report.vehicleVin && <span>{report.vehicleVin}</span>}
-                    <div className="text-xs text-gray-400">
-                      {report.vehicleBrand && (
-                        <span>{report.vehicleBrand}</span>
-                      )}
-                    </div>
+                    <div className="text-xs text-gray-400">{report.vehicleBrand && <span>{report.vehicleBrand}</span>}</div>
                   </div>
                 </td>
               </tr>
@@ -427,14 +235,10 @@ export default function AdminPdfReports({
         <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
-          onPrev={prevPage}
-          onNext={nextPage}
+          onPrev={() => setCurrentPage(p => Math.max(1, p - 1))}
+          onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
         />
-        <SearchBar
-          query={query}
-          setQuery={setQuery}
-          resetPage={() => setCurrentPage(1)}
-        />
+        <SearchBar query={query} setQuery={setQuery} resetPage={() => setCurrentPage(1)} />
       </div>
 
       {selectedReportForNotes && (

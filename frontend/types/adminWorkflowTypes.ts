@@ -20,6 +20,28 @@ export type adminWorkflowTypesInputForm = {
   clientOAuthAuthorized: boolean;
 };
 
+export interface AdminWorkflowExtendedDTO {
+  id: number;
+  vin: string;
+  fuelType: string;
+  brand: string;
+  model: string;
+  trim?: string;
+  color?: string;
+  isActive: boolean;
+  isFetching: boolean;
+  firstActivationAt?: string;
+  clientOAuthAuthorized?: boolean;
+  referentName?: string;
+  vehicleMobileNumber?: string;
+  referentEmail?: string;
+  clientCompany?: {
+    id: number;
+    vatNumber: string;
+    name: string;
+  };
+}
+
 type InputWithoutFile = Omit<adminWorkflowTypesInputForm, "zipFilePath">;
 
 export type WorkflowRow = InputWithoutFile & {

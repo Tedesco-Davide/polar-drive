@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
 using System.IO.Compression;
 
@@ -13,11 +14,48 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
     private readonly string _zipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "filemanager-zips");
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AdminFileManager>>> GetAll()
+    public async Task<ActionResult<PaginatedResponse<AdminFileManager>>> GetAll(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] string? search = null)
     {
-        return await db.AdminFileManager
-            .OrderByDescending(j => j.RequestedAt)
-            .ToListAsync();
+        try
+        {
+            var query = db.AdminFileManager.AsQueryable();
+
+            // Filtro ricerca
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(j =>
+                    j.Status.Contains(search) ||
+                    (j.RequestedBy != null && j.RequestedBy.Contains(search)) ||
+                    j.CompanyList.Any(c => c.Contains(search)) ||
+                    j.VinList.Any(v => v.Contains(search)) ||
+                    j.BrandList.Any(b => b.Contains(search)));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(j => j.RequestedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return Ok(new PaginatedResponse<AdminFileManager>
+            {
+                Data = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            });
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error retrieving file manager jobs");
+            return StatusCode(500, new { error = "Errore interno server", details = ex.Message });
+        }
     }
 
     [HttpGet("{id}")]
@@ -148,7 +186,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
     {
         var companies = await db.PdfReports
             .Include(p => p.ClientCompany)
-            .Select(selector: p => p.ClientCompany!.Name)
+            .Select(p => p.ClientCompany!.Name)
             .Distinct()
             .OrderBy(name => name)
             .ToListAsync();
@@ -206,25 +244,21 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
 
         try
         {
-            // Imposta job come in processamento
             job.Status = "PROCESSING";
             job.StartedAt = DateTime.Now;
             await scopedDb.SaveChangesAsync();
 
-            // Crea directory se non esiste
             if (!Directory.Exists(_zipStoragePath))
             {
                 Directory.CreateDirectory(_zipStoragePath);
             }
 
-            // Aggiusta la data di fine se è mezzanotte
             var adjustedPeriodEnd = job.PeriodEnd;
             if (job.PeriodEnd.TimeOfDay == TimeSpan.Zero)
             {
                 adjustedPeriodEnd = job.PeriodEnd.AddDays(1).AddSeconds(-1);
             }
 
-            // Converti in UTC
             var jobPeriodStartUtc = job.PeriodStart.Kind == DateTimeKind.Utc
                 ? job.PeriodStart
                 : job.PeriodStart.ToUniversalTime();
@@ -233,7 +267,6 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                 ? adjustedPeriodEnd
                 : adjustedPeriodEnd.ToUniversalTime();
 
-            // Query per i PDF nel periodo specificato
             var pdfQuery = scopedDb.PdfReports
                 .AsNoTracking()
                 .Include(p => p.ClientCompany)
@@ -243,7 +276,6 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                     p.ReportPeriodEnd >= jobPeriodStartUtc
                 );
 
-            // Applica filtri se specificati
             if (job.CompanyList.Any())
             {
                 pdfQuery = pdfQuery.Where(p => job.CompanyList.Contains(p.ClientCompany!.Name));
@@ -262,7 +294,6 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
             var pdfReports = await pdfQuery.ToListAsync();
             job.TotalPdfCount = pdfReports.Count;
 
-            // Se non ci sono PDF, completa il job senza creare ZIP
             if (pdfReports.Count == 0)
             {
                 job.Status = "COMPLETED";
@@ -276,7 +307,6 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                 return;
             }
 
-            // Crea il file ZIP
             var zipFileName = $"pdf_reports_{jobId}_{DateTime.Now:yyyyMMddHHmmss}.zip";
             var zipFilePath = Path.Combine(_zipStoragePath, zipFileName);
 
@@ -313,7 +343,6 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                 job.IncludedPdfCount = includedCount;
             }
 
-            // Calcola la dimensione del file ZIP e completa il job
             var zipFileInfo = new FileInfo(zipFilePath);
             job.ZipFileSizeMB = Math.Round((decimal)zipFileInfo.Length / (1024 * 1024), 2);
             job.ResultZipPath = zipFilePath;

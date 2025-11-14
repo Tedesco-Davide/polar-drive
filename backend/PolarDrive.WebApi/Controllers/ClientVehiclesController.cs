@@ -13,41 +13,80 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
     private readonly PolarDriveLogger _logger = new(db);
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<AdminWorkflowExtendedDTO>>> Get()
+    public async Task<ActionResult<PaginatedResponse<AdminWorkflowExtendedDTO>>> Get(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 5,
+        [FromQuery] string? search = null)
     {
-        await _logger.Info("ClientVehiclesController.Get", "Requested list of client vehicles");
-
-        var rawItems = await db.ClientVehicles
-            .Include(v => v.ClientCompany)
-            .ToListAsync();
-
-        var items = rawItems.Select(v => new AdminWorkflowExtendedDTO
+        try
         {
-            Id = v.Id,
-            Vin = v.Vin,
-            FuelType = v.FuelType,
-            Brand = v.Brand,
-            Model = v.Model,
-            Trim = v.Trim ?? "",
-            Color = v.Color ?? "",
-            IsActive = v.IsActiveFlag,
-            IsFetching = v.IsFetchingDataFlag,
-            FirstActivationAt = v.FirstActivationAt?.ToString("o"),
-            LastDeactivationAt = v.LastDeactivationAt?.ToString("o"),
-            LastFetchingDataAt = v.LastFetchingDataAt?.ToString("o"),
-            ClientOAuthAuthorized = v.ClientOAuthAuthorized,
-            ReferentName = v.ReferentName,
-            VehicleMobileNumber = v.VehicleMobileNumber,
-            ReferentEmail = v.ReferentEmail,
-            ClientCompany = new ClientCompanyDTO
-            {
-                Id = v.ClientCompany!.Id,
-                VatNumber = v.ClientCompany.VatNumber,
-                Name = v.ClientCompany.Name,
-            }
-        }).ToList();
+            await _logger.Info("ClientVehiclesController.Get", "Requested list of client vehicles",
+                $"Page: {page}, PageSize: {pageSize}, Search: {search ?? "none"}");
 
-        return Ok(items);
+            var query = db.ClientVehicles
+                .Include(v => v.ClientCompany)
+                .AsQueryable();
+
+            // Filtro ricerca
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                query = query.Where(v =>
+                    v.Vin.Contains(search) ||
+                    v.Brand.Contains(search) ||
+                    v.Model.Contains(search) ||
+                    v.FuelType.Contains(search) ||
+                    (v.Trim != null && v.Trim.Contains(search)) ||
+                    (v.Color != null && v.Color.Contains(search)));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var rawItems = await query
+                .OrderBy(v => v.Vin)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            var items = rawItems.Select(v => new AdminWorkflowExtendedDTO
+            {
+                Id = v.Id,
+                Vin = v.Vin,
+                FuelType = v.FuelType,
+                Brand = v.Brand,
+                Model = v.Model,
+                Trim = v.Trim ?? "",
+                Color = v.Color ?? "",
+                IsActive = v.IsActiveFlag,
+                IsFetching = v.IsFetchingDataFlag,
+                FirstActivationAt = v.FirstActivationAt?.ToString("o"),
+                LastDeactivationAt = v.LastDeactivationAt?.ToString("o"),
+                LastFetchingDataAt = v.LastFetchingDataAt?.ToString("o"),
+                ClientOAuthAuthorized = v.ClientOAuthAuthorized,
+                ReferentName = v.ReferentName,
+                VehicleMobileNumber = v.VehicleMobileNumber,
+                ReferentEmail = v.ReferentEmail,
+                ClientCompany = new ClientCompanyDTO
+                {
+                    Id = v.ClientCompany!.Id,
+                    VatNumber = v.ClientCompany.VatNumber,
+                    Name = v.ClientCompany.Name,
+                }
+            }).ToList();
+
+            return Ok(new PaginatedResponse<AdminWorkflowExtendedDTO>
+            {
+                Data = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize,
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+            });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("ClientVehiclesController.Get", "Error retrieving vehicles", ex.ToString());
+            return StatusCode(500, new { error = "Errore interno server", details = ex.Message });
+        }
     }
 
     [HttpGet("{id}")]
@@ -135,7 +174,6 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         await _logger.Info("ClientVehiclesController.Post", "New client vehicle created.", $"VehicleId: {entity.Id}, VIN: {entity.Vin}");
-
         return CreatedAtAction(nameof(Get), new { id = entity.Id }, entity.Id);
     }
 
@@ -244,7 +282,6 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         await db.SaveChangesAsync();
 
         await _logger.Info("ClientVehiclesController.Put", "Client vehicle updated successfully.", $"VehicleId: {id}, VIN: {dto.Vin}");
-
         return NoContent();
     }
 
