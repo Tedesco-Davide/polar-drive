@@ -113,6 +113,7 @@ export default function AdminDashboard() {
                     PolarDrive ❄️🐻‍❄️🚗
                   </button>
                   <button
+                    disabled={true}
                     className={classNames(
                       "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
                       {
