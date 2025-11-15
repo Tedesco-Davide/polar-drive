@@ -16,7 +16,7 @@ public class OutageDetectionService(
     IWebHostEnvironment env) : IOutageDetectionService
 {
     private readonly PolarDriveDbContext _db = db;
-    private readonly PolarDriveLogger _logger = new PolarDriveLogger(db);
+    private readonly PolarDriveLogger _logger = new();
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly IWebHostEnvironment _env = env;
     private readonly IConfiguration _cfg = cfg;

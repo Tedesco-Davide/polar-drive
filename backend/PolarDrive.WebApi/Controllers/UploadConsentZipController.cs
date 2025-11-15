@@ -11,16 +11,10 @@ namespace PolarDrive.WebApi.Controllers;
 [ApiExplorerSettings(IgnoreApi = true)]
 [ApiController]
 [Route("api/[controller]")]
-public class UploadConsentZipController : ControllerBase
+public class UploadConsentZipController(PolarDriveDbContext db) : ControllerBase
 {
-    private readonly PolarDriveDbContext _db;
-    private readonly PolarDriveLogger _logger;
-
-    public UploadConsentZipController(PolarDriveDbContext db)
-    {
-        _db = db;
-        _logger = new PolarDriveLogger(db);
-    }
+    private readonly PolarDriveDbContext _db = db;
+    private readonly PolarDriveLogger _logger = new();
 
     /// <summary>
     ///  Upload consent con nuova gestione storage

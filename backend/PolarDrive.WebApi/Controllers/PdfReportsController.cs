@@ -10,20 +10,13 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class PdfReportsController : ControllerBase
+public class PdfReportsController(
+    PolarDriveDbContext context,
+    IReportGenerationService reportGenerationService) : ControllerBase
 {
-    private readonly PolarDriveDbContext db;
-    private readonly PolarDriveLogger _logger;
-    private readonly IReportGenerationService _reportGenerationService;
-
-    public PdfReportsController(
-        PolarDriveDbContext context,
-        IReportGenerationService reportGenerationService)
-    {
-        db = context;
-        _logger = new PolarDriveLogger(db);
-        _reportGenerationService = reportGenerationService;
-    }
+    private readonly PolarDriveDbContext db = context;
+    private readonly PolarDriveLogger _logger = new();
+    private readonly IReportGenerationService _reportGenerationService = reportGenerationService;
 
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<PdfReportDTO>>> Get(

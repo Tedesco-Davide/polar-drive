@@ -11,11 +11,10 @@ namespace PolarDrive.WebApi.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class AdminFullClientInsertController(PolarDriveDbContext dbContext, IWebHostEnvironment env) : ControllerBase
+public class AdminFullClientInsertController(PolarDriveDbContext dbContext) : ControllerBase
 {
     private readonly PolarDriveDbContext _dbContext = dbContext;
-    private readonly IWebHostEnvironment _env = env;
-    private readonly PolarDriveLogger _logger = new(dbContext);
+    private readonly PolarDriveLogger _logger = new();
 
     [HttpPost]
     [RequestSizeLimit(100_000_000)] // ZIP up to 100MB

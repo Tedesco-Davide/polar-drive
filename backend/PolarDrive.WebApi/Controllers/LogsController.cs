@@ -6,9 +6,9 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class LogsController(PolarDriveDbContext dbContext) : ControllerBase
+public class LogsController() : ControllerBase
 {
-    private readonly PolarDriveLogger _logger = new(dbContext);
+    private readonly PolarDriveLogger _logger = new();
 
     public class LogFrontendDto
     {

@@ -17,7 +17,7 @@ public class SmsController(
 {
     private readonly PolarDriveDbContext _db = db;
     private readonly ISmsConfigurationService _smsConfig = smsConfig;
-    private readonly PolarDriveLogger _logger = new(db);
+    private readonly PolarDriveLogger _logger = new();
 
     [HttpGet("test-sms")]
     public async Task<IActionResult> TestSendSms([FromServices] ISmsConfigurationService sms)

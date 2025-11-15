@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
-using PolarDrive.WebApi.Helpers;
 using PolarDrive.WebApi.PolarAiReports.Templates;
 using System.Net;
 using System.Text;
@@ -15,18 +14,11 @@ namespace PolarDrive.WebApi.PolarAiReports;
 /// Responsabilità: templating, rendering, formattazione output finale
 /// Non contiene logica di business delle certificazioni
 /// </summary>
-public class HtmlReportService
+public class HtmlReportService(PolarDriveDbContext dbContext)
 {
-    private readonly PolarDriveDbContext _dbContext;
-    private readonly PolarDriveLogger _logger;
-    private readonly DataPolarCertification _certification;
-
-    public HtmlReportService(PolarDriveDbContext dbContext)
-    {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-        _logger = new PolarDriveLogger(_dbContext);
-        _certification = new DataPolarCertification(dbContext);
-    }
+    private readonly PolarDriveDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    private readonly PolarDriveLogger _logger = new();
+    private readonly DataPolarCertification _certification = new(dbContext);
 
     /// <summary>
     /// Genera un report HTML completo pronto per visualizzazione o conversione PDF
@@ -118,7 +110,7 @@ public class HtmlReportService
             ["periodEnd"] = now.ToString("dd/MM/yyyy").Replace("-", "/"),
             ["generatedAtDays"] = DateTime.Now.ToString(options.DateTimeFormatDays).Replace("-", "/"),
             ["generatedAtHours"] = DateTime.Now.ToString(options.DateTimeFormatHours),
-            ["pdfHash"] = report.PdfHash,
+            ["pdfHash"] = report.PdfHash!,
             ["notes"] = report.Notes ?? "N/A",
             ["insights"] = FormatInsightsForHtml(aiReportContentInsights),
 

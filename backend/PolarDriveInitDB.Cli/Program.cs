@@ -188,7 +188,7 @@ try
     }
 
     // ORA possiamo inizializzare il logger
-    var logger = new PolarDriveLogger(db);
+    var logger = new PolarDriveLogger();
     await logger.Info("PolarDriveInitDB.Cli", 
         $"Database initialization completed - Environment: {environment}, DB: {dbName}");
 
@@ -211,24 +211,5 @@ catch (Exception ex)
     Console.WriteLine($"❌ FATAL ERROR during initialization: {ex.Message}");
     Console.ResetColor();
     Console.WriteLine($"Details: {ex}");
-
-    // Solo prova a loggare se il database esiste
-    try
-    {
-        if (await DatabaseHelper.DatabaseExistsAsync(db))
-        {
-            var logger = new PolarDriveLogger(db);
-            await logger.Error(
-                "PolarDriveInitDB.Cli",
-                $"Initialization failed in {environment} environment",
-                $"Exception: {ex}"
-            );
-        }
-    }
-    catch
-    {
-        Console.WriteLine("⚠️  Could not log error to database");
-    }
-
-    Environment.Exit(1); // Exit con errore
+    Environment.Exit(1);
 }

@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Diagnostics;
-using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -13,41 +12,24 @@ namespace PolarDrive.WebApi.PolarAiReports;
 /// Aggregatore intelligente COMPLETO che processa 720h di dati JSON Tesla,
 /// per ottimizzare l'uso di token con PolarAi™
 /// </summary>
-public class IntelligentDataAggregator
+public class IntelligentDataAggregator(
+    PolarDriveDbContext dbContext,
+    int maxRetryAttempts = 3,
+    int baseDelayMs = 1000)
 {
-    private readonly PolarDriveDbContext _dbContext;
-    private readonly PolarDriveLogger _logger;
-    private readonly PolarDriveLoggerFileSpecific _loggerFileSpecific;
-    private readonly int _maxRetryAttempts;
-    private readonly TimeSpan _baseDelay;
-    private readonly Random _jitterRandom;
-    private readonly Stopwatch _totalStopwatch;
-    private readonly HashSet<string> _processedRecords;
-    private readonly HashSet<string> _processedSessions;
-    private readonly HashSet<string> _processedCommands;
-    private readonly List<ProcessingError> _processingErrors;
-    private readonly Dictionary<string, int> _processingStats;
-    private readonly Dictionary<string, TimeSpan> _processingTimes;
-
-    public IntelligentDataAggregator(
-        PolarDriveDbContext dbContext,
-        int maxRetryAttempts = 3,
-        int baseDelayMs = 1000)
-    {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-        _logger = new PolarDriveLogger(_dbContext);
-        _loggerFileSpecific = new PolarDriveLoggerFileSpecific("IntelligentDataAggregator");
-        _maxRetryAttempts = maxRetryAttempts;
-        _baseDelay = TimeSpan.FromMilliseconds(baseDelayMs);
-        _jitterRandom = new Random();
-        _totalStopwatch = new Stopwatch();
-        _processedRecords = [];
-        _processedSessions = [];
-        _processedCommands = [];
-        _processingErrors = [];
-        _processingStats = [];
-        _processingTimes = [];
-    }
+    private readonly PolarDriveDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    private readonly PolarDriveLogger _logger = new();
+    private readonly PolarDriveLoggerFileSpecific _loggerFileSpecific = new("IntelligentDataAggregator");
+    private readonly int _maxRetryAttempts = maxRetryAttempts;
+    private readonly TimeSpan _baseDelay = TimeSpan.FromMilliseconds(baseDelayMs);
+    private readonly Random _jitterRandom = new Random();
+    private readonly Stopwatch _totalStopwatch = new Stopwatch();
+    private readonly HashSet<string> _processedRecords = [];
+    private readonly HashSet<string> _processedSessions = [];
+    private readonly HashSet<string> _processedCommands = [];
+    private readonly List<ProcessingError> _processingErrors = [];
+    private readonly Dictionary<string, int> _processingStats = [];
+    private readonly Dictionary<string, TimeSpan> _processingTimes = [];
 
     public async Task<string> GenerateAggregatedInsights(List<string> rawJsonAnonymizedList, int vehicleId)
     {

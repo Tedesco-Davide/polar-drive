@@ -17,7 +17,7 @@ public class PolarAiReportGenerator
     public PolarAiReportGenerator(PolarDriveDbContext dbContext, IOptionsSnapshot<OllamaConfig> ollama)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-        _logger = new PolarDriveLogger(_dbContext);
+        _logger = new PolarDriveLogger();
         _ollamaConfig = ollama?.Value ?? throw new ArgumentNullException(nameof(ollama));
         _httpClient = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
     }

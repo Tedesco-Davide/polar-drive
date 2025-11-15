@@ -13,7 +13,7 @@ namespace PolarDrive.WebApi.Controllers;
 public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
 {
     private readonly PolarDriveDbContext _db = db;
-    private readonly PolarDriveLogger _logger = new(db);
+    private readonly PolarDriveLogger _logger = new();
 
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<object>>> Get(

@@ -9,20 +9,12 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class VehicleOAuthController : ControllerBase
+public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment env, IConfiguration cfg) : ControllerBase
 {
-    private readonly PolarDriveDbContext _db;
-    private readonly IWebHostEnvironment _env;
-    private readonly IConfiguration _cfg;
-    private readonly PolarDriveLogger _logger;
-
-    public VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment env, IConfiguration cfg)
-    {
-        _db = db;
-        _env = env;
-        _cfg = cfg;
-        _logger = new PolarDriveLogger(_db);
-    }
+    private readonly PolarDriveDbContext _db = db;
+    private readonly IWebHostEnvironment _env = env;
+    private readonly IConfiguration _cfg = cfg;
+    private readonly PolarDriveLogger _logger = new();
 
     [HttpGet("GenerateUrl")]
     public async Task<IActionResult> GenerateOAuthUrl([FromQuery] string brand, [FromQuery] string vin)

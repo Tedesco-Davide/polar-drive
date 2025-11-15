@@ -14,7 +14,7 @@ namespace PolarDrive.WebApi.Controllers;
 [Route("api/[controller]")]
 public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 {
-    private readonly PolarDriveLogger _logger = new(db);
+    private readonly PolarDriveLogger _logger = new();
 
     [HttpPost]
     public async Task<IActionResult> UploadOutage(

@@ -10,20 +10,11 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ClientProfileController : ControllerBase
+public class ClientProfileController(PolarDriveDbContext db, PdfGenerationService pdfService) : ControllerBase
 {
-    private readonly PolarDriveDbContext _db;
-    private readonly PolarDriveLogger _logger;
-    private readonly string _reportsStoragePath;
-    private readonly PdfGenerationService _pdfService;
-
-    public ClientProfileController(PolarDriveDbContext db, PdfGenerationService pdfService)
-    {
-        _db = db;
-        _logger = new PolarDriveLogger(db);
-        _reportsStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "client-profiles");
-        _pdfService = pdfService;
-    }
+    private readonly PolarDriveDbContext _db = db;
+    private readonly PolarDriveLogger _logger = new();
+    private readonly PdfGenerationService _pdfService = pdfService;
 
     /// <summary>
     /// Ottiene i dati del profilo cliente senza generare il PDF (per preview o debug)

@@ -17,7 +17,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<OutagePeriod> OutagePeriods => Set<OutagePeriod>();
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
-    public DbSet<PolarDriveLog> PolarDriveLogs => Set<PolarDriveLog>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -113,16 +112,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasIndex(e => e.VehicleId).IsUnique();
-            });
-
-            modelBuilder.Entity<PolarDriveLog>(entity =>
-            {
-                entity.Property(e => e.Timestamp)
-                    .HasDefaultValueSql("GETDATE()");
-
-                entity.Property(e => e.Level)
-                    .HasConversion<string>()
-                    .HasDefaultValue(PolarDriveLogLevel.INFO);
             });
 
             modelBuilder.Entity<AdminFileManager>(entity =>

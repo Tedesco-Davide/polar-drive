@@ -91,7 +91,6 @@ builder.Services.AddHangfireServer(options => new BackgroundJobServerOptions
 
 // LOGGER
 builder.Services.AddScoped<PolarDriveLogger>();
-builder.Services.AddScoped(typeof(PolarDriveLogger<>));
 
 // SERVIZI MULTI-BRAND
 builder.Services.AddScoped<TeslaApiService>();
@@ -162,7 +161,7 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
-    var logger = new PolarDriveLogger(dbContext);
+    var logger = new PolarDriveLogger();
 
     try
     {

@@ -10,7 +10,7 @@ namespace PolarDrive.WebApi.Controllers;
 [Route("api/[controller]")]
 public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
 {
-    private readonly PolarDriveLogger _logger = new(db);
+    private readonly PolarDriveLogger _logger = new();
 
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<object>>> Get(

@@ -10,16 +10,10 @@ namespace PolarDrive.WebApi.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
-public class OutageSystemController : ControllerBase
+public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
 {
-    private readonly PolarDriveDbContext _db;
-    private readonly PolarDriveLogger _logger;
-
-    public OutageSystemController(PolarDriveDbContext db)
-    {
-        _db = db;
-        _logger = new PolarDriveLogger(db);
-    }
+    private readonly PolarDriveDbContext _db = db;
+    private readonly PolarDriveLogger _logger = new();
 
     /// <summary>
     /// Ottiene statistiche complete del sistema outages

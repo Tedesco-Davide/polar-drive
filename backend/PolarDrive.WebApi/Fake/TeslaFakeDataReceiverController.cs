@@ -9,20 +9,12 @@ namespace PolarDrive.WebApi.Scheduler;
 
 [ApiController]
 [Route("api/[controller]")]
-public class TeslaFakeDataReceiverController : ControllerBase
+public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnvironment env, IServiceProvider serviceProvider) : ControllerBase
 {
-    private readonly PolarDriveDbContext _db;
-    private readonly PolarDriveLogger _logger;
-    private readonly IWebHostEnvironment _env;
-    private readonly IServiceProvider _serviceProvider;
-
-    public TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnvironment env, IServiceProvider serviceProvider)
-    {
-        _db = db;
-        _env = env;
-        _serviceProvider = serviceProvider;
-        _logger = new PolarDriveLogger(_db);
-    }
+    private readonly PolarDriveDbContext _db = db;
+    private readonly PolarDriveLogger _logger = new();
+    private readonly IWebHostEnvironment _env = env;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
 
     /// <summary>
     /// Riceve i dati dal Tesla Mock Service con validazione avanzata

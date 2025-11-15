@@ -491,7 +491,7 @@ namespace PolarDrive.WebApi.Services
             var html = await htmlSvc.GenerateHtmlReportAsync(report, insights, htmlOpt);
 
             // PDF con Puppeteer → otteniamo byte[]
-            var pdfSvc = new PdfGenerationService(db);
+            var pdfSvc = new PdfGenerationService();
             var pdfOpt = new PdfConversionOptions
             {
                 HeaderTemplate = $@"

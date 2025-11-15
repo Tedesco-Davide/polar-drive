@@ -9,22 +9,13 @@ namespace PolarDrive.WebApi.Production;
 /// Service che chiama le API Tesla reali e salva i dati
 /// Usato in PRODUZIONE (non in development/mock)
 /// </summary>
-public class TeslaApiService
+public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, HttpClient httpClient, IConfiguration cfg)
 {
-    private readonly PolarDriveDbContext _db;
-    private readonly PolarDriveLogger _logger;
-    private readonly IWebHostEnvironment _env;
-    private readonly HttpClient _httpClient;
-    private readonly IConfiguration _cfg;
-
-    public TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, HttpClient httpClient,  IConfiguration cfg)
-    {
-        _db = db;
-        _env = env;
-        _cfg = cfg;
-        _httpClient = httpClient;
-        _logger = new PolarDriveLogger(_db);
-    }
+    private readonly PolarDriveDbContext _db = db;
+    private readonly PolarDriveLogger _logger = new();
+    private readonly IWebHostEnvironment _env = env;
+    private readonly HttpClient _httpClient = httpClient;
+    private readonly IConfiguration _cfg = cfg;
 
     /// <summary>
     /// Metodo principale - raccoglie dati per tutti i veicoli in fetching (include grace period)

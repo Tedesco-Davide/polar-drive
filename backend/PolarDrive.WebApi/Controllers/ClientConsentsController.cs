@@ -10,18 +10,11 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ClientConsentsController : ControllerBase
+public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
 {
-    private readonly PolarDriveDbContext _db;
-    private readonly IWebHostEnvironment _env;
-    private readonly PolarDriveLogger _logger;
-
-    public ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironment env)
-    {
-        _db = db;
-        _env = env;
-        _logger = new PolarDriveLogger(db);
-    }
+    private readonly PolarDriveDbContext _db = db;
+    private readonly IWebHostEnvironment _env = env;
+    private readonly PolarDriveLogger _logger = new();
 
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<ClientConsentDTO>>> Get(

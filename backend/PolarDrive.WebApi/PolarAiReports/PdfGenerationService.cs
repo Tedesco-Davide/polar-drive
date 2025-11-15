@@ -10,9 +10,9 @@ namespace PolarDrive.WebApi.PolarAiReports;
 /// La generazione HTML è gestita da HtmlReportService
 /// Supporta Windows, Linux e Docker
 /// </summary>
-public class PdfGenerationService(PolarDriveDbContext dbContext)
+public class PdfGenerationService()
 {
-    private readonly PolarDriveLogger _logger = new(dbContext);
+    private readonly PolarDriveLogger _logger = new();
 
     /// <summary>
     /// Converte HTML in PDF usando Puppeteer/Node.js

@@ -10,16 +10,10 @@ namespace PolarDrive.WebApi.PolarAiReports;
 /// Servizio dedicato ESCLUSIVAMENTE alla certificazione DataPolar
 /// Gestisce: certificazioni generali, statistiche mensili, tabelle dettagliate log
 /// </summary>
-public class DataPolarCertification
+public class DataPolarCertification(PolarDriveDbContext dbContext)
 {
-    private readonly PolarDriveDbContext _dbContext;
-    private readonly PolarDriveLogger _logger;
-
-    public DataPolarCertification(PolarDriveDbContext dbContext)
-    {
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-        _logger = new PolarDriveLogger(_dbContext);
-    }
+    private readonly PolarDriveDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    private readonly PolarDriveLogger _logger = new();
 
     /// <summary>
     /// Genera il blocco HTML completo della certificazione DataPolar
