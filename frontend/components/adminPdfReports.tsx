@@ -2,7 +2,7 @@ import { TFunction } from "i18next";
 import { PdfReport } from "@/types/reportInterfaces";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
-import { NotebookPen, FileBadge } from "lucide-react";
+import { NotebookPen, FileBadge, RefreshCw } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
 import Chip from "@/components/chip";
 import AdminLoader from "@/components/adminLoader";
@@ -15,7 +15,8 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true); // Inizia con true
+  const [regeneratingId, setRegeneratingId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Paginazione server-side
@@ -67,7 +68,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
 
   useEffect(() => {
     const processingReports = localReports.filter(
-      (r) => r.status === "PROCESSING"
+      (r) => r.status === "PROCESSING" || r.status === "REGENERATING"
     );
     const interval = setInterval(
       () => {
@@ -96,6 +97,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       case "WAITING-RECORDS":
         return "bg-orange-100 text-orange-700 border-orange-500";
       case "PROCESSING":
+      case "REGENERATING":
         return "bg-blue-100 text-blue-700 border-blue-500";
       case "ERROR":
         return "bg-red-100 text-red-700 border-red-500";
@@ -162,6 +164,146 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     }
   };
 
+  const handleRegenerate = async (report: PdfReport) => {
+    const confirmMessage = t("admin.vehicleReports.regenerateConfirmationMessage", {
+    id: report.id,
+    companyName: report.companyName,
+    companyVatNumber: report.companyVatNumber,
+    vehicleVin: report.vehicleVin,
+    start: formatDateToDisplay(report.reportPeriodStart),
+    end: formatDateToDisplay(report.reportPeriodEnd),
+    status: report.status
+    });
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    setRegeneratingId(report.id);
+    
+    try {
+      logFrontendEvent(
+        "AdminPdfReports",
+        "INFO",
+        "Starting report Regeneration",
+        `ReportId: ${report.id}`
+      );
+
+      const response = await fetch(`/api/pdfreports/${report.id}/regenerate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      const data = await response.json();
+
+      if (response.status === 409) {
+        // Conflict - Report già completato (immutabile)
+        alert(
+          `REGENERATION BLOCKED\n\n` +
+          `${data.message}\n\n` +
+          `PDF Hash: ${data.pdfHash}\n` +
+          `Generated: ${data.generatedAt ? formatDateToDisplay(data.generatedAt) : 'N/A'}\n\n`
+        );
+        
+        logFrontendEvent(
+          "AdminPdfReports",
+          "WARNING",
+          "Regeneration blocked - report already exists",
+          `ReportId: ${report.id}, PdfHash: ${data.pdfHash}`
+        );
+      } else if (response.status === 400) {
+        alert(
+          `Operation not allowed\n\n` +
+          `${data.message}\n\n` +
+          `Status: ${data.status}`
+        );
+        
+        logFrontendEvent(
+          "AdminPdfReports",
+          "WARNING",
+          "Regeneration not allowed",
+          `ReportId: ${report.id}, Status: ${data.status}`
+        );
+      } else if (response.status === 202) {
+        // Accepted - Rigenerazione avviata
+        alert(t("admin.vehicleReports.regenerationStarted", {
+        id: report.id,
+        status: data.status
+        }));
+
+        logFrontendEvent(
+          "AdminPdfReports",
+          "INFO",
+          "Regeneration started successfully",
+          `ReportId: ${report.id}, Status: ${data.status}`
+        );
+
+        // Aggiorna immediatamente la lista per mostrare status REGENERATING
+        await fetchReports(currentPage, query);
+
+        // Auto-refresh ogni 5 secondi per i prossimi 2 minuti
+        let refreshCount = 0;
+        const maxRefreshes = 24; // 24 * 5s = 2 minuti
+        const refreshInterval = setInterval(async () => {
+          refreshCount++;
+          await fetchReports(currentPage, query);
+          
+          if (refreshCount >= maxRefreshes) {
+            clearInterval(refreshInterval);
+          }
+
+          // Se il report non è più in REGENERATING, ferma il refresh
+          const updatedReport = localReports.find(r => r.id === report.id);
+          if (updatedReport && updatedReport.status !== "REGENERATING") {
+            clearInterval(refreshInterval);
+          }
+        }, 5000);
+
+      } else if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${data.error || data.message}`);
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      alert(
+        `REGENERATION ERROR\n\n` +
+        `Report ID: ${report.id}\n\n` +
+        `${errorMessage}\n\n`
+      );
+
+      logFrontendEvent(
+        "AdminPdfReports",
+        "ERROR",
+        "Regeneration error"
+      );
+    } finally {
+      setRegeneratingId(null);
+    }
+  };
+
+  const canRegenerate = (report: PdfReport): boolean => {
+    // Se ha PdfHash, è immutabile e NON può essere rigenerato
+    if (report.pdfHash && report.pdfHash.trim().length > 0) {
+      return false;
+    }
+
+    // Se ha contenuto PDF, è stato completato e NON può essere rigenerato
+    if (report.hasPdfFile && report.pdfFileSize > 0) {
+      return false;
+    }
+
+    // Stati che permettono la rigenerazione
+    const regenerableStatuses = [
+      "FILE-MISSING",
+      "PROCESSING", 
+      "ERROR",
+      "NO-DATA"
+    ];
+
+    return regenerableStatuses.includes(report.status);
+  };
+
   return (
     <div className="relative">
       {(loading || isRefreshing) && <AdminLoader local />}
@@ -188,7 +330,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
               </button>{" "}
               {t("admin.actions")}
             </th>
-            <th className="p-4">{t("admin.vehicleReports.generatedAt")}</th>
+            <th className="p-4">{t("admin.vehicleReports.generatedInfo")}</th>
             <th className="p-4">{t("admin.vehicleReports.fileInfo")}</th>
             <th className="p-4">{t("admin.vehicleReports.reportPeriod")}</th>
             <th className="p-4">
@@ -205,20 +347,30 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
             const fileSize = report.hasPdfFile
               ? report.pdfFileSize
               : report.htmlFileSize;
+            const isRegeneratable = canRegenerate(report);
+            const isCurrentlyRegenerating = regeneratingId === report.id;
+
             return (
               <tr
                 key={report.id}
                 className="border-b border-gray-300 dark:border-gray-600"
               >
                 <td className="p-4 space-x-2">
+                  {/* Download Button */}
                   <button
                     className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
                     disabled={
                       !isDownloadable ||
                       downloadingId === report.id ||
-                      report.status === "PROCESSING"
+                      report.status === "PROCESSING" ||
+                      report.status === "REGENERATING"
                     }
                     onClick={() => handleDownload(report)}
+                    title={
+                      isDownloadable
+                        ? "Scarica report"
+                        : "Report non disponibile per il download"
+                    }
                   >
                     {downloadingId === report.id ? (
                       <AdminLoader inline />
@@ -226,16 +378,47 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                       <FileBadge size={16} />
                     )}
                   </button>
+
+                  {/* Notes Button */}
                   <button
                     className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
                     disabled={
                       downloadingId === report.id ||
-                      report.status === "PROCESSING"
+                      report.status === "PROCESSING" ||
+                      report.status === "REGENERATING"
                     }
                     onClick={() => setSelectedReportForNotes(report)}
+                    title="Modifica note"
                   >
                     <NotebookPen size={16} />
                   </button>
+
+                  {isRegeneratable && (
+                    <button
+                      className={`p-2 rounded transition-all ${
+                        isCurrentlyRegenerating
+                          ? "bg-orange-500 animate-pulse"
+                          : "bg-orange-500 hover:bg-orange-600"
+                      } text-softWhite disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed`}
+                      disabled={
+                        isCurrentlyRegenerating ||
+                        downloadingId === report.id ||
+                        report.status === "REGENERATING"
+                      }
+                      onClick={() => handleRegenerate(report)}
+                      title={
+                        report.pdfHash
+                          ? "Report certificato - immutabile"
+                          : `Rigenera report (Status: ${report.status})`
+                      }
+                    >
+                      {isCurrentlyRegenerating || report.status === "REGENERATING" ? (
+                        <AdminLoader inline />
+                      ) : (
+                        <RefreshCw size={16} />
+                      )}
+                    </button>
+                  )}
                 </td>
                 <td className="p-4">
                   {report.generatedAt
@@ -243,6 +426,8 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     : "-"}
                   {report.monitoringDurationHours >= 0 && (
                     <div className="text-xs text-gray-400 mt-1">
+                      ID {report.id}{" "}
+                      - {" "}
                       {report.monitoringDurationHours < 1
                         ? "< 1h"
                         : Math.round(report.monitoringDurationHours) + "h"}{" "}

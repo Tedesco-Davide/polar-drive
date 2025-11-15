@@ -204,7 +204,7 @@
   "admin.vehicleReports.clientCompanyVATName": "Azienda interessata",
   "admin.vehicleReports.vehicleVinDisplay": "Veicolo interessato",
   "admin.vehicleReports.fileInfo": "Info File",
-  "admin.vehicleReports.generatedAt": "Giorno di generazione",
+  "admin.vehicleReports.generatedInfo": "Info di generazione",
   "admin.vehicleReports.notesModalTitle": "Gestione nota per: riga in Tabella Reports PDF",
   "admin.vehicleReports.downloadSinglePdf": "Singolo PDF",
   "admin.vehicleReports.blobCheck": "Il file ricevuto è vuoto",
@@ -311,5 +311,7 @@
   "admin.outagePeriods.validation.startDateInFuture": "Inserisci una data inizio valida che non sia futura",
   "admin.outagePeriods.validation.invalidEndDate": "La data di fine non è valida",
   "admin.outagePeriods.validation.outageEndBeforeStart": "La data di fine non può essere precedente alla data di inizio",
-  "admin.outagePeriods.validation.outageEndInFuture": "La data di fine non può essere nel futuro"
+  "admin.outagePeriods.validation.outageEndInFuture": "La data di fine non può essere nel futuro",
+  "admin.vehicleReports.regenerateConfirmationMessage": "⚠️ RIGENERAZIONE REPORT\n\nReport ID: {{id}}\nAzienda: {{companyName}} ({{companyVatNumber}})\nVeicolo: {{vehicleVin}}\nPeriodo: {{start}} - {{end}}\n\nStatus attuale: {{status}}\n\nQuesta operazione avvierà la rigenerazione del report.\nIl processo potrebbe richiedere diversi minuti.\n\n⚠️ NOTA: Se il report è già stato completato con successo,\nla rigenerazione sarà bloccata per conformità.\n\nProcedere?",
+  "admin.vehicleReports.regenerationStarted": "✅ RIGENERAZIONE AVVIATA\n\nReport ID: {{id}}\n\nIl processo è stato avviato in background.\nLa pagina si aggiornerà automaticamente.\n\nStatus: {{status}}\n\nNota: Il processo potrebbe richiedere diversi minuti"
 }

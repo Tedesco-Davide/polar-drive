@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
+using PolarDrive.WebApi.Services;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
@@ -13,16 +14,20 @@ public class PdfReportsController : ControllerBase
 {
     private readonly PolarDriveDbContext db;
     private readonly PolarDriveLogger _logger;
+    private readonly IReportGenerationService _reportGenerationService;
 
-    public PdfReportsController(PolarDriveDbContext context)
+    public PdfReportsController(
+        PolarDriveDbContext context,
+        IReportGenerationService reportGenerationService)
     {
         db = context;
         _logger = new PolarDriveLogger(db);
+        _reportGenerationService = reportGenerationService;
     }
 
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<PdfReportDTO>>> Get(
-        [FromQuery] int page = 1, 
+        [FromQuery] int page = 1,
         [FromQuery] int pageSize = 5,
         [FromQuery] string? search = null)
     {
@@ -30,7 +35,7 @@ public class PdfReportsController : ControllerBase
 
         try
         {
-            await _logger.Info(source, "Richiesta lista report PDF", 
+            await _logger.Info(source, "Richiesta lista report PDF",
                 $"Page: {page}, PageSize: {pageSize}, Search: {search ?? "none"}");
 
             var query = db.PdfReports
@@ -48,15 +53,13 @@ public class PdfReportsController : ControllerBase
             }
 
             var totalCount = await query.CountAsync();
-            
+
             var reports = await query
-                .OrderByDescending(r => r.GeneratedAt)
-                .ThenByDescending(r => r.Id)
+                .OrderByDescending(r => r.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();
 
-            // ✅ OTTIMIZZAZIONE: Carica tutti i count in UNA query
             var vehicleIds = reports.Select(r => r.VehicleId).Distinct().ToList();
             var vehicleStats = await db.VehiclesData
                 .Where(vd => vehicleIds.Contains(vd.VehicleId))
@@ -109,7 +112,7 @@ public class PdfReportsController : ControllerBase
         var pdfSize = hasPdf ? report.PdfContent!.Length : 0;
 
         // Status semplificato (no query aggiuntive)
-        var status = hasPdf ? "PDF-READY" : 
+        var status = hasPdf ? "PDF-READY" :
                      (!string.IsNullOrEmpty(report.Status) ? report.Status : "PROCESSING");
 
         return new PdfReportDTO
@@ -177,7 +180,7 @@ public class PdfReportsController : ControllerBase
             if (report.PdfContent != null && report.PdfContent.Length > 0)
             {
                 var fileName = $"PolarDrive_PolarReport_{id}_{report.ClientVehicle?.Vin}_{report.ReportPeriodStart:yyyyMMdd}.pdf";
-                
+
                 Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
                 Response.Headers.Pragma = "no-cache";
                 if (!string.IsNullOrWhiteSpace(report.PdfHash))
@@ -192,6 +195,192 @@ public class PdfReportsController : ControllerBase
         {
             await _logger.Error("PdfReportsController.DownloadPdf", "Download error", ex.ToString());
             return StatusCode(500, "Download failed");
+        }
+    }
+
+    [HttpPost("{id}/regenerate")]
+    public async Task<IActionResult> RegenerateReport(int id)
+    {
+        const string source = "PdfReportsController.RegenerateReport";
+
+        try
+        {
+            await _logger.Info(source, "Richiesta rigenerazione report", $"ReportId: {id}");
+
+            var report = await db.PdfReports
+                .Include(r => r.ClientCompany)
+                .Include(r => r.ClientVehicle)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (report == null)
+            {
+                await _logger.Warning(source, "Report non trovato", $"ReportId: {id}");
+                return NotFound(new { error = "Report non trovato" });
+            }
+
+            if (!string.IsNullOrWhiteSpace(report.PdfHash) &&
+                report.PdfContent != null &&
+                report.PdfContent.Length > 0)
+            {
+                await _logger.Warning(source,
+                    "TENTATIVO RIGENERAZIONE REPORT IMMUTABILE BLOCCATO",
+                    $"ReportId: {id}, PdfHash: {report.PdfHash}");
+
+                return Conflict(new
+                {
+                    error = "Report già completato e certificato",
+                    isImmutable = true
+                });
+            }
+
+            var regenerableStatuses = new[] { "FILE-MISSING", "PROCESSING", "ERROR", "NO-DATA", "" };
+            if (!string.IsNullOrWhiteSpace(report.Status) &&
+                !regenerableStatuses.Contains(report.Status))
+            {
+                return BadRequest(new { error = "Report non rigenerabile" });
+            }
+
+            await _logger.Info(source, "Report eleggibile per rigenerazione",
+                $"ReportId: {id}, Status: '{report.Status}', CompanyId: {report.ClientCompanyId}, VehicleId: {report.VehicleId}");
+
+            // Salva i parametri necessari
+            var companyId = report.ClientCompanyId;
+            var vehicleId = report.VehicleId;
+            var periodStart = report.ReportPeriodStart;
+            var periodEnd = report.ReportPeriodEnd;
+
+            // Reset stato
+            report.Status = "REGENERATING";
+            report.GeneratedAt = null;
+            await db.SaveChangesAsync();
+
+            await _logger.Info(source, "Report impostato per rigenerazione",
+                $"ReportId: {id}, NewStatus: REGENERATING");
+
+            // ✅ FIX: Task.Run senza dipendenze esterne
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    // ⚠️ IMPORTANTE: Non usare 'db' da fuori - crea un nuovo scope
+                    await _logger.Info(source,
+                        "🔄 BACKGROUND: Inizio rigenerazione",
+                        $"ReportId: {id}, VehicleId: {vehicleId}, CompanyId: {companyId}");
+
+                    // ✅ LOG PARAMETRI PRIMA DELLA CHIAMATA
+                    await _logger.Info(source,
+                        "🎯 BACKGROUND: Parametri chiamata",
+                        $"CompanyId={companyId}, VehicleId={vehicleId}, " +
+                        $"PeriodStart={periodStart:yyyy-MM-dd}, PeriodEnd={periodEnd:yyyy-MM-dd}, " +
+                        $"IsRegeneration=true, ExistingReportId={id}");
+
+                    await _logger.Info(source,
+                        "🎯 BACKGROUND: Tipo service",
+                        $"Service={_reportGenerationService?.GetType().Name ?? "NULL"}");
+
+                    if (_reportGenerationService == null)
+                    {
+                        await _logger.Error(source,
+                            "❌ BACKGROUND: _reportGenerationService è NULL!");
+                        return;
+                    }
+
+                    await _logger.Info(source,
+                        "🎯 BACKGROUND: Chiamata GenerateSingleReportAsync...");
+
+                    var success = await _reportGenerationService.GenerateSingleReportAsync(
+                        companyId,
+                        vehicleId,
+                        periodStart,
+                        periodEnd,
+                        isRegeneration: true,
+                        existingReportId: id
+                    );
+
+                    await _logger.Info(source, "🎯 BACKGROUND: Chiamata completata");
+
+                    if (success)
+                    {
+                        await _logger.Info(source,
+                            "✅ BACKGROUND: Rigenerazione COMPLETATA",
+                            $"ReportId: {id}");
+                    }
+                    else
+                    {
+                        await _logger.Error(source,
+                            "❌ BACKGROUND: Rigenerazione FALLITA (returned false)",
+                            $"ReportId: {id}");
+                    }
+                }
+                catch (Exception bgEx)
+                {
+                    await _logger.Error(source,
+                        "💥 BACKGROUND: Exception durante rigenerazione",
+                        $"ReportId: {id}, Error: {bgEx.Message}, StackTrace: {bgEx.StackTrace}");
+                }
+            });
+
+            return Accepted(new
+            {
+                message = "Rigenerazione avviata in background",
+                reportId = id,
+                status = "REGENERATING"
+            });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Errore rigenerazione report",
+                $"ReportId: {id}, Error: {ex.Message}");
+            return StatusCode(500, new { error = "Errore interno server" });
+        }
+    }
+
+    /// <summary>
+    /// ✅ NUOVO ENDPOINT: Verifica se un report può essere rigenerato
+    /// Ritorna true solo se il report non ha PdfHash (mai completato con successo)
+    /// </summary>
+    [HttpGet("{id}/can-regenerate")]
+    public async Task<ActionResult<object>> CanRegenerate(int id)
+    {
+        try
+        {
+            var report = await db.PdfReports
+                .Select(r => new
+                {
+                    r.Id,
+                    r.PdfHash,
+                    r.Status,
+                    HasPdfContent = r.PdfContent != null && r.PdfContent.Length > 0
+                })
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (report == null)
+                return NotFound(new { canRegenerate = false, reason = "Report non trovato" });
+
+            var isImmutable = !string.IsNullOrWhiteSpace(report.PdfHash) && report.HasPdfContent;
+            var isInErrorState = new[] { "FILE-MISSING", "PROCESSING", "ERROR", "NO-DATA" }
+                .Contains(report.Status ?? "");
+
+            var canRegenerate = !isImmutable && isInErrorState;
+
+            return Ok(new
+            {
+                canRegenerate,
+                isImmutable,
+                pdfHash = report.PdfHash,
+                status = report.Status,
+                reason = isImmutable
+                    ? "Report completato e certificato - immutabile per conformità fiscale"
+                    : !isInErrorState
+                        ? $"Report in stato '{report.Status}' non rigenerabile"
+                        : "Report eleggibile per rigenerazione"
+            });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("PdfReportsController.CanRegenerate",
+                "Errore verifica rigenerabilità", ex.ToString());
+            return StatusCode(500, new { canRegenerate = false, reason = "Errore interno" });
         }
     }
 }

@@ -204,7 +204,7 @@
   "admin.vehicleReports.clientCompanyVATName": "Company",
   "admin.vehicleReports.vehicleVinDisplay": "Vehicle",
   "admin.vehicleReports.fileInfo": "File Info",
-  "admin.vehicleReports.generatedAt": "Generated On",
+  "admin.vehicleReports.generatedInfo": "Generated Info",
   "admin.vehicleReports.notesModalTitle": "Manage note for: row in PDF Reports Table",
   "admin.vehicleReports.downloadSinglePdf": "Sinlge PDF",
   "admin.vehicleReports.blobCheck": "The received file is empty",
@@ -311,5 +311,7 @@
   "admin.outagePeriods.validation.startDateInFuture": "Please enter a valid start date that is not in the future",
   "admin.outagePeriods.validation.invalidEndDate": "End date is not valid",
   "admin.outagePeriods.validation.outageEndBeforeStart": "End date cannot be earlier than start date",
-  "admin.outagePeriods.validation.outageEndInFuture": "End date cannot be in the future"
+  "admin.outagePeriods.validation.outageEndInFuture": "End date cannot be in the future",
+  "admin.vehicleReports.regenerateConfirmationMessage": "⚠️ REPORT REGENERATION\n\nReport ID: {{id}}\nCompany: {{companyName}} ({{companyVatNumber}})\nVehicle: {{vehicleVin}}\nPeriod: {{start}} - {{end}}\n\nCurrent status: {{status}}\n\nThis operation will start report regeneration.\nThe process might take several minutes.\n\n⚠️ NOTE: If the report has already been completed successfully,\nregeneration will be blocked for compliance.\n\nProceed?",
+  "admin.vehicleReports.regenerationStarted": "✅ REGENERATION STARTED\n\nReport ID: {{id}}\n\nThe process has been started in background.\nThe page will refresh automatically.\n\nStatus: {{status}}\n\nNote: The process might take several minutes"
 }

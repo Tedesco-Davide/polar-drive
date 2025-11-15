@@ -20,7 +20,7 @@ public class PdfReport
 
     public DateTime CreatedAt { get; set; } = DateTime.Now;
 
-    public string PdfHash { get; set; } = string.Empty;
+    public string? PdfHash { get; set; } = string.Empty;
 
     public byte[]? PdfContent { get; set; }
 

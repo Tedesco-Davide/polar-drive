@@ -29,8 +29,8 @@ DEV => INFO SU OLLAMA
 DEV => COMANDI GENERICI => FULL DOWN ED UP
 
 - RIMUOVERE ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml down
-- REBUILD ALL IMMAGINI DEV => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .;
-docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .;
+- REBUILD ALL IMMAGINI DEV => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
+docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
 docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
 - START ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
 
@@ -65,7 +65,7 @@ DEV => REBUILD FRONTEND POST MODIFICHE =>
 
 _(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
 
-PROD => INFO SU OLLAMA
+PROD => DA SCRIVERE DOPO CHE DEV FUNZIONA PERFETTAMENTE. FARE CHECK COMPARE CON DEV DI TUTTI I FILES DOCKER, PER ADATTARLI A PROD
 
 ### 🔷 FRONTEND POLARDRIVE ADMIN
 
