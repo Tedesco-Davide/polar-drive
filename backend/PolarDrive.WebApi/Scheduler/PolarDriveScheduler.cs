@@ -1,20 +1,21 @@
+using PolarDrive.Data.DbContexts;
 using PolarDrive.WebApi.Services;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Scheduler
 {
     public class PolarDriveScheduler(
-        ILogger<PolarDriveScheduler> logger,
+        PolarDriveLogger logger,
         IWebHostEnvironment env,
         IServiceProvider provider) : BackgroundService
     {
-        private readonly ILogger<PolarDriveScheduler> _logger = logger;
+        private readonly PolarDriveLogger _logger = logger;
         private readonly IWebHostEnvironment _env = env;
         private readonly IServiceProvider _provider = provider;
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("🚀 Starting PolarDriveScheduler in {Mode}", _env.IsDevelopment() ? "DEV" : "PROD");
+            _ = _logger.Info("🚀 Starting PolarDriveScheduler in {Mode}", _env.IsDevelopment() ? "DEV" : "PROD");
 
             if (_env.IsDevelopment())
             {
@@ -29,7 +30,7 @@ namespace PolarDrive.WebApi.Scheduler
 
         private async Task RunDevelopmentLoop(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("🔧 DEV Mode: running every {Minutes} minute(s)", DEV_REPEAT_DELAY_MINUTES);
+            _ = _logger.Info("🔧 DEV Mode: running every {Minutes} minute(s)", DEV_REPEAT_DELAY_MINUTES.ToString());
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -50,7 +51,7 @@ namespace PolarDrive.WebApi.Scheduler
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "❌ DEV Mode: error in scheduler loop");
+                    _ = _logger.Error(ex.ToString(), "❌ DEV Mode: error in scheduler loop");
                 }
 
                 await Task.Delay(TimeSpan.FromMinutes(DEV_REPEAT_DELAY_MINUTES), stoppingToken);
@@ -59,7 +60,10 @@ namespace PolarDrive.WebApi.Scheduler
 
         private async Task RunProductionSchedulers(CancellationToken stoppingToken)
         {
-            _logger.LogInformation("🏭 PRODUCTION Mode: starting scheduled tasks");
+            _ = _logger.Info(
+                "PolarDriveScheduler.RunProductionSchedulers",
+                "🏭 PRODUCTION Mode: starting scheduled tasks"
+            );
 
             var monthlyTask = ScheduleRecurring(
                 async () =>
@@ -109,14 +113,14 @@ namespace PolarDrive.WebApi.Scheduler
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "❌ Error in scheduled task");
+                    _ = _logger.Error(ex.ToString(), "❌ Error in scheduled task");
                 }
 
                 await Task.Delay(period, token);
             }
         }
 
-        private TimeSpan GetInitialDelayForFirstOfMonth(TimeSpan timeOfDay)
+        private static TimeSpan GetInitialDelayForFirstOfMonth(TimeSpan timeOfDay)
         {
             var now = DateTime.Now;
             var next = new DateTime(now.Year, now.Month, 1).AddMonths(now.Day == 1 && now.TimeOfDay < timeOfDay ? 0 : 1).Add(timeOfDay);
@@ -126,13 +130,21 @@ namespace PolarDrive.WebApi.Scheduler
         private void LogResults(string type, SchedulerResults results)
         {
             if (results.SuccessCount > 0 || results.ErrorCount > 0)
-                _logger.LogInformation("📊 {Type} Results | Success: {Success} | Errors: {Errors}", type, results.SuccessCount, results.ErrorCount);
+            {
+                _logger.Info(
+                    "PolarDriveScheduler.LogResults",
+                    $"📊 {type} Results | Success: {results.SuccessCount} | Errors: {results.ErrorCount}"
+                );
+            }
         }
 
         private void LogRetryResults(RetryResults results)
         {
-            _logger.LogInformation("🔄 Retry Results | Processed: {Processed} | Success: {Success} | Failed: {Failed}",
-                results.ProcessedCount, results.SuccessCount, results.ErrorCount);
+            _logger.Info(
+                "PolarDriveScheduler.LogRetryResults",
+                $"🔄 Retry Results | Processed: {results.ProcessedCount} | Success: {results.SuccessCount} | Failed: {results.ErrorCount}"
+            );
         }
+
     }
 }

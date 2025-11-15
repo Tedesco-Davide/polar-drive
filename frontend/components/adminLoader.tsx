@@ -1,6 +1,4 @@
 import { useTranslation } from "next-i18next";
-import { logFrontendEvent } from "@/utils/logger";
-import { useEffect } from "react";
 
 export default function AdminLoader({ 
   inline = false, 
@@ -10,24 +8,6 @@ export default function AdminLoader({
   local?: boolean; 
 }) {
   const { t } = useTranslation();
-
-  useEffect(() => {
-    try {
-      logFrontendEvent(
-        "AdminLoader",
-        "INFO",
-        "AdminLoader mounted and displayed"
-      );
-    } catch (err) {
-      const details = err instanceof Error ? err.message : String(err);
-      logFrontendEvent(
-        "AdminLoader",
-        "ERROR",
-        "Error while mounting AdminLoader",
-        details
-      );
-    }
-  }, []);
 
   if (inline) {
     return (

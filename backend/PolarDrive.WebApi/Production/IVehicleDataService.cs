@@ -1,3 +1,5 @@
+using PolarDrive.Data.DbContexts;
+
 namespace PolarDrive.WebApi.Production;
 
 /// <summary>
@@ -86,10 +88,10 @@ public class TokenStatus
 /// <summary>
 /// Registro dei servizi API disponibili
 /// </summary>
-public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger<VehicleApiServiceRegistry> logger)
+public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, PolarDriveLogger logger)
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<VehicleApiServiceRegistry> _logger = logger;
+    private readonly PolarDriveLogger _logger = logger;
 
     /// <summary>
     /// Ottieni tutti i servizi API registrati
@@ -105,18 +107,24 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
             if (teslaService != null)
             {
                 services.Add(new TeslaApiServiceAdapter(teslaService));
-                _logger.LogDebug("Tesla API service registered successfully");
+                _logger.Info(
+                    "VehicleApiServiceRegistry.GetAllServices",
+                    $"Vehicle API service registry initialized with {services.Count} services"
+                );
             }
             else
             {
-                _logger.LogWarning("Tesla API service not available in service provider");
+                _logger.Error(
+                    "VehicleApiServiceRegistry.GetAllServices",
+                    "Tesla API service not available in service provider"
+                );
             }
 
-            _logger.LogInformation("Vehicle API service registry initialized with {ServiceCount} services", services.Count);
+            _logger.Info("Vehicle API service registry initialized with {ServiceCount} services", services.Count.ToString());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving vehicle API services");
+            _logger.Error(ex.ToString(), "Error retrieving vehicle API services");
         }
 
         return services;
@@ -134,7 +142,7 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error retrieving service for brand {BrandName}", brandName);
+            _logger.Error(ex.ToString(), "Error retrieving service for brand {BrandName}", brandName);
             return null;
         }
     }
@@ -152,12 +160,12 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
             {
                 var isHealthy = await service.IsServiceAvailableAsync();
                 healthStatus[service.BrandName] = isHealthy;
-                _logger.LogDebug("Health check for {BrandName}: {Status}", service.BrandName, isHealthy ? "Healthy" : "Unhealthy");
+                _ = _logger.Debug("Health check for {BrandName}: {Status}", service.BrandName, isHealthy ? "Healthy" : "Unhealthy");
             }
             catch (Exception ex)
             {
                 healthStatus[service.BrandName] = false;
-                _logger.LogError(ex, "Health check failed for {BrandName}", service.BrandName);
+                _ = _logger.Error(ex.ToString(), "Health check failed for {BrandName}", service.BrandName);
             }
         }
 
@@ -192,7 +200,7 @@ public class VehicleApiServiceRegistry(IServiceProvider serviceProvider, ILogger
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting stats for {BrandName}", service.BrandName);
+                _ = _logger.Error(ex.ToString(), "Error getting stats for {BrandName}", service.BrandName);
                 stats.ServiceHealthStatus[service.BrandName] = false;
             }
         }

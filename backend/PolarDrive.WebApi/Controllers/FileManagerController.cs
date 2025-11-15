@@ -9,7 +9,7 @@ namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerController> logger) : ControllerBase
+public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logger) : ControllerBase
 {
     private readonly string _zipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "filemanager-zips");
 
@@ -53,7 +53,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error retrieving file manager jobs");
+            _ = logger.Error(ex.ToString(), "Error retrieving file manager jobs");
             return StatusCode(500, new { error = "Errore interno server", details = ex.Message });
         }
     }
@@ -96,7 +96,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, $"Errore critico nel processamento del job {job.Id}");
+                _ = logger.Error(ex.ToString(), $"Errore critico nel processamento del job {job.Id}");
 
                 try
                 {
@@ -113,7 +113,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                 }
                 catch (Exception dbEx)
                 {
-                    logger.LogError(dbEx, $"Impossibile aggiornare stato FAILED per job {job.Id}");
+                    _ = logger.Error(dbEx.ToString(), $"Impossibile aggiornare stato FAILED per job {job.Id}");
                 }
             }
         });
@@ -171,8 +171,10 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
             }
             catch (Exception ex)
             {
-                logger.LogWarning($"Impossibile eliminare il file ZIP {job.ResultZipPath}: {ex.Message}");
-            }
+                _ = logger.Warning(
+                    "FileManagerCleanupService.CleanupJob",
+                    $"Impossibile eliminare il file ZIP {job.ResultZipPath}: {ex.Message}"
+                );            }
         }
 
         db.AdminFileManager.Remove(job);
@@ -238,7 +240,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
         var job = await scopedDb.AdminFileManager.FindAsync(jobId);
         if (job == null)
         {
-            logger.LogError("Job {JobId} not found in database", jobId);
+            _ = logger.Error("Job {JobId} not found in database", jobId.ToString());
             return;
         }
 
@@ -303,7 +305,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                 job.ZipFileSizeMB = 0;
                 await scopedDb.SaveChangesAsync();
 
-                logger.LogInformation("Job {JobId} completed with no PDFs found for specified criteria", jobId);
+                _ = logger.Info("Job {JobId} completed with no PDFs found for specified criteria", jobId.ToString());
                 return;
             }
 
@@ -331,12 +333,12 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
                         }
                         catch (Exception ex)
                         {
-                            logger.LogWarning(ex, "Failed to add PDF {PdfId} to ZIP archive", pdf.Id);
+                            _ = logger.Warning(ex.ToString(), "Failed to add PDF {PdfId} to ZIP archive", pdf.Id.ToString());
                         }
                     }
                     else
                     {
-                        logger.LogWarning("PDF file not found: {PdfFilePath} for PDF {PdfId}", pdfFilePath, pdf.Id);
+                        _ = logger.Warning("PDF file not found: {PdfFilePath} for PDF {PdfId}", pdfFilePath, pdf.Id.ToString());
                     }
                 }
 
@@ -351,12 +353,14 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
 
             await scopedDb.SaveChangesAsync();
 
-            logger.LogInformation("Job {JobId} completed successfully. Included {IncludedCount}/{TotalCount} PDFs, ZIP size: {ZipSizeMB}MB",
-                jobId, job.IncludedPdfCount, job.TotalPdfCount, job.ZipFileSizeMB);
+            _ = logger.Info(
+                "FileManagerDownloadService.ProcessJob",
+                $"Job {jobId} completed successfully. Included {job.IncludedPdfCount}/{job.TotalPdfCount} PDFs, ZIP size: {job.ZipFileSizeMB}MB"
+            );
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Critical error processing job {JobId}", jobId);
+            _ = logger.Error(ex.ToString(), "Critical error processing job {JobId}", jobId.ToString());
 
             try
             {
@@ -367,7 +371,7 @@ public class FileManagerController(PolarDriveDbContext db, ILogger<FileManagerCo
             }
             catch (Exception saveEx)
             {
-                logger.LogError(saveEx, "Failed to save FAILED status for job {JobId}", jobId);
+                _ = logger.Error(saveEx.ToString(), "Failed to save FAILED status for job {JobId}", jobId.ToString());
             }
         }
     }

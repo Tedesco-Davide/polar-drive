@@ -1,5 +1,4 @@
 using PolarDrive.Data.DbContexts;
-using PolarDrive.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 
 namespace PolarDrive.WebApi.Production;
@@ -7,17 +6,20 @@ namespace PolarDrive.WebApi.Production;
 /// <summary>
 /// Servizio centrale per gestire il fetch dati di tutti i brand
 /// </summary>
-public class VehicleDataService(IServiceProvider serviceProvider, ILogger<VehicleDataService> logger)
+public class VehicleDataService(IServiceProvider serviceProvider, PolarDriveLogger logger)
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<VehicleDataService> _logger = logger;
+    private readonly PolarDriveLogger _logger = logger;
 
     /// <summary>
     /// Fetch dati per tutti i brand attivi con risultati dettagliati
     /// </summary>
     public async Task<VehicleDataFetchResult> FetchDataForAllBrandsAsync()
     {
-        _logger.LogInformation("🚗 VehicleDataService: Starting data fetch for all brands");
+        _ = _logger.Info(
+            "VehicleDataService.FetchDataForAllBrandsAsync",
+            "🚗 VehicleDataService: Starting data fetch for all brands"
+        );
 
         var result = new VehicleDataFetchResult();
         var startTime = DateTime.Now;
@@ -29,13 +31,16 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
             if (!services.Any())
             {
-                _logger.LogWarning("⚠️ VehicleDataService: No vehicle API services registered");
+                _ = _logger.Warning(
+                    "VehicleDataService.FetchDataForAllBrandsAsync",
+                    "⚠️ VehicleDataService: No vehicle API services registered"
+                );
                 result.OverallSuccess = false;
                 result.ErrorMessage = "No vehicle API services available";
                 return result;
             }
 
-            _logger.LogInformation("📊 VehicleDataService: Found {ServiceCount} vehicle API services", services.Count);
+            _ = _logger.Info("📊 VehicleDataService: Found {ServiceCount} vehicle API services", services.Count.ToString());
 
             // Esegui fetch con risultati dettagliati
             var brandTasks = services.Select(service =>
@@ -55,8 +60,10 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
             result.Duration = DateTime.Now - startTime;
             result.OverallSuccess = result.FailedBrands == 0;
 
-            _logger.LogInformation("✅ VehicleDataService: Completed data fetch for all brands - Success: {Success}/{Total}, Duration: {Duration}ms",
-                result.SuccessfulBrands, result.TotalBrands, result.Duration.TotalMilliseconds);
+            _ = _logger.Info(
+                "VehicleDataService.FetchDataForAllBrandsAsync",
+                $"✅ VehicleDataService: Completed data fetch for all brands - Success: {result.SuccessfulBrands}/{result.TotalBrands}, Duration: {result.Duration.TotalMilliseconds}ms"
+            );
 
             return result;
         }
@@ -66,7 +73,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
             result.ErrorMessage = ex.Message;
             result.Duration = DateTime.Now - startTime;
 
-            _logger.LogError(ex, "❌ VehicleDataService: Error during multi-brand data fetch");
+            _ = _logger.Error(ex.ToString(), "❌ VehicleDataService: Error during multi-brand data fetch");
             return result;
         }
     }
@@ -76,7 +83,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     /// </summary>
     public async Task<BrandFetchResult> FetchDataForBrandAsync(string brandName)
     {
-        _logger.LogInformation("🚗 VehicleDataService: Starting data fetch for brand {BrandName}", brandName);
+        _ = _logger.Info("🚗 VehicleDataService: Starting data fetch for brand {BrandName}", brandName);
 
         try
         {
@@ -85,7 +92,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
             if (service == null)
             {
-                _logger.LogWarning("⚠️ VehicleDataService: No service found for brand {BrandName}", brandName);
+                _ = _logger.Warning("⚠️ VehicleDataService: No service found for brand {BrandName}", brandName);
                 return new BrandFetchResult
                 {
                     BrandName = brandName,
@@ -98,7 +105,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ VehicleDataService: Error fetching data for brand {BrandName}", brandName);
+            _ = _logger.Error(ex.ToString(), "❌ VehicleDataService: Error fetching data for brand {BrandName}", brandName);
             return new BrandFetchResult
             {
                 BrandName = brandName,
@@ -113,7 +120,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
     /// </summary>
     public async Task<VehicleFetchResult> FetchDataForVehicleAsync(string vin)
     {
-        _logger.LogInformation("🚗 VehicleDataService: Starting data fetch for vehicle {VIN}", vin);
+        _ = _logger.Info("🚗 VehicleDataService: Starting data fetch for vehicle {VIN}", vin);
 
         try
         {
@@ -126,7 +133,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
             if (vehicle == null)
             {
-                _logger.LogWarning("⚠️ VehicleDataService: Vehicle {VIN} not found", vin);
+                _ = _logger.Warning("⚠️ VehicleDataService: Vehicle {VIN} not found", vin);
                 return VehicleFetchResult.Error;
             }
 
@@ -136,18 +143,18 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
             if (service == null)
             {
-                _logger.LogWarning("⚠️ VehicleDataService: No service found for brand {Brand}", vehicle.Brand);
+                _ = _logger.Warning("⚠️ VehicleDataService: No service found for brand {Brand}", vehicle.Brand);
                 return VehicleFetchResult.Error;
             }
 
             var result = await service.FetchDataForVehicleAsync(vin);
 
-            _logger.LogInformation("✅ VehicleDataService: Vehicle {VIN} fetch result: {Result}", vin, result);
+            _ = _logger.Info("✅ VehicleDataService: Vehicle {VIN} fetch result: {Result}", vin, result.ToString());
             return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ VehicleDataService: Error fetching data for vehicle {VIN}", vin);
+            _ = _logger.Error(ex.ToString(), "❌ VehicleDataService: Error fetching data for vehicle {VIN}", vin);
             return VehicleFetchResult.Error;
         }
     }
@@ -232,11 +239,11 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "❌ VehicleDataService: Error checking services health");
+            _ = _logger.Error(ex.ToString(), "❌ VehicleDataService: Error checking services health");
             return new ServiceHealthReport
             {
                 CheckTime = DateTime.Now,
-                ServiceHealthStatus = new Dictionary<string, bool>(),
+                ServiceHealthStatus = [],
                 OverallHealthy = false,
                 ErrorMessage = ex.Message
             };
@@ -256,7 +263,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
 
         try
         {
-            _logger.LogInformation("🚗 Fetching {BrandName} data", service.BrandName);
+            _ = _logger.Info("🚗 Fetching {BrandName} data", service.BrandName);
 
             // Conta veicoli prima del fetch
             using var scope = _serviceProvider.CreateScope();
@@ -270,7 +277,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
             {
                 result.Success = true;
                 result.SkippedReason = "No active vehicles to process";
-                _logger.LogInformation("ℹ️ {BrandName}: No active vehicles to process", service.BrandName);
+                _ = _logger.Info("ℹ️ {BrandName}: No active vehicles to process", service.BrandName);
                 return result;
             }
 
@@ -279,8 +286,8 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
             result.VehiclesSuccess = result.VehiclesProcessed;
             result.Success = true;
 
-            _logger.LogInformation("✅ {BrandName}: Successfully processed {Count} vehicles",
-                service.BrandName, result.VehiclesProcessed);
+            _ = _logger.Info("✅ {BrandName}: Successfully processed {Count} vehicles",
+                service.BrandName, result.VehiclesProcessed.ToString());
         }
         catch (Exception ex)
         {
@@ -289,7 +296,7 @@ public class VehicleDataService(IServiceProvider serviceProvider, ILogger<Vehicl
             result.VehiclesError = result.VehiclesProcessed;
             result.VehiclesSuccess = 0;
 
-            _logger.LogError(ex, "❌ Error fetching {BrandName} data", service.BrandName);
+            _ = _logger.Error(ex.ToString(), "❌ Error fetching {BrandName} data", service.BrandName);
         }
         finally
         {

@@ -3,10 +3,10 @@ using PolarDrive.Data.DbContexts;
 
 namespace PolarDrive.WebApi.Services;
 
-public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCleanupService> logger) : BackgroundService
+public class FileCleanupService(IServiceProvider serviceProvider, PolarDriveLogger logger) : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<FileCleanupService> _logger = logger;
+    private readonly PolarDriveLogger _logger = logger;
     private readonly string _fileManagerZipStoragePath = Path.Combine("storage", "filemanager-zips");
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -22,7 +22,7 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Errore durante il cleanup dei file ZIP");
+                _ = _logger.Error(ex.ToString(), "Errore durante il cleanup dei file ZIP");
                 await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
             }
         }
@@ -51,11 +51,14 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
                 try
                 {
                     File.Delete(job.ResultZipPath);
-                    _logger.LogInformation($"File Manager ZIP eliminato: {job.ResultZipPath}");
+                    _ = _logger.Info(
+                        "FileCleanupService.CleanupOldFileManagerFiles",
+                        $"File Manager ZIP eliminato: {job.ResultZipPath}"
+                    );
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, $"Impossibile eliminare il file ZIP del File Manager: {job.ResultZipPath}");
+                    _ = _logger.Warning(ex.ToString(), $"Impossibile eliminare il file ZIP del File Manager: {job.ResultZipPath}");
                 }
             }
 
@@ -66,7 +69,10 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
         if (oldJobs.Any())
         {
             await db.SaveChangesAsync();
-            _logger.LogInformation($"File Manager cleanup completato: {oldJobs.Count} job vecchi rimossi");
+            _ = _logger.Info(
+                "FileCleanupService.CleanupOldFileManagerFiles",
+                $"File Manager cleanup completato: {oldJobs.Count} job vecchi rimossi"
+            );
         }
 
         // Rimuovi file ZIP orfani del File Manager
@@ -97,12 +103,15 @@ public class FileCleanupService(IServiceProvider serviceProvider, ILogger<FileCl
                 if (fileInfo.CreationTime < DateTime.Now.AddDays(-7))
                 {
                     File.Delete(orphanedFile);
-                    _logger.LogInformation($"File Manager ZIP orfano eliminato: {orphanedFile}");
+                    _ = _logger.Info(
+                        "FileCleanupService.CleanupOldFileManagerFiles",
+                        $"File Manager ZIP orfano eliminato: {orphanedFile}"
+                    );
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, $"Impossibile eliminare il file ZIP orfano del File Manager: {orphanedFile}");
+                _ = _logger.Warning(ex.ToString(), $"Impossibile eliminare il file ZIP orfano del File Manager: {orphanedFile}");
             }
         }
     }

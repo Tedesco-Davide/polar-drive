@@ -1,3 +1,5 @@
+using PolarDrive.Data.DbContexts;
+
 namespace PolarDrive.WebApi.Services;
 
 /// <summary>
@@ -5,17 +7,20 @@ namespace PolarDrive.WebApi.Services;
 /// </summary>
 public class OutageDetectionBackgroundService(
     IServiceProvider serviceProvider,
-    ILogger<OutageDetectionBackgroundService> logger) : BackgroundService
+    PolarDriveLogger logger) : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<OutageDetectionBackgroundService> _logger = logger;
+    private readonly PolarDriveLogger _logger = logger;
 
     // Configurazione timing
     private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("OutageDetectionBackgroundService started");
+        _ = _logger.Info(
+            "OutageDetectionBackgroundService.ExecuteAsync",
+            "OutageDetectionBackgroundService started"
+        );
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -24,7 +29,10 @@ public class OutageDetectionBackgroundService(
                 using var scope = _serviceProvider.CreateScope();
                 var outageService = scope.ServiceProvider.GetRequiredService<IOutageDetectionService>();
 
-                _logger.LogInformation("Starting outage detection cycle");
+                _ = _logger.Info(
+                    "OutageDetectionBackgroundService.ExecuteAsync",
+                    "Starting outage detection cycle"
+                );
 
                 // 1. Controlla Fleet API outages
                 await outageService.CheckFleetApiOutagesAsync();
@@ -35,17 +43,23 @@ public class OutageDetectionBackgroundService(
                 // 3. Risolvi outages automaticamente
                 await outageService.ResolveOutagesAsync();
 
-                _logger.LogInformation("Outage detection cycle completed successfully");
+                _ = _logger.Info(
+                    "OutageDetectionBackgroundService.ExecuteAsync",
+                    "Outage detection cycle completed successfully"
+                );
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during outage detection cycle");
+                _ = _logger.Error(ex.ToString(), "Error during outage detection cycle");
             }
 
             // Aspetta prima del prossimo ciclo
             await Task.Delay(_checkInterval, stoppingToken);
         }
 
-        _logger.LogInformation("OutageDetectionBackgroundService stopped");
+        _ = _logger.Info(
+            "OutageDetectionBackgroundService.ExecuteAsync",
+            "OutageDetectionBackgroundService stopped"
+        );
     }
 }

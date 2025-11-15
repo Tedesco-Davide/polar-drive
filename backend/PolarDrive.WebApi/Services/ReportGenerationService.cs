@@ -16,12 +16,10 @@ namespace PolarDrive.WebApi.Services
         Task<bool> GenerateSingleReportAsync(int companyId, int vehicleId, DateTime periodStart, DateTime periodEnd, bool isRegeneration = false, int? existingReportId = null);
     }
 
-    public class ReportGenerationService(IServiceProvider serviceProvider,
-                                  ILogger<ReportGenerationService> logger,
-                                  IWebHostEnvironment env) : IReportGenerationService
+    public class ReportGenerationService(IServiceProvider serviceProvider, PolarDriveLogger logger, IWebHostEnvironment env) : IReportGenerationService
     {
         private readonly IServiceProvider _serviceProvider = serviceProvider;
-        private readonly ILogger<ReportGenerationService> _logger = logger;
+        private readonly PolarDriveLogger _logger = logger;
         private readonly IWebHostEnvironment _env = env;
         private readonly Dictionary<int, DateTime> _lastReportAttempts = [];
         private readonly Dictionary<int, int> _retryCount = [];
@@ -35,7 +33,7 @@ namespace PolarDrive.WebApi.Services
 
             if (!ShouldGenerateReports(scheduleType, now))
             {
-                _logger.LogDebug("⏰ Not time for {ScheduleType} reports", scheduleType);
+                _ = _logger.Debug("⏰ Not time for {ScheduleType} reports", scheduleType.ToString());
                 return results;
             }
 
@@ -45,16 +43,20 @@ namespace PolarDrive.WebApi.Services
             var vehicles = await GetVehiclesToProcess(db, scheduleType);
             if (!vehicles.Any())
             {
-                _logger.LogInformation("📭 No vehicles to process for {ScheduleType}", scheduleType);
+                _ = _logger.Info("📭 No vehicles to process for {ScheduleType}", scheduleType.ToString());
                 return results;
             }
 
             var activeCount = vehicles.Count(v => v.IsActiveFlag);
             var graceCount = vehicles.Count - activeCount;
-            _logger.LogInformation("📊 {ScheduleType}: Total={Total}, Active={Active}, Grace={Grace}",
-                                   scheduleType, vehicles.Count, activeCount, graceCount);
+
+            _ = _logger.Info(
+                "ReportGenerationService.ProcessScheduledReportsAsync",
+                $"📊 {scheduleType}: Total={vehicles.Count}, Active={activeCount}, Grace={graceCount}"
+            );
+            
             if (graceCount > 0)
-                _logger.LogWarning("⏳ {Count} vehicles in grace period still generating reports", graceCount);
+                _ = _logger.Warning("⏳ {Count} vehicles in grace period still generating reports", graceCount.ToString());
 
             foreach (var v in vehicles)
             {
@@ -73,7 +75,10 @@ namespace PolarDrive.WebApi.Services
                     var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
                     var end = now;
 
-                    _logger.LogInformation("🔍 DEBUG: Vehicle {VIN} - Start: {Start}, End: {End}, Now: {Now}", v.Vin, start, end, now);
+                    _ = _logger.Debug(
+                        "ReportGenerationService.ProcessScheduledReportsAsync",
+                        $"🔍 DEBUG: Vehicle {v.Vin} - Start: {start}, End: {end}, Now: {now}"
+                    );
 
                     // 3) Infine genero con questi parametri
                     var analysisType = GetAnalysisType(scheduleType);
@@ -85,7 +90,7 @@ namespace PolarDrive.WebApi.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "❌ Error report for vehicle {VIN}", v.Vin);
+                    _ = _logger.Error(ex.ToString(), "❌ Error report for vehicle {VIN}", v.Vin);
                     results.ErrorCount++;
                     _lastReportAttempts[v.Id] = now;
                     _retryCount[v.Id] = _retryCount.GetValueOrDefault(v.Id) + 1;
@@ -126,7 +131,10 @@ namespace PolarDrive.WebApi.Services
                     var veh = await db.ClientVehicles.FindAsync(id);
                     if (veh == null) continue;
 
-                    _logger.LogInformation("🔄 Retry {Count}/{Max} for {VIN}", _retryCount[id], MAX_RETRIES, veh.Vin);
+                    _ = _logger.Info(
+                        "ReportGenerationService.ProcessRetriesAsync",
+                        $"🔄 Retry {_retryCount[id]}/{MAX_RETRIES} for {veh.Vin}"
+                    );
 
                     var lastReportEnd = await db.PdfReports
                         .Where(r => r.VehicleId == id)
@@ -146,12 +154,12 @@ namespace PolarDrive.WebApi.Services
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "❌ Retry failed for {VehicleId}", id);
+                    _ = _logger.Error(ex.ToString(), "❌ Retry failed for {VehicleId}", id.ToString());
                     results.ErrorCount++;
                     _retryCount[id]++;
                     _lastReportAttempts[id] = now;
                     if (_retryCount[id] > MAX_RETRIES)
-                        _logger.LogWarning("🚫 {VehicleId} exceeded max retries", id);
+                        _ = _logger.Warning("🚫 {VehicleId} exceeded max retries", id.ToString());
                 }
             }
 
@@ -163,47 +171,23 @@ namespace PolarDrive.WebApi.Services
         /// </summary>
         public async Task<bool> GenerateSingleReportAsync(int companyId, int vehicleId, DateTime periodStart, DateTime periodEnd, bool isRegeneration = false, int? existingReportId = null)
         {
-            // ✅ LOG 1: Appena entra
-            _logger.LogInformation("🎯 [STEP 1] ENTRATA metodo - CompanyId: {CompanyId}, VehicleId: {VehicleId}, IsRegen: {IsRegen}, ExistingId: {ExistingId}",
-                companyId, vehicleId, isRegeneration, existingReportId);
-
             try
             {
-                // ✅ LOG 2: Prima del scope
-                _logger.LogInformation("🎯 [STEP 2] Creazione scope...");
-
                 using var scope = _serviceProvider.CreateScope();
-
-                // ✅ LOG 3: Dopo scope
-                _logger.LogInformation("🎯 [STEP 3] Scope creato, richiesta DbContext...");
 
                 var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-                // ✅ LOG 4: Dopo DbContext
-                _logger.LogInformation("🎯 [STEP 4] DbContext ottenuto!");
-
                 PdfReport? report;
-
-                // ✅ LOG 5: Prima del branch
-                _logger.LogInformation("🎯 [STEP 5] Controllo branch - IsRegen: {IsRegen}, HasExistingId: {HasId}",
-                    isRegeneration, existingReportId.HasValue);
 
                 if (isRegeneration && existingReportId.HasValue)
                 {
-                    // ✅ LOG 6: Dentro branch rigenerazione
-                    _logger.LogInformation("🎯 [STEP 6] Branch RIGENERAZIONE - Carico report {ReportId}", existingReportId);
-
                     report = await db.PdfReports
                         .Include(r => r.ClientCompany)
                         .Include(r => r.ClientVehicle)
                         .FirstOrDefaultAsync(r => r.Id == existingReportId.Value);
 
-                    // ✅ LOG 7: Dopo caricamento
-                    _logger.LogInformation("🎯 [STEP 7] Report caricato - Found: {Found}", report != null);
-
                     if (report == null)
                     {
-                        _logger.LogError("🎯 [STEP 7-ERROR] Report {ReportId} non trovato", existingReportId);
                         return false;
                     }
 
@@ -211,13 +195,8 @@ namespace PolarDrive.WebApi.Services
                     if (!string.IsNullOrWhiteSpace(report.PdfHash) &&
                         report.PdfContent?.Length > 0)
                     {
-                        _logger.LogError("🎯 [STEP 7-IMMUTABLE] Report {ReportId} certificato (Hash: {Hash})",
-                            existingReportId, report.PdfHash);
                         return false;
                     }
-
-                    // ✅ LOG 8: Reset report
-                    _logger.LogInformation("🎯 [STEP 8] Reset report per rigenerazione");
 
                     report.Status = "REGENERATING";
                     report.PdfContent = null;
@@ -226,14 +205,9 @@ namespace PolarDrive.WebApi.Services
                     report.Notes = $"Rigenerato: {DateTime.Now:yyyy-MM-dd HH:mm}";
 
                     await db.SaveChangesAsync();
-
-                    _logger.LogInformation("🎯 [STEP 9] Reset salvato!");
                 }
                 else
                 {
-                    // ✅ LOG 10: Branch nuovo report
-                    _logger.LogInformation("🎯 [STEP 10] Branch NUOVO REPORT");
-
                     var exists = await db.PdfReports.AnyAsync(r =>
                         r.ClientCompanyId == companyId &&
                         r.VehicleId == vehicleId &&
@@ -242,7 +216,6 @@ namespace PolarDrive.WebApi.Services
 
                     if (exists)
                     {
-                        _logger.LogWarning("🎯 [STEP 10-EXISTS] Report già esistente");
                         return false;
                     }
 
@@ -259,29 +232,22 @@ namespace PolarDrive.WebApi.Services
                     db.PdfReports.Add(report);
                     await db.SaveChangesAsync();
 
-                    _logger.LogInformation("🎯 [STEP 11] Nuovo report creato - Id: {Id}", report.Id);
+                    _ = _logger.Info("🎯 [STEP 11] Nuovo report creato - Id: {Id}", report.Id.ToString());
                 }
-
-                // ✅ LOG 12: Verifica dati
-                _logger.LogInformation("🎯 [STEP 12] Verifica disponibilità dati...");
 
                 var dataCount = await db.VehiclesData
                     .CountAsync(vd => vd.VehicleId == vehicleId &&
                                      vd.Timestamp >= periodStart &&
                                      vd.Timestamp <= periodEnd);
 
-                _logger.LogInformation("🎯 [STEP 13] Dati trovati: {Count}", dataCount);
+                _ = _logger.Info("🎯 [STEP 13] Dati trovati: {Count}", dataCount.ToString());
 
                 if (dataCount == 0)
                 {
-                    _logger.LogWarning("🎯 [STEP 13-NODATA] Nessun dato disponibile");
                     report.Status = "NO-DATA";
                     await db.SaveChangesAsync();
                     return false;
                 }
-
-                // ✅ LOG 14: Carica vehicle
-                _logger.LogInformation("🎯 [STEP 14] Caricamento vehicle...");
 
                 var vehicle = await db.ClientVehicles
                     .Include(v => v.ClientCompany)
@@ -289,16 +255,13 @@ namespace PolarDrive.WebApi.Services
 
                 if (vehicle == null)
                 {
-                    _logger.LogError("🎯 [STEP 14-ERROR] Vehicle {VehicleId} non trovato", vehicleId);
+                    _ = _logger.Error("🎯 [STEP 14-ERROR] Vehicle {VehicleId} non trovato", vehicleId.ToString());
                     report.Status = "ERROR";
                     await db.SaveChangesAsync();
                     return false;
                 }
 
-                _logger.LogInformation("🎯 [STEP 15] Vehicle caricato: {Vin}", vehicle.Vin);
-
-                // ✅ LOG 16: Prepara period
-                _logger.LogInformation("🎯 [STEP 16] Preparazione period info...");
+                _ = _logger.Info("🎯 [STEP 15] Vehicle caricato: {Vin}", vehicle.Vin);
 
                 var period = new ReportPeriodInfo
                 {
@@ -309,45 +272,30 @@ namespace PolarDrive.WebApi.Services
                     MonitoringDays = (periodEnd - periodStart).TotalDays
                 };
 
-                _logger.LogInformation("🎯 [STEP 17] Period preparato - Hours: {Hours}", period.DataHours);
-
-                // ✅ LOG 18: AI Insights
-                _logger.LogInformation("🎯 [STEP 18] Inizio generazione AI insights...");
+                _ = _logger.Info("🎯 [STEP 17] Period preparato - Hours: {Hours}", period.DataHours.ToString());
 
                 using var scope_ollama = _serviceProvider.CreateScope();
                 var ollamaOptions = scope_ollama.ServiceProvider
                     .GetRequiredService<IOptionsSnapshot<OllamaConfig>>();
                 var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
 
-                _logger.LogInformation("🎯 [STEP 19] AI Generator creato, chiamata in corso...");
-
                 var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
-
-                _logger.LogInformation("🎯 [STEP 20] AI Insights ricevuti - Length: {Length}", insights?.Length ?? 0);
 
                 if (string.IsNullOrWhiteSpace(insights))
                 {
-                    _logger.LogError("🎯 [STEP 20-ERROR] AI insights vuoti");
                     report.Status = "ERROR";
                     report.Notes = "AI insights generation failed";
                     await db.SaveChangesAsync();
                     return false;
                 }
 
-                // ✅ LOG 21: Genera files
-                _logger.LogInformation("🎯 [STEP 21] Inizio GenerateReportFiles...");
-
                 await GenerateReportFiles(db, report, insights, period, vehicle);
-
-                _logger.LogInformation("🎯 [STEP 22] GenerateReportFiles completato!");
-                _logger.LogInformation("✅ Report {ReportId} completato - Hash: {Hash}",
-                    report.Id, report.PdfHash);
 
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "💥 [EXCEPTION] CompanyId: {CompanyId}, VehicleId: {VehicleId}", companyId, vehicleId);
+                _ = _logger.Error(ex.ToString(), "💥 [EXCEPTION] CompanyId: {CompanyId}, VehicleId: {VehicleId}");
 
                 // Aggiorna status a ERROR se possibile
                 if (existingReportId.HasValue)
@@ -370,7 +318,6 @@ namespace PolarDrive.WebApi.Services
             }
             finally
             {
-                _logger.LogInformation("🎯 [FINALLY] Garbage Collection...");
                 GC.Collect(2, GCCollectionMode.Forced, blocking: true);
                 GC.WaitForPendingFinalizers();
                 GC.Collect(2, GCCollectionMode.Forced, blocking: true);
@@ -407,8 +354,10 @@ namespace PolarDrive.WebApi.Services
                             vd.Timestamp <= period.End)
                 .CountAsync();
 
-            _logger.LogInformation("🧠 Generating {Level} for {VIN} | {Start:yyyy-MM-dd HH:mm} to {End:yyyy-MM-dd HH:mm} | Report #{Count} | DataRecords in period: {DataCount}",
-                                period.AnalysisLevel, vehicle.Vin, period.Start, period.End, reportCount + 1, dataCountInPeriod);
+            _ = _logger.Info(
+                "ReportGenerationService.GenerateReportForVehicle",
+                $"🧠 Generating {period.AnalysisLevel} for {vehicle.Vin} | {period.Start:yyyy-MM-dd HH:mm} to {period.End:yyyy-MM-dd HH:mm} | Report #{reportCount + 1} | DataRecords in period: {dataCountInPeriod}"
+            );
 
             // Crea sempre il record del report per tracking
             var report = new PdfReport
@@ -430,8 +379,10 @@ namespace PolarDrive.WebApi.Services
                 db.PdfReports.Add(report);
                 await db.SaveChangesAsync();
 
-                _logger.LogWarning("⚠️ Report {Id} created but NO FILES generated for {VIN} - No data available for period",
-                                report.Id, vehicle.Vin);
+                _ = _logger.Warning(
+                    "ReportGenerationService.GenerateReportForVehicle",
+                    $"⚠️ Report {report.Id} created but NO FILES generated for {vehicle.Vin} - No data available for period"
+                );
                 return;
             }
 
@@ -451,8 +402,10 @@ namespace PolarDrive.WebApi.Services
 
             await GenerateReportFiles(db, report, insights, period, vehicle);
 
-            _logger.LogInformation("✅ Report {Id} generated for {VIN} | Period: {Hours}h | Type: {Type} | Storage: PDF in DB",
-                report.Id, vehicle.Vin, period.DataHours, period.AnalysisLevel);
+            _ = _logger.Info(
+                "ReportGenerationService.GenerateReportForVehicle",
+                $"✅ Report {report.Id} generated for {vehicle.Vin} | Period: {period.DataHours}h | Type: {period.AnalysisLevel} | Storage: PDF in DB"
+            );
 
         }
 
@@ -567,7 +520,7 @@ namespace PolarDrive.WebApi.Services
             // ⛔️ Se già presente, non rigenerare
             if (report.PdfContent is { Length: > 0 })
             {
-                _logger.LogInformation("Report {Id} already has a PDF ({Size} bytes). Skipping.", report.Id, report.PdfContent.Length);
+                _ = _logger.Info("Report {Id} already has a PDF ({Size} bytes). Skipping.", report.Id.ToString(), report.PdfContent.Length.ToString());
                 return;
             }
 
@@ -598,7 +551,7 @@ namespace PolarDrive.WebApi.Services
             // 🛡️ Double-check anti-race
             if (report.PdfContent is { Length: > 0 })
             {
-                _logger.LogWarning("Race detected for report {Id}. Another worker saved the PDF meanwhile. Discarding generated bytes.", report.Id);
+                _ = _logger.Warning("Race detected for report {Id}. Another worker saved the PDF meanwhile. Discarding generated bytes.", report.Id.ToString());
                 return;
             }
 

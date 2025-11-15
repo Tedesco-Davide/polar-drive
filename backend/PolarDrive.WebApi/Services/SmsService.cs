@@ -1,3 +1,4 @@
+using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using Vonage;
 using Vonage.Messaging;
@@ -13,12 +14,12 @@ public interface ISmsConfigurationService
     Task<bool> SendSmsAsync(string phoneNumber, string message);
 }
 
-public class SmsService(IConfiguration configuration, ILogger<SmsService> logger) : ISmsConfigurationService
+public class SmsService(IConfiguration configuration, PolarDriveLogger logger) : ISmsConfigurationService
 {
     private readonly SmsConfigurationDTO _config = configuration.GetSection("Vonage").Get<SmsConfigurationDTO>()
         ?? throw new InvalidOperationException("Vonage configuration not found");
 
-    private readonly ILogger<SmsService> _logger = logger;
+    private readonly PolarDriveLogger _logger = logger;
 
     private readonly Dictionary<string, List<DateTime>> _rateLimitTracker = [];
 
@@ -32,21 +33,21 @@ public class SmsService(IConfiguration configuration, ILogger<SmsService> logger
         var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
         if (env == "Development")
         {
-            _logger.LogWarning("DEV MODE: Allowing all numbers ({PhoneNumber})", phoneNumber);
+            _logger.Warning("DEV MODE: Allowing all numbers ({PhoneNumber})", phoneNumber);
             return true;
         }
 
         // In produzione, usa la whitelist
         if (_config?.AllowedPhoneNumbers?.Any() != true)
         {
-            _logger.LogWarning("PROD MODE: No whitelist configured - REJECTING {PhoneNumber}", phoneNumber);
+            _logger.Warning("PROD MODE: No whitelist configured - REJECTING {PhoneNumber}", phoneNumber);
             return false;
         }
 
         var isAllowed = _config.AllowedPhoneNumbers.Contains(phoneNumber);
         if (!isAllowed)
         {
-            _logger.LogWarning("PROD MODE: Phone {PhoneNumber} not in whitelist", phoneNumber);
+            _logger.Warning("PROD MODE: Phone {PhoneNumber} not in whitelist", phoneNumber);
         }
 
         return isAllowed;
@@ -68,8 +69,10 @@ public class SmsService(IConfiguration configuration, ILogger<SmsService> logger
             // Controlla rate limit
             if (_rateLimitTracker[phoneNumber].Count >= _config.RateLimitPerMinute)
             {
-                _logger.LogInformation("Rate limit superato per {PhoneNumber}: {Count}/{Limit} in 60s",
-                    phoneNumber, _rateLimitTracker[phoneNumber].Count, _config.RateLimitPerMinute);
+                _logger.Info(
+                    "SmsService.IsRateLimitExceeded",
+                    $"Rate limit superato per {phoneNumber}: {_rateLimitTracker[phoneNumber].Count}/{_config.RateLimitPerMinute} in 60s"
+                );
                 return Task.FromResult(true);
             }
 
@@ -101,8 +104,10 @@ public class SmsService(IConfiguration configuration, ILogger<SmsService> logger
 
             if (messages is null || messages.Length == 0)
             {
-                _logger.LogError("Vonage: response.Messages è vuoto o null per destinatario {PhoneNumber}. Dichiarati: {DeclaredCount}",
-                    phoneNumber, declaredCount);
+                using var _ = _logger.Error(
+                    "SmsService.SendSmsAsync",
+                    $"Vonage: response.Messages è vuoto o null per destinatario {phoneNumber}. Dichiarati: {declaredCount}"
+                );
                 return false;
             }
 
@@ -110,20 +115,24 @@ public class SmsService(IConfiguration configuration, ILogger<SmsService> logger
             var allOk = messages.All(m => m.Status == "0");
             if (allOk)
             {
-                _logger.LogInformation("SMS inviato a {PhoneNumber} ({Segments} segmenti; dichiarati: {DeclaredCount}).",
-                    phoneNumber, messages.Length, declaredCount);
+                _ = _logger.Info(
+                    "SmsService.SendSmsAsync",
+                    $"SMS inviato a {phoneNumber} ({messages.Length} segmenti; dichiarati: {declaredCount})."
+                );
                 return true;
             }
 
             // Logga il primo errore utile
             var firstError = messages.FirstOrDefault(m => m.Status != "0");
-            _logger.LogWarning("Vonage error {Status} per {PhoneNumber}: {ErrorText}",
-                firstError?.Status, phoneNumber, firstError?.ErrorText);
+            _ = _logger.Warning(
+                "SmsService.SendSmsAsync",
+                $"Vonage error {firstError?.Status} per {phoneNumber}: {firstError?.ErrorText}"
+            );
             return false;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Vonage SendSmsAsync exception per {PhoneNumber}", phoneNumber);
+            _ = _logger.Error(ex.ToString(), "Vonage SendSmsAsync exception per {PhoneNumber}", phoneNumber);
             return false;
         }
     }
