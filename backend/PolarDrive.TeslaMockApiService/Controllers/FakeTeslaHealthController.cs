@@ -7,14 +7,9 @@ namespace PolarDrive.TeslaMockApiService.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/tesla")]
-public class TeslaHealthController : ControllerBase
+public class TeslaHealthController(ILogger<TeslaHealthController> logger) : ControllerBase
 {
-    private readonly ILogger<TeslaHealthController> _logger;
-
-    public TeslaHealthController(ILogger<TeslaHealthController> logger)
-    {
-        _logger = logger;
-    }
+    private readonly ILogger<TeslaHealthController> _logger = logger;
 
     /// <summary>
     /// GET /api/tesla/health - Health check per OutageDetectionService

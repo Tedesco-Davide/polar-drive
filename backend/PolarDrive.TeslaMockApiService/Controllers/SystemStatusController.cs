@@ -5,16 +5,10 @@ namespace PolarDrive.TeslaMockApiService.Controllers;
 
 [ApiController]
 [Route("api/system")]
-public class SystemStatusController : ControllerBase
+public class SystemStatusController(VehicleStateManager vehicleStateManager, ILogger<SystemStatusController> logger) : ControllerBase
 {
-    private readonly VehicleStateManager _vehicleStateManager;
-    private readonly ILogger<SystemStatusController> _logger;
-
-    public SystemStatusController(VehicleStateManager vehicleStateManager, ILogger<SystemStatusController> logger)
-    {
-        _vehicleStateManager = vehicleStateManager;
-        _logger = logger;
-    }
+    private readonly VehicleStateManager _vehicleStateManager = vehicleStateManager;
+    private readonly ILogger<SystemStatusController> _logger = logger;
 
     /// <summary>
     /// GET /api/system/status - Stato generale del sistema

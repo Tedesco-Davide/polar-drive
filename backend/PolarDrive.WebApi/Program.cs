@@ -89,6 +89,10 @@ builder.Services.AddHangfireServer(options => new BackgroundJobServerOptions
     WorkerCount = 1
 });
 
+// LOGGER
+builder.Services.AddScoped<PolarDriveLogger>();
+builder.Services.AddScoped(typeof(PolarDriveLogger<>));
+
 // SERVIZI MULTI-BRAND
 builder.Services.AddScoped<TeslaApiService>();
 builder.Services.AddScoped<VehicleApiServiceRegistry>();
