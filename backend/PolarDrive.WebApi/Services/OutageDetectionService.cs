@@ -33,7 +33,6 @@ public class OutageDetectionService(
 
     private readonly int _maxRetries = 3;
 
-    // Usa ENV Docker già esistente (WebAPI__BaseUrl=http://api:8080) per TEST DEV
     private string GetVehicleListEndpoint()
     {
         return _env.IsDevelopment()

@@ -3,21 +3,15 @@ namespace PolarDrive.WebApi.Services;
 /// <summary>
 /// Background service che esegue periodicamente il controllo degli outage
 /// </summary>
-public class OutageDetectionBackgroundService : BackgroundService
+public class OutageDetectionBackgroundService(
+    IServiceProvider serviceProvider,
+    ILogger<OutageDetectionBackgroundService> logger) : BackgroundService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<OutageDetectionBackgroundService> _logger;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly ILogger<OutageDetectionBackgroundService> _logger = logger;
 
     // Configurazione timing
-    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1); // Controlla ogni minuto
-
-    public OutageDetectionBackgroundService(
-        IServiceProvider serviceProvider,
-        ILogger<OutageDetectionBackgroundService> logger)
-    {
-        _serviceProvider = serviceProvider;
-        _logger = logger;
-    }
+    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
