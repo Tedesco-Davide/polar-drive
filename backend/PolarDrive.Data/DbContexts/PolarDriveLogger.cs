@@ -3,15 +3,30 @@ using PolarDrive.Data.Entities;
 
 namespace PolarDrive.Data.DbContexts;
 
-public class PolarDriveLogger()
+public class PolarDriveLogger
 {
     // 🔒 Lock statico per garantire atomicità nella scrittura su file/console
     private static readonly object _fileSync = new();
 
-    public Task Info   (string source, string message, string? details = null) => LogAsync(source, PolarDriveLogLevel.INFO,    message, details);
-    public Task Error  (string source, string message, string? details = null) => LogAsync(source, PolarDriveLogLevel.ERROR,   message, details);
-    public Task Warning(string source, string message, string? details = null) => LogAsync(source, PolarDriveLogLevel.WARNING, message, details);
-    public Task Debug  (string source, string message, string? details = null) => LogAsync(source, PolarDriveLogLevel.DEBUG,   message, details);
+    public PolarDriveLogger()
+    {
+    }
+
+    // ===== API con source esplicito =====
+
+    public Task Info(string source, string message, string? details = null)
+        => LogAsync(source, PolarDriveLogLevel.INFO, message, details);
+
+    public Task Error(string source, string message, string? details = null)
+        => LogAsync(source, PolarDriveLogLevel.ERROR, message, details);
+
+    public Task Warning(string source, string message, string? details = null)
+        => LogAsync(source, PolarDriveLogLevel.WARNING, message, details);
+
+    public Task Debug(string source, string message, string? details = null)
+        => LogAsync(source, PolarDriveLogLevel.DEBUG, message, details);
+
+    // ===== Implementazione base =====
 
     public async Task LogAsync(string source, PolarDriveLogLevel level, string message, string? details = null)
     {
@@ -21,6 +36,8 @@ public class PolarDriveLogger()
 
         // 📝 Scrive su file/console in modo atomico
         WriteAtomicallyToFile(source, level, safeMessage!, safeDetails);
+
+        await Task.CompletedTask; // per rispettare la firma async, anche se ora non fai altro
     }
 
     private static string? Sanitize(string? value)
