@@ -54,7 +54,7 @@ namespace PolarDrive.WebApi.Services
                 "ReportGenerationService.ProcessScheduledReportsAsync",
                 $"📊 {scheduleType}: Total={vehicles.Count}, Active={activeCount}, Grace={graceCount}"
             );
-            
+
             if (graceCount > 0)
                 _ = _logger.Warning("⏳ {Count} vehicles in grace period still generating reports", graceCount.ToString());
 
@@ -169,16 +169,28 @@ namespace PolarDrive.WebApi.Services
         /// <summary>
         /// Permette rigenerazione di un PDF report singolarmente
         /// </summary>
-        public async Task<bool> GenerateSingleReportAsync(int companyId, int vehicleId, DateTime periodStart, DateTime periodEnd, bool isRegeneration = false, int? existingReportId = null)
+        public async Task<bool> GenerateSingleReportAsync(
+            int companyId,
+            int vehicleId,
+            DateTime periodStart,
+            DateTime periodEnd,
+            bool isRegeneration = false,
+            int? existingReportId = null)
         {
+            const string source = "ReportGenerationService.GenerateSingleReportAsync";
+
             try
             {
-                using var scope = _serviceProvider.CreateScope();
+                _ = _logger.Info(source,
+                    "Inizio elaborazione report",
+                    $"VehicleId: {vehicleId}, CompanyId: {companyId}, IsRegeneration: {isRegeneration}, ReportId: {existingReportId?.ToString() ?? "NEW"}");
 
+                using var scope = _serviceProvider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
                 PdfReport? report;
 
+                // ===== BRANCH RIGENERAZIONE =====
                 if (isRegeneration && existingReportId.HasValue)
                 {
                     report = await db.PdfReports
@@ -188,24 +200,34 @@ namespace PolarDrive.WebApi.Services
 
                     if (report == null)
                     {
+                        _ = _logger.Warning(source,
+                            "Report non trovato per rigenerazione",
+                            $"ReportId: {existingReportId}");
                         return false;
                     }
 
                     // ⚠️ CONTROLLO IMMUTABILITÀ
-                    if (!string.IsNullOrWhiteSpace(report.PdfHash) &&
-                        report.PdfContent?.Length > 0)
+                    if (!string.IsNullOrWhiteSpace(report.PdfHash) && report.PdfContent?.Length > 0)
                     {
+                        _ = _logger.Warning(source,
+                            "RIGENERAZIONE BLOCCATA - Report immutabile",
+                            $"ReportId: {existingReportId}, PdfHash: {report.PdfHash}");
                         return false;
                     }
 
+                    _ = _logger.Info(source,
+                        "Reset report per rigenerazione",
+                        $"ReportId: {existingReportId}");
+
                     report.Status = "REGENERATING";
                     report.PdfContent = null;
-                    report.PdfHash = null;
+                    report.PdfHash = string.Empty;
                     report.GeneratedAt = null;
                     report.Notes = $"Rigenerato: {DateTime.Now:yyyy-MM-dd HH:mm}";
 
                     await db.SaveChangesAsync();
                 }
+                // ===== BRANCH NUOVO REPORT =====
                 else
                 {
                     var exists = await db.PdfReports.AnyAsync(r =>
@@ -216,6 +238,9 @@ namespace PolarDrive.WebApi.Services
 
                     if (exists)
                     {
+                        _ = _logger.Warning(source,
+                            "Report già esistente per questo periodo",
+                            $"VehicleId: {vehicleId}, Period: {periodStart:yyyy-MM-dd} - {periodEnd:yyyy-MM-dd}");
                         return false;
                     }
 
@@ -226,43 +251,56 @@ namespace PolarDrive.WebApi.Services
                         ReportPeriodStart = periodStart,
                         ReportPeriodEnd = periodEnd,
                         Status = "PROCESSING",
-                        GeneratedAt = null
+                        GeneratedAt = null,
+                        PdfHash = string.Empty
                     };
 
                     db.PdfReports.Add(report);
                     await db.SaveChangesAsync();
 
-                    _ = _logger.Info("🎯 [STEP 11] Nuovo report creato - Id: {Id}", report.Id.ToString());
+                    _ = _logger.Info(source,
+                        "Nuovo report creato",
+                        $"ReportId: {report.Id}, VehicleId: {vehicleId}");
                 }
 
+                // ===== VERIFICA DISPONIBILITÀ DATI =====
                 var dataCount = await db.VehiclesData
                     .CountAsync(vd => vd.VehicleId == vehicleId &&
                                      vd.Timestamp >= periodStart &&
                                      vd.Timestamp <= periodEnd);
 
-                _ = _logger.Info("🎯 [STEP 13] Dati trovati: {Count}", dataCount.ToString());
-
                 if (dataCount == 0)
                 {
+                    _ = _logger.Warning(source,
+                        "Nessun dato disponibile per il periodo",
+                        $"ReportId: {report.Id}, VehicleId: {vehicleId}, Period: {periodStart:yyyy-MM-dd} - {periodEnd:yyyy-MM-dd}");
+
                     report.Status = "NO-DATA";
                     await db.SaveChangesAsync();
                     return false;
                 }
 
+                _ = _logger.Info(source,
+                    "Dati disponibili verificati",
+                    $"ReportId: {report.Id}, DataCount: {dataCount}");
+
+                // ===== CARICA VEHICLE =====
                 var vehicle = await db.ClientVehicles
                     .Include(v => v.ClientCompany)
                     .FirstOrDefaultAsync(v => v.Id == vehicleId);
 
                 if (vehicle == null)
                 {
-                    _ = _logger.Error("🎯 [STEP 14-ERROR] Vehicle {VehicleId} non trovato", vehicleId.ToString());
+                    _ = _logger.Error(source,
+                        "Vehicle non trovato",
+                        $"ReportId: {report.Id}, VehicleId: {vehicleId}");
+
                     report.Status = "ERROR";
                     await db.SaveChangesAsync();
                     return false;
                 }
 
-                _ = _logger.Info("🎯 [STEP 15] Vehicle caricato: {Vin}", vehicle.Vin);
-
+                // ===== PREPARA PERIOD INFO =====
                 var period = new ReportPeriodInfo
                 {
                     Start = periodStart,
@@ -272,7 +310,10 @@ namespace PolarDrive.WebApi.Services
                     MonitoringDays = (periodEnd - periodStart).TotalDays
                 };
 
-                _ = _logger.Info("🎯 [STEP 17] Period preparato - Hours: {Hours}", period.DataHours.ToString());
+                // ===== GENERAZIONE AI INSIGHTS =====
+                _ = _logger.Info(source,
+                    "Avvio generazione AI insights",
+                    $"ReportId: {report.Id}, VIN: {vehicle.Vin}, DataHours: {period.DataHours}h");
 
                 using var scope_ollama = _serviceProvider.CreateScope();
                 var ollamaOptions = scope_ollama.ServiceProvider
@@ -283,19 +324,38 @@ namespace PolarDrive.WebApi.Services
 
                 if (string.IsNullOrWhiteSpace(insights))
                 {
+                    _ = _logger.Error(source,
+                        "AI insights generation failed",
+                        $"ReportId: {report.Id}, VehicleId: {vehicleId}");
+
                     report.Status = "ERROR";
                     report.Notes = "AI insights generation failed";
                     await db.SaveChangesAsync();
                     return false;
                 }
 
+                _ = _logger.Info(source,
+                    "AI insights generati con successo",
+                    $"ReportId: {report.Id}, InsightsLength: {insights.Length} chars");
+
+                // ===== GENERAZIONE FILE PDF =====
+                _ = _logger.Info(source,
+                    "Avvio generazione PDF",
+                    $"ReportId: {report.Id}, VIN: {vehicle.Vin}");
+
                 await GenerateReportFiles(db, report, insights, period, vehicle);
+
+                _ = _logger.Info(source,
+                    "Report completato con successo",
+                    $"ReportId: {report.Id}, PdfHash: {report.PdfHash}, PdfSize: {report.PdfContent?.Length ?? 0} bytes");
 
                 return true;
             }
             catch (Exception ex)
             {
-                _ = _logger.Error(ex.ToString(), "💥 [EXCEPTION] CompanyId: {CompanyId}, VehicleId: {VehicleId}");
+                _ = _logger.Error(source,
+                    "Errore durante generazione report",
+                    $"VehicleId: {vehicleId}, CompanyId: {companyId}, ReportId: {existingReportId}, Error: {ex.Message}, StackTrace: {ex.StackTrace}");
 
                 // Aggiorna status a ERROR se possibile
                 if (existingReportId.HasValue)
@@ -308,16 +368,23 @@ namespace PolarDrive.WebApi.Services
                         if (failedReport != null)
                         {
                             failedReport.Status = "ERROR";
+                            failedReport.Notes = $"Error: {ex.Message}";
                             await db.SaveChangesAsync();
                         }
                     }
-                    catch { }
+                    catch (Exception innerEx)
+                    {
+                        _ = _logger.Error(source,
+                            "Errore durante aggiornamento status ERROR",
+                            $"ReportId: {existingReportId}, InnerError: {innerEx.Message}");
+                    }
                 }
 
                 return false;
             }
             finally
             {
+                // Garbage Collection forzata per liberare memoria (PDF generation può essere memory-intensive)
                 GC.Collect(2, GCCollectionMode.Forced, blocking: true);
                 GC.WaitForPendingFinalizers();
                 GC.Collect(2, GCCollectionMode.Forced, blocking: true);

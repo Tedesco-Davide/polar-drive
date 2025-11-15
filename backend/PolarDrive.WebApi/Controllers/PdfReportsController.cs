@@ -206,24 +206,13 @@ public class PdfReportsController(
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (report == null)
-            {
-                await _logger.Warning(source, "Report non trovato", $"ReportId: {id}");
                 return NotFound(new { error = "Report non trovato" });
-            }
 
             if (!string.IsNullOrWhiteSpace(report.PdfHash) &&
                 report.PdfContent != null &&
                 report.PdfContent.Length > 0)
             {
-                await _logger.Warning(source,
-                    "TENTATIVO RIGENERAZIONE REPORT IMMUTABILE BLOCCATO",
-                    $"ReportId: {id}, PdfHash: {report.PdfHash}");
-
-                return Conflict(new
-                {
-                    error = "Report già completato e certificato",
-                    isImmutable = true
-                });
+                return Conflict(new { error = "Report già completato e certificato" });
             }
 
             var regenerableStatuses = new[] { "FILE-MISSING", "PROCESSING", "ERROR", "NO-DATA", "" };
@@ -233,10 +222,7 @@ public class PdfReportsController(
                 return BadRequest(new { error = "Report non rigenerabile" });
             }
 
-            await _logger.Info(source, "Report eleggibile per rigenerazione",
-                $"ReportId: {id}, Status: '{report.Status}', CompanyId: {report.ClientCompanyId}, VehicleId: {report.VehicleId}");
-
-            // Salva i parametri necessari
+            // Salva parametri
             var companyId = report.ClientCompanyId;
             var vehicleId = report.VehicleId;
             var periodStart = report.ReportPeriodStart;
@@ -250,38 +236,21 @@ public class PdfReportsController(
             await _logger.Info(source, "Report impostato per rigenerazione",
                 $"ReportId: {id}, NewStatus: REGENERATING");
 
-            // ✅ FIX: Task.Run senza dipendenze esterne
+            // ✅ FIX: Usa IServiceScopeFactory invece del service diretto!
+            var scopeFactory = HttpContext.RequestServices.GetRequiredService<IServiceScopeFactory>();
+
             _ = Task.Run(async () =>
             {
                 try
                 {
-                    // ⚠️ IMPORTANTE: Non usare 'db' da fuori - crea un nuovo scope
-                    await _logger.Info(source,
-                        "🔄 BACKGROUND: Inizio rigenerazione",
+                    // ✅ CREA UN NUOVO SCOPE INDIPENDENTE
+                    using var taskScope = scopeFactory.CreateScope();
+                    var taskService = taskScope.ServiceProvider.GetRequiredService<IReportGenerationService>();
+
+                    await _logger.Info(source, "🔄 BACKGROUND: Inizio rigenerazione",
                         $"ReportId: {id}, VehicleId: {vehicleId}, CompanyId: {companyId}");
 
-                    // ✅ LOG PARAMETRI PRIMA DELLA CHIAMATA
-                    await _logger.Info(source,
-                        "🎯 BACKGROUND: Parametri chiamata",
-                        $"CompanyId={companyId}, VehicleId={vehicleId}, " +
-                        $"PeriodStart={periodStart:yyyy-MM-dd}, PeriodEnd={periodEnd:yyyy-MM-dd}, " +
-                        $"IsRegeneration=true, ExistingReportId={id}");
-
-                    await _logger.Info(source,
-                        "🎯 BACKGROUND: Tipo service",
-                        $"Service={_reportGenerationService?.GetType().Name ?? "NULL"}");
-
-                    if (_reportGenerationService == null)
-                    {
-                        await _logger.Error(source,
-                            "❌ BACKGROUND: _reportGenerationService è NULL!");
-                        return;
-                    }
-
-                    await _logger.Info(source,
-                        "🎯 BACKGROUND: Chiamata GenerateSingleReportAsync...");
-
-                    var success = await _reportGenerationService.GenerateSingleReportAsync(
+                    var success = await taskService.GenerateSingleReportAsync(
                         companyId,
                         vehicleId,
                         periodStart,
@@ -290,25 +259,20 @@ public class PdfReportsController(
                         existingReportId: id
                     );
 
-                    await _logger.Info(source, "🎯 BACKGROUND: Chiamata completata");
-
                     if (success)
                     {
-                        await _logger.Info(source,
-                            "✅ BACKGROUND: Rigenerazione COMPLETATA",
+                        await _logger.Info(source, "✅ BACKGROUND: Rigenerazione COMPLETATA",
                             $"ReportId: {id}");
                     }
                     else
                     {
-                        await _logger.Error(source,
-                            "❌ BACKGROUND: Rigenerazione FALLITA (returned false)",
+                        await _logger.Error(source, "❌ BACKGROUND: Rigenerazione FALLITA",
                             $"ReportId: {id}");
                     }
                 }
                 catch (Exception bgEx)
                 {
-                    await _logger.Error(source,
-                        "💥 BACKGROUND: Exception durante rigenerazione",
+                    await _logger.Error(source, "💥 BACKGROUND: Exception durante rigenerazione",
                         $"ReportId: {id}, Error: {bgEx.Message}, StackTrace: {bgEx.StackTrace}");
                 }
             });
