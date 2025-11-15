@@ -187,7 +187,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.outagePeriods.tableHeader")}: {totalCount}
+          {t("admin.outagePeriods.tableHeader")} ➜ {totalCount}
         </h1>
         <button
           className={`px-6 py-2 rounded font-medium transition-colors ${showAddForm ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"} text-white`}

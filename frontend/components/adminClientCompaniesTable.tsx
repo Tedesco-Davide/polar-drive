@@ -84,7 +84,7 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.clientCompany.tableHeader")}: {totalCount}
+          {t("admin.clientCompany.tableHeader")} ➜ {totalCount}
         </h1>
         <button
           onClick={handleRefresh}

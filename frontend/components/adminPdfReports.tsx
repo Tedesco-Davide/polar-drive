@@ -136,7 +136,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.vehicleReports.tableHeader")}: {totalCount} {t("admin.vehicleReports.tableHeaderTotals")}
+          {t("admin.vehicleReports.tableHeader")} ➜ {totalCount} {t("admin.vehicleReports.tableHeaderTotals")}
         </h1>
       </div>
 
