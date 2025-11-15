@@ -14,7 +14,9 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
   const [vehicleData, setVehicleData] = useState<ClientVehicle[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState<ClientVehicle | null>(null);
+  const [selectedVehicle, setSelectedVehicle] = useState<ClientVehicle | null>(
+    null
+  );
   const [showEditModal, setShowEditModal] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -41,10 +43,19 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
       setTotalPages(data.totalPages);
       setCurrentPage(data.page);
 
-      logFrontendEvent("AdminClientVehiclesTable", "INFO", "Vehicles loaded", 
-        `Page: ${data.page}, Total: ${data.totalCount}`);
+      logFrontendEvent(
+        "AdminClientVehiclesTable",
+        "INFO",
+        "Vehicles loaded",
+        `Page: ${data.page}, Total: ${data.totalCount}`
+      );
     } catch (err) {
-      logFrontendEvent("AdminClientVehiclesTable", "ERROR", "Failed to load vehicles", String(err));
+      logFrontendEvent(
+        "AdminClientVehiclesTable",
+        "ERROR",
+        "Failed to load vehicles",
+        String(err)
+      );
     } finally {
       setLoading(false);
     }
@@ -63,42 +74,63 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
   const handleEditClick = (vehicle: ClientVehicle) => {
     setSelectedVehicle(vehicle);
     setShowEditModal(true);
-    logFrontendEvent("AdminClientVehiclesTable", "INFO", "Edit modal opened for vehicle", `Vehicle VIN: ${vehicle.vin}`);
+    logFrontendEvent(
+      "AdminClientVehiclesTable",
+      "INFO",
+      "Edit modal opened for vehicle",
+      `Vehicle VIN: ${vehicle.vin}`
+    );
   };
 
   const handleSave = async (updatedVehicle: ClientVehicle) => {
     try {
-      setVehicleData(prev => prev.map(v => v.id === updatedVehicle.id ? updatedVehicle : v));
+      setVehicleData((prev) =>
+        prev.map((v) => (v.id === updatedVehicle.id ? updatedVehicle : v))
+      );
       await fetchVehicles(currentPage, query);
       setShowEditModal(false);
-      logFrontendEvent("AdminClientVehiclesTable", "INFO", "Vehicle updated successfully", `Vehicle VIN: ${updatedVehicle.vin}`);
+      logFrontendEvent(
+        "AdminClientVehiclesTable",
+        "INFO",
+        "Vehicle updated successfully",
+        `Vehicle VIN: ${updatedVehicle.vin}`
+      );
     } catch (err) {
       const details = err instanceof Error ? err.message : String(err);
-      logFrontendEvent("AdminClientVehiclesTable", "ERROR", "Error while saving vehicle update", details);
+      logFrontendEvent(
+        "AdminClientVehiclesTable",
+        "ERROR",
+        "Error while saving vehicle update",
+        details
+      );
     }
   };
 
   return (
-    <div>
-      {(loading || isRefreshing) && <AdminLoader />}
+    <div className="relative">
+      {(loading || isRefreshing) && <AdminLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
           {t("admin.clientVehicle.tableHeader")} ➜ {totalCount}
         </h1>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="px-6 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          <span className="uppercase text-xs tracking-widest">{t("admin.tableRefreshButton")}</span>
-        </button>
       </div>
 
       <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
-            <th className="p-4">{t("admin.actions")}</th>
+            <th className="p-4">
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+              >
+                <span className="uppercase text-xs tracking-widest">
+                  {t("admin.tableRefreshButton")}
+                </span>
+              </button>{" "}
+              {t("admin.actions")}
+            </th>{" "}
             <th className="p-4">{t("admin.vehicleVIN")}</th>
             <th className="p-4">{t("admin.clientVehicle.fuelType")}</th>
             <th className="p-4">{t("admin.clientVehicle.brand")}</th>
@@ -107,16 +139,29 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
             <th className="p-4">{t("admin.clientVehicle.color")}</th>
             <th className="p-4">{t("admin.clientVehicle.isActive")}</th>
             <th className="p-4">{t("admin.clientVehicle.isFetching")}</th>
-            <th className="p-4">{t("admin.clientVehicle.firstActivationAt")}</th>
-            <th className="p-4">{t("admin.clientVehicle.lastDeactivationAt")}</th>
-            <th className="p-4">{t("admin.clientVehicle.lastFetchingDataAt")}</th>
+            <th className="p-4">
+              {t("admin.clientVehicle.firstActivationAt")}
+            </th>
+            <th className="p-4">
+              {t("admin.clientVehicle.lastDeactivationAt")}
+            </th>
+            <th className="p-4">
+              {t("admin.clientVehicle.lastFetchingDataAt")}
+            </th>
           </tr>
         </thead>
         <tbody>
           {vehicleData.map((vehicle) => (
-            <tr key={vehicle.vin} className="border-b border-gray-300 dark:border-gray-600">
+            <tr
+              key={vehicle.vin}
+              className="border-b border-gray-300 dark:border-gray-600"
+            >
               <td className="p-4">
-                <button onClick={() => handleEditClick(vehicle)} className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600" title={t("admin.edit")}>
+                <button
+                  onClick={() => handleEditClick(vehicle)}
+                  className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
+                  title={t("admin.edit")}
+                >
                   <Pencil size={16} />
                 </button>
               </td>
@@ -127,31 +172,66 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
               <td className="p-4">{vehicle.trim}</td>
               <td className="p-4">{vehicle.color}</td>
               <td className="p-4">
-                {vehicle.isActive ? <CircleCheck size={30} className="text-green-600" /> : <CircleX size={30} className="text-red-600" />}
+                {vehicle.isActive ? (
+                  <CircleCheck size={30} className="text-green-600" />
+                ) : (
+                  <CircleX size={30} className="text-red-600" />
+                )}
               </td>
               <td className="p-4">
-                {vehicle.isFetching ? <CircleCheck size={30} className="text-green-600" /> : <CircleX size={30} className="text-red-600" />}
+                {vehicle.isFetching ? (
+                  <CircleCheck size={30} className="text-green-600" />
+                ) : (
+                  <CircleX size={30} className="text-red-600" />
+                )}
               </td>
-              <td className="p-4">{vehicle.firstActivationAt ? formatDateToDisplay(vehicle.firstActivationAt) : t("admin.basicPlaceholder")}</td>
-              <td className="p-4">{vehicle.lastDeactivationAt ? formatDateToDisplay(vehicle.lastDeactivationAt) : t("admin.basicPlaceholder")}</td>
-              <td className="p-4">{vehicle.lastFetchingDataAt ? formatDateToDisplay(vehicle.lastFetchingDataAt) : t("admin.basicPlaceholder")}</td>
+              <td className="p-4">
+                {vehicle.firstActivationAt
+                  ? formatDateToDisplay(vehicle.firstActivationAt)
+                  : t("admin.basicPlaceholder")}
+              </td>
+              <td className="p-4">
+                {vehicle.lastDeactivationAt
+                  ? formatDateToDisplay(vehicle.lastDeactivationAt)
+                  : t("admin.basicPlaceholder")}
+              </td>
+              <td className="p-4">
+                {vehicle.lastFetchingDataAt
+                  ? formatDateToDisplay(vehicle.lastFetchingDataAt)
+                  : t("admin.basicPlaceholder")}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPrev={() => setCurrentPage(p => Math.max(1, p - 1))} onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))} />
-        <SearchBar query={query} setQuery={setQuery} resetPage={() => setCurrentPage(1)} />
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+        />
+        <SearchBar
+          query={query}
+          setQuery={setQuery}
+          resetPage={() => setCurrentPage(1)}
+        />
       </div>
 
       {showEditModal && selectedVehicle && (
-        <EditModal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title={t("admin.clientVehicle.editModal")}>
+        <EditModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          title={t("admin.clientVehicle.editModal")}
+        >
           <AdminClientVehicleEditForm
             vehicle={selectedVehicle}
             onClose={() => setShowEditModal(false)}
             onSave={handleSave}
-            refreshWorkflowData={async () => await fetchVehicles(currentPage, query)}
+            refreshWorkflowData={async () =>
+              await fetchVehicles(currentPage, query)
+            }
             t={t}
           />
         </EditModal>

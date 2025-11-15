@@ -182,8 +182,8 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
   };
 
   return (
-    <div className="space-y-6">
-      {(loading || isRefreshing) && <AdminLoader />}
+    <div className="relative">
+      {(loading || isRefreshing) && <AdminLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">

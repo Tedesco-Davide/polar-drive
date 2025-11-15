@@ -456,8 +456,8 @@ export default function AdminMainWorkflow() {
   };
 
   return (
-    <div>
-      {(loading || isRefreshing || isStatusChanging) && <AdminLoader />}
+    <div className="relative">
+      {(loading || isRefreshing || isStatusChanging) && <AdminLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">

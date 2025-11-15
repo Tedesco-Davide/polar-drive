@@ -4,7 +4,6 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTheme } from "next-themes";
 import { useTranslation } from "next-i18next";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminLoader from "@/components/adminLoader";
 import AdminClientVehiclesTable from "@/components/adminClientVehiclesTable";
 import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
 import AdminMainWorkflow from "@/components/adminMainWorkflow";
@@ -21,8 +20,7 @@ export default function AdminDashboard() {
 
   type AdminTab = "PolarDrive" | "ComingSoon";
   const [activeTab, setActiveTab] = useState<AdminTab>("PolarDrive");
-  const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted] = useState(false); // Rimuovi il loading state globale
   const { theme } = useTheme();
   const { t } = useTranslation("common");
 
@@ -41,120 +39,90 @@ export default function AdminDashboard() {
     );
   }, []);
 
-  useEffect(() => {
-    const initializeDashboard = async () => {
-      try {
-        setLoading(true);
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        logFrontendEvent(
-          "AdminDashboard",
-          "INFO",
-          "Admin dashboard initialized"
-        );
-      } catch (err) {
-        logFrontendEvent(
-          "AdminDashboard",
-          "ERROR",
-          "Dashboard initialization error",
-          err instanceof Error ? err.message : String(err)
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    initializeDashboard();
-  }, []);
-
   return (
     <>
       <Head>
         <title>{t("admin.title")}</title>
       </Head>
+      <>
+        <Header />
+        <section className="relative w-full h-screen pt-[64px] overflow-hidden">
+          <div className="h-full overflow-y-auto px-6">
+            {mounted && (
+              <div
+                className={classNames(
+                  "absolute inset-0 z-0 bg-background bg-[length:40px_40px]",
+                  {
+                    "bg-products-grid-light": theme === "light",
+                    "dark:bg-products-grid": theme === "dark",
+                  }
+                )}
+              />
+            )}
 
-      {loading && <AdminLoader />}
-
-      {!loading && (
-        <>
-          <Header />
-          <section className="relative w-full h-screen pt-[64px] overflow-hidden">
-            <div className="h-full overflow-y-auto px-6">
-              {mounted && (
-                <div
+            <div className="relative z-20 mx-auto">
+              <div className="relative z-20 mx-auto border-y-8 border-gray-300 dark:border-gray-600 py-3 my-6">
+                <p className="text-3xl font-medium text-gray-600 dark:text-softWhite">
+                  {t("admin.title")}
+                </p>
+              </div>
+              <div className="mb-12 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 rounded">
+                <button
                   className={classNames(
-                    "absolute inset-0 z-0 bg-background bg-[length:40px_40px]",
+                    "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
                     {
-                      "bg-products-grid-light": theme === "light",
-                      "dark:bg-products-grid": theme === "dark",
+                      "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
+                        activeTab === "PolarDrive",
+                      "border-transparent text-gray-500 hover:text-primary":
+                        activeTab !== "PolarDrive",
                     }
                   )}
-                />
+                  onClick={() => setActiveTab("PolarDrive")}
+                >
+                  PolarDrive ❄️🐻‍❄️🚗
+                </button>
+                <button
+                  disabled={true}
+                  className={classNames(
+                    "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
+                    {
+                      "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
+                        activeTab === "ComingSoon",
+                      "border-transparent text-gray-500 hover:text-primary":
+                        activeTab !== "ComingSoon",
+                    }
+                  )}
+                  onClick={() => setActiveTab("ComingSoon")}
+                >
+                  Coming Soon 😎
+                </button>
+              </div>
+
+              {activeTab === "PolarDrive" && (
+                <div className="overflow-x-auto">
+                  <div className="mx-auto space-y-12 min-w-fit mb-12">
+                    <AdminMainWorkflow />
+                    <AdminClientCompaniesTable t={t} />
+                    <AdminClientVehiclesTable t={t} />
+                    <AdminClientConsents t={t} />
+                    <AdminOutagePeriodsTable t={t} />
+                    <AdminPdfReports t={t} />
+                    <AdminFileManagerTable t={t} />
+                  </div>
+                </div>
               )}
 
-              <div className="relative z-20 mx-auto">
-                <div className="relative z-20 mx-auto border-y-8 border-gray-300 dark:border-gray-600 py-3 my-6">
-                  <p className="text-3xl font-medium text-gray-600 dark:text-softWhite">
-                    {t("admin.title")}
+              {activeTab === "ComingSoon" && (
+                <div className="pointer-events-none">
+                  <p className="text-xl text-gray-600 dark:text-softWhite">
+                    Stay tuned!
                   </p>
                 </div>
-                <div className="mb-12 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 rounded">
-                  <button
-                    className={classNames(
-                      "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
-                      {
-                        "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
-                          activeTab === "PolarDrive",
-                        "border-transparent text-gray-500 hover:text-primary":
-                          activeTab !== "PolarDrive",
-                      }
-                    )}
-                    onClick={() => setActiveTab("PolarDrive")}
-                  >
-                    PolarDrive ❄️🐻‍❄️🚗
-                  </button>
-                  <button
-                    disabled={true}
-                    className={classNames(
-                      "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
-                      {
-                        "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
-                          activeTab === "ComingSoon",
-                        "border-transparent text-gray-500 hover:text-primary":
-                          activeTab !== "ComingSoon",
-                      }
-                    )}
-                    onClick={() => setActiveTab("ComingSoon")}
-                  >
-                    Coming Soon 😎
-                  </button>
-                </div>
-
-                {activeTab === "PolarDrive" && (
-                  <div className="overflow-x-auto">
-                    <div className="mx-auto space-y-12 min-w-fit mb-12">
-                      <AdminMainWorkflow />
-                      <AdminClientCompaniesTable t={t} />
-                      <AdminClientVehiclesTable t={t} />
-                      <AdminClientConsents t={t} />
-                      <AdminOutagePeriodsTable t={t} />
-                      <AdminPdfReports t={t} />
-                      <AdminFileManagerTable t={t} />
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "ComingSoon" && (
-                  <div className="pointer-events-none">
-                    <p className="text-xl text-gray-600 dark:text-softWhite">
-                      Stay tuned!
-                    </p>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
-          </section>
-        </>
-      )}
+          </div>
+        </section>
+      </>
     </>
   );
 }
