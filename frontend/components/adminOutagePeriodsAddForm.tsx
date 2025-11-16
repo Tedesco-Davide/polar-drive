@@ -13,7 +13,6 @@ interface Props {
   refreshOutagePeriods: () => Promise<void>;
 }
 
-// ✅ Costanti (dovrebbero corrispondere al backend)
 const OUTAGE_TYPES = ["Outage Vehicle", "Outage Fleet Api"];
 const VALID_BRANDS = ["Tesla"];
 
@@ -40,10 +39,8 @@ export default function AdminOutagePeriodsAddForm({
     vehicleId: number | null;
   }>({ clientCompanyId: null, vehicleId: null });
 
-  // ✅ Filtra veicoli quando cambia company o brand
   useEffect(() => {
     if (formData.outageType === "Outage Fleet Api") {
-      // Reset campi veicolo per Outage Fleet Api
       setFormData((prev) => ({
         ...prev,
         companyVatNumber: "",
@@ -51,10 +48,8 @@ export default function AdminOutagePeriodsAddForm({
       }));
       setResolvedIds({ clientCompanyId: null, vehicleId: null });
     }
-    // Per "Outage Vehicle" non facciamo nulla, i campi rimangono editabili
   }, [formData.outageType]);
 
-  // ✅ Risolvi IDs quando cambiano VAT e VIN
   useEffect(() => {
     const resolveCompanyAndVehicleIds = async () => {
       try {
@@ -69,7 +64,6 @@ export default function AdminOutagePeriodsAddForm({
             vehicleId: resolved.vehicleId,
           });
 
-          // ✅ Verifica brand coerente
           const vehicleBrand = (resolved.vehicleBrand || "").trim();
           const selectedBrand = formData.outageBrand.trim();
           if (vehicleBrand && selectedBrand && vehicleBrand !== selectedBrand) {
@@ -117,13 +111,11 @@ export default function AdminOutagePeriodsAddForm({
     if (name === "zipFile" && files?.[0]) {
       const file = files[0];
 
-      // ✅ Verifica solo che sia un file .zip
       if (!file.name.endsWith(".zip")) {
         alert(t("admin.validation.invalidZipType"));
         return;
       }
 
-      // ✅ Verifica dimensione (manteniamo il limite di sicurezza)
       const maxSize = 50 * 1024 * 1024; // 50MB
       if (file.size > maxSize) {
         alert(t("admin.validation.zipTooLarge"));
@@ -138,7 +130,6 @@ export default function AdminOutagePeriodsAddForm({
   };
 
   const validateForm = (): boolean => {
-    // ✅ Validazioni base
     if (!formData.outageType) {
       alert(t("admin.outagePeriods.validation.outageTypeRequired"));
       return false;
@@ -160,7 +151,6 @@ export default function AdminOutagePeriodsAddForm({
       return false;
     }
 
-    // ✅ Validazione data fine
     if (formData.outageEnd) {
       const parsedEnd = parseISO(formData.outageEnd);
       const now = new Date();
@@ -181,7 +171,6 @@ export default function AdminOutagePeriodsAddForm({
       }
     }
 
-    // ✅ Validazioni specifiche per tipo outage
     if (formData.outageType === "Outage Vehicle") {
       if (!formData.vin || !formData.companyVatNumber) {
         alert(t("admin.resolveVATandVIN"));
@@ -204,70 +193,80 @@ export default function AdminOutagePeriodsAddForm({
     return true;
   };
 
-    const handleSubmit = async () => {
+  const handleSubmit = async () => {
     if (isSubmitting) return;
 
     try {
-        setIsSubmitting(true);
+      setIsSubmitting(true);
 
-        await logFrontendEvent(
+      await logFrontendEvent(
         "AdminOutagePeriodsAddForm",
         "INFO",
         "Attempting to submit new outage period"
-        );
+      );
 
-        if (!validateForm()) return;
+      if (!validateForm()) return;
 
-        // ✅ Una singola chiamata atomica con FormData
-        const formDataToSend = new FormData();
-        formDataToSend.append("outageType", formData.outageType);
-        formDataToSend.append("outageBrand", formData.outageBrand);
-        formDataToSend.append("outageStart", formData.outageStart);
-        
-        if (formData.outageEnd) {
+      const formDataToSend = new FormData();
+      formDataToSend.append("outageType", formData.outageType);
+      formDataToSend.append("outageBrand", formData.outageBrand);
+      formDataToSend.append("outageStart", formData.outageStart);
+      formDataToSend.append(
+        "status",
+        formData.outageEnd ? "OUTAGE-RESOLVED" : "OUTAGE-ONGOING"
+      );
+      formDataToSend.append("autoDetected", "false");
+      formDataToSend.append("vin", formData.vin || "");
+      formDataToSend.append(
+        "companyVatNumber",
+        formData.companyVatNumber || ""
+      );
+
+      if (formData.outageEnd) {
         formDataToSend.append("outageEnd", formData.outageEnd);
-        }
+      }
 
-        if (formData.outageType === "Outage Vehicle") {
+      if (formData.outageType === "Outage Vehicle") {
         formDataToSend.append("vehicleId", resolvedIds.vehicleId!.toString());
-        formDataToSend.append("clientCompanyId", resolvedIds.clientCompanyId!.toString());
-        }
-
         formDataToSend.append(
+          "clientCompanyId",
+          resolvedIds.clientCompanyId!.toString()
+        );
+      }
+
+      formDataToSend.append(
         "notes",
         formData.notes || t("admin.outagePeriods.resolveManuallyInserted")
-        );
+      );
 
-        // ✅ ZIP opzionale per outages
-        if (formData.zipFile) {
+      if (formData.zipFile) {
         formDataToSend.append("zipFile", formData.zipFile);
-        }
+      }
 
-        const response = await fetch(`/api/outageperiods`, {
+      const response = await fetch(`/api/uploadoutagezip`, {
         method: "POST",
-        body: formDataToSend, // NO Content-Type header
-        });
+        body: formDataToSend,
+      });
 
-        if (!response.ok) {
+      if (!response.ok) {
         const errorText = await response.text();
         throw new Error(errorText);
-        }
+      }
 
-        const newOutage = await response.json();
+      const newOutage = await response.json();
 
-        await logFrontendEvent(
+      await logFrontendEvent(
         "AdminOutagePeriodsAddForm",
         "INFO",
         "Outage period successfully created",
         "Outage ID: " + newOutage.id
-        );
+      );
 
-        alert(t("admin.outagePeriods.successAddNewOutage"));
-        await refreshOutagePeriods();
-        onSubmitSuccess();
+      alert(t("admin.outagePeriods.successAddNewOutage"));
+      await refreshOutagePeriods();
+      onSubmitSuccess();
 
-        // Reset form
-        setFormData({
+      setFormData({
         outageType: "",
         outageBrand: "",
         outageStart: "",
@@ -276,37 +275,41 @@ export default function AdminOutagePeriodsAddForm({
         vin: "",
         notes: "",
         zipFile: null,
-        });
-        setResolvedIds({ clientCompanyId: null, vehicleId: null });
+      });
+      setResolvedIds({ clientCompanyId: null, vehicleId: null });
 
-      // ✅ Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
-      }        
-
+      }
     } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        await logFrontendEvent(
+      let errorMessage = "Unknown error";
+      if (error instanceof Error) {
+        try {
+          const errorObj = JSON.parse(error.message);
+          errorMessage = errorObj.title || errorObj.message || error.message;
+        } catch {
+          errorMessage = error.message;
+        }
+      }
+      await logFrontendEvent(
         "AdminOutagePeriodsAddForm",
         "ERROR",
         "Failed to create outage",
         errorMessage
-        );
-        alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
-        // ✅ Reset file input dopo errore
-        setFormData((prev) => ({ ...prev, zipFile: null }));
-        if (fileInputRef.current) {
-            fileInputRef.current.value = "";
-        }        
+      );
+      alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
+      setFormData((prev) => ({ ...prev, zipFile: null }));
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
-    };
+  };
 
   return (
     <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Outage Type */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.outagePeriods.outageType")}
@@ -327,7 +330,6 @@ export default function AdminOutagePeriodsAddForm({
           </select>
         </label>
 
-        {/* Outage Brand */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.outagePeriods.outageBrand")}
@@ -348,7 +350,6 @@ export default function AdminOutagePeriodsAddForm({
           </select>
         </label>
 
-        {/* Outage Start */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.outagePeriods.outageStart")}
@@ -373,7 +374,6 @@ export default function AdminOutagePeriodsAddForm({
           />
         </label>
 
-        {/* Outage End */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.outagePeriods.outageEnd")}
@@ -403,7 +403,6 @@ export default function AdminOutagePeriodsAddForm({
           />
         </label>
 
-        {/* Company VAT Number - Solo per Outage Vehicle */}
         <label
           className={`flex flex-col ${
             formData.outageType === "Outage Fleet Api" ? "opacity-50" : ""
@@ -428,7 +427,6 @@ export default function AdminOutagePeriodsAddForm({
           )}
         </label>
 
-        {/* Vehicle VIN - Solo per Outage Vehicle */}
         <label
           className={`flex flex-col ${
             formData.outageType === "Outage Fleet Api" ? "opacity-50" : ""
@@ -453,7 +451,6 @@ export default function AdminOutagePeriodsAddForm({
           )}
         </label>
 
-        {/* Upload ZIP */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.uploadZip")}
@@ -468,7 +465,6 @@ export default function AdminOutagePeriodsAddForm({
           />
         </label>
 
-        {/* Notes */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.notes.addNote")}
@@ -482,7 +478,6 @@ export default function AdminOutagePeriodsAddForm({
         </label>
       </div>
 
-      {/* Informazioni di stato */}
       {formData.outageType === "Outage Fleet Api" && (
         <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
           <p className="text-sm text-blue-700 dark:text-blue-300">
@@ -500,7 +495,6 @@ export default function AdminOutagePeriodsAddForm({
           </div>
         )}
 
-      {/* Confirm Button */}
       <button
         className={`mt-6 px-6 py-2 rounded font-medium transition-colors ${
           isSubmitting

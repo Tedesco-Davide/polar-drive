@@ -26,7 +26,7 @@
   "admin.successEditRow": "Row updated successfully!",
   "admin.errorEditRow": "ERROR: There was an error while trying to update the row",
   "admin.genericApiError": "ERROR: A generic error occurred during the API call: ",
-  "admin.uploadZipOutageSignedActivation": "Upload signed consents for the Vehicle Activation (.zip)",
+  "admin.uploadZipSignedActivation": "Upload signed consents for the Vehicle Activation (.zip)",
   "admin.uploadZipSignedConsentGeneric": "Upload signed consents for the Vehicle (.zip)",
   "admin.openNotesModal": "Open notes management",
   "admin.vehicleAlreadyAssociatedToSameCompany": "This vehicle is already associated with this company",

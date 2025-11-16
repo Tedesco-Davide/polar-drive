@@ -137,7 +137,7 @@ public class UploadConsentZipController(PolarDriveDbContext db) : ControllerBase
     }
 
     /// <summary>
-    /// Upload ZIP a consent esistente (allineato agli outages)
+    /// Upload ZIP a consent esistente
     /// </summary>
     [HttpPost("{consentId}/upload-zip")]
     [Consumes("multipart/form-data")]

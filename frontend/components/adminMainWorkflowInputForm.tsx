@@ -197,7 +197,7 @@ export default function AdminMainWorkflowInputForm({
         </label>
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.uploadZipOutageSignedActivation")}
+            {t("admin.uploadZipSignedActivation")}
           </span>
           <label className="flex flex-col">
             <input

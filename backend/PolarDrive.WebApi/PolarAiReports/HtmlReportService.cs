@@ -423,42 +423,6 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
-    /// Ottiene riepilogo dati grezzi
-    /// </summary>
-    private async Task<string> GetFormattedRawDataAsync(PdfReport report)
-    {
-        try
-        {
-            var recentData = await _dbContext.VehiclesData
-                .Where(vd => vd.VehicleId == report.VehicleId &&
-                           vd.Timestamp >= report.ReportPeriodStart &&
-                           vd.Timestamp <= report.ReportPeriodEnd)
-                .OrderByDescending(vd => vd.Timestamp)
-                .Take(3)
-                .Select(vd => new { vd.Timestamp, vd.RawJsonAnonymized })
-                .ToListAsync();
-
-            var sb = new StringBuilder();
-            sb.AppendLine("<div class='raw-data-summary'>");
-
-            foreach (var data in recentData)
-            {
-                sb.AppendLine($"<div class='raw-data-entry'>");
-                sb.AppendLine($"<div class='raw-data-timestamp'>[{data.Timestamp:yyyy-MM-dd HH:mm:ss}]</div>");
-                sb.AppendLine($"<div class='raw-data-size'>Dimensione: {data.RawJsonAnonymized?.Length ?? 0} caratteri</div>");
-                sb.AppendLine("</div>");
-            }
-
-            sb.AppendLine("</div>");
-            return sb.ToString();
-        }
-        catch
-        {
-            return "<p class='raw-data-error'>Dati grezzi non disponibili.</p>";
-        }
-    }
-
-    /// <summary>
     /// Genera HTML di fallback in caso di errore
     /// </summary>
     private static string GenerateErrorFallbackHtml(PdfReport report, string insights, string errorMessage)

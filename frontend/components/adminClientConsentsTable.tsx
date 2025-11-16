@@ -135,7 +135,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
           className={`${showForm ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"} text-softWhite px-6 py-2 rounded font-medium transition-colors`}
           onClick={() => setShowForm(!showForm)}
         >
-          {showForm ? t("admin.clientConsents.undoAddNewConsent") : t("admin.clientConsents.addNewConsent")}
+          {showForm ? t("admin.clientConsents.addNewConsent") : t("admin.clientConsents.undoAddNewConsent")}
         </button>
       </div>
 

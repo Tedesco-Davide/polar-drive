@@ -12,7 +12,6 @@ type Props = {
   refreshClientConsents: () => Promise<void>;
 };
 
-// ✅ Costanti allineate agli outages
 const VALID_CONSENT_TYPES = [
   "Consent Deactivation",
   "Consent Stop Data Fetching",
@@ -47,7 +46,7 @@ export default function AdminClientConsentAddForm({
     vehicleId: number | null;
   }>({ clientCompanyId: null, vehicleId: null });
 
-  // ✅ Risolvi IDs quando cambiano VAT e VIN (come negli outages)
+  // ✅ Risolvi IDs quando cambiano VAT e VIN
   useEffect(() => {
     const resolveCompanyAndVehicleIds = async () => {
       try {
