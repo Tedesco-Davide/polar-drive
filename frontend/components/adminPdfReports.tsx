@@ -47,7 +47,9 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         "AdminPdfReports",
         "INFO",
         "Reports loaded",
-        `Page: ${data.page}, Total: ${data.totalCount}, Search: ${searchQuery || "none"}`
+        `Page: ${data.page}, Total: ${data.totalCount}, Search: ${
+          searchQuery || "none"
+        }`
       );
     } catch (err) {
       logFrontendEvent(
@@ -164,22 +166,25 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   };
 
   const handleRegenerate = async (report: PdfReport) => {
-    const confirmMessage = t("admin.vehicleReports.regenerateConfirmationMessage", {
-    id: report.id,
-    companyName: report.companyName,
-    companyVatNumber: report.companyVatNumber,
-    vehicleVin: report.vehicleVin,
-    start: formatDateToDisplay(report.reportPeriodStart),
-    end: formatDateToDisplay(report.reportPeriodEnd),
-    status: report.status
-    });
+    const confirmMessage = t(
+      "admin.vehicleReports.regenerateConfirmationMessage",
+      {
+        id: report.id,
+        companyName: report.companyName,
+        companyVatNumber: report.companyVatNumber,
+        vehicleVin: report.vehicleVin,
+        start: formatDateToDisplay(report.reportPeriodStart),
+        end: formatDateToDisplay(report.reportPeriodEnd),
+        status: report.status,
+      }
+    );
 
     if (!confirm(confirmMessage)) {
       return;
     }
 
     setRegeneratingId(report.id);
-    
+
     try {
       logFrontendEvent(
         "AdminPdfReports",
@@ -198,11 +203,13 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       if (response.status === 409) {
         alert(
           `REGENERATION BLOCKED\n\n` +
-          `${data.message}\n\n` +
-          `PDF Hash: ${data.pdfHash}\n` +
-          `Generated: ${data.generatedAt ? formatDateToDisplay(data.generatedAt) : 'N/A'}\n\n`
+            `${data.message}\n\n` +
+            `PDF Hash: ${data.pdfHash}\n` +
+            `Generated: ${
+              data.generatedAt ? formatDateToDisplay(data.generatedAt) : "N/A"
+            }\n\n`
         );
-        
+
         logFrontendEvent(
           "AdminPdfReports",
           "WARNING",
@@ -212,10 +219,10 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       } else if (response.status === 400) {
         alert(
           `Operation not allowed\n\n` +
-          `${data.message}\n\n` +
-          `Status: ${data.status}`
+            `${data.message}\n\n` +
+            `Status: ${data.status}`
         );
-        
+
         logFrontendEvent(
           "AdminPdfReports",
           "WARNING",
@@ -223,10 +230,12 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           `ReportId: ${report.id}, Status: ${data.status}`
         );
       } else if (response.status === 202) {
-        alert(t("admin.vehicleReports.regenerationStarted", {
-        id: report.id,
-        status: data.status
-        }));
+        alert(
+          t("admin.vehicleReports.regenerationStarted", {
+            id: report.id,
+            status: data.status,
+          })
+        );
 
         logFrontendEvent(
           "AdminPdfReports",
@@ -242,55 +251,47 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         const refreshInterval = setInterval(async () => {
           refreshCount++;
           await fetchReports(currentPage, query);
-          
+
           if (refreshCount >= maxRefreshes) {
             clearInterval(refreshInterval);
           }
 
-          const updatedReport = localReports.find(r => r.id === report.id);
+          const updatedReport = localReports.find((r) => r.id === report.id);
           if (updatedReport && updatedReport.status !== "REGENERATING") {
             clearInterval(refreshInterval);
           }
         }, 5000);
-
       } else if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${data.error || data.message}`);
+        throw new Error(
+          `HTTP ${response.status}: ${data.error || data.message}`
+        );
       }
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       alert(
         `REGENERATION ERROR\n\n` +
-        `Report ID: ${report.id}\n\n` +
-        `${errorMessage}\n\n`
+          `Report ID: ${report.id}\n\n` +
+          `${errorMessage}\n\n`
       );
 
-      logFrontendEvent(
-        "AdminPdfReports",
-        "ERROR",
-        "Regeneration error"
-      );
+      logFrontendEvent("AdminPdfReports", "ERROR", "Regeneration error");
     } finally {
       setRegeneratingId(null);
     }
   };
 
   const canRegenerate = (report: PdfReport): boolean => {
+    // Se ha hash o PDF completo, è immutabile
     if (report.pdfHash && report.pdfHash.trim().length > 0) {
       return false;
     }
-
     if (report.hasPdfFile && report.pdfFileSize > 0) {
       return false;
     }
-
-    const regenerableStatuses = [
-      "PROCESSING", 
-      "ERROR"
-    ];
-
-    return regenerableStatuses.includes(report.status);
+    // Solo error è rigenerabile
+    return report.status === "ERROR";
   };
 
   return (
@@ -399,7 +400,8 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                           : `Rigenera report (Status: ${report.status})`
                       }
                     >
-                      {isCurrentlyRegenerating || report.status === "REGENERATING" ? (
+                      {isCurrentlyRegenerating ||
+                      report.status === "REGENERATING" ? (
                         <AdminLoader inline />
                       ) : (
                         <RefreshCw size={16} />
@@ -413,8 +415,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     : "-"}
                   {report.monitoringDurationHours >= 0 && (
                     <div className="text-xs text-gray-400 mt-1">
-                      ID {report.id}{" "}
-                      - {" "}
+                      ID {report.id} -{" "}
                       {report.monitoringDurationHours < 1
                         ? "< 1h"
                         : Math.round(report.monitoringDurationHours) + "h"}{" "}

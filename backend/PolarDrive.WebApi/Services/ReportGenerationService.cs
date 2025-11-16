@@ -432,7 +432,8 @@ namespace PolarDrive.WebApi.Services
                 ClientCompanyId = vehicle.ClientCompanyId,
                 ReportPeriodStart = period.Start,
                 ReportPeriodEnd = period.End,
-                GeneratedAt = DateTime.Now,
+                Status = "PROCESSING",
+                GeneratedAt = null,
                 Notes = $"{period.AnalysisLevel}"
             };
 
@@ -465,12 +466,27 @@ namespace PolarDrive.WebApi.Services
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"No insights for {vehicle.Vin}");
 
-            await GenerateReportFiles(db, report, insights, period, vehicle);
-
-            _ = _logger.Info(
+            try
+            {
+                await GenerateReportFiles(db, report, insights, period, vehicle);
+                _ = _logger.Info(
                 "ReportGenerationService.GenerateReportForVehicle",
                 $"✅ Report {report.Id} generated for {vehicle.Vin} | Period: {period.DataHours}h | Type: {period.AnalysisLevel} | Storage: PDF in DB"
             );
+            }
+            catch (Exception ex)
+            {
+                report.Status = "ERROR";
+                report.Notes += $" - ERROR: {ex.Message}";
+                await db.SaveChangesAsync();
+
+                _ = _logger.Info(
+                    "ReportGenerationService.GenerateReportForVehicle",
+                    $"❌ Report {report.Id} not generated for {vehicle.Vin}"
+                );
+
+                throw;
+            }
 
         }
 
@@ -623,6 +639,7 @@ namespace PolarDrive.WebApi.Services
             // ✅ Persisti il PDF finale + stato
             report.PdfContent = pdf2;
             report.Status = "PDF-READY";
+            report.GeneratedAt = DateTime.Now;
             await db.SaveChangesAsync();
         }
 
