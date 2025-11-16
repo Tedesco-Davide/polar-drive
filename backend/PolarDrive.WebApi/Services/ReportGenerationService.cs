@@ -277,7 +277,6 @@ namespace PolarDrive.WebApi.Services
 
                     report.Status = "NO-DATA";
                     await db.SaveChangesAsync();
-                    return false;
                 }
 
                 _ = _logger.Info(source,
@@ -437,7 +436,7 @@ namespace PolarDrive.WebApi.Services
                 Notes = $"{period.AnalysisLevel}"
             };
 
-            // Se non ci sono dati nel periodo, imposta status e non generare file
+            // Se non ci sono dati nel periodo, imposta status ma genera comunque il file
             if (dataCountInPeriod == 0)
             {
                 report.Status = "NO-DATA";
@@ -448,9 +447,8 @@ namespace PolarDrive.WebApi.Services
 
                 _ = _logger.Warning(
                     "ReportGenerationService.GenerateReportForVehicle",
-                    $"⚠️ Report {report.Id} created but NO FILES generated for {vehicle.Vin} - No data available for period"
+                    $"⚠️ Report {report.Id} created and file generated for {vehicle.Vin} - No data available for period"
                 );
-                return;
             }
 
             // Se ci sono dati, procedi con la generazione normale

@@ -29,23 +29,64 @@ public class PdfReportsController(
         try
         {
             await _logger.Info(source, "Richiesta lista report PDF",
-                $"Page: {page}, PageSize: {pageSize}, Search: {search ?? "none"}");
+                $"Page: {page}, PageSize: {pageSize}, Search: '{search ?? "none"}'");
 
             var query = db.PdfReports
                 .Include(r => r.ClientCompany)
                 .Include(r => r.ClientVehicle)
                 .AsQueryable();
 
-            // Filtro ricerca
+            // ✅ RICERCA SPECIFICA: solo per ID oppure Status
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(r =>
-                    (r.ClientCompany != null && r.ClientCompany.VatNumber.Contains(search)) ||
-                    (r.ClientCompany != null && r.ClientCompany.Name.Contains(search)) ||
-                    (r.ClientVehicle != null && r.ClientVehicle.Vin.Contains(search)));
+                var trimmedSearch = search.Trim();
+                
+                // Se contiene SOLO numeri → cerca per ID
+                if (int.TryParse(trimmedSearch, out int searchId))
+                {
+                    // Cerca ID che CONTIENE il numero (es: 123 trova 123, 1234, 12345)
+                    var searchIdStr = searchId.ToString();
+                    query = query.Where(r => EF.Functions.Like(r.Id.ToString(), $"%{searchIdStr}%"));
+                    
+                    await _logger.Info(source, "🔍 Ricerca per ID",
+                        $"Pattern: '%{searchIdStr}%'");
+                }
+                else
+                {
+                    // ✅ Ricerca Status con LIKE case-insensitive
+                    var searchPattern = $"%{trimmedSearch}%";
+                    
+                    // 🐛 DEBUG: Vediamo quanti report hanno Status non vuoto
+                    var totalReportsWithStatus = await db.PdfReports
+                        .Where(r => !string.IsNullOrEmpty(r.Status))
+                        .CountAsync();
+                    
+                    await _logger.Info(source, "📊 DEBUG Status Count",
+                        $"Total reports with Status: {totalReportsWithStatus}");
+                    
+                    // 🐛 DEBUG: Vediamo quali Status esistono
+                    var distinctStatuses = await db.PdfReports
+                        .Where(r => !string.IsNullOrEmpty(r.Status))
+                        .Select(r => r.Status)
+                        .Distinct()
+                        .ToListAsync();
+                    
+                    await _logger.Info(source, "📊 DEBUG Distinct Statuses",
+                        $"Found statuses: {string.Join(", ", distinctStatuses)}");
+                    
+                    query = query.Where(r => 
+                        !string.IsNullOrEmpty(r.Status) && 
+                        EF.Functions.Like(r.Status, searchPattern));
+                    
+                    await _logger.Info(source, "🔍 Ricerca per Status",
+                        $"Pattern: '{searchPattern}'");
+                }
             }
 
             var totalCount = await query.CountAsync();
+            
+            await _logger.Info(source, "✅ Risultati trovati",
+                $"Total matches: {totalCount}");
 
             var reports = await query
                 .OrderByDescending(r => r.Id)
@@ -104,9 +145,7 @@ public class PdfReportsController(
         var hasPdf = report.PdfContent != null && report.PdfContent.Length > 0;
         var pdfSize = hasPdf ? report.PdfContent!.Length : 0;
 
-        // Status semplificato (no query aggiuntive)
-        var status = hasPdf ? "PDF-READY" :
-                     (!string.IsNullOrEmpty(report.Status) ? report.Status : "PROCESSING");
+        var status = hasPdf ? "PDF-READY" : (!string.IsNullOrEmpty(report.Status) ? report.Status : "PROCESSING");
 
         return new PdfReportDTO
         {
@@ -215,7 +254,7 @@ public class PdfReportsController(
                 return Conflict(new { error = "Report già completato e certificato" });
             }
 
-            var regenerableStatuses = new[] { "FILE-MISSING", "PROCESSING", "ERROR", "NO-DATA", "" };
+            var regenerableStatuses = new[] { "PROCESSING", "ERROR" };
             if (!string.IsNullOrWhiteSpace(report.Status) &&
                 !regenerableStatuses.Contains(report.Status))
             {
@@ -292,10 +331,6 @@ public class PdfReportsController(
         }
     }
 
-    /// <summary>
-    /// ✅ NUOVO ENDPOINT: Verifica se un report può essere rigenerato
-    /// Ritorna true solo se il report non ha PdfHash (mai completato con successo)
-    /// </summary>
     [HttpGet("{id}/can-regenerate")]
     public async Task<ActionResult<object>> CanRegenerate(int id)
     {
@@ -315,7 +350,7 @@ public class PdfReportsController(
                 return NotFound(new { canRegenerate = false, reason = "Report non trovato" });
 
             var isImmutable = !string.IsNullOrWhiteSpace(report.PdfHash) && report.HasPdfContent;
-            var isInErrorState = new[] { "FILE-MISSING", "PROCESSING", "ERROR", "NO-DATA" }
+            var isInErrorState = new[] { "PROCESSING", "ERROR" }
                 .Contains(report.Status ?? "");
 
             var canRegenerate = !isImmutable && isInErrorState;
@@ -340,4 +375,6 @@ public class PdfReportsController(
             return StatusCode(500, new { canRegenerate = false, reason = "Errore interno" });
         }
     }
+
+    //ASD
 }

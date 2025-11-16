@@ -603,7 +603,7 @@ export default function AdminMainWorkflow() {
                   )}
                 </button>
                 <button
-                  className="p-2 bg-orange-500 hover:bg-orange-600 text-softWhite rounded"
+                  className="p-2 bg-yellow-500 hover:bg-yellow-600 text-softWhite rounded"
                   onClick={() =>
                     handleDownloadAllConsents(
                       entry.companyVatNumber,

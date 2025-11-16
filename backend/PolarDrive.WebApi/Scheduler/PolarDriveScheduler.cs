@@ -133,7 +133,7 @@ namespace PolarDrive.WebApi.Scheduler
             {
                 _logger.Info(
                     "PolarDriveScheduler.LogResults",
-                    $"📊 {type} Results | Success: {results.SuccessCount} | Errors: {results.ErrorCount}"
+                    $"📊 {type} Results | Success: {results.SuccessCount} | Failed: {results.ErrorCount}"
                 );
             }
         }

@@ -12,9 +12,6 @@ namespace PolarDrive.WebApi.Constants
         public const int DAILY_HOURS_THRESHOLD = 24;
         public const int WEEKLY_HOURS_THRESHOLD = 168;
 
-        // Valori usati per determinare se in stato WAITING-RECORDS
-        public const int MIN_RECORDS_FOR_GENERATION = 5;
-
         // Numero massimo di tentativi di generazione report in caso di fallimento
         public const int MAX_RETRIES = 5;
 
@@ -54,10 +51,5 @@ namespace PolarDrive.WebApi.Constants
         // Treshold per verificare OGNI QUANTO effettuare il processo "Check periodo di grazia"
         public const int DEV_GRACE_PERIOD_INACTIVITY_TRESHOLD_MINUTES = 10;
         public const int PROD_GRACE_PERIOD_INACTIVITY_TRESHOLD_HOURS = 6;
-
-        // Controllo di sicurezza per limitare il periodo massimo di dati da tenere in considerazione
-        // per la generazione delle statistiche mensili
-        // Numero massimo di anni impostato attualmente: 5 anni
-        public const int MAX_YEAR_DATA_PERIOD = 24 * 365 * 5;
     }
 }

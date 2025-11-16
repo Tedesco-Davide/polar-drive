@@ -1,6 +1,5 @@
 {
   "admin.missingFields": "Please fill in the following required fields",
-  "admin.searchPlaceholder": "Enter something to search...",
   "admin.loading": "Loading...",
   "admin.title": "Admin Dashboard",
   "admin.actions": "Actions",
@@ -58,6 +57,11 @@
   "admin.downloadError": "Generic error while downloading",
   "admin.tableRefreshButton": "🔄REFRESH",
   "admin.clickToCopy": "Click to copy",
+
+  "admin.searchButton": "Search",
+  "admin.status": "Status",
+  "admin.searchButton.selectStatus": "-- Select Status --",
+  "admin.vehicleReports.searchPlaceholder": "Search by Report ID or File Info Status",
 
   "admin.mainWorkflow.alerts.confirmGenerateProfile": "Do you want to generate the complete profile for the company",
   "admin.mainWorkflow.alerts.clientProfileGenerated": "Client profile generated and downloaded successfully!",

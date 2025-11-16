@@ -19,7 +19,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Paginazione server-side
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -48,7 +47,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         "AdminPdfReports",
         "INFO",
         "Reports loaded",
-        `Page: ${data.page}, Total: ${data.totalCount}`
+        `Page: ${data.page}, Total: ${data.totalCount}, Search: ${searchQuery || "none"}`
       );
     } catch (err) {
       logFrontendEvent(
@@ -80,6 +79,11 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     return () => clearInterval(interval);
   }, [localReports, currentPage, query]);
 
+  const handleSearch = (searchValue: string) => {
+    setQuery(searchValue);
+    setCurrentPage(1);
+  };
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchReports(currentPage, query);
@@ -90,19 +94,14 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     switch (statusText) {
       case "PDF-READY":
         return "bg-green-100 text-green-700 border-green-500";
-      case "HTML-ONLY":
-        return "bg-yellow-100 text-yellow-700 border-yellow-500";
       case "NO-DATA":
         return "bg-red-100 text-red-700 border-red-500";
-      case "WAITING-RECORDS":
-        return "bg-orange-100 text-orange-700 border-orange-500";
       case "PROCESSING":
-      case "REGENERATING":
         return "bg-blue-100 text-blue-700 border-blue-500";
+      case "REGENERATING":
+        return "bg-purple-100 text-purple-700 border-purple-500";
       case "ERROR":
         return "bg-red-100 text-red-700 border-red-500";
-      case "FILE-MISSING":
-        return "bg-purple-100 text-purple-700 border-purple-500";
       default:
         return "bg-gray-100 text-polarNight border-gray-400";
     }
@@ -197,7 +196,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       const data = await response.json();
 
       if (response.status === 409) {
-        // Conflict - Report già completato (immutabile)
         alert(
           `REGENERATION BLOCKED\n\n` +
           `${data.message}\n\n` +
@@ -225,7 +223,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           `ReportId: ${report.id}, Status: ${data.status}`
         );
       } else if (response.status === 202) {
-        // Accepted - Rigenerazione avviata
         alert(t("admin.vehicleReports.regenerationStarted", {
         id: report.id,
         status: data.status
@@ -238,12 +235,10 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           `ReportId: ${report.id}, Status: ${data.status}`
         );
 
-        // Aggiorna immediatamente la lista per mostrare status REGENERATING
         await fetchReports(currentPage, query);
 
-        // Auto-refresh ogni 5 secondi per i prossimi 2 minuti
         let refreshCount = 0;
-        const maxRefreshes = 24; // 24 * 5s = 2 minuti
+        const maxRefreshes = 24;
         const refreshInterval = setInterval(async () => {
           refreshCount++;
           await fetchReports(currentPage, query);
@@ -252,7 +247,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
             clearInterval(refreshInterval);
           }
 
-          // Se il report non è più in REGENERATING, ferma il refresh
           const updatedReport = localReports.find(r => r.id === report.id);
           if (updatedReport && updatedReport.status !== "REGENERATING") {
             clearInterval(refreshInterval);
@@ -283,22 +277,17 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   };
 
   const canRegenerate = (report: PdfReport): boolean => {
-    // Se ha PdfHash, è immutabile e NON può essere rigenerato
     if (report.pdfHash && report.pdfHash.trim().length > 0) {
       return false;
     }
 
-    // Se ha contenuto PDF, è stato completato e NON può essere rigenerato
     if (report.hasPdfFile && report.pdfFileSize > 0) {
       return false;
     }
 
-    // Stati che permettono la rigenerazione
     const regenerableStatuses = [
-      "FILE-MISSING",
       "PROCESSING", 
-      "ERROR",
-      "NO-DATA"
+      "ERROR"
     ];
 
     return regenerableStatuses.includes(report.status);
@@ -356,7 +345,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                 className="border-b border-gray-300 dark:border-gray-600"
               >
                 <td className="p-4 space-x-2">
-                  {/* Download Button */}
                   <button
                     className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
                     disabled={
@@ -379,7 +367,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     )}
                   </button>
 
-                  {/* Notes Button */}
                   <button
                     className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
                     disabled={
@@ -506,10 +493,13 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
+        {/* ✅ Usa la modalità speciale per dropdown ID/Status */}
         <SearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
+          onSearch={handleSearch}
+          searchMode="id-or-status"
         />
       </div>
 
