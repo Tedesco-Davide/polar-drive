@@ -51,5 +51,9 @@ namespace PolarDrive.WebApi.Constants
         // Treshold per verificare OGNI QUANTO effettuare il processo "Check periodo di grazia"
         public const int DEV_GRACE_PERIOD_INACTIVITY_TRESHOLD_MINUTES = 10;
         public const int PROD_GRACE_PERIOD_INACTIVITY_TRESHOLD_HOURS = 6;
+
+        // Frequenza dei controlli di PDF orfani per development / produzione
+        public const int DEV_RETRY_ORPHAN_PDF_REPEAT_MINUTES = 2;
+        public const int PROD_RETRY_ORPHAN_PDF_REPEAT_HOURS = 1;
     }
 }

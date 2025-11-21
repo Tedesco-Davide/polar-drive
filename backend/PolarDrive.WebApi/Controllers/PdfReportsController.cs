@@ -36,15 +36,12 @@ public class PdfReportsController(
                 .Include(r => r.ClientVehicle)
                 .AsQueryable();
 
-            // ✅ RICERCA SPECIFICA: solo per ID oppure Status
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var trimmedSearch = search.Trim();
                 
-                // Se contiene SOLO numeri → cerca per ID
                 if (int.TryParse(trimmedSearch, out int searchId))
                 {
-                    // Cerca ID che CONTIENE il numero (es: 123 trova 123, 1234, 12345)
                     var searchIdStr = searchId.ToString();
                     query = query.Where(r => EF.Functions.Like(r.Id.ToString(), $"%{searchIdStr}%"));
                     
@@ -53,33 +50,21 @@ public class PdfReportsController(
                 }
                 else
                 {
-                    // ✅ Ricerca Status con LIKE case-insensitive
                     var searchPattern = $"%{trimmedSearch}%";
                     
-                    // 🐛 DEBUG: Vediamo quanti report hanno Status non vuoto
                     var totalReportsWithStatus = await db.PdfReports
                         .Where(r => !string.IsNullOrEmpty(r.Status))
                         .CountAsync();
                     
-                    await _logger.Info(source, "📊 DEBUG Status Count",
-                        $"Total reports with Status: {totalReportsWithStatus}");
-                    
-                    // 🐛 DEBUG: Vediamo quali Status esistono
                     var distinctStatuses = await db.PdfReports
                         .Where(r => !string.IsNullOrEmpty(r.Status))
                         .Select(r => r.Status)
                         .Distinct()
                         .ToListAsync();
                     
-                    await _logger.Info(source, "📊 DEBUG Distinct Statuses",
-                        $"Found statuses: {string.Join(", ", distinctStatuses)}");
-                    
                     query = query.Where(r => 
                         !string.IsNullOrEmpty(r.Status) && 
                         EF.Functions.Like(r.Status, searchPattern));
-                    
-                    await _logger.Info(source, "🔍 Ricerca per Status",
-                        $"Pattern: '{searchPattern}'");
                 }
             }
 

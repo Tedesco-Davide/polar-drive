@@ -14,6 +14,7 @@ namespace PolarDrive.WebApi.Services
         Task<SchedulerResults> ProcessScheduledReportsAsync(ScheduleType scheduleType, CancellationToken stoppingToken = default);
         Task<RetryResults> ProcessRetriesAsync(CancellationToken stoppingToken = default);
         Task<bool> GenerateSingleReportAsync(int companyId, int vehicleId, DateTime periodStart, DateTime periodEnd, bool isRegeneration = false, int? existingReportId = null);
+        Task<int> RecoverStaleProcessingReportsAsync(CancellationToken stoppingToken = default);
     }
 
     public class ReportGenerationService(IServiceProvider serviceProvider, PolarDriveLogger logger, IWebHostEnvironment env) : IReportGenerationService
@@ -29,6 +30,15 @@ namespace PolarDrive.WebApi.Services
             CancellationToken stoppingToken = default)
         {
             var results = new SchedulerResults();
+
+            var recoveredCount = await RecoverStaleProcessingReportsAsync(stoppingToken);
+            if (recoveredCount > 0) 
+            {
+                _ = _logger.Info(
+                    "ReportGenerationService.ProcessScheduledReportsAsync", $"🔧 Recovered {recoveredCount} stale reports before starting {scheduleType}"
+                );
+            }
+
             var now = DateTime.Now;
 
             if (!ShouldGenerateReports(scheduleType, now))
@@ -682,6 +692,41 @@ namespace PolarDrive.WebApi.Services
                 ScheduleType.Monthly => "Analisi Mensile",
                 _ => "Analisi Mensile"
             };
+        }
+
+        public async Task<int> RecoverStaleProcessingReportsAsync(CancellationToken stoppingToken = default)
+        {
+            const string source = "ReportGenerationService.RecoverStaleProcessingReportsAsync";
+
+            var cutoffTime = _env.IsDevelopment() 
+                ? DateTime.Now.AddMinutes(-DEV_RETRY_ORPHAN_PDF_REPEAT_MINUTES)
+                : DateTime.Now.AddHours(-PROD_RETRY_ORPHAN_PDF_REPEAT_HOURS);
+
+            using var scope = _serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
+
+            var staleReports = await db.PdfReports
+                .Where(r => (r.Status == "PROCESSING" || r.Status == "REGENERATING")
+                            && r.CreatedAt < cutoffTime)
+                .ToListAsync(stoppingToken);
+
+            if (!staleReports.Any())
+                return 0;
+
+            _ = _logger.Warning(source,
+                $"🚨 Found {staleReports.Count} stale reports in PROCESSING/REGENERATING");
+
+            foreach (var report in staleReports)
+            {
+                report.Status = "ERROR";
+                report.Notes = $"Auto-recovered from stale {report.Status} state at {DateTime.Now:yyyy-MM-dd HH:mm}. Original notes: {report.Notes}";
+
+                _ = _logger.Warning(source,
+                    $"Report {report.Id} moved to ERROR (was stuck in {report.Status} since {report.CreatedAt})");
+            }
+
+            await db.SaveChangesAsync(stoppingToken);
+            return staleReports.Count;
         }
     }
 }
