@@ -1,512 +1,712 @@
 <!DOCTYPE html>
 <html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PolarDrive - Calcolatore Pricing</title>
     <style>
-        :root {
-            --primary: #2c3e50;
-            --secondary: #3498db;
-            --accent: #e74c3c;
-            --light: #ecf0f1;
-            --dark: #2c3e50;
-            --success: #2ecc71;
-        }
-        
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        body {
-            background-color: #f5f7fa;
-            color: var(--dark);
-            line-height: 1.6;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        header {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        h1 {
-            font-size: 2.2rem;
-            margin-bottom: 10px;
-        }
-        
-        .subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
+      :root {
+        --primary: #2c3e50;
+        --secondary: #3498db;
+        --accent: #e74c3c;
+        --light: #ecf0f1;
+        --dark: #2c3e50;
+        --success: #2ecc71;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background-color: #f5f7fa;
+        color: var(--dark);
+        line-height: 1.6;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1366px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+      }
+
+      header {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+        color: white;
+        padding: 30px;
+        text-align: center;
+      }
+
+      h1 {
+        font-size: 2.2rem;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        padding: 30px;
+      }
+
+      @media (max-width: 768px) {
         .content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            padding: 30px;
+          grid-template-columns: 1fr;
         }
-        
-        @media (max-width: 768px) {
-            .content {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            border: 1px solid #e1e8ed;
-        }
-        
-        .card h2 {
-            color: var(--primary);
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--light);
-        }
-        
-        .input-group {
-            margin-bottom: 20px;
-        }
-        
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: var(--dark);
-        }
-        
-        input, select {
-            width: 100%;
-            padding: 12px 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 1rem;
-            transition: border 0.3s;
-        }
-        
-        input:focus, select:focus {
-            border-color: var(--secondary);
-            outline: none;
-            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
-        }
-        
-        .slider-container {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .slider-container input[type="range"] {
-            flex: 1;
-        }
-        
-        .slider-value {
-            min-width: 50px;
-            text-align: center;
-            font-weight: bold;
-            color: var(--secondary);
-        }
-        
-        .results {
-            background: var(--light);
-            border-radius: 8px;
-            padding: 25px;
-        }
-        
-        .result-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #dce4e9;
-        }
-        
-        .result-item:last-child {
-            border-bottom: none;
-            margin-bottom: 0;
-            padding-bottom: 0;
-        }
-        
-        .result-label {
-            font-weight: 600;
-        }
-        
-        .result-value {
-            font-weight: 700;
-            color: var(--primary);
-        }
-        
-        .highlight {
-            background: var(--secondary);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        
-        .savings {
-            color: var(--success);
-            font-weight: bold;
-        }
-        
-        .costs {
-            color: var(--accent);
-            font-weight: bold;
-        }
-        
-        .comparison-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        
-        .comparison-table th, .comparison-table td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #e1e8ed;
-        }
-        
-        .comparison-table th {
-            background-color: var(--light);
-            font-weight: 600;
-        }
-        
-        .comparison-table tr:hover {
-            background-color: #f9f9f9;
-        }
-        
-        .data-polar-row {
-            background-color: rgba(52, 152, 219, 0.1);
-        }
-        
-        .footer-note {
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff9e6;
-            border-left: 4px solid #f1c40f;
-            border-radius: 4px;
-            font-size: 0.9rem;
-        }
-        
-        .btn-calculate {
-            background: var(--secondary);
-            color: white;
-            border: none;
-            padding: 14px 25px;
-            font-size: 1.1rem;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background 0.3s;
-            font-weight: 600;
-            width: 100%;
-            margin-top: 10px;
-        }
-        
-        .btn-calculate:hover {
-            background: #2980b9;
-        }
-        
-        .section-title {
-            font-size: 1.4rem;
-            color: var(--primary);
-            margin: 25px 0 15px 0;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--light);
-        }
-        
-        .explanation {
-            margin-top: 30px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border-left: 4px solid var(--secondary);
-        }
+      }
+
+      .card {
+        background: white;
+        border-radius: 8px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        border: 1px solid #e1e8ed;
+      }
+
+      .card h2 {
+        color: var(--primary);
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--light);
+      }
+
+      .card-margin {
+        margin-left: 30px;
+        margin-right: 30px;
+        margin-bottom: 30px;
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: var(--dark);
+      }
+
+      input,
+      select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        font-size: 1rem;
+        transition: border 0.3s;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--secondary);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+      }
+
+      .slider-container {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+      }
+
+      .slider-container input[type="range"] {
+        flex: 1;
+      }
+
+      .slider-value {
+        min-width: 50px;
+        text-align: center;
+        font-weight: bold;
+        color: var(--secondary);
+      }
+
+      .results {
+        background: var(--light);
+        border-radius: 8px;
+        padding: 25px;
+      }
+
+      .result-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 15px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid #dce4e9;
+      }
+
+      .result-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+      }
+
+      .result-label {
+        font-weight: 600;
+      }
+
+      .result-value {
+        font-weight: 700;
+        color: var(--primary);
+      }
+
+      .highlight {
+        background: var(--secondary);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-weight: bold;
+      }
+
+      .savings {
+        color: var(--success);
+        font-weight: bold;
+      }
+
+      .costs {
+        color: var(--accent);
+        font-weight: bold;
+      }
+
+      .comparison-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+
+      .comparison-table th,
+      .comparison-table td {
+        padding: 12px 15px;
+        text-align: left;
+        border-bottom: 1px solid #e1e8ed;
+      }
+
+      .comparison-table th {
+        background-color: var(--light);
+        font-weight: 600;
+      }
+
+      .comparison-table tr:hover {
+        background-color: #f9f9f9;
+      }
+
+      .data-polar-row {
+        background-color: rgba(52, 152, 219, 0.1);
+      }
+
+      .footer-note {
+        margin-top: 20px;
+        padding: 15px;
+        background: #fff9e6;
+        border-left: 4px solid #f1c40f;
+        border-radius: 4px;
+        font-size: 0.9rem;
+      }
+
+      .btn-calculate {
+        background: var(--secondary);
+        color: white;
+        border: none;
+        padding: 14px 25px;
+        font-size: 1.1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background 0.3s;
+        font-weight: 600;
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      .btn-calculate:hover {
+        background: #2980b9;
+      }
+
+      .section-title {
+        font-size: 1.1rem;
+        color: var(--primary);
+        margin: 20px 0 10px 0;
+        padding-bottom: 6px;
+        border-bottom: 2px solid var(--light);
+      }
+
+      .explanation {
+        margin-top: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 4px solid var(--secondary);
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <header>
-            <h1>PolarDrive - Calcolatore Pricing</h1>
-            <p class="subtitle">Calcola il pricing basato sul risparmio fiscale del cliente</p>
-        </header>
-        
-        <div class="content">
-            <div>
-                <div class="card">
-                    <h2>Parametri di Input</h2>
-                    
-                    <div class="input-group">
-                        <label for="teslaCost">Costo mensile noleggio / leasing Tesla (IVA esclusa)</label>
-                        <input type="number" id="teslaCost" value="500" min="0" step="0.01">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="taxRate">Aliquota IRES + IRAP del cliente (%)</label>
-                        <input type="number" id="taxRate" value="28" min="0" max="100" step="1">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label for="marginPercentage">Percentuale del risparmio fiscale come margine DataPolar (%)</label>
-                        <div class="slider-container">
-                            <input type="range" id="marginPercentage" min="0" max="100" value="50" step="1" style="padding: 12px 0px;">
-                            <span class="slider-value" id="marginValue">50%</span>
-                        </div>
-                    </div>
-                    
-                    <button class="btn-calculate" id="calculateBtn">Calcola Pricing</button>
-                </div>
-                
-                <div class="card">
-                    <h2>Risultati Pricing</h2>
-                    
-                    <div class="results">
-                        <div class="result-item">
-                            <span class="result-label">Costo Tesla:</span>
-                            <span class="result-value" id="teslaCostResult">€ 553.00</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Costo PolarDrive (margine):</span>
-                            <span class="result-value" id="operationalCostResult">€ 101.12</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Costo Totale DataPolar:</span>
-                            <span class="result-value" id="totalCostResult">€ 654.12</span>
-                        </div>
-                        
-                        <div class="section-title">Pricing Finale</div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Prezzo Servizio (IVA escl.):</span>
-                            <span class="result-value" id="servicePriceResult">€ 654.12</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">IVA (22%):</span>
-                            <span class="result-value" id="vatAmountResult">€ 143.91</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Prezzo al Cliente:</span>
-                            <span class="result-value highlight" id="customerPriceResult">€ 798.03</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Margine DataPolar:</span>
-                            <span class="result-value savings" id="marginResult">€ 101.12</span>
-                        </div>
-                    </div>
-                </div>
+      <header>
+        <h1>PolarDrive - Calcolatore Pricing</h1>
+        <p class="subtitle">
+          Calcola il pricing basato sul risparmio fiscale del cliente
+        </p>
+      </header>
+
+      <div class="content">
+        <div class="card">
+          <h2>Parametri di Input</h2>
+
+          <div class="input-group">
+            <label for="teslaCost">Costo mensile noleggi (IVA esclusa)</label>
+            <input
+              type="number"
+              id="teslaCost"
+              value="500"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="taxRate">Aliquota IRES + IRAP del cliente (%)</label>
+            <input
+              type="number"
+              id="taxRate"
+              value="28"
+              min="0"
+              max="100"
+              step="1"
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="maxDeductible"
+              >Limite massimo standard deducibile annualmente</label
+            >
+            <input
+              type="number"
+              id="maxDeductible"
+              value="3615.20"
+              min="0"
+              step="0.01"
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="leaseMonths">Numero mesi noleggio</label>
+            <input type="number" id="leaseMonths" value="48" min="1" step="1" />
+          </div>
+
+          <div class="input-group">
+            <label for="marginPercentage"
+              >Percentuale del risparmio fiscale come margine DataPolar
+              (%)</label
+            >
+            <div class="slider-container">
+              <input
+                type="range"
+                id="marginPercentage"
+                min="0"
+                max="100"
+                value="50"
+                step="1"
+                style="padding: 12px 0px"
+              />
+              <span class="slider-value" id="marginValue">50%</span>
             </div>
-            
-            <div>
-                <div class="card">
-                    <h2>Analisi Risparmio Fiscale</h2>
-                    
-                    <div class="results">
-                        <div class="result-item">
-                            <span class="result-label">Risparmio fiscale cliente SENZA PolarDrive</span>
-                            <span class="result-value" id="savingWithoutResult">€ 158.21</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Risparmio fiscale cliente CON PolarDrive</span>
-                            <span class="result-value savings" id="savingWithResult">€ 360.45</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Risparmio fiscale aggiuntivo</span>
-                            <span class="result-value savings" id="additionalSavingResult">€ 202.24</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Margine DataPolar (% del risparmio aggiuntivo)</span>
-                            <span class="result-value savings" id="marginFromSavingResult">€ 101.12</span>
-                        </div>
-                        
-                        <div class="result-item">
-                            <span class="result-label">Risparmio netto cliente</span>
-                            <span class="result-value savings" id="netCustomerSavingResult">€ 101.12</span>
-                        </div>
-                    </div>
-                    
-                    <div class="footer-note">
-                        <strong>Nota:</strong> Il cliente deduce il 100% del servizio come "Laboratorio Mobile" invece del 20% come "noleggio auto". L'IVA è detraibile al 100% invece del 40%.
-                    </div>
-                </div>
-                
-                <div class="card">
-                    <h2>Confronto Scenari</h2>
-                    
-                    <table class="comparison-table">
-                        <thead>
-                            <tr>
-                                <th>Scenario</th>
-                                <th>Costo Lordo Cliente</th>
-                                <th>Deducibilità Fiscale</th>
-                                <th>Detrazione IVA</th>
-                                <th>Costo Netto Cliente</th>
-                                <th>Risparmio vs Auto</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>Auto Aziendale Normale</td>
-                                <td id="normalGross">€ 674.66</td>
-                                <td id="normalDeductibility">20% (€ 110.60)</td>
-                                <td id="normalVatDeduction">40% (€ 48.66)</td>
-                                <td id="normalNetCost">€ 599.45</td>
-                                <td>-</td>
-                            </tr>
-                            <tr class="data-polar-row">
-                                <td><strong>Servizio DataPolar</strong></td>
-                                <td id="polarGross"><strong>€ 798.03</strong></td>
-                                <td id="polarDeductibility"><strong>100% (€ 654.12)</strong></td>
-                                <td id="polarVatDeduction"><strong>100% (€ 143.91)</strong></td>
-                                <td id="polarNetCost"><strong>€ 498.33</strong></td>
-                                <td id="polarSaving" class="savings"><strong>€ 101.12</strong></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    
-                    <div class="explanation">
-                        <h3>Come funziona il calcolo:</h3>
-                        <p>Il costo operativo PolarDrive (il tuo margine) è calcolato come percentuale del risparmio fiscale aggiuntivo che il cliente ottiene grazie al tuo servizio.</p>
-                    </div>
-                </div>
-            </div>
+          </div>
+
+          <button class="btn-calculate" id="calculateBtn">
+            Calcola Pricing
+          </button>
         </div>
+        <div class="card">
+          <h2>Analisi Risparmio Fiscale</h2>
+
+          <div class="results">
+            <!-- BLOCCO RISPARMIO GENERALE -->
+            <div class="result-item">
+              <span class="result-label"
+                >Risparmio fiscale cliente senza PolarDrive</span
+              >
+              <span class="result-value" id="savingWithoutResult"
+                >€ 1.540,26</span
+              >
+            </div>
+
+            <div class="result-item">
+              <span class="result-label"
+                >Risparmio fiscale cliente con PolarDrive</span
+              >
+              <span class="result-value savings" id="savingWithResult"
+                >€ 3.959,81</span
+              >
+            </div>
+
+            <div class="result-item">
+              <span class="result-label">Risparmio fiscale aggiuntivo</span>
+              <span class="result-value savings" id="additionalSavingResult"
+                >€ 2.419,55</span
+              >
+            </div>
+
+            <div class="result-item">
+              <span class="result-label"
+                >Margine DataPolar ( % del risparmio aggiuntivo )</span
+              >
+              <span class="result-value savings" id="marginFromSavingResult"
+                >€ 1.189,60</span
+              >
+            </div>
+
+            <div class="result-item">
+              <span class="result-label">Risparmio netto cliente</span>
+              <span class="result-value savings" id="netCustomerSavingResult"
+                >€ 1.229,95</span
+              >
+            </div>
+
+            <!-- NUOVA SEZIONE: VANTAGGIO OLTRE IL LIMITE STANDARD -->
+            <div class="section-title">
+              <b>Vantaggio extra oltre il limite standard</b>
+            </div>
+
+            <div class="result-item">
+              <span class="result-label"
+                >Quota canone Tesla oltre il limite massimo</span
+              >
+              <span class="result-value" id="extraBaseBeyondLimitResult"
+                >€ 0,00</span
+              >
+            </div>
+
+            <div class="result-item">
+              <span class="result-label"
+                >Risparmio fiscale solo su quota oltre limite
+              </span>
+              <span class="result-value savings" id="extraTaxBeyondLimitResult"
+                >€ 0,00</span
+              >
+            </div>
+          </div>
+
+          <div class="footer-note">
+            <strong>Nota:</strong> Il cliente deduce il 100% del servizio come
+            invece del 20% come "noleggio auto". L'IVA è detraibile al 100%
+            invece del 40%. La sezione "Vantaggio extra oltre il limite
+            standard" evidenzia la parte di beneficio che non sarebbe mai
+            ottenibile senza PolarDrive.
+          </div>
+        </div>
+      </div>
+      <div class="card card-margin">
+        <h2>Confronto Scenari</h2>
+
+        <table class="comparison-table">
+          <thead>
+            <tr>
+              <th>Scenario</th>
+              <th>Costo Lordo Cliente</th>
+              <th>Deducibilità Fiscale</th>
+              <th>Detrazione IVA</th>
+              <th>Costo Netto Cliente</th>
+              <th>Risparmio vs Auto</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Auto Aziendale Normale</td>
+              <td id="normalGross">€ 7.320,00</td>
+              <td id="normalDeductibility">20% (€ 1.012,26)</td>
+              <td id="normalVatDeduction">40% (€ 528,00)</td>
+              <td id="normalNetCost">€ 5.779,74</td>
+              <td>-</td>
+            </tr>
+            <tr class="data-polar-row">
+              <td><strong>Servizio DataPolar</strong></td>
+              <td id="polarGross"><strong>€ 8.771,31</strong></td>
+              <td id="polarDeductibility">
+                <strong>100% (€ 2.013,09)</strong>
+              </td>
+              <td id="polarVatDeduction">
+                <strong>100% (€ 1.581,71)</strong>
+              </td>
+              <td id="polarNetCost"><strong>€ 4.549,79</strong></td>
+              <td id="polarSaving" class="savings">
+                <strong>€ 1.229,95</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="explanation">
+          <h3>Come funziona il calcolo:</h3>
+          <p>
+            Il calcolatore considera che senza PolarDrive il cliente può dedurre
+            solo fino al limite annuo indicato (es. 3.615,20 €) ragguagliato ai
+            mesi di utilizzo. Tutto il canone oltre quel limite non è
+            deducibile. Con PolarDrive, invece, l'intero servizio (Tesla +
+            margine) è deducibile al 100% e l'IVA è detraibile al 100%.
+          </p>
+        </div>
+      </div>
+      <div class="card card-margin">
+        <h2>Risultati Pricing</h2>
+
+        <div class="results">
+          <div class="result-item">
+            <span class="result-label">Costo Tesla (periodo):</span>
+            <span class="result-value" id="teslaCostResult">€ 6.000,00</span>
+          </div>
+
+          <div class="result-item">
+            <span class="result-label">Costo PolarDrive (margine):</span>
+            <span class="result-value" id="operationalCostResult"
+              >€ 1.189,60</span
+            >
+          </div>
+
+          <div class="result-item">
+            <span class="result-label">Costo Totale DataPolar:</span>
+            <span class="result-value" id="totalCostResult">€ 7.189,60</span>
+          </div>
+
+          <div class="section-title">Pricing Finale</div>
+
+          <div class="result-item">
+            <span class="result-label">Prezzo Servizio (IVA escl.):</span>
+            <span class="result-value" id="servicePriceResult">€ 7.189,60</span>
+          </div>
+
+          <div class="result-item">
+            <span class="result-label">IVA (22%):</span>
+            <span class="result-value" id="vatAmountResult">€ 1.581,71</span>
+          </div>
+
+          <div class="result-item">
+            <span class="result-label">Prezzo al Cliente:</span>
+            <span class="result-value highlight" id="customerPriceResult"
+              >€ 8.771,31</span
+            >
+          </div>
+
+          <div class="result-item">
+            <span class="result-label">Margine DataPolar:</span>
+            <span class="result-value savings" id="marginResult"
+              >€ 1.189,60</span
+            >
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const marginSlider = document.getElementById('marginPercentage');
-    const marginValue = document.getElementById('marginValue');
-    const calculateBtn = document.getElementById('calculateBtn');
-    const marginLabel = document.getElementById('marginLabel');
-    
-    // Update slider value display
-    marginSlider.addEventListener('input', function() {
-        marginValue.textContent = this.value + '%';
-        marginLabel.textContent = `Margine DataPolar (${this.value}% del risparmio aggiuntivo):`;
-    });
-    
-    // Calculate pricing
-    calculateBtn.addEventListener('click', calculatePricing);
-    
-    // Initial calculation
-    calculatePricing();
-    
-    function calculatePricing() {
-        // Get input values
-        const teslaCost = parseFloat(document.getElementById('teslaCost').value) || 0;
-        const taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
-        const marginPercentage = parseFloat(document.getElementById('marginPercentage').value) || 0;
-        
-        // Fixed parameters
-        const vatRate = 0.22;
-        const deductibilityWithout = 0.20; // 20% senza PolarDrive
-        const vatDeductionWithout = 0.40; // 40% IVA senza PolarDrive
-        const deductibilityWith = 1.00; // 100% con PolarDrive
-        const vatDeductionWith = 1.00; // 100% IVA con PolarDrive
-        
-        // Calculate fiscal benefits without PolarDrive
-        const taxSavingWithout = teslaCost * deductibilityWithout * (taxRate / 100);
-        const vatSavingWithout = teslaCost * vatRate * vatDeductionWithout;
-        const totalSavingWithout = taxSavingWithout + vatSavingWithout;
-        
-        // Calculate fiscal benefits with PolarDrive (initial estimate)
-        // We need to calculate the operational cost based on the additional saving
-        const additionalSavingEstimate = teslaCost * 0.3; // Initial estimate
-        const operationalCost = additionalSavingEstimate * (marginPercentage / 100);
-        
-        const servicePrice = teslaCost + operationalCost;
-        const vatAmount = servicePrice * vatRate;
-        const customerPrice = servicePrice + vatAmount;
-        
-        const taxSavingWith = servicePrice * deductibilityWith * (taxRate / 100);
-        const vatSavingWith = vatAmount * vatDeductionWith;
-        const totalSavingWith = taxSavingWith + vatSavingWith;
-        
-        // Now calculate the actual additional saving
-        const additionalSaving = totalSavingWith - totalSavingWithout;
-        
-        // Recalculate operational cost based on actual additional saving
-        const operationalCostFinal = additionalSaving * (marginPercentage / 100);
-        
-        // Recalculate all values with the final operational cost
-        const servicePriceFinal = teslaCost + operationalCostFinal;
-        const vatAmountFinal = servicePriceFinal * vatRate;
-        const customerPriceFinal = servicePriceFinal + vatAmountFinal;
-        
-        const taxSavingWithFinal = servicePriceFinal * deductibilityWith * (taxRate / 100);
-        const vatSavingWithFinal = vatAmountFinal * vatDeductionWith;
-        const totalSavingWithFinal = taxSavingWithFinal + vatSavingWithFinal;
-        
-        const additionalSavingFinal = totalSavingWithFinal - totalSavingWithout;
-        const netCustomerSaving = additionalSavingFinal - operationalCostFinal;
-        
-        // Calculate net costs for scenarios
-        const normalGrossCost = teslaCost * (1 + vatRate);
-        const normalDeductibility = teslaCost * deductibilityWithout;
-        const normalVatDeduction = teslaCost * vatRate * vatDeductionWithout;
-        const normalTaxSaving = normalDeductibility * (taxRate / 100);
-        const normalNetCost = normalGrossCost - normalTaxSaving - normalVatDeduction;
-        
-        // CORREZIONE: Calcolo corretto del costo netto con PolarDrive
-        const polarNetCost = customerPriceFinal - taxSavingWithFinal - vatSavingWithFinal;
-        
-        // CORREZIONE: Il risparmio deve essere normalNetCost - polarNetCost
-        const polarSaving = normalNetCost - polarNetCost;
-        
-        // Update results
-        document.getElementById('teslaCostResult').textContent = `€ ${teslaCost.toFixed(2)}`;
-        document.getElementById('operationalCostResult').textContent = `€ ${operationalCostFinal.toFixed(2)}`;
-        document.getElementById('totalCostResult').textContent = `€ ${(teslaCost + operationalCostFinal).toFixed(2)}`;
-        document.getElementById('servicePriceResult').textContent = `€ ${servicePriceFinal.toFixed(2)}`;
-        document.getElementById('vatAmountResult').textContent = `€ ${vatAmountFinal.toFixed(2)}`;
-        document.getElementById('customerPriceResult').textContent = `€ ${customerPriceFinal.toFixed(2)}`;
-        document.getElementById('marginResult').textContent = `€ ${operationalCostFinal.toFixed(2)}`;
-        
-        document.getElementById('savingWithoutResult').textContent = `€ ${totalSavingWithout.toFixed(2)}`;
-        document.getElementById('savingWithResult').textContent = `€ ${totalSavingWithFinal.toFixed(2)}`;
-        document.getElementById('additionalSavingResult').textContent = `€ ${additionalSavingFinal.toFixed(2)}`;
-        document.getElementById('marginFromSavingResult').textContent = `€ ${operationalCostFinal.toFixed(2)}`;
-        
-        // CORREZIONE: Usiamo lo stesso valore per entrambi i risparmi
-        document.getElementById('netCustomerSavingResult').textContent = `€ ${polarSaving.toFixed(2)}`;
-        
-        document.getElementById('normalGross').textContent = `€ ${normalGrossCost.toFixed(2)}`;
-        document.getElementById('normalDeductibility').textContent = `20% (€ ${normalDeductibility.toFixed(2)})`;
-        document.getElementById('normalVatDeduction').textContent = `40% (€ ${normalVatDeduction.toFixed(2)})`;
-        document.getElementById('normalNetCost').textContent = `€ ${normalNetCost.toFixed(2)}`;
-        
-        document.getElementById('polarGross').innerHTML = `<strong>€ ${customerPriceFinal.toFixed(2)}</strong>`;
-        document.getElementById('polarDeductibility').innerHTML = `<strong>100% (€ ${servicePriceFinal.toFixed(2)})</strong>`;
-        document.getElementById('polarVatDeduction').innerHTML = `<strong>100% (€ ${vatAmountFinal.toFixed(2)})</strong>`;
-        document.getElementById('polarNetCost').innerHTML = `<strong>€ ${polarNetCost.toFixed(2)}</strong>`;
-        document.getElementById('polarSaving').innerHTML = `<strong>€ ${polarSaving.toFixed(2)}</strong>`;
-    }
-});
+      document.addEventListener("DOMContentLoaded", function () {
+        const marginSlider = document.getElementById("marginPercentage");
+        const marginValue = document.getElementById("marginValue");
+        const calculateBtn = document.getElementById("calculateBtn");
+
+        // Aggiorna etichetta slider
+        marginSlider.addEventListener("input", function () {
+          marginValue.textContent = this.value + "%";
+        });
+
+        // Eventi
+        calculateBtn.addEventListener("click", calculatePricing);
+
+        document
+          .getElementById("teslaCost")
+          .addEventListener("input", calculatePricing);
+        document
+          .getElementById("taxRate")
+          .addEventListener("input", calculatePricing);
+        document
+          .getElementById("maxDeductible")
+          .addEventListener("input", calculatePricing);
+        document
+          .getElementById("leaseMonths")
+          .addEventListener("input", calculatePricing);
+        document
+          .getElementById("marginPercentage")
+          .addEventListener("input", calculatePricing);
+
+        // Prima esecuzione
+        calculatePricing();
+
+        function formatCurrency(value) {
+          return `€ ${value
+            .toFixed(2)
+            .replace(".", ",")
+            .replace(/\B(?=(\d{3})+(?!\d))/g, ".")}`;
+        }
+
+        function formatPercentage(value, percentage) {
+          return `${percentage}% (${formatCurrency(value)})`;
+        }
+
+        function calculatePricing() {
+          // INPUT
+          const teslaCostMonthly =
+            parseFloat(document.getElementById("teslaCost").value) || 0;
+          const taxRateInput =
+            parseFloat(document.getElementById("taxRate").value) || 0;
+          const marginPercentage =
+            parseFloat(document.getElementById("marginPercentage").value) || 0;
+          const maxDeductibleAnnual =
+            parseFloat(document.getElementById("maxDeductible").value) || 0;
+          const leaseMonths =
+            parseInt(document.getElementById("leaseMonths").value) || 0;
+
+          // PARAMETRI FISSI
+          const vatRate = 0.22;
+          const deductibilityWithout = 0.2; // 20% senza PolarDrive
+          const vatDeductionWithout = 0.4; // 40% IVA senza PolarDrive
+          const deductibilityWith = 1.0; // 100% con PolarDrive
+          const vatDeductionWith = 1.0; // 100% IVA con PolarDrive
+
+          const teslaCostTotal = teslaCostMonthly * leaseMonths; // C
+          const taxRate = taxRateInput / 100; // T
+          const m = marginPercentage / 100; // m
+          const limitCostTotal = maxDeductibleAnnual * (leaseMonths / 12); // L
+
+          // ===== SCENARIO SENZA POLARDRIVE =====
+          // Applico il limite ai CANONI e poi il 20%
+          const baseCostStandard = Math.min(teslaCostTotal, limitCostTotal);
+          const deductibleCostStandard =
+            baseCostStandard * deductibilityWithout;
+
+          const taxSavingWithout = deductibleCostStandard * taxRate;
+          const vatSavingWithout =
+            teslaCostTotal * vatRate * vatDeductionWithout;
+          const totalSavingWithout = taxSavingWithout + vatSavingWithout;
+
+          const normalGrossCost = teslaCostTotal * (1 + vatRate);
+          const normalVatDeduction = vatSavingWithout;
+          const normalNetCost =
+            normalGrossCost - taxSavingWithout - normalVatDeduction;
+
+          // ===== MARGINE DATAPOLAR (risolto in forma chiusa) =====
+          // M = m * ( (C + M)*(T+V) - S0 )
+          // => M = m * ( (T+V)*C - S0 ) / (1 - m*(T+V))
+          const sumRate = taxRate + vatRate;
+          const numerator = m * (sumRate * teslaCostTotal - totalSavingWithout);
+          const denominator = 1 - m * sumRate;
+
+          let marginAmount = 0;
+          if (denominator > 0 && numerator > 0) {
+            marginAmount = numerator / denominator;
+          } else {
+            marginAmount = 0;
+          }
+
+          // ===== SCENARIO CON POLARDRIVE =====
+          const serviceNet = teslaCostTotal + marginAmount;
+          const vatAmount = serviceNet * vatRate;
+          const customerPrice = serviceNet + vatAmount;
+
+          const taxSavingWith = serviceNet * deductibilityWith * taxRate;
+          const vatSavingWith = vatAmount * vatDeductionWith;
+          const totalSavingWith = taxSavingWith + vatSavingWith;
+
+          const additionalSaving = totalSavingWith - totalSavingWithout;
+
+          const polarNetCost = customerPrice - taxSavingWith - vatSavingWith;
+          const polarSaving = normalNetCost - polarNetCost;
+
+          // ===== BREAKDOWN: VANTAGGIO OLTRE IL LIMITE =====
+          // 1) Quota di canone oltre il limite standard
+          const extraCostBeyondLimit = Math.max(
+            0,
+            teslaCostTotal - limitCostTotal
+          );
+
+          // 2) Risparmio fiscale solo su questa quota (senza margine)
+          const extraTaxSavingBeyondLimit = extraCostBeyondLimit * taxRate;
+
+          // 3) Risparmio extra su parte ENTRO il limite
+          const extraDeductibleWithinLimit =
+            baseCostStandard * (deductibilityWith - deductibilityWithout); // 80% in più
+          const extraTaxSavingWithinLimit =
+            extraDeductibleWithinLimit * taxRate;
+
+          // 4) Extra IVA sulla Tesla (dal 40% al 100%)
+          const extraVatSavingTesla =
+            teslaCostTotal * vatRate * (vatDeductionWith - vatDeductionWithout);
+
+          // ===== AGGIORNAMENTO INTERFACCIA =====
+
+          // Card "Risultati Pricing"
+          document.getElementById("teslaCostResult").textContent =
+            formatCurrency(teslaCostTotal);
+          document.getElementById("operationalCostResult").textContent =
+            formatCurrency(marginAmount);
+          document.getElementById("totalCostResult").textContent =
+            formatCurrency(teslaCostTotal + marginAmount);
+
+          document.getElementById("servicePriceResult").textContent =
+            formatCurrency(serviceNet);
+          document.getElementById("vatAmountResult").textContent =
+            formatCurrency(vatAmount);
+          document.getElementById("customerPriceResult").textContent =
+            formatCurrency(customerPrice);
+          document.getElementById("marginResult").textContent =
+            formatCurrency(marginAmount);
+
+          // Card "Analisi Risparmio Fiscale"
+          document.getElementById("savingWithoutResult").textContent =
+            formatCurrency(totalSavingWithout);
+          document.getElementById("savingWithResult").textContent =
+            formatCurrency(totalSavingWith);
+          document.getElementById("additionalSavingResult").textContent =
+            formatCurrency(additionalSaving);
+          document.getElementById("marginFromSavingResult").textContent =
+            formatCurrency(marginAmount);
+          document.getElementById("netCustomerSavingResult").textContent =
+            formatCurrency(polarSaving);
+
+          // Nuova sezione "Vantaggio extra oltre il limite standard"
+          document.getElementById("extraBaseBeyondLimitResult").textContent =
+            formatCurrency(extraCostBeyondLimit);
+          document.getElementById("extraTaxBeyondLimitResult").textContent =
+            formatCurrency(extraTaxSavingBeyondLimit);
+
+          // Tabella confronto scenari
+          document.getElementById("normalGross").textContent =
+            formatCurrency(normalGrossCost);
+          document.getElementById("normalDeductibility").textContent =
+            formatPercentage(deductibleCostStandard, 20);
+          document.getElementById("normalVatDeduction").textContent =
+            formatPercentage(normalVatDeduction, 40);
+          document.getElementById("normalNetCost").textContent =
+            formatCurrency(normalNetCost);
+
+          document.getElementById(
+            "polarGross"
+          ).innerHTML = `<strong>${formatCurrency(customerPrice)}</strong>`;
+          document.getElementById(
+            "polarDeductibility"
+          ).innerHTML = `<strong>${formatPercentage(serviceNet, 100)}</strong>`;
+          document.getElementById(
+            "polarVatDeduction"
+          ).innerHTML = `<strong>${formatPercentage(
+            vatSavingWith,
+            100
+          )}</strong>`;
+          document.getElementById(
+            "polarNetCost"
+          ).innerHTML = `<strong>${formatCurrency(polarNetCost)}</strong>`;
+          document.getElementById(
+            "polarSaving"
+          ).innerHTML = `<strong>${formatCurrency(polarSaving)}</strong>`;
+        }
+      });
     </script>
-</body>
+  </body>
 </html>
