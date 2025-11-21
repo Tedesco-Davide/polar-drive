@@ -8,7 +8,9 @@ type SearchBarProps = {
   resetPage: () => void;
   onSearch?: (searchValue: string) => void;
   placeholderKey?: string;
-  searchMode?: "id-or-status" | "default";
+  searchMode?: "id-or-status" | "vin-or-company" | "default";
+  externalSearchType?: "id" | "status";
+  onSearchTypeChange?: (type: "id" | "status") => void;
 };
 
 export default function SearchBar({
@@ -18,10 +20,14 @@ export default function SearchBar({
   onSearch,
   placeholderKey = "admin.searchPlaceholder",
   searchMode = "default",
+  externalSearchType,
+  onSearchTypeChange,
 }: SearchBarProps) {
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(query);
-  const [searchType, setSearchType] = useState<"id" | "status">("id");
+  const [searchType, setSearchType] = useState<"id" | "status">(
+    externalSearchType || "id"
+  );
 
   const availableStatuses = [
     "PDF-READY",
@@ -62,6 +68,7 @@ export default function SearchBar({
           <button
             onClick={() => {
               setSearchType("id");
+              onSearchTypeChange?.("id");
               setLocalValue("");
             }}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
@@ -75,6 +82,7 @@ export default function SearchBar({
           <button
             onClick={() => {
               setSearchType("status");
+              onSearchTypeChange?.("status");
               setLocalValue("");
             }}
             className={`px-4 py-2 text-sm font-medium transition-colors ${
@@ -128,6 +136,74 @@ export default function SearchBar({
             ))}
           </select>
         )}
+      </div>
+    );
+  }
+
+  if (searchMode === "vin-or-company") {
+    return (
+      <div className="flex-1 flex gap-2">
+        <div className="flex bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+          <button
+            onClick={() => {
+              setSearchType("id");
+              onSearchTypeChange?.("id");
+              setLocalValue("");
+            }}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              searchType === "id"
+                ? "bg-blue-500 text-white"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
+          >
+            VIN
+          </button>
+          <button
+            onClick={() => {
+              setSearchType("status");
+              onSearchTypeChange?.("status");
+              setLocalValue("");
+            }}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              searchType === "status"
+                ? "bg-blue-500 text-white"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
+          >
+            {t("admin.company")}
+          </button>
+        </div>
+
+        <button
+          onClick={handleSearch}
+          className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          title={t("admin.searchButton")}
+        >
+          <Search size={16} />
+        </button>
+
+        {localValue && (
+          <button
+            onClick={handleClear}
+            className="p-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+            title="Cancella"
+          >
+            <X size={16} />
+          </button>
+        )}
+
+        <input
+          type="text"
+          value={localValue}
+          onChange={(e) => setLocalValue(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={
+            searchType === "id"
+              ? t("admin.vehicles.searchVinPlaceholder")
+              : t("admin.vehicles.searchCompanyPlaceholder")
+          }
+          className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
+        />
       </div>
     );
   }

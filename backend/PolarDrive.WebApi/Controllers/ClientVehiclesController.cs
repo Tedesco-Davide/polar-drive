@@ -16,7 +16,8 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
     public async Task<ActionResult<PaginatedResponse<AdminWorkflowExtendedDTO>>> Get(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 5,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] string? searchType = "vin")
     {
         try
         {
@@ -30,13 +31,17 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             // Filtro ricerca
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(v =>
-                    v.Vin.Contains(search) ||
-                    v.Brand.Contains(search) ||
-                    v.Model.Contains(search) ||
-                    v.FuelType.Contains(search) ||
-                    (v.Trim != null && v.Trim.Contains(search)) ||
-                    (v.Color != null && v.Color.Contains(search)));
+                var trimmed = search.Trim();
+                var pattern = $"%{trimmed}%";
+
+                if (searchType == "vin")
+                {
+                    query = query.Where(v => EF.Functions.Like(v.Vin, pattern));
+                }
+                else if (searchType == "company")
+                {
+                    query = query.Where(v => EF.Functions.Like(v.ClientCompany!.Name, pattern));
+                }
             }
 
             var totalCount = await query.CountAsync();

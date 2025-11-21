@@ -62,6 +62,9 @@
   "admin.status": "Status",
   "admin.searchButton.selectStatus": "-- Select Status --",
   "admin.vehicleReports.searchPlaceholder": "Search by Report ID or File Info Status",
+  "admin.company": "Company",
+  "admin.vehicles.searchVinPlaceholder": "Search by VIN",
+  "admin.vehicles.searchCompanyPlaceholder": "Search by Company Name",
 
   "admin.mainWorkflow.alerts.confirmGenerateProfile": "Do you want to generate the complete profile for the company",
   "admin.mainWorkflow.alerts.clientProfileGenerated": "Client profile generated and downloaded successfully!",

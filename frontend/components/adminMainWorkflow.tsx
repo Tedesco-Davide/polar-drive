@@ -61,14 +61,20 @@ export default function AdminMainWorkflow() {
     clientOAuthAuthorized: false,
   });
 
-  const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
+  const [searchType, setSearchType] = useState<"id" | "status">("id");
+
+const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
-      if (searchQuery) params.append("search", searchQuery);
+      if (searchQuery) {
+        params.append("search", searchQuery);
+        const type = searchType === "id" ? "vin" : "company";
+        params.append("searchType", type);
+      }
 
       const res = await fetch(`/api/clientvehicles?${params}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -699,6 +705,9 @@ export default function AdminMainWorkflow() {
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
+          searchMode="vin-or-company"
+          externalSearchType={searchType}
+          onSearchTypeChange={setSearchType}
         />
       </div>
 
