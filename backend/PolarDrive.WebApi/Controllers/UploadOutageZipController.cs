@@ -6,6 +6,7 @@ using PolarDrive.Data.Entities;
 using System.Globalization;
 using PolarDrive.Data.Constants;
 using System.IO.Compression;
+using PolarDrive.WebApi.Helpers;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -90,7 +91,6 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 
         byte[]? zipContent = null;
         string zipHash = "";
-
         if (zipFile != null && zipFile.Length > 0)
         {
             using var ms = new MemoryStream();
@@ -100,11 +100,11 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
             try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
             catch { return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!"); }
 
+            // Hash & dup check
             ms.Position = 0;
-            using var sha = SHA256.Create();
-            zipHash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+            string hash = GenericHelpers.ComputeContentHash(ms);
 
-            var duplicate = await db.OutagePeriods.FirstOrDefaultAsync(o => o.ZipHash == zipHash);
+            var duplicate = await db.OutagePeriods.FirstOrDefaultAsync(o => o.ZipHash == hash);
             if (duplicate != null)
                 return BadRequest($"SERVER ERROR → File already exists for outage ID {duplicate.Id}!");
 
@@ -230,9 +230,9 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
         try { using var _ = new ZipArchive(ms, ZipArchiveMode.Read, leaveOpen: true); }
         catch { return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!"); }
 
+        // Hash & dup check
         ms.Position = 0;
-        using var sha = SHA256.Create();
-        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+        string hash = GenericHelpers.ComputeContentHash(ms);
 
         var duplicate = await db.OutagePeriods
             .FirstOrDefaultAsync(o => o.ZipHash == hash && o.Id != outageId);

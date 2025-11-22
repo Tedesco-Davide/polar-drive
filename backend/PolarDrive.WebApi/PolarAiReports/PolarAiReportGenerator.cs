@@ -46,15 +46,15 @@ public class PolarAiReportGenerator
             return "Nessun dato disponibile per l'analisi mensile.";
         }
 
-        // 🎯 AGGREGAZIONE INTELLIGENTE - Riduzione drastica dei token
+        // 🎯 AGGREGAZIONE INTELLIGENTE
         var aggregator = new IntelligentDataAggregator(_dbContext);
-        var aggregatedData = await aggregator.GenerateAggregatedInsights(historicalData, vehicleId);
+        var aggregatedGoogleAdsData = await aggregator.GenerateGoogleAdsAggregatedInsights(historicalData, vehicleId);
 
-        await _logger.Info(source, "Aggregazione completata",
-            $"Da {historicalData.Sum(d => d.Length)} char → {aggregatedData.Length} char");
+        await _logger.Info(source, "Aggregazione dati per Google Ads completata",
+            $"Da {historicalData.Sum(d => d.Length)} char → {aggregatedGoogleAdsData.Length} char");
 
         // 🧠 GENERAZIONE INSIGHTS AI con dati ottimizzati
-        var aiInsights = await GenerateSummary(aggregatedData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
+        var aiInsights = await GenerateSummary(aggregatedGoogleAdsData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
 
         // 🔗 ATTACH FINALE
         var aiInsightsSection = new StringBuilder();

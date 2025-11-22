@@ -17,6 +17,19 @@ public static class GenericHelpers
         return Convert.ToHexStringLower(hashBytes);
     }
 
+    // Overload per lo stream
+    public static string ComputeContentHash(Stream stream)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        if (stream.CanSeek)
+            stream.Position = 0;
+
+        using var sha256 = System.Security.Cryptography.SHA256.Create();
+        var hashBytes = sha256.ComputeHash(stream);
+        return Convert.ToHexStringLower(hashBytes);
+    }
+
     // Helper locale per garantire lo slash finale
     public static string EnsureTrailingSlash(string? baseUrl)
     {

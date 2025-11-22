@@ -5,6 +5,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Globalization;
 using System.Security.Cryptography;
+using PolarDrive.WebApi.Helpers;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -94,10 +95,9 @@ public class UploadConsentZipController(PolarDriveDbContext db) : ControllerBase
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
         }
 
-        // === Hash (SHA-256)
+        // === Hash (SHA-256) usando GenericHelpers
         ms.Position = 0;
-        using var sha = SHA256.Create();
-        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+        string hash = GenericHelpers.ComputeContentHash(ms);
 
         // Duplicate check
         var existingConsent = await _db.ClientConsents.FirstOrDefaultAsync(c => c.ConsentHash == hash);
@@ -184,10 +184,9 @@ public class UploadConsentZipController(PolarDriveDbContext db) : ControllerBase
             return BadRequest("SERVER ERROR → BAD REQUEST: Invalid ZIP file!");
         }
 
-        // Hash & dup check (escludendo il consenso corrente)
+        // Hash & dup check
         ms.Position = 0;
-        using var sha = SHA256.Create();
-        var hash = Convert.ToHexStringLower(await sha.ComputeHashAsync(ms));
+        string hash = GenericHelpers.ComputeContentHash(ms);
 
         var existingWithHash = await _db.ClientConsents
             .FirstOrDefaultAsync(c => c.ConsentHash == hash && c.Id != consentId);

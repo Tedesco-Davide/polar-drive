@@ -96,9 +96,9 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
             var tempReport = new PdfReport
             {
                 Id = 0,
-                ReportPeriodStart = DateTime.UtcNow.AddMonths(-1),
-                ReportPeriodEnd = DateTime.UtcNow,
-                GeneratedAt = DateTime.UtcNow
+                ReportPeriodStart = DateTime.Now.AddMonths(-1),
+                ReportPeriodEnd = DateTime.Now,
+                GeneratedAt = DateTime.Now
             };
 
             // OPZIONI PERSONALIZZATE PER HEADER E FOOTER

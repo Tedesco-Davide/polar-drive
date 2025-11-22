@@ -330,6 +330,8 @@ namespace PolarDrive.WebApi.Services
                 var aiGen = new PolarAiReportGenerator(db, ollamaOptions);
 
                 var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
+                var googleAds = new GoogleAdsIntegrationService();
+                await googleAds.SendAiInsightsToGoogleAds(insights, vehicleId, vehicle.Vin);
 
                 if (string.IsNullOrWhiteSpace(insights))
                 {
@@ -472,6 +474,9 @@ namespace PolarDrive.WebApi.Services
 
             var insights = await aiGen.GeneratePolarAiInsightsAsync(vehicleId);
             //var insights = "TEST_INSIGHTS_NO_AI";
+
+            var googleAds = new GoogleAdsIntegrationService();
+            await googleAds.SendAiInsightsToGoogleAds(insights, vehicleId, vehicle.Vin);
 
             if (string.IsNullOrWhiteSpace(insights))
                 throw new InvalidOperationException($"No insights for {vehicle.Vin}");

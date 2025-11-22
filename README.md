@@ -8,6 +8,7 @@ Repository per il progetto **PolarDrive**.
 
 - backend/PolarDrive.WebApi/Constants/CommonConstants.cs => CONTIENE CONFIG PRINCIPALI APPLICATIVO => ESEMPIO: MONTHLY_HOURS_THRESHOLD
 - DECOMMENTARE PER STAMPARE VELOCEMENTE => var insights = "TEST_INSIGHTS_NO_AI";
+- COMMENTARE PER NON INVIARE DATI A GOOGLE => await googleAds.SendAiInsightsToGoogleAds(insights, vehicleId, vehicle.Vin);
 - CONTIENE FORMATTING PER EVENTUALI SBAGLI STAMPA AI => private static string FormatInsightsForHtml(string insights)
 
 ### 🐳 DOCKER DEV

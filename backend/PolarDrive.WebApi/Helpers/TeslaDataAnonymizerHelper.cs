@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Security.Cryptography;
 using System.Text;
+using PolarDrive.WebApi.Helpers;
 
 public static class TeslaDataAnonymizerHelper
 {
@@ -131,9 +132,9 @@ public static class TeslaDataAnonymizerHelper
         if (string.IsNullOrEmpty(email) || !email.Contains("@"))
             return email;
 
-        // Sostituisce con hash della prima parte + dominio generico
+        // === Hash (SHA-256) usando GenericHelpers
         var parts = email.Split('@');
-        var hash = CreateShortHash(parts[0]);
+        var hash = GenericHelpers.ComputeContentHash(parts[0]);
         return $"user_{hash}@domain.com";
     }
 

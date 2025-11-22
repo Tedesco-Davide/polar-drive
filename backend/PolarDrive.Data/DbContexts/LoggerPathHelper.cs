@@ -13,7 +13,7 @@ internal static class LoggerPathHelper
     }
 
     public static DateTime NowItalian() =>
-        TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, ItalianTz);
+        TimeZoneInfo.ConvertTimeFromUtc(DateTime.Now, ItalianTz);
 
     public static string ResolveBaseLogsDir()
     {

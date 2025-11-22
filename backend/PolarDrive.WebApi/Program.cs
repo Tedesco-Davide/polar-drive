@@ -94,6 +94,7 @@ builder.Services.AddSingleton<PolarDriveLogger>();
 
 // SERVIZI MULTI-BRAND
 builder.Services.AddScoped<TeslaApiService>();
+builder.Services.AddScoped<GoogleAdsIntegrationService>();
 builder.Services.AddScoped<VehicleApiServiceRegistry>();
 builder.Services.AddScoped<VehicleDataService>();
 

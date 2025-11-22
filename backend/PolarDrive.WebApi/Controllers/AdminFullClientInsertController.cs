@@ -4,6 +4,7 @@ using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
 using System.Security.Cryptography;
 
@@ -113,10 +114,9 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext) : Co
 
             // === Compute SHA-256 hash ===
             memoryStream.Position = 0;
-            using var sha256 = SHA256.Create();
-            byte[] hashBytes = await sha256.ComputeHashAsync(memoryStream);
-            string hash = Convert.ToHexStringLower(hashBytes);
-
+            byte[] contentBytes = memoryStream.ToArray();
+            string hash = GenericHelpers.ComputeContentHash(contentBytes);
+            
             // === Duplicate check on hash ===
             var existingConsent = await _dbContext.ClientConsents
                 .FirstOrDefaultAsync(c => c.ConsentHash == hash);
