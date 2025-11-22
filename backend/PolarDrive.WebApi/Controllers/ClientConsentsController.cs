@@ -24,8 +24,8 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
     {
         try
         {
-            await _logger.Info("ClientConsentsController.Get", "Requested list of client consents",
-                $"Page: {page}, PageSize: {pageSize}, Search: {search ?? "none"}");
+            await _logger.Info("ClientConsentsController.Get", "Requested filtered list of client consents",
+                $"Page: {page}, PageSize: {pageSize}");
 
             var query = _db.ClientConsents
                 .Include(c => c.ClientCompany)

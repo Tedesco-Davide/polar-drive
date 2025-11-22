@@ -27,7 +27,28 @@ public class LogsController() : ControllerBase
         if (!Enum.TryParse<PolarDriveLogLevel>(input.Level, true, out var parsedLevel))
             parsedLevel = PolarDriveLogLevel.INFO;
 
-        await _logger.LogAsync(input.Source, parsedLevel, input.Message, input.Details);
+        string? sanitizedDetails = input.Details;
+        if (!string.IsNullOrWhiteSpace(sanitizedDetails))
+        {
+            var idx = sanitizedDetails.IndexOf(", Search:", StringComparison.OrdinalIgnoreCase);
+            if (idx >= 0)
+            {
+                sanitizedDetails = sanitizedDetails[..idx];
+            }
+            else
+            {
+                // fallback più aggressivo: se trovi "Search:" ovunque, tronca da lì
+                var idx2 = sanitizedDetails.IndexOf("Search:", StringComparison.OrdinalIgnoreCase);
+                if (idx2 >= 0)
+                {
+                    sanitizedDetails = sanitizedDetails[..idx2];
+                }
+            }
+
+            sanitizedDetails = sanitizedDetails.TrimEnd();
+        }
+
+        await _logger.LogAsync(input.Source, parsedLevel, input.Message, sanitizedDetails);
 
         return Ok();
     }

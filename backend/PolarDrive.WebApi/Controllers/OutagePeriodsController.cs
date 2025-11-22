@@ -23,8 +23,8 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
     {
         try
         {
-            await _logger.Info("OutagePeriodsController.Get", "Requested list of outage periods",
-                $"Page: {page}, PageSize: {pageSize}, Search: {search ?? "none"}");
+            await _logger.Info("OutagePeriodsController.Get", "Requested filtered list of outage periods",
+                $"Page: {page}, PageSize: {pageSize}");
 
             var query = _db.OutagePeriods
                 .Include(o => o.ClientCompany)

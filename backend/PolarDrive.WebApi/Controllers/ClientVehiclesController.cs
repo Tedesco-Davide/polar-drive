@@ -21,8 +21,8 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
     {
         try
         {
-            await _logger.Info("ClientVehiclesController.Get", "Requested list of client vehicles",
-                $"Page: {page}, PageSize: {pageSize}, Search: {search ?? "none"}");
+            await _logger.Info("ClientVehiclesController.Get", "Requested filtered list of client vehicles",
+                $"Page: {page}, PageSize: {pageSize}");
 
             var query = db.ClientVehicles
                 .Include(v => v.ClientCompany)

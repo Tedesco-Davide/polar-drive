@@ -28,8 +28,8 @@ public class PdfReportsController(
 
         try
         {
-            await _logger.Info(source, "Richiesta lista report PDF",
-                $"Page: {page}, PageSize: {pageSize}, Search: '{search ?? "none"}'");
+            await _logger.Info(source, "Requested filtered list of PDF reports",
+                $"Page: {page}, PageSize: {pageSize}");
 
             var query = db.PdfReports
                 .Include(r => r.ClientCompany)

@@ -47,9 +47,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         "AdminPdfReports",
         "INFO",
         "Reports loaded",
-        `Page: ${data.page}, Total: ${data.totalCount}, Search: ${
-          searchQuery || "none"
-        }`
+        `Page: ${data.page}, Total: ${data.totalCount}`
       );
     } catch (err) {
       logFrontendEvent(

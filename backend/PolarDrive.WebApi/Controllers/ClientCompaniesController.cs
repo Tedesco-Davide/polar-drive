@@ -20,8 +20,8 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     {
         try
         {
-            await _logger.Info("ClientCompaniesController.Get", "Requested list of client companies",
-                $"Page: {page}, PageSize: {pageSize}, Search: {search ?? "none"}");
+            await _logger.Info("ClientCompaniesController.Get", "Requested filtered list of client companies",
+                $"Page: {page}, PageSize: {pageSize}");
 
             var query = from company in db.ClientCompanies
                         join vehicle in db.ClientVehicles on company.Id equals vehicle.ClientCompanyId
