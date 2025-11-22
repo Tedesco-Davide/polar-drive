@@ -897,6 +897,15 @@ public static partial class SmartTeslaDataGeneratorService
             fleet_telemetry_error_vins = new[]
             {
                 "5YJ3000000NEXUS01",
+                "5YJ3000000NEXUS02",
+                "5YJ3000000NEXUS03",
+                "5YJ3000000NEXUS04",
+                "5YJ3000000NEXUS05",
+                "5YJ3000000NEXUS06",
+                "5YJ3000000NEXUS07",
+                "5YJ3000000NEXUS08",
+                "5YJ3000000NEXUS09",
+                "5YJ3000000NEXUS10"
             },
             fleet_telemetry_errors = new[]
             {
@@ -904,6 +913,51 @@ public static partial class SmartTeslaDataGeneratorService
                     name = "evotesla-client",
                     error = "Unable to parse GPS data",
                     vin = "5YJ3000000NEXUS01"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS02"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS03"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS04"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS05"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS06"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS07"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS08"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS09"
+                },
+                new {
+                    name = "evotesla-client",
+                    error = "Unable to parse GPS data",
+                    vin = "5YJ3000000NEXUS10"
                 }
             },
             public_key = "0437d832a7a695151f5a671780a276aa4cf2d6be3b2786465397612a342fcf418e98022d3cedf4e9a6f4b3b160472dee4ca022383d9b4cc4001a0f3023caec58fa"

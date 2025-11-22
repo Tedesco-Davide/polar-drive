@@ -284,10 +284,22 @@ public class TeslaDataPusherService : BackgroundService
 
     private List<string> GetSimulatedVehicleVins()
     {
-        var vins = _configuration.GetSection("TeslaDataPusher:SimulatedVins").Get<List<string>>();
+        var vins = _configuration
+            .GetSection("TeslaDataPusher:SimulatedVins")
+            .Get<List<string>>();
+
         return vins ??
         [
-            "5YJ3000000NEXUS01"
+            "5YJ3000000NEXUS01",
+            "5YJ3000000NEXUS02",
+            "5YJ3000000NEXUS03",
+            "5YJ3000000NEXUS04",
+            "5YJ3000000NEXUS05",
+            "5YJ3000000NEXUS06",
+            "5YJ3000000NEXUS07",
+            "5YJ3000000NEXUS08",
+            "5YJ3000000NEXUS09",
+            "5YJ3000000NEXUS10"
         ];
     }
 
