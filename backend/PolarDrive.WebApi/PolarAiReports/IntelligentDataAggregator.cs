@@ -27,7 +27,7 @@ public class IntelligentDataAggregator(
     private readonly Dictionary<string, int> _processingStats = [];
     private readonly Dictionary<string, TimeSpan> _processingTimes = [];
 
-    public async Task<string> GenerateGoogleAdsAggregatedInsights(List<string> rawJsonAnonymizedList, int vehicleId)
+    public async Task<(string text, GoogleAdsTeslaDataAggregation data)> GenerateGoogleAdsAggregatedInsights(List<string> rawJsonAnonymizedList, int vehicleId)
     {
         var source = "IntelligentDataAggregator.GenerateAggregatedInsights";
         _totalStopwatch.Start();
@@ -94,11 +94,18 @@ public class IntelligentDataAggregator(
                         switch (type)
                         {
                             case "vehicle_endpoints":
+                                // Prendiamo in considerazione solo endpoints necessari per campagne Google Ads
                                 ProcessVehicleEndpointsGoogleAds(content, aggregation);
                                 LogProcessingStep("VehicleEndpoints", $"Processati vehicle endpoints per Google Ads");
                                 break;
                             case "user_profile":
                                 // Ignoriamo esplicitamente per rispettare Tesla Fleet Api
+                                break;
+                                // Ignoriamo questi tipi per Google Ads
+                            case "charging_history":
+                            case "energy_endpoints":
+                            case "partner_public_key":
+                            case "vehicle_commands":
                                 break;
                             default:
                                 if (!"user_profile".Equals(type, StringComparison.OrdinalIgnoreCase))
@@ -180,7 +187,7 @@ public class IntelligentDataAggregator(
             $"Tempo totale: {_totalStopwatch.Elapsed.TotalSeconds:F2}s, " +
             $"Velocità: {processedRecords / Math.Max(0.001, _totalStopwatch.Elapsed.TotalSeconds):F1} record/sec");
 
-        return result ?? string.Empty;
+        return (result ?? string.Empty, aggregation);
     }
 
     #region PROCESSAMENTO DATI
@@ -436,7 +443,10 @@ public class IntelligentDataAggregator(
         {
             sb.AppendLine("### 🚗 DRIVING");
             sb.AppendLine($"- Avg Speed: {aggregation.AvgSpeed:F1} km/h");
-            sb.AppendLine($"- Odometer: {aggregation.OdometerReadings.Min():F0}-{aggregation.OdometerReadings.Max():F0} km");
+            
+            if (aggregation.OdometerReadings.Count != 0)
+                sb.AppendLine($"- Odometer: {aggregation.OdometerReadings.Min():F0}-{aggregation.OdometerReadings.Max():F0} km");
+            
             if (aggregation.GeographicZones.Count != 0)
             {
                 var topZone = aggregation.GeographicZones.OrderByDescending(kvp => kvp.Value).First();

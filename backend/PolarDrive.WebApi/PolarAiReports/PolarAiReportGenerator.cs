@@ -22,16 +22,16 @@ public class PolarAiReportGenerator
         _httpClient = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
     }
 
-    public async Task<string> GeneratePolarAiInsightsAsync(int vehicleId)
+    public async Task<(string humanReport, AiGoogleAdsPayload adsPayload, GoogleAdsTeslaDataAggregation aggregation)> GeneratePolarAiInsightsAsync(int vehicleId)
     {
         var source = "PolarAiReportGenerator.GenerateInsights";
         await _logger.Info(source, "Avvio analisi AI ottimizzata", $"VehicleId: {vehicleId}");
 
-        // ✅ SEMPRE FINESTRA MENSILE - Calcola il periodo di monitoraggio per il context
+        // Finestra mensile - Calcola il periodo di monitoraggio per il context
         var monitoringPeriod = await CalculateMonitoringPeriod(vehicleId);
         var analysisLevel = GetAnalysisLevel(monitoringPeriod);
 
-        // ✅ SEMPRE 720 ORE (30 GIORNI) - Finestra dati unificata
+        // 720 ore (30 GIORNI) - Finestra dati unificata
         const int dataHours = MONTHLY_HOURS_THRESHOLD;
 
         await _logger.Info(source, $"Analisi {analysisLevel}",
@@ -43,32 +43,29 @@ public class PolarAiReportGenerator
         if (historicalData.Count == 0)
         {
             await _logger.Warning(source, "Nessun dato nel periodo mensile specificato", null);
-            return "Nessun dato disponibile per l'analisi mensile.";
+            return ("Nessun dato disponibile per l'analisi mensile.", new AiGoogleAdsPayload(), new GoogleAdsTeslaDataAggregation());
         }
 
-        // 🎯 AGGREGAZIONE INTELLIGENTE
+        // 🎯 Aggregazione intelligente
         var aggregator = new IntelligentDataAggregator(_dbContext);
-        var aggregatedGoogleAdsData = await aggregator.GenerateGoogleAdsAggregatedInsights(historicalData, vehicleId);
+        var (aggregatedGoogleAdsData, aggregation) = await aggregator.GenerateGoogleAdsAggregatedInsights(historicalData, vehicleId);
 
         await _logger.Info(source, "Aggregazione dati per Google Ads completata",
             $"Da {historicalData.Sum(d => d.Length)} char → {aggregatedGoogleAdsData.Length} char");
 
-        // 🧠 GENERAZIONE INSIGHTS AI con dati ottimizzati
-        var aiInsights = await GenerateSummary(aggregatedGoogleAdsData, monitoringPeriod, analysisLevel, dataHours, vehicleId);
-
-        // 🔗 ATTACH FINALE
+        // 🧠 Generazione Insights AI con dati ottimizzati
+        var aiResponseRaw = await GenerateSummary(aggregatedGoogleAdsData, monitoringPeriod, analysisLevel, dataHours);
+        var (humanReport, adsPayload) = ExtractAdsPayloadFromResponse(aiResponseRaw);
         var aiInsightsSection = new StringBuilder();
-        aiInsightsSection.AppendLine(aiInsights);
+        aiInsightsSection.AppendLine(humanReport);
 
         await _logger.Info(source, "Sezione Insights stampata nel PDF",
-            $"AI Insights Section: {aiInsights.Length}");
+            $"AI Insights Section: {aiInsightsSection.Length}");
 
-        return aiInsightsSection.ToString();
+        return (aiInsightsSection.ToString(), adsPayload, aggregation);
     }
 
-    /// <summary>
-    /// Calcola il periodo totale di monitoraggio (per context)
-    /// </summary>
+    // Calcola il periodo totale di monitoraggio (per context)
     private async Task<TimeSpan> CalculateMonitoringPeriod(int vehicleId)
     {
         try
@@ -84,11 +81,9 @@ public class PolarAiReportGenerator
         }
     }
 
-    /// <summary>
-    /// Determina il livello di analisi basato sul periodo TOTALE di monitoraggio
-    /// I dati utilizzati sono sempre gli ultimi 30 giorni, ma il livello cambia in base alla maturità
-    /// </summary>
-    private string GetAnalysisLevel(TimeSpan totalMonitoringPeriod)
+    // Determina il livello di analisi basato sul periodo totale di monitoraggio
+    // I dati utilizzati sono sempre gli ultimi 30 giorni, ma il livello cambia in base alla maturità
+    private static string GetAnalysisLevel(TimeSpan totalMonitoringPeriod)
     {
         return totalMonitoringPeriod.TotalDays switch
         {
@@ -100,9 +95,7 @@ public class PolarAiReportGenerator
         };
     }
 
-    /// <summary>
-    /// Recupera il primo record del veicolo per calcolare l'età di monitoraggio
-    /// </summary>
+    // Recupera il primo record del veicolo per calcolare l'età di monitoraggio
     private async Task<DateTime> GetFirstVehicleRecord(int vehicleId)
     {
         try
@@ -121,10 +114,8 @@ public class PolarAiReportGenerator
         }
     }
 
-    /// <summary>
-    /// Recupera gli ultimi N. record disponibili per il veicolo ( lo standard equivale a 720 record ),
-    /// rispettando il loro periodo reale di riferimento e restituendoli in ordine cronologico crescente.
-    /// </summary>
+    // Recupera gli ultimi N. record disponibili per il veicolo ( lo standard equivale a 720 record ),
+    // rispettando il loro periodo reale di riferimento e restituendoli in ordine cronologico crescente.
     private async Task<List<string>> GetHistoricalData(int vehicleId, int recordsCount)
     {
         try
@@ -143,15 +134,15 @@ public class PolarAiReportGenerator
             {
                 await _logger.Warning("PolarAiReportGenerator.GetHistoricalData",
                     $"Nessun dato disponibile per VehicleId={vehicleId}", null);
-                return new List<string>();
+                return [];
             }
 
             // Riordino in senso cronologico (dal più vecchio al più recente)
             itemsDesc.Reverse();
 
             var firstTs = itemsDesc.First().Timestamp;
-            var lastTs  = itemsDesc.Last().Timestamp;
-            var span    = lastTs - firstTs;
+            var lastTs = itemsDesc.Last().Timestamp;
+            var span = lastTs - firstTs;
 
             await _logger.Info("PolarAiReportGenerator.GetHistoricalData",
                 $"Recupero ultimi {recordsCount} record disponibili (periodo effettivo)",
@@ -168,11 +159,11 @@ public class PolarAiReportGenerator
         {
             await _logger.Error("PolarAiReportGenerator.GetHistoricalData",
                 "Errore recupero ultimi N record", ex.ToString());
-            return new List<string>();
+            return [];
         }
     }
 
-    private async Task<string> GenerateSummary(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
+    private async Task<string> GenerateSummary(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
     {
         if (string.IsNullOrWhiteSpace(aggregatedData))
             return "Nessun dato veicolo disponibile per l'analisi mensile.";
@@ -181,8 +172,7 @@ public class PolarAiReportGenerator
             $"Generazione analisi {analysisLevel}",
             $"Dati aggregati: {aggregatedData.Length} caratteri, Finestra: {dataHours}h");
 
-        // ✅ PROMPT ottimizzato per dati aggregati
-        var prompt = BuildOptimizedPrompt(aggregatedData, totalMonitoringPeriod, analysisLevel, dataHours, vehicleId);
+        var prompt = BuildOptimizedPrompt(aggregatedData, totalMonitoringPeriod, analysisLevel, dataHours);
         var maxRetries = _ollamaConfig.MaxRetries;
         var retryDelaySeconds = _ollamaConfig.RetryDelaySeconds;
 
@@ -202,7 +192,7 @@ public class PolarAiReportGenerator
                 return aiResponse;
             }
 
-            // ✅ Se non è l'ultimo tentativo, aspetta prima di riprovare
+            // Se non è l'ultimo tentativo, aspetta prima di riprovare
             if (attempt < maxRetries)
             {
                 await _logger.Warning("PolarAiReportGenerator.GenerateSummary",
@@ -211,115 +201,120 @@ public class PolarAiReportGenerator
             }
         }
 
-        // ✅ Dopo tutti i tentativi falliti, lancia eccezione
+        // Dopo tutti i tentativi falliti, lancia eccezione
         var errorMessage = $"Polar AI non disponibile dopo {maxRetries} tentativi per {analysisLevel}";
         await _logger.Error("PolarAiReportGenerator.GenerateSummary", errorMessage, null);
         throw new InvalidOperationException(errorMessage);
     }
 
-    /// <summary>
-    /// Promp per dati aggregati
-    /// </summary>
-    private string BuildOptimizedPrompt(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours, int vehicleId)
+    // Promp per dati aggregati
+    private static string BuildOptimizedPrompt(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
     {
         return $@"
-# POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
+        # POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
 
-**RUOLO**: Senior Data Analyst specializzato in veicoli Tesla con sistema di analisi mensile unificata.
+        **RUOLO**: Senior Data Analyst specializzato in veicoli Tesla con sistema di analisi mensile unificata.
 
-## PARAMETRI ANALISI MENSILE UNIFICATA
-**Livello**: {analysisLevel}  
-**Periodo Totale Monitoraggio**: {totalMonitoringPeriod.TotalDays:F1} giorni  
-**Finestra Dati Analizzata**: SEMPRE {dataHours} ore (30 giorni)  
-**Dataset**: Dati aggregati e processati da C# per ottimizzazione AI  
-**Strategia**: Analisi mensile consistente con context evolutivo
+        ## PARAMETRI ANALISI MENSILE UNIFICATA
+        **Livello**: {analysisLevel}  
+        **Periodo Totale Monitoraggio**: {totalMonitoringPeriod.TotalDays:F1} giorni  
+        **Finestra Dati Analizzata**: SEMPRE {dataHours} ore (30 giorni)  
+        **Dataset**: Dati aggregati e processati da C# per ottimizzazione AI  
+        **Strategia**: Analisi mensile consistente con context evolutivo
 
-## ⚠️ IMPORTANTE: CERTIFICAZIONE DATAPOLAR NEL PDF
-**NOTA CRITICA**: La certificazione DataPolar sarà automaticamente inclusa nel PDF finale attraverso il sistema HTML. 
-Tu concentrati sull'analisi tecnica e comportamentale utilizzando i dati aggregati forniti.
+        ## ⚠️ IMPORTANTE: CERTIFICAZIONE DATAPOLAR NEL PDF
+        **NOTA CRITICA**: La certificazione DataPolar sarà automaticamente inclusa nel PDF finale attraverso il sistema HTML. 
+        Tu concentrati sull'analisi tecnica e comportamentale utilizzando i dati aggregati forniti.
 
-## OBIETTIVI ANALISI MENSILE PER LIVELLO
-{GetMonthlyFocus(analysisLevel, totalMonitoringPeriod)}
+        ## OBIETTIVI ANALISI MENSILE PER LIVELLO
+        {GetMonthlyFocus(analysisLevel, totalMonitoringPeriod)}
 
-## 🎯 DATI AGGREGATI TESLA (OTTIMIZZATI PER AI)
-I seguenti dati sono stati pre-processati da algoritmi C# per ridurre la complessità computazionale, 
-mantenendo tutte le informazioni essenziali per un'analisi approfondita:
+        ## 🎯 DATI AGGREGATI TESLA (OTTIMIZZATI PER AI)
+        I seguenti dati sono stati pre-processati da algoritmi C# per ridurre la complessità computazionale, 
+        mantenendo tutte le informazioni essenziali per un'analisi approfondita:
 
-{aggregatedData}
+        {aggregatedData}
 
-## FORMATO OUTPUT RICHIESTO (ANALISI MENSILE)
+        ## ISTRUZIONI OUTPUT CRITICHE
 
-### 1. 🎯 EXECUTIVE SUMMARY MENSILE
-- **Stato attuale**: Valutazione performance ultimo mese
-- **Evoluzione**: Cambiamenti rispetto al contesto di {totalMonitoringPeriod.TotalDays:F0} giorni totali
-- **KPI mensili**: Batteria, efficienza, utilizzo (con percentuali precise)
-- **Alert mensili**: Anomalie o trend preoccupanti nel periodo
+        La tua risposta deve contenere ESATTAMENTE due parti separate da una riga vuota:
 
-### 2. 📈 APPRENDIMENTO PROGRESSIVO (CONTESTO {analysisLevel.ToUpper()})
-- **Sessioni Adaptive Profile**: Analisi delle sessioni negli ultimi 30 giorni
-- **Pattern mensili identificati**: Cosa emerge dall'analisi mensile
-- **Correlazioni mensili**: Relazioni scoperte nei 30 giorni
-- **Evoluzione comportamentale**: Come il comportamento è cambiato nel mese
-- **Baseline mensili**: Parametri di riferimento del periodo
+        PARTE 1 (riga 1): JSON compatto su singola riga, senza testo prima o dopo.
+        Formato: {{{{""driver_profile"": ""value"", ""driver_profile_confidence"": 0.XX, ...}}}}
 
-### 3. 🔍 ANALISI COMPORTAMENTALE MENSILE
-- **Cicli mensili**: Pattern identificati nei 30 giorni
-- **Efficienza energetica mensile**: Trend e ottimizzazioni del mese
-- **Modalità di guida mensile**: Stili di utilizzo e impatti
-- **Ricarica intelligente mensile**: Strategie e risultati
+        PARTE 2 (dopo riga vuota): Report markdown che inizia DIRETTAMENTE con ### 1. 🎯 EXECUTIVE SUMMARY MENSILE
 
-### 4. 🔮 INSIGHTS PREDITTIVI (BASE MENSILE)
-- **Previsioni prossimo mese**: Basate sui dati mensili correnti
-- **Trend batteria mensile**: Con proiezioni
-- **Manutenzione predittiva**: Basata su usage mensile
-- **Ottimizzazioni comportamentali**: ROI per il prossimo periodo
+        NON scrivere:
+        - ""PRIMA: JSON per Google Ads""
+        - ""DOPO: Report di Analisi""
+        - Alcun testo introduttivo
 
-### 5. 🔋 ANALISI BATTERIA & RICARICA (PERFORMANCE MENSILE)
-- **Salute batteria mensile**: Trend e degrado nel periodo
-- **Efficienza ricarica mensile**: Performance degli ultimi 30 giorni
-- **Cicli di vita mensili**: Analisi dei cicli nel periodo
-- **Confronto mensile**: Performance vs standard
+        SCHEMA JSON (usa valori CONCRETI basati sui dati):
+        {{{{
+          ""driver_profile"": ""efficient|aggressive|urban_commuter|balanced"",
+          ""driver_profile_confidence"": <0.00-1.00>,
+          ""optimization_priority"": ""high|medium|low"",
+          ""optimization_priority_score"": <0-100>,
+          ""predicted_monthly_usage_change"": <-100 a +100>,
+          ""segment"": ""tech_enthusiast|cost_conscious|performance_seeker|mainstream"",
+          ""segment_confidence"": <0.00-1.00>,
+          ""charging_behavior_score"": <0-100>,
+          ""efficiency_potential"": <0-100>,
+          ""battery_health_trend"": ""improving|stable|declining"",
+          ""engagement_level"": ""high|medium|low"",
+          ""conversion_likelihood"": <0.00-1.00>,
+          ""lifetime_value_indicator"": ""high|medium|low"",
+          ""recommended_campaign_type"": ""awareness|consideration|conversion"",
+          ""key_motivators"": [""cost_savings"", ""performance"", ""sustainability"", ""technology""]
+        }}}}
+        
+        CONTENUTO REPORT (inizia con ### 1. 🎯 EXECUTIVE SUMMARY MENSILE):
 
-### 6. 💡 RACCOMANDAZIONI STRATEGICHE (FOCUS MENSILE)
-- **Immediate**: Basate su pattern mensili identificati
-- **Prossimo mese**: Ottimizzazioni per i prossimi 30 giorni
-- **Trimestrali**: Strategie a medio termine
-- **ROI mensile**: Stima benefici implementazione
+        ### 1. 🎯 EXECUTIVE SUMMARY MENSILE
+        - Qualità del dataset raccolto nel mese (densità dati, copertura oraria, varietà contesti)
+        - Evoluzione della raccolta dati rispetto al contesto totale di {totalMonitoringPeriod.TotalDays:F0} giorni
+        - KPI marketing: potenziale di targeting, segmentazione utenti, affidabilità insights
+        - Valore strategico dei dati per campagne Google Ads (impression potenziali, accuracy targeting)
 
-## VINCOLI DI QUALITÀ MENSILE
+        ### 2. 📊 INSIGHTS PER TARGETING & SEGMENTAZIONE
+        - Profili comportamentali identificati negli ultimi 30 giorni (frequent driver, urban commuter, long-distance, efficiency-focused)
+        - Pattern di mobilità utili per geo-targeting (zone più frequentate, orari picco, raggio operativo)
+        - Segmenti di pubblico ideali per campagne (es: ""early adopters tech"", ""cost-conscious EV users"", ""performance seekers"")
+        - Opportunità di remarketing basate su comportamenti ricorrenti
 
-**PRECISIONE NUMERICA**: Tutti i valori devono riferirsi al periodo mensile analizzato
-**FOCUS TECNICO**: Concentrati su analisi comportamentale e predittiva utilizzando i dati aggregati
-**PROFESSIONALITÀ**: Linguaggio tecnico ma accessibile
-**ACTIONABILITY**: Ogni insight mensile deve tradursi in azioni concrete
-**COMPARABILITÀ**: Fornire benchmark e confronti mensili
-**COMPLETEZZA**: Analizzare TUTTI i dati aggregati forniti, inclusi SMS Adaptive Profile
+        ### 3. 🎯 RACCOMANDAZIONI CAMPAGNE GOOGLE ADS
+        - Strategie di targeting consigliate (keywords, audience, posizionamenti geografici)
+        - Messaggi pubblicitari allineati ai pattern rilevati (es: enfasi su risparmio, performance, sostenibilità)
+        - Budget allocation ottimale per fasce orarie e zone ad alta densità di utilizzo
+        - Tipo di campagna consigliata (awareness, consideration, conversion) in base al livello di engagement
 
-## ELEMENTI OBBLIGATORI MENSILI
+        ### 4. 🔮 PREVISIONI & OTTIMIZZAZIONI
+        - Trend di utilizzo previsto per il prossimo mese (aumento/diminuzione attività, nuovi pattern)
+        - Opportunità stagionali o eventi ricorrenti da sfruttare nelle campagne
+        - Raccomandazioni su diversificazione profili guida per arricchire dataset (ADAPTIVE_PROFILE)
+        - Potenziale ROI marketing stimato in base alla qualità dati raccolti
 
-✅ **Metriche quantitative mensili** in ogni sezione  
-✅ **Trend mensili** con direzione e velocità  
-✅ **Confidence level** per previsioni mensili  
-✅ **Impatto economico mensile** stimato  
-✅ **Timeline mensile** per implementazione raccomandazioni
-✅ **Integrazione completa dati aggregati forniti**
+        ### 5. 💡 AZIONI IMMEDIATE PER MASSIMIZZARE IL VALORE
+        - Strategie per incrementare varietà dataset (coinvolgimento utilizzatori terzi, espansione geografica)
+        - Miglioramenti nella raccolta dati per insights più accurati (frequenza ADAPTIVE_PROFILE, copertura oraria)
+        - Quick wins pubblicitari basati su dati già disponibili (campagne locali, retargeting comportamentale)
+        - Priorità investimento marketing nei prossimi 30 giorni
 
-## STILE OUTPUT
+        ### 6. 📈 ADAPTIVE PROFILE - IMPATTO SU MARKETING (se presente nei dati)
+        - Contributo sessioni ADAPTIVE_PROFILE alla qualità del dataset per Google Ads
+        - Frequenza utilizzo e copertura temporale ottimale per campagne data-driven
+        - Profili utilizzatori diversificati e valore per segmentazione audience
+        - Raccomandazioni per massimizzare ROI delle sessioni ADAPTIVE_PROFILE
 
-- **Formato**: Markdown professionale con emoji per sezioni
-- **Lunghezza**: Proporzionale al livello {analysisLevel} ma focus mensile
-- **Tone**: Consultoriale esperto, focus su performance mensili
-- **Focus**: Valore business e ottimizzazione basata su dati aggregati
-- **Evita**: Ripetizione delle statistiche di certificazione (già nel PDF)
-
-**GENERA REPORT {analysisLevel.ToUpper()} CON FOCUS TECNICO-COMPORTAMENTALE**
-**ANALIZZA I DATI AGGREGATI NEL CONTESTO DI {totalMonitoringPeriod.TotalDays:F0} GIORNI TOTALI**
-**LA CERTIFICAZIONE DATAPOLAR È GIÀ INCLUSA NEL PDF - CONCENTRATI SULL'ANALISI**";
+        **VINCOLI:**
+        - Linguaggio marketing-oriented, focalizzato su ROI e performance campagne
+        - Ogni insight deve tradursi in azioni concrete per Google Ads (targeting, messaging, budget)
+        - Evitare dettagli tecnici Tesla: concentrati su come i dati influenzano le strategie pubblicitarie
+        - Collegare sempre pattern di mobilità a opportunità di marketing (es: ""alta frequenza zona X"" → ""geo-targeting campagna locale"")
+        - Quantificare il valore commerciale dei dati raccolti (potenziale reach, accuracy segmentazione, conversion likelihood)";
     }
 
-    /// <summary>
-    /// Genera con Polar AI usando prompt ottimizzato
-    /// </summary>
+    // Genera con Polar AI usando prompt ottimizzato
     private async Task<string?> TryGenerateWithPolarAi(string prompt, string analysisLevel)
     {
         try
@@ -398,10 +393,8 @@ mantenendo tutte le informazioni essenziali per un'analisi approfondita:
         }
     }
 
-    /// <summary>
-    /// Focus specifico per analisi mensile in base al livello
-    /// </summary>
-    private string GetMonthlyFocus(string analysisLevel, TimeSpan totalMonitoringPeriod)
+    // Focus specifico per analisi mensile in base al livello
+    private static string GetMonthlyFocus(string analysisLevel, TimeSpan totalMonitoringPeriod)
     {
         var contextInfo = totalMonitoringPeriod.TotalDays < 30
             ? $"(Dati parziali: {totalMonitoringPeriod.TotalDays:F0} giorni disponibili)"
@@ -416,5 +409,74 @@ mantenendo tutte le informazioni essenziali per un'analisi approfondita:
             "Analisi Comprensiva" => $"- Intelligence mensile avanzata nel contesto storico {contextInfo}\n- Ottimizzazione strategica basata su analisi mensile approfondita",
             _ => $"- Analisi mensile generale {contextInfo}"
         };
+    }
+
+    private static (string humanReport, AiGoogleAdsPayload) ExtractAdsPayloadFromResponse(string aiResponse)
+    {
+        try
+        {
+            // Step 1: Rimuovi prefissi testuali dell'AI
+            aiResponse = System.Text.RegularExpressions.Regex.Replace(
+                aiResponse,
+                @"(PRIMA|PARTE\s*1|JSON\s*per\s*Google\s*Ads):.*?\n*",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase
+            );
+            
+            aiResponse = System.Text.RegularExpressions.Regex.Replace(
+                aiResponse,
+                @"(DOPO|PARTE\s*2|Report\s*di\s*Analisi):.*?\n*",
+                "",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase
+            );
+            
+            // Step 2: Trova le graffe del JSON
+            var jsonStart = aiResponse.IndexOf("{");
+            if (jsonStart < 0)
+                return (aiResponse, new AiGoogleAdsPayload());
+            
+            // Conta graffe bilanciate per trovare la fine
+            int braceCount = 0;
+            int jsonEnd = -1;
+            
+            for (int i = jsonStart; i < aiResponse.Length; i++)
+            {
+                if (aiResponse[i] == '{') braceCount++;
+                if (aiResponse[i] == '}') braceCount--;
+                
+                if (braceCount == 0)
+                {
+                    jsonEnd = i + 1;
+                    break;
+                }
+            }
+            
+            if (jsonEnd <= jsonStart)
+                return (aiResponse, new AiGoogleAdsPayload());
+            
+            // Step 3: Estrai e deserializza JSON
+            var jsonStr = aiResponse.Substring(jsonStart, jsonEnd - jsonStart);
+            var payload = JsonSerializer.Deserialize<AiGoogleAdsPayload>(jsonStr);
+            
+            if (payload != null)
+            {
+                // Step 4: Rimuovi JSON dalla risposta
+                var beforeJson = aiResponse.Substring(0, jsonStart).Trim();
+                var afterJson = aiResponse.Substring(jsonEnd).Trim();
+                
+                // Se c'è solo spazio prima del JSON, ignora
+                var humanReport = string.IsNullOrWhiteSpace(beforeJson) 
+                    ? afterJson 
+                    : beforeJson + "\n\n" + afterJson;
+                
+                return (humanReport.Trim(), payload);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore parsing JSON: {ex.Message}");
+        }
+
+        return (aiResponse, new AiGoogleAdsPayload());
     }
 }

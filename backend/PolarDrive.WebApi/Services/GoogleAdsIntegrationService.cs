@@ -1,24 +1,25 @@
 using PolarDrive.Data.DbContexts;
 using PolarDrive.WebApi.Helpers;
+using PolarDrive.WebApi.PolarAiReports;
 
 namespace PolarDrive.WebApi.Services;
 
 public class GoogleAdsIntegrationService
 {
-    private readonly HttpClient? _httpClient;
-    private readonly PolarDriveLogger? _logger;
+    private readonly HttpClient _httpClient = new();
+    private readonly PolarDriveLogger _logger = new();
 
-    public async Task SendAiInsightsToGoogleAds(string aiInsights, int vehicleId, string vin)
+    public async Task SendAiInsightsToGoogleAds(AiGoogleAdsPayload aiPayload, GoogleAdsTeslaDataAggregation aggregation, int vehicleId, string vin)
     {
         var source = "GoogleAdsIntegrationService.SendAiInsightsToGoogleAds";
-        
-        await _logger!.Info(source, $"📤 Invio insights a Google Ads per {vin}");
+
+        await _logger.Info(source, $"📤 Invio insights a Google Ads per {vin}");
 
         var customerId = Environment.GetEnvironmentVariable("GOOGLE_ADS_CUSTOMER_ID") ?? "YOUR_CUSTOMER_ID";
         var conversionAction = Environment.GetEnvironmentVariable("GOOGLE_ADS_CONVERSION_ACTION") ?? "YOUR_CONVERSION_ACTION";
 
         // Estrai metriche chiave dagli insights AI
-        var metrics = ExtractMetricsFromAiInsights(aiInsights);
+        var metrics = ExtractMetricsFromAiAndAggregation(aiPayload, aggregation);
 
         var conversion = new
         {
@@ -26,16 +27,38 @@ public class GoogleAdsIntegrationService
             conversion_date_time = DateTime.Now,
             conversion_value = metrics.ConversionValue,
             currency_code = "EUR",
-            
             user_identifiers = new[]
+        {
+        new { hashed_email = GenericHelpers.ComputeContentHash($"vehicle_{vehicleId}@datapolar.com") }
+        },
+            custom_variables = new object[]
             {
-                new { hashed_email =  GenericHelpers.ComputeContentHash($"vehicle_{vehicleId}@datapolar.com") }
-            },
+                new { tag = "battery_health", number_value = metrics.BatteryHealthScore },
+                new { tag = "efficiency_score", number_value = metrics.EfficiencyScore },
+                new { tag = "usage_intensity", string_value = metrics.UsageIntensity },
+                new { tag = "ai_driver_profile", string_value = aiPayload.DriverProfile },
+                new { tag = "ai_driver_confidence", number_value = aiPayload.DriverProfileConfidence },
+                new { tag = "ai_optimization_priority", string_value = aiPayload.OptimizationPriority },
+                new { tag = "ai_optimization_score", number_value = aiPayload.OptimizationPriorityScore },
+                new { tag = "ai_usage_change_pred", number_value = aiPayload.PredictedMonthlyUsageChange },
+                new { tag = "ai_segment", string_value = aiPayload.Segment },
+                new { tag = "ai_segment_confidence", number_value = aiPayload.SegmentConfidence },
+                new { tag = "ai_charging_score", number_value = aiPayload.ChargingBehaviorScore },
+                new { tag = "ai_efficiency_potential", number_value = aiPayload.EfficiencyPotential },
+                new { tag = "ai_battery_trend", string_value = aiPayload.BatteryHealthTrend },
+                new { tag = "ai_engagement", string_value = aiPayload.EngagementLevel },
+                new { tag = "ai_conversion_likelihood", number_value = aiPayload.ConversionLikelihood },
+                new { tag = "ai_ltv_indicator", string_value = aiPayload.LifetimeValueIndicator },
+                new { tag = "ai_campaign_type", string_value = aiPayload.RecommendedCampaignType },
+                new { tag = "ai_motivator_1", string_value = aiPayload.KeyMotivators.ElementAtOrDefault(0) ?? "" },
+                new { tag = "ai_motivator_2", string_value = aiPayload.KeyMotivators.ElementAtOrDefault(1) ?? "" },
+                new { tag = "ai_motivator_3", string_value = aiPayload.KeyMotivators.ElementAtOrDefault(2) ?? "" }
+            }
         };
 
         try
         {
-            var response = await _httpClient!.PostAsJsonAsync(
+            var response = await _httpClient.PostAsJsonAsync(
                 $"https://googleads.googleapis.com/v15/customers/{customerId}:uploadConversions",
                 new { conversions = new[] { conversion } }
             );
@@ -51,55 +74,28 @@ public class GoogleAdsIntegrationService
         }
     }
 
-    private static GoogleAdsMetrics ExtractMetricsFromAiInsights(string aiInsights)
+    private static GoogleAdsMetrics ExtractMetricsFromAiAndAggregation(AiGoogleAdsPayload aiPayload, GoogleAdsTeslaDataAggregation aggregation)
     {
-        var metrics = new GoogleAdsMetrics();
-
-        if (aiInsights.Contains("Batteria ben carica") || aiInsights.Contains("Buon livello"))
-            metrics.BatteryHealthScore = 85;
-        else if (aiInsights.Contains("Batteria scarica"))
-            metrics.BatteryHealthScore = 45;
-        else
-            metrics.BatteryHealthScore = 70;
-
-        if (aiInsights.Contains("EUR/kWh"))
+        var metrics = new GoogleAdsMetrics
         {
-            var match = System.Text.RegularExpressions.Regex.Match(aiInsights, @"(\d+\.?\d*)\s*EUR/kWh");
-            if (match.Success && decimal.TryParse(match.Groups[1].Value, out var cost))
-                metrics.EfficiencyScore = cost < 0.40m ? 90 : cost < 0.55m ? 70 : 50;
-        }
+            BatteryHealthScore = aggregation.BatteryLevelAvg > 0 ? (double)aggregation.BatteryLevelAvg : 70,
+            EfficiencyScore = aiPayload.EfficiencyPotential > 0 ? aiPayload.EfficiencyPotential :
+                            (aggregation.BatteryLevels.Any() ? Math.Min(100, (double)aggregation.BatteryLevelAvg + 15) : 70),
+            UsageIntensity = aggregation.AvgSpeed switch { > 60 => "high", > 30 => "medium", _ => "low" }
+        };
 
-        if (aiInsights.Contains("Uso quotidiano"))
-            metrics.UsageIntensity = "high";
-        else if (aiInsights.Contains("Uso occasionale"))
-            metrics.UsageIntensity = "low";
-        else
-            metrics.UsageIntensity = "medium";
-
-        if (aiInsights.Contains("Ricarica veloce"))
-            metrics.ChargingPattern = "fast_frequent";
-        else if (aiInsights.Contains("Ricarica completa"))
-            metrics.ChargingPattern = "slow_complete";
-        else
-            metrics.ChargingPattern = "balanced";
-
-        metrics.RiskLevel = aiInsights.Contains("controllo necessario") ? "high" : "low";
-        metrics.PredictedMaintenance = aiInsights.Contains("Manutenzione") ? "yes" : "no";
-        metrics.OptimizationPotential = aiInsights.Contains("ottimizzazione") ? 25 : 10;
-        
-        metrics.ConversionValue = CalculateConversionValue(metrics);
-
+        metrics.ConversionValue = CalculateConversionValue(metrics) * (1 + aiPayload.ConversionLikelihood);
         return metrics;
     }
 
     private static double CalculateConversionValue(GoogleAdsMetrics metrics)
     {
         double value = 30.0;
-        
+
         if (metrics.BatteryHealthScore > 80) value += 20;
         if (metrics.EfficiencyScore > 80) value += 15;
         if (metrics.UsageIntensity == "high") value += 10;
-        
+
         return value;
     }
 }
@@ -109,9 +105,5 @@ public class GoogleAdsMetrics
     public double BatteryHealthScore { get; set; }
     public double EfficiencyScore { get; set; }
     public string UsageIntensity { get; set; } = "";
-    public string ChargingPattern { get; set; } = "";
-    public string RiskLevel { get; set; } = "";
-    public string PredictedMaintenance { get; set; } = "";
-    public double OptimizationPotential { get; set; }
     public double ConversionValue { get; set; }
 }
