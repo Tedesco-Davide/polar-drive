@@ -111,7 +111,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
             ms.Position = 0;
             zipContent = ms.ToArray();
         }
-        
+
         var allOutages = await db.OutagePeriods.ToListAsync();
 
         var existingOutage = allOutages.FirstOrDefault(o =>
@@ -130,31 +130,34 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 
         if (existingOutage != null)
         {
-            if (zipFile != null && existingOutage.ZipContent != null && existingOutage.ZipContent.Length > 0)
+            if (zipFile != null)
             {
-                await _logger.Warning("UploadOutageZipController", "Outage already has a ZIP file.");
-                return BadRequest("SERVER ERROR → OUTAGE ALREADY HAS A ZIP FILE!");
-            }
-
-            if (zipFile != null && zipContent != null)
-            {
-                existingOutage.ZipContent = zipContent;
-                existingOutage.ZipHash = zipHash;
-                await db.SaveChangesAsync();
-
-                await _logger.Info("UploadOutageZipController", "ZIP file added to existing outage.", $"OutageId: {existingOutage.Id}, File: {existingOutage.ZipContent}");
-
-                return Ok(new
+                if (existingOutage.ZipContent != null && existingOutage.ZipContent.Length > 0)
                 {
-                    id = existingOutage.Id,
-                    outageType,
-                    outageBrand,
-                    outageStart = parsedStart.ToString("dd/MM/yyyy"),
-                    outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
-                    hasZip = existingOutage.ZipContent != null && existingOutage.ZipContent.Length > 0,
-                    zipSize = existingOutage.ZipContent?.Length ?? 0,
-                    isNew = false
-                });
+                    await _logger.Warning("UploadOutageZipController", "Outage already has a ZIP file.");
+                    return BadRequest("SERVER ERROR → OUTAGE ALREADY HAS A ZIP FILE!");
+                }
+
+                if (zipContent != null)
+                {
+                    existingOutage.ZipContent = zipContent;
+                    existingOutage.ZipHash = zipHash;
+                    await db.SaveChangesAsync();
+
+                    await _logger.Info("UploadOutageZipController", "ZIP file added to existing outage.", $"OutageId: {existingOutage.Id}, File: {existingOutage.ZipContent}");
+
+                    return Ok(new
+                    {
+                        id = existingOutage.Id,
+                        outageType,
+                        outageBrand,
+                        outageStart = parsedStart.ToString("dd/MM/yyyy"),
+                        outageEnd = parsedEnd?.ToString("dd/MM/yyyy"),
+                        hasZip = existingOutage.ZipContent != null && existingOutage.ZipContent.Length > 0,
+                        zipSize = existingOutage.ZipContent?.Length ?? 0,
+                        isNew = false
+                    });
+                }
             }
 
             return Ok(new

@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef } from "react";
 import { TFunction } from "i18next";
-import { NotebookPen, Clock, Upload, Download, ShieldCheck, CircleX, CircleCheck } from "lucide-react";
+import {
+  NotebookPen,
+  Clock,
+  Upload,
+  Download,
+  ShieldCheck,
+  CircleX,
+  CircleCheck,
+} from "lucide-react";
 import { format } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
@@ -38,7 +46,8 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedOutageForNotes, setSelectedOutageForNotes] = useState<OutagePeriod | null>(null);
+  const [selectedOutageForNotes, setSelectedOutageForNotes] =
+    useState<OutagePeriod | null>(null);
   const [uploadingZip, setUploadingZip] = useState<Set<number>>(new Set());
   const fileInputRefs = useRef<Map<number, HTMLInputElement | null>>(new Map());
 
@@ -66,9 +75,19 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
       setTotalPages(data.totalPages);
       setCurrentPage(data.page);
 
-      logFrontendEvent("AdminOutagePeriodsTable", "INFO", "Outages loaded", `Page: ${data.page}, Total: ${data.totalCount}`);
+      logFrontendEvent(
+        "AdminOutagePeriodsTable",
+        "INFO",
+        "Outages loaded",
+        `Page: ${data.page}, Total: ${data.totalCount}`
+      );
     } catch (err) {
-      logFrontendEvent("AdminOutagePeriodsTable", "ERROR", "Failed to load outages", String(err));
+      logFrontendEvent(
+        "AdminOutagePeriodsTable",
+        "ERROR",
+        "Failed to load outages",
+        String(err)
+      );
     } finally {
       setLoading(false);
     }
@@ -92,16 +111,12 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
   const handleZipUpload = async (outageId: number, file: File) => {
     if (!file.name.endsWith(".zip")) {
       alert(t("admin.validation.invalidZipType"));
-      const inputEl = fileInputRefs.current.get(outageId);
-      if (inputEl) inputEl.value = "";
       return;
     }
 
     const maxSize = 50 * 1024 * 1024;
     if (file.size > maxSize) {
       alert(t("admin.outagePeriods.validation.zipTooLarge"));
-      const inputEl = fileInputRefs.current.get(outageId);
-      if (inputEl) inputEl.value = "";
       return;
     }
 
@@ -111,10 +126,13 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
       const formData = new FormData();
       formData.append("zipFile", file);
 
-      const response = await fetch(`/api/outageperiods/${outageId}/upload-zip`, {
-        method: "POST",
-        body: formData,
-      });
+      const response = await fetch(
+        `/api/uploadoutagezip/${outageId}/upload-zip`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -128,11 +146,11 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
 
       await fetchOutages(currentPage, query);
       alert(t("admin.successUploadZip"));
-
       const inputEl = fileInputRefs.current.get(outageId);
       if (inputEl) inputEl.value = "";
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Upload failed";
+      const errorMessage =
+        error instanceof Error ? error.message : "Upload failed";
       alert(`${t("admin.genericUploadError")}: ${errorMessage}`);
       const inputEl = fileInputRefs.current.get(outageId);
       if (inputEl) inputEl.value = "";
@@ -153,7 +171,9 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
     if (!confirm(t("admin.outagePeriods.confirmResolveManually"))) return;
 
     try {
-      const response = await fetch(`/api/outageperiods/${outageId}/resolve`, { method: "PATCH" });
+      const response = await fetch(`/api/outageperiods/${outageId}/resolve`, {
+        method: "PATCH",
+      });
       if (!response.ok) throw new Error("Failed to resolve outage");
 
       await fetchOutages(currentPage, query);
@@ -173,7 +193,11 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
 
       if (!response.ok) throw new Error("HTTP " + response.status);
 
-      setOutages(prev => prev.map(o => o.id === updated.id ? { ...o, notes: updated.notes } : o));
+      setOutages((prev) =>
+        prev.map((o) =>
+          o.id === updated.id ? { ...o, notes: updated.notes } : o
+        )
+      );
       setSelectedOutageForNotes(null);
       setTimeout(() => fetchOutages(currentPage, query), 200);
     } catch {
@@ -190,10 +214,16 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
           {t("admin.outagePeriods.tableHeader")} ➜ {totalCount}
         </h1>
         <button
-          className={`px-6 py-2 rounded font-medium transition-colors ${showAddForm ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"} text-white`}
+          className={`px-6 py-2 rounded font-medium transition-colors ${
+            showAddForm
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-blue-500 hover:bg-blue-600"
+          } text-white`}
           onClick={() => setShowAddForm(!showAddForm)}
         >
-          {showAddForm ? t("admin.outagePeriods.undoAddNewOutage") : t("admin.outagePeriods.addNewOutage")}
+          {showAddForm
+            ? t("admin.outagePeriods.undoAddNewOutage")
+            : t("admin.outagePeriods.addNewOutage")}
         </button>
       </div>
 
@@ -201,7 +231,9 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
         <AdminOutagePeriodsAddForm
           t={t}
           onSubmitSuccess={() => setShowAddForm(false)}
-          refreshOutagePeriods={async () => await fetchOutages(currentPage, query)}
+          refreshOutagePeriods={async () =>
+            await fetchOutages(currentPage, query)
+          }
         />
       )}
 
@@ -209,29 +241,48 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">
-              <button onClick={handleRefresh} disabled={isRefreshing} className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50">
-                <span className="uppercase text-xs tracking-widest">{t("admin.tableRefreshButton")}</span>
-              </button> {t("admin.actions")}
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+              >
+                <span className="uppercase text-xs tracking-widest">
+                  {t("admin.tableRefreshButton")}
+                </span>
+              </button>{" "}
+              {t("admin.actions")}
             </th>
             <th className="p-4">{t("admin.outagePeriods.autoDetected")}</th>
             <th className="p-4">{t("admin.outagePeriods.status")}</th>
             <th className="p-4">{t("admin.outagePeriods.outageType")}</th>
             <th className="p-4">{t("admin.outagePeriods.outageBrand")}</th>
-            <th className="p-4">{t("admin.outagePeriods.outageStart")} - {t("admin.outagePeriods.outageEnd")}</th>
+            <th className="p-4">
+              {t("admin.outagePeriods.outageStart")} -{" "}
+              {t("admin.outagePeriods.outageEnd")}
+            </th>
             <th className="p-4">{t("admin.outagePeriods.duration")}</th>
-            <th className="p-4">{t("admin.outagePeriods.companyVatNumber")} — {t("admin.outagePeriods.vehicleVIN")}</th>
+            <th className="p-4">
+              {t("admin.outagePeriods.companyVatNumber")} —{" "}
+              {t("admin.outagePeriods.vehicleVIN")}
+            </th>
           </tr>
         </thead>
         <tbody>
           {outages.map((outage) => (
-            <tr key={outage.id} className="border-b border-gray-300 dark:border-gray-600">
+            <tr
+              key={outage.id}
+              className="border-b border-gray-300 dark:border-gray-600"
+            >
               <td className="px-4 py-3">
                 <div className="flex items-center space-x-2">
                   {!outage.hasZipFile && (
-                    <label className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded cursor-pointer" title={t("admin.uploadZip")}>
+                    <label
+                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded cursor-pointer"
+                      title={t("admin.uploadZip")}
+                    >
                       <input
                         ref={(el) => {
-                            fileInputRefs.current.set(outage.id, el);
+                          if (el) fileInputRefs.current.set(outage.id, el);
                         }}
                         type="file"
                         accept=".zip"
@@ -242,29 +293,51 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
                         }}
                         disabled={uploadingZip.has(outage.id)}
                       />
-                      {uploadingZip.has(outage.id) ? <Clock size={16} className="animate-spin" /> : <Upload size={16} />}
+                      {uploadingZip.has(outage.id) ? (
+                        <Clock size={16} className="animate-spin" />
+                      ) : (
+                        <Upload size={16} />
+                      )}
                     </label>
                   )}
                   {outage.hasZipFile && (
-                    <button onClick={() => handleZipDownload(outage.id)} className="p-2 bg-green-500 hover:bg-green-600 text-white rounded" title={t("admin.downloadZip")}>
+                    <button
+                      onClick={() => handleZipDownload(outage.id)}
+                      className="p-2 bg-green-500 hover:bg-green-600 text-white rounded"
+                      title={t("admin.downloadZip")}
+                    >
                       <Download size={16} />
                     </button>
                   )}
                   {outage.status === "OUTAGE-ONGOING" && (
-                    <button onClick={() => handleResolveOutage(outage.id)} className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded" title={t("admin.outagePeriods.resolveManually")}>
+                    <button
+                      onClick={() => handleResolveOutage(outage.id)}
+                      className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                      title={t("admin.outagePeriods.resolveManually")}
+                    >
                       <ShieldCheck size={16} />
                     </button>
                   )}
-                  <button onClick={() => setSelectedOutageForNotes(outage)} className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded" title={t("admin.openNotesModal")}>
+                  <button
+                    onClick={() => setSelectedOutageForNotes(outage)}
+                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                    title={t("admin.openNotesModal")}
+                  >
                     <NotebookPen size={16} />
                   </button>
                 </div>
               </td>
               <td className="px-4 py-3">
-                {outage.autoDetected ? <CircleCheck size={30} className="text-green-600" /> : <CircleX size={30} className="text-red-600" />}
+                {outage.autoDetected ? (
+                  <CircleCheck size={30} className="text-green-600" />
+                ) : (
+                  <CircleX size={30} className="text-red-600" />
+                )}
               </td>
               <td className="px-4 py-3">
-                <Chip className={getStatusColor(outage.status)}>{outage.status}</Chip>
+                <Chip className={getStatusColor(outage.status)}>
+                  {outage.status}
+                </Chip>
               </td>
               <td className="px-4 py-3">{outage.outageType}</td>
               <td className="px-4 py-3">{outage.outageBrand}</td>
@@ -272,11 +345,25 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
                 <div className="text-sm">
                   <div>{formatDateTime(outage.outageStart)}</div>
                   <div className="text-gray-500">↓</div>
-                  <div>{outage.outageEnd ? formatDateTime(outage.outageEnd) : <Chip className="bg-red-100 text-red-700 border-red-500 text-xs">ONGOING</Chip>}</div>
+                  <div>
+                    {outage.outageEnd ? (
+                      formatDateTime(outage.outageEnd)
+                    ) : (
+                      <Chip className="bg-red-100 text-red-700 border-red-500 text-xs">
+                        ONGOING
+                      </Chip>
+                    )}
+                  </div>
                 </div>
               </td>
               <td className="px-4 py-3">
-                {outage.outageEnd ? <span>{formatDuration(outage.durationMinutes)}</span> : <Chip className="bg-red-100 text-red-700 border-red-500">ONGOING</Chip>}
+                {outage.outageEnd ? (
+                  <span>{formatDuration(outage.durationMinutes)}</span>
+                ) : (
+                  <Chip className="bg-red-100 text-red-700 border-red-500">
+                    ONGOING
+                  </Chip>
+                )}
               </td>
               <td className="px-4 py-3">
                 {outage.outageType === "Outage Vehicle" ? (
@@ -285,7 +372,9 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
                     <div className="text-gray-500">—</div>
                     <div className="font-mono">{outage.vin}</div>
                   </div>
-                ) : <span className="text-gray-500">—</span>}
+                ) : (
+                  <span className="text-gray-500">—</span>
+                )}
               </td>
             </tr>
           ))}
@@ -293,12 +382,29 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPrev={() => setCurrentPage(p => Math.max(1, p - 1))} onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))} />
-        <SearchBar query={query} setQuery={setQuery} resetPage={() => setCurrentPage(1)} />
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+        />
+        <SearchBar
+          query={query}
+          setQuery={setQuery}
+          resetPage={() => setCurrentPage(1)}
+        />
       </div>
 
       {selectedOutageForNotes && (
-        <NotesModal entity={selectedOutageForNotes} isOpen={!!selectedOutageForNotes} title={t("admin.outagePeriods.notes.modalTitle")} notesField="notes" onSave={handleNotesUpdate} onClose={() => setSelectedOutageForNotes(null)} t={t} />
+        <NotesModal
+          entity={selectedOutageForNotes}
+          isOpen={!!selectedOutageForNotes}
+          title={t("admin.outagePeriods.notes.modalTitle")}
+          notesField="notes"
+          onSave={handleNotesUpdate}
+          onClose={() => setSelectedOutageForNotes(null)}
+          t={t}
+        />
       )}
     </div>
   );
