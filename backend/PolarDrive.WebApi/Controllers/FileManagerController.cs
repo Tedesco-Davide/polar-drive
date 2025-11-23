@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
 
 namespace PolarDrive.WebApi.Controllers;
@@ -34,10 +35,31 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
 
             var totalCount = await query.CountAsync();
 
+            // ✅ FIX: Projection per ESCLUDERE ZipContent dal caricamento
+            // Questo previene il timeout HTTP 500 quando ci sono ZIP da 1GB+ nel database
             var items = await query
                 .OrderByDescending(j => j.RequestedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(j => new AdminFileManager
+                {
+                    Id = j.Id,
+                    RequestedAt = j.RequestedAt,
+                    PeriodStart = j.PeriodStart,
+                    PeriodEnd = j.PeriodEnd,
+                    CompanyList = j.CompanyList,
+                    VinList = j.VinList,
+                    BrandList = j.BrandList,
+                    Status = j.Status,
+                    RequestedBy = j.RequestedBy,
+                    StartedAt = j.StartedAt,
+                    CompletedAt = j.CompletedAt,
+                    TotalPdfCount = j.TotalPdfCount,
+                    IncludedPdfCount = j.IncludedPdfCount,
+                    ZipFileSizeMB = j.ZipFileSizeMB,
+                    ZipHash = j.ZipHash,
+                    Notes = j.Notes,
+                })
                 .ToListAsync();
 
             return Ok(new PaginatedResponse<AdminFileManager>
@@ -85,36 +107,7 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
         db.AdminFileManager.Add(job);
         await db.SaveChangesAsync();
 
-        // Avvia processamento in background
-        _ = Task.Run(async () =>
-        {
-            try
-            {
-                await ProcessPdfDownloadAsync(job.Id);
-            }
-            catch (Exception ex)
-            {
-                _ = logger.Error(ex.ToString(), $"Errore critico nel processamento del job {job.Id}");
-
-                try
-                {
-                    using var scope = HttpContext.RequestServices.CreateScope();
-                    var scopedDb = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
-                    var failedJob = await scopedDb.AdminFileManager.FindAsync(job.Id);
-                    if (failedJob != null)
-                    {
-                        failedJob.Status = "FAILED";
-                        failedJob.CompletedAt = DateTime.Now;
-                        failedJob.Notes = $"Errore critico: {ex.Message}";
-                        await scopedDb.SaveChangesAsync();
-                    }
-                }
-                catch (Exception dbEx)
-                {
-                    _ = logger.Error(dbEx.ToString(), $"Impossibile aggiornare stato FAILED per job {job.Id}");
-                }
-            }
-        });
+        _ = logger.Info("FileManagerController.AdminFileManagerRequest", $"Job {job.Id} queued");
 
         return CreatedAtAction(nameof(GetById), new { id = job.Id }, job);
     }
@@ -309,12 +302,16 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
                 job.IncludedPdfCount = includedCount;
             }
 
-            job.ZipContent = zipStream.ToArray();
-            job.ZipFileSizeMB = Math.Round((decimal)job.ZipContent.Length / (1024 * 1024), 2);
+            var zipBytes = zipStream.ToArray();
+            job.ZipFileSizeMB = Math.Round((decimal)zipBytes.Length / (1024 * 1024), 2);
+            job.ZipHash = GenericHelpers.ComputeContentHash(zipBytes);
 
-            using var sha256 = System.Security.Cryptography.SHA256.Create();
-            var hashBytes = sha256.ComputeHash(job.ZipContent);
-            job.ZipHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
+            // ✅ Salva metadati prima del contenuto
+            job.Status = "UPLOADING";
+            await scopedDb.SaveChangesAsync();
+
+            // ✅ Poi salva il contenuto in una transazione separata
+            job.ZipContent = zipBytes;
             job.Status = "COMPLETED";
             job.CompletedAt = DateTime.Now;
 

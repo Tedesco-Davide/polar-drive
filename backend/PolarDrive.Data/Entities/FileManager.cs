@@ -36,5 +36,5 @@ public class AdminFileManager
 
     // Metodi helper
     public bool IsCompleted => Status == "COMPLETED";
-    public bool HasZipFile => ZipContent != null && ZipContent.Length > 0;
+    public bool HasZipFile { get; set; }
 }

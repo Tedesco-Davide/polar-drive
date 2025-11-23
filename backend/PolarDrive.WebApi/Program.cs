@@ -79,8 +79,13 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
     ?? throw new InvalidOperationException("❌ Connection string 'DefaultConnection' not found. Please set ConnectionStrings__DefaultConnection environment variable.");
 
 builder.Services.AddDbContext<PolarDriveDbContext>(options =>
-    options.UseSqlServer(connectionString)
-);
+{
+    options.UseSqlServer(connectionString, sqlOptions =>
+    {
+        // Timeout 5 minuti per query su SQL server
+        sqlOptions.CommandTimeout(300);
+    });
+});
 
 // Hangfire
 builder.Services.AddHangfire(config => config.UseMemoryStorage());
@@ -104,6 +109,7 @@ builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
 // SCHEDULER
 builder.Services.AddHostedService<PolarDriveScheduler>();
+builder.Services.AddHostedService<FileManagerBackgroundService>();
 
 // SERVIZI OUTAGES
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();

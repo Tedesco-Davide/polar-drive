@@ -21,16 +21,26 @@ const PDF_JOB_STATUS = {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case PDF_JOB_STATUS.PENDING: return "bg-yellow-100 text-yellow-700 border-yellow-500";
-    case PDF_JOB_STATUS.PROCESSING: return "bg-blue-100 text-blue-700 border-blue-500";
-    case PDF_JOB_STATUS.COMPLETED: return "bg-green-100 text-green-700 border-green-500";
-    case PDF_JOB_STATUS.FAILED: return "bg-red-100 text-red-700 border-red-500";
-    case PDF_JOB_STATUS.CANCELLED: return "bg-gray-100 text-gray-700 border-gray-500";
-    default: return "bg-gray-100 text-polarNight border-gray-400";
+    case PDF_JOB_STATUS.PENDING:
+      return "bg-yellow-100 text-yellow-700 border-yellow-500";
+    case PDF_JOB_STATUS.PROCESSING:
+      return "bg-blue-100 text-blue-700 border-blue-500";
+    case PDF_JOB_STATUS.COMPLETED:
+      return "bg-green-100 text-green-700 border-green-500";
+    case PDF_JOB_STATUS.FAILED:
+      return "bg-red-100 text-red-700 border-red-500";
+    case PDF_JOB_STATUS.CANCELLED:
+      return "bg-gray-100 text-gray-700 border-gray-500";
+    default:
+      return "bg-gray-100 text-polarNight border-gray-400";
   }
 };
 
-const formatJobDuration = (startedAt: string | null, completedAt: string | null, status?: string): string => {
+const formatJobDuration = (
+  startedAt: string | null,
+  completedAt: string | null,
+  status?: string
+): string => {
   if (status === "PENDING") return "-";
   if (!startedAt) return "-";
 
@@ -64,9 +74,10 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
   const [localJobs, setLocalJobs] = useState<FileManager[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [selectedJobForNotes, setSelectedJobForNotes] = useState<FileManager | null>(null);
+  const [selectedJobForNotes, setSelectedJobForNotes] =
+    useState<FileManager | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-
+  const [downloadingJobId, setDownloadingJobId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -91,9 +102,19 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
       setTotalPages(data.totalPages);
       setCurrentPage(data.page);
 
-      logFrontendEvent("AdminFileManagerTable", "INFO", "Jobs loaded", `Page: ${data.page}, Total: ${data.totalCount}`);
+      logFrontendEvent(
+        "AdminFileManagerTable",
+        "INFO",
+        "Jobs loaded",
+        `Page: ${data.page}, Total: ${data.totalCount}`
+      );
     } catch (err) {
-      logFrontendEvent("AdminFileManagerTable", "ERROR", "Failed to load jobs", String(err));
+      logFrontendEvent(
+        "AdminFileManagerTable",
+        "ERROR",
+        "Failed to load jobs",
+        String(err)
+      );
     } finally {
       setLoading(false);
     }
@@ -103,6 +124,23 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
     fetchJobs(currentPage, query);
   }, [currentPage, query]);
 
+  useEffect(() => {
+    const hasActiveJobs = localJobs.some(
+      (j) =>
+        j.status === "PENDING" ||
+        j.status === "PROCESSING" ||
+        j.status === "UPLOADING"
+    );
+
+    if (!hasActiveJobs) return;
+
+    const interval = setInterval(() => {
+      fetchJobs(currentPage, query);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [localJobs, currentPage, query]);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchJobs(currentPage, query);
@@ -110,34 +148,52 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
   };
 
   const handleDownloadZip = async (job: FileManager) => {
-    if (!job.hasZipFile || job.status !== "COMPLETED") return;
+    setDownloadingJobId(job.id);
+    if (
+      job.status !== "COMPLETED" ||
+      !job.zipFileSizeMB ||
+      job.zipFileSizeMB <= 0
+    )
+      return;
 
     try {
-      const response = await fetch(`/api/filemanager/${job.id}/download`, { method: "GET" });
+      const response = await fetch(`/api/filemanager/${job.id}/download`, {
+        method: "GET",
+      });
       if (!response.ok) throw new Error("Download failed");
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `PDF_Reports_${formatDateToDisplay(job.periodStart).replace(/\//g, "")}_${formatDateToDisplay(job.periodEnd).replace(/\//g, "")}_${job.id}.zip`;
+      link.download = `PDF_Reports_${formatDateToDisplay(
+        job.periodStart
+      ).replace(/\//g, "")}_${formatDateToDisplay(job.periodEnd).replace(
+        /\//g,
+        ""
+      )}_${job.id}.zip`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
+      setDownloadingJobId(null);
     } catch {
+      setDownloadingJobId(null);
       alert("Errore durante il download del file ZIP");
     }
   };
 
   const handleDeleteJob = async (job: FileManager) => {
-    if (!confirm("Sei sicuro di voler eliminare questo job di download PDF?")) return;
+    if (!confirm("Sei sicuro di voler eliminare questo job di download PDF?"))
+      return;
 
     try {
-      const response = await fetch(`/api/filemanager/${job.id}`, { method: "DELETE" });
+      const response = await fetch(`/api/filemanager/${job.id}`, {
+        method: "DELETE",
+      });
       if (!response.ok) throw new Error("Delete failed");
 
-      setLocalJobs(prev => prev.filter(j => j.id !== job.id));
+      setLocalJobs((prev) => prev.filter((j) => j.id !== job.id));
       setTimeout(() => fetchJobs(currentPage, query), 200);
     } catch {
       alert("Errore durante l'eliminazione del job");
@@ -158,15 +214,26 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
           {t("admin.filemanager.tableHeader")} ➜ {totalCount}
         </h1>
         <button
-          className={`${showCreateModal ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"} text-white px-6 py-2 rounded`}
+          className={`${
+            showCreateModal
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-blue-500 hover:bg-blue-600"
+          } text-white px-6 py-2 rounded`}
           onClick={() => setShowCreateModal(!showCreateModal)}
         >
-          {showCreateModal ? t("admin.filemanager.modal.undoDownloadModal") : t("admin.filemanager.modal.createDownloadModal")}
+          {showCreateModal
+            ? t("admin.filemanager.modal.undoDownloadModal")
+            : t("admin.filemanager.modal.createDownloadModal")}
         </button>
       </div>
 
       {showCreateModal && (
-        <AdminFileManagerModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} onSuccess={handleCreateSuccess} t={t} />
+        <AdminFileManagerModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={handleCreateSuccess}
+          t={t}
+        />
       )}
 
       <div className="bg-softWhite dark:bg-polarNight rounded-lg overflow-hidden shadow-lg">
@@ -184,7 +251,7 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
                   </span>
                 </button>{" "}
                 {t("admin.actions")}
-              </th>                
+              </th>
               <th className="p-4">{t("admin.filemanager.requestedAt")}</th>
               <th className="p-4">{t("admin.filemanager.status")}</th>
               <th className="p-4">{t("admin.filemanager.period")}</th>
@@ -195,30 +262,57 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
           </thead>
           <tbody>
             {localJobs.map((job) => (
-              <tr key={job.id} className="border-b border-gray-300 dark:border-gray-600">
+              <tr
+                key={job.id}
+                className="border-b border-gray-300 dark:border-gray-600"
+              >
                 <td className="p-4 space-x-2">
-                  {job.status === "COMPLETED" && job.hasZipFile ? (
-                    <button className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600" title={t("admin.downloadZip")} onClick={() => handleDownloadZip(job)}>
-                      <FileArchive size={16} />
+                  {job.status === "COMPLETED" &&
+                  job.zipFileSizeMB &&
+                  job.zipFileSizeMB > 0 ? (
+                    <button
+                      className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:opacity-50"
+                      title={t("admin.downloadZip")}
+                      onClick={() => handleDownloadZip(job)}
+                      disabled={downloadingJobId === job.id}
+                    >
+                      {downloadingJobId === job.id ? (
+                        <span className="animate-spin">⏳</span>
+                      ) : (
+                        <FileArchive size={16} />
+                      )}
                     </button>
                   ) : (
-                    <button className="p-2 bg-gray-400 text-softWhite rounded cursor-not-allowed" disabled>
+                    <button
+                      className="p-2 bg-gray-400 text-softWhite rounded cursor-not-allowed"
+                      disabled
+                    >
                       <Download size={16} />
                     </button>
                   )}
-                  <button className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600" onClick={() => setSelectedJobForNotes(job)}>
+                  <button
+                    className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600"
+                    onClick={() => setSelectedJobForNotes(job)}
+                  >
                     <NotebookPen size={16} />
                   </button>
-                  <button className="p-2 bg-red-500 text-softWhite rounded hover:bg-red-600" onClick={() => handleDeleteJob(job)}>
+                  <button
+                    className="p-2 bg-red-500 text-softWhite rounded hover:bg-red-600"
+                    onClick={() => handleDeleteJob(job)}
+                  >
                     <Trash2 size={16} />
                   </button>
                 </td>
                 <td className="p-4">
                   {formatDateToDisplay(job.requestedAt)}
-                  <div>{t("admin.from")} {job.requestedBy || "-"}</div>
+                  <div>
+                    {t("admin.from")} {job.requestedBy || "-"}
+                  </div>
                 </td>
                 <td className="p-4">
-                  <Chip className={getStatusColor(job.status)}>{job.status}</Chip>
+                  <Chip className={getStatusColor(job.status)}>
+                    {job.status}
+                  </Chip>
                 </td>
                 <td className="p-4">
                   <div className="text-xs">
@@ -227,35 +321,70 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
                     <div>{formatDateToDisplay(job.periodEnd)}</div>
                   </div>
                 </td>
-                <td className="p-4">{formatJobDuration(job.startedAt, job.completedAt, job.status)}</td>
+                <td className="p-4">
+                  {formatJobDuration(
+                    job.startedAt,
+                    job.completedAt,
+                    job.status
+                  )}
+                </td>
                 <td className="p-4">
                   <div className="space-y-1">
-                    <div>📄PDF tot {job.includedPdfCount || 0} / {job.totalPdfCount || 0}</div>
-                    <div className="flex">📦{job.zipFileSizeMB && <div>{formatFileSize(job.zipFileSizeMB)}</div>}</div>
+                    <div>
+                      📄PDF tot {job.includedPdfCount || 0} /{" "}
+                      {job.totalPdfCount || 0}
+                    </div>
+                    <div className="flex">
+                      📦
+                      {job.zipFileSizeMB && (
+                        <div>{formatFileSize(job.zipFileSizeMB)}</div>
+                      )}
+                    </div>
                   </div>
                 </td>
                 <td className="p-4">
                   <div className="flex flex-wrap gap-2">
                     {job.companyList && job.companyList.length > 0 ? (
                       job.companyList.slice(0, 2).map((company, idx) => (
-                        <Chip key={idx} className="bg-blue-100 text-blue-700 border-blue-300">{company}</Chip>
+                        <Chip
+                          key={idx}
+                          className="bg-blue-100 text-blue-700 border-blue-300"
+                        >
+                          {company}
+                        </Chip>
                       ))
                     ) : (
-                      <Chip className="bg-blue-100 text-blue-700 border-blue-300">ALL-COMPANIES</Chip>
+                      <Chip className="bg-blue-100 text-blue-700 border-blue-300">
+                        ALL-COMPANIES
+                      </Chip>
                     )}
                     {job.brandList && job.brandList.length > 0 ? (
                       job.brandList.slice(0, 2).map((brand, idx) => (
-                        <Chip key={idx} className="bg-purple-100 text-purple-700 border-purple-300">{brand}</Chip>
+                        <Chip
+                          key={idx}
+                          className="bg-purple-100 text-purple-700 border-purple-300"
+                        >
+                          {brand}
+                        </Chip>
                       ))
                     ) : (
-                      <Chip className="bg-purple-100 text-purple-700 border-purple-300">ALL-BRAND</Chip>
+                      <Chip className="bg-purple-100 text-purple-700 border-purple-300">
+                        ALL-BRAND
+                      </Chip>
                     )}
                     {job.vinList && job.vinList.length > 0 ? (
                       job.vinList.map((vin, idx) => (
-                        <Chip key={idx} className="bg-orange-100 text-orange-700 border-orange-300">{vin}</Chip>
+                        <Chip
+                          key={idx}
+                          className="bg-orange-100 text-orange-700 border-orange-300"
+                        >
+                          {vin}
+                        </Chip>
                       ))
                     ) : (
-                      <Chip className="bg-orange-100 text-orange-700 border-orange-300">ALL-VIN</Chip>
+                      <Chip className="bg-orange-100 text-orange-700 border-orange-300">
+                        ALL-VIN
+                      </Chip>
                     )}
                   </div>
                 </td>
@@ -266,8 +395,17 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPrev={() => setCurrentPage(p => Math.max(1, p - 1))} onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))} />
-        <SearchBar query={query} setQuery={setQuery} resetPage={() => setCurrentPage(1)} />
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+        />
+        <SearchBar
+          query={query}
+          setQuery={setQuery}
+          resetPage={() => setCurrentPage(1)}
+        />
       </div>
 
       {selectedJobForNotes && (
@@ -283,7 +421,11 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ notes: updated.notes }),
               });
-              setLocalJobs(prev => prev.map(j => j.id === updated.id ? { ...j, notes: updated.notes } : j));
+              setLocalJobs((prev) =>
+                prev.map((j) =>
+                  j.id === updated.id ? { ...j, notes: updated.notes } : j
+                )
+              );
               setSelectedJobForNotes(null);
               setTimeout(() => fetchJobs(currentPage, query), 200);
             } catch {
