@@ -54,8 +54,8 @@ public class PolarAiReportGenerator
             $"Da {historicalData.Sum(d => d.Length)} char → {aggregatedGoogleAdsData.Length} char");
 
         // 🧠 Generazione Insights AI con dati ottimizzati
-        var aiResponseRaw = await GenerateSummary(aggregatedGoogleAdsData, monitoringPeriod, analysisLevel, dataHours);
-        var (humanReport, adsPayload) = ExtractAdsPayloadFromResponse(aiResponseRaw);
+        var adsPayload = await GenerateGoogleAdsPayload(aggregatedGoogleAdsData, monitoringPeriod, analysisLevel, dataHours);
+        var humanReport = await GenerateHumanReport(aggregatedGoogleAdsData, monitoringPeriod, analysisLevel, dataHours);
         var aiInsightsSection = new StringBuilder();
         aiInsightsSection.AppendLine(humanReport);
 
@@ -114,6 +114,94 @@ public class PolarAiReportGenerator
         }
     }
 
+    private async Task<AiGoogleAdsPayload> GenerateGoogleAdsPayload(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
+    {
+        var prompt = BuildGenericAdsPayloadPrompt(aggregatedData, totalMonitoringPeriod, analysisLevel, dataHours);
+        var maxRetries = _ollamaConfig.MaxRetries;
+        var retryDelaySeconds = _ollamaConfig.RetryDelaySeconds;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            var aiResponse = await TryGenerateWithPolarAi(prompt, $"AdsPayload-{analysisLevel}");
+            if (!string.IsNullOrWhiteSpace(aiResponse))
+            {
+                try
+                {
+                    var cleaned = aiResponse.Trim();
+                    if (cleaned.StartsWith("```json")) cleaned = cleaned.Substring(7);
+                    if (cleaned.StartsWith("```")) cleaned = cleaned.Substring(3);
+                    if (cleaned.EndsWith("```")) cleaned = cleaned.Substring(0, cleaned.Length - 3);
+                    cleaned = cleaned.Trim();
+
+                    var payload = JsonSerializer.Deserialize<AiGoogleAdsPayload>(cleaned);
+                    if (payload != null) return payload;
+                }
+                catch { }
+            }
+
+            if (attempt < maxRetries)
+                await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
+        }
+
+        return new AiGoogleAdsPayload();
+    }
+
+    private static string BuildGenericAdsPayloadPrompt(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
+    {
+        return $@"
+        # POLAR AI - GOOGLE ADS DATA EXTRACTION
+
+        Analizza i seguenti dati Tesla aggregati e restituisci SOLO un JSON valido, senza alcun testo prima o dopo.
+
+        ## PARAMETRI
+        - Livello: {analysisLevel}
+        - Periodo Totale: {totalMonitoringPeriod.TotalDays:F1} giorni
+        - Finestra: {dataHours} ore
+
+        ## DATI AGGREGATI
+        {aggregatedData}
+
+        ## OUTPUT RICHIESTO
+        Restituisci SOLO il seguente JSON compilato con valori concreti basati sui dati (nessun testo aggiuntivo):
+
+        {{
+            ""driver_profile"": ""efficient|aggressive|urban_commuter|balanced"",
+            ""driver_profile_confidence"": 0.XX,
+            ""optimization_priority"": ""high|medium|low"",
+            ""optimization_priority_score"": XX,
+            ""predicted_monthly_usage_change"": XX,
+            ""segment"": ""tech_enthusiast|cost_conscious|performance_seeker|mainstream"",
+            ""segment_confidence"": 0.XX,
+            ""charging_behavior_score"": XX,
+            ""efficiency_potential"": XX,
+            ""battery_health_trend"": ""improving|stable|declining"",
+            ""engagement_level"": ""high|medium|low"",
+            ""conversion_likelihood"": 0.XX,
+            ""lifetime_value_indicator"": ""high|medium|low"",
+            ""recommended_campaign_type"": ""awareness|consideration|conversion"",
+            ""key_motivators"": [""motivator1"", ""motivator2"", ""motivator3""]
+        }}";
+    }
+
+    private async Task<string> GenerateHumanReport(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
+    {
+        var prompt = BuildHumanReportPrompt(aggregatedData, totalMonitoringPeriod, analysisLevel, dataHours);
+        var maxRetries = _ollamaConfig.MaxRetries;
+        var retryDelaySeconds = _ollamaConfig.RetryDelaySeconds;
+
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
+        {
+            var aiResponse = await TryGenerateWithPolarAi(prompt, $"HumanReport-{analysisLevel}");
+            if (!string.IsNullOrWhiteSpace(aiResponse))
+                return aiResponse;
+
+            if (attempt < maxRetries)
+                await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
+        }
+
+        throw new InvalidOperationException($"Polar AI non disponibile dopo {maxRetries} tentativi per {analysisLevel}");
+    }
+
     // Recupera gli ultimi N. record disponibili per il veicolo ( lo standard equivale a 720 record ),
     // rispettando il loro periodo reale di riferimento e restituendoli in ordine cronologico crescente.
     private async Task<List<string>> GetHistoricalData(int vehicleId, int recordsCount)
@@ -163,52 +251,8 @@ public class PolarAiReportGenerator
         }
     }
 
-    private async Task<string> GenerateSummary(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
-    {
-        if (string.IsNullOrWhiteSpace(aggregatedData))
-            return "Nessun dato veicolo disponibile per l'analisi mensile.";
-
-        await _logger.Info("PolarAiReportGenerator.GenerateSummary",
-            $"Generazione analisi {analysisLevel}",
-            $"Dati aggregati: {aggregatedData.Length} caratteri, Finestra: {dataHours}h");
-
-        var prompt = BuildOptimizedPrompt(aggregatedData, totalMonitoringPeriod, analysisLevel, dataHours);
-        var maxRetries = _ollamaConfig.MaxRetries;
-        var retryDelaySeconds = _ollamaConfig.RetryDelaySeconds;
-
-        for (int attempt = 1; attempt <= maxRetries; attempt++)
-        {
-            await _logger.Info("PolarAiReportGenerator.GenerateSummary",
-                $"Tentativo {attempt}/{maxRetries} con Polar AI",
-                $"Analisi: {analysisLevel}");
-
-            var aiResponse = await TryGenerateWithPolarAi(prompt, analysisLevel);
-
-            if (!string.IsNullOrWhiteSpace(aiResponse))
-            {
-                await _logger.Info("PolarAiReportGenerator.GenerateSummary",
-                    $"Polar AI completata al tentativo {attempt}",
-                    $"Risposta: {aiResponse.Length} caratteri");
-                return aiResponse;
-            }
-
-            // Se non è l'ultimo tentativo, aspetta prima di riprovare
-            if (attempt < maxRetries)
-            {
-                await _logger.Warning("PolarAiReportGenerator.GenerateSummary",
-                    $"Tentativo {attempt} fallito, riprovo tra {retryDelaySeconds}s", null);
-                await Task.Delay(TimeSpan.FromSeconds(retryDelaySeconds));
-            }
-        }
-
-        // Dopo tutti i tentativi falliti, lancia eccezione
-        var errorMessage = $"Polar AI non disponibile dopo {maxRetries} tentativi per {analysisLevel}";
-        await _logger.Error("PolarAiReportGenerator.GenerateSummary", errorMessage, null);
-        throw new InvalidOperationException(errorMessage);
-    }
-
     // Promp per dati aggregati
-    private static string BuildOptimizedPrompt(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
+    private static string BuildHumanReportPrompt(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
     {
         return $@"
         # POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
@@ -235,39 +279,6 @@ public class PolarAiReportGenerator
 
         {aggregatedData}
 
-        ## ISTRUZIONI OUTPUT CRITICHE
-
-        La tua risposta deve contenere ESATTAMENTE due parti separate da una riga vuota:
-
-        PARTE 1 (riga 1): JSON compatto su singola riga, senza testo prima o dopo.
-        Formato: {{{{""driver_profile"": ""value"", ""driver_profile_confidence"": 0.XX, ...}}}}
-
-        PARTE 2 (dopo riga vuota): Report markdown che inizia DIRETTAMENTE con ### 1. 🎯 EXECUTIVE SUMMARY MENSILE
-
-        NON scrivere:
-        - ""PRIMA: JSON per Google Ads""
-        - ""DOPO: Report di Analisi""
-        - Alcun testo introduttivo
-
-        SCHEMA JSON (usa valori CONCRETI basati sui dati):
-        {{{{
-          ""driver_profile"": ""efficient|aggressive|urban_commuter|balanced"",
-          ""driver_profile_confidence"": <0.00-1.00>,
-          ""optimization_priority"": ""high|medium|low"",
-          ""optimization_priority_score"": <0-100>,
-          ""predicted_monthly_usage_change"": <-100 a +100>,
-          ""segment"": ""tech_enthusiast|cost_conscious|performance_seeker|mainstream"",
-          ""segment_confidence"": <0.00-1.00>,
-          ""charging_behavior_score"": <0-100>,
-          ""efficiency_potential"": <0-100>,
-          ""battery_health_trend"": ""improving|stable|declining"",
-          ""engagement_level"": ""high|medium|low"",
-          ""conversion_likelihood"": <0.00-1.00>,
-          ""lifetime_value_indicator"": ""high|medium|low"",
-          ""recommended_campaign_type"": ""awareness|consideration|conversion"",
-          ""key_motivators"": [""cost_savings"", ""performance"", ""sustainability"", ""technology""]
-        }}}}
-        
         CONTENUTO REPORT (inizia con ### 1. 🎯 EXECUTIVE SUMMARY MENSILE):
 
         ### 1. 🎯 EXECUTIVE SUMMARY MENSILE
@@ -409,74 +420,5 @@ public class PolarAiReportGenerator
             "Analisi Comprensiva" => $"- Intelligence mensile avanzata nel contesto storico {contextInfo}\n- Ottimizzazione strategica basata su analisi mensile approfondita",
             _ => $"- Analisi mensile generale {contextInfo}"
         };
-    }
-
-    private static (string humanReport, AiGoogleAdsPayload) ExtractAdsPayloadFromResponse(string aiResponse)
-    {
-        try
-        {
-            // Step 1: Rimuovi prefissi testuali dell'AI
-            aiResponse = System.Text.RegularExpressions.Regex.Replace(
-                aiResponse,
-                @"(PRIMA|PARTE\s*1|JSON\s*per\s*Google\s*Ads):.*?\n*",
-                "",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase
-            );
-            
-            aiResponse = System.Text.RegularExpressions.Regex.Replace(
-                aiResponse,
-                @"(DOPO|PARTE\s*2|Report\s*di\s*Analisi):.*?\n*",
-                "",
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase
-            );
-            
-            // Step 2: Trova le graffe del JSON
-            var jsonStart = aiResponse.IndexOf("{");
-            if (jsonStart < 0)
-                return (aiResponse, new AiGoogleAdsPayload());
-            
-            // Conta graffe bilanciate per trovare la fine
-            int braceCount = 0;
-            int jsonEnd = -1;
-            
-            for (int i = jsonStart; i < aiResponse.Length; i++)
-            {
-                if (aiResponse[i] == '{') braceCount++;
-                if (aiResponse[i] == '}') braceCount--;
-                
-                if (braceCount == 0)
-                {
-                    jsonEnd = i + 1;
-                    break;
-                }
-            }
-            
-            if (jsonEnd <= jsonStart)
-                return (aiResponse, new AiGoogleAdsPayload());
-            
-            // Step 3: Estrai e deserializza JSON
-            var jsonStr = aiResponse.Substring(jsonStart, jsonEnd - jsonStart);
-            var payload = JsonSerializer.Deserialize<AiGoogleAdsPayload>(jsonStr);
-            
-            if (payload != null)
-            {
-                // Step 4: Rimuovi JSON dalla risposta
-                var beforeJson = aiResponse.Substring(0, jsonStart).Trim();
-                var afterJson = aiResponse.Substring(jsonEnd).Trim();
-                
-                // Se c'è solo spazio prima del JSON, ignora
-                var humanReport = string.IsNullOrWhiteSpace(beforeJson) 
-                    ? afterJson 
-                    : beforeJson + "\n\n" + afterJson;
-                
-                return (humanReport.Trim(), payload);
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Errore parsing JSON: {ex.Message}");
-        }
-
-        return (aiResponse, new AiGoogleAdsPayload());
     }
 }
