@@ -68,7 +68,7 @@ public class PdfGenerationService()
             // ✅ FORZA GARBAGE COLLECTION
             GC.Collect(2, GCCollectionMode.Forced, blocking: true);
             GC.WaitForPendingFinalizers();
-            GC.Collect(2, GCCollectionMode.Forced, blocking: true);   
+            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
             await _logger.Debug("PdfGenerationService", "Garbage Collection forzato post-conversione");
         }
     }
@@ -112,7 +112,7 @@ public class PdfGenerationService()
             if (process.ExitCode == 0 && !string.IsNullOrEmpty(output))
             {
                 var nodePath = output.Split('\n')[0].Trim(); // Prima riga se ci sono più risultati
-                
+
                 // Verifica che il file esista
                 if (File.Exists(nodePath))
                 {
@@ -125,7 +125,7 @@ public class PdfGenerationService()
         }
         catch (Exception ex)
         {
-            _logger.Warning("PdfGenerationService.GetNodeJsPath", 
+            _logger.Warning("PdfGenerationService.GetNodeJsPath",
                 "Errore ricerca Node.js", ex.Message).Wait();
             return (null, null);
         }
@@ -192,19 +192,10 @@ public class PdfGenerationService()
         return htmlPath;
     }
 
-    /// <summary>
-    /// Determina il path di output per il PDF
-    /// </summary>
-    private string GetOutputPdfPath(PdfReport report)
+    private static string GetOutputPdfPath(PdfReport report)
     {
-        var generationDate = report.GeneratedAt ?? DateTime.Now;
-
-        var outputDir = Path.Combine("storage", "reports",
-            generationDate.Year.ToString(),
-            generationDate.Month.ToString("D2"));
-
-        Directory.CreateDirectory(outputDir);
-        return Path.Combine(outputDir, $"PolarDrive_PolarReport_{report.Id}.pdf");
+        var tempDir = Path.GetTempPath();
+        return Path.Combine(tempDir, $"PolarDrive_PolarReport_{report.Id}_{DateTime.Now.Ticks}.pdf");
     }
 
     /// <summary>
@@ -216,7 +207,7 @@ public class PdfGenerationService()
         int maxRetries = options.MaxRetries;
         int timeoutSeconds = options.ConvertTimeoutSeconds;
         string? scriptPath = null;
-        
+
         for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
             try
@@ -306,15 +297,21 @@ public class PdfGenerationService()
                         await _logger.Info(source, $"PDF generato con successo (tentativo {attempt})",
                             $"Dimensione: {pdfBytes.Length} bytes");
 
+                        // ✅ AGGIUNGI QUESTA PULIZIA
+                        try
+                        {
+                            File.Delete(pdfPath);
+                            await _logger.Debug(source, "PDF temporaneo eliminato", pdfPath);
+                        }
+                        catch (Exception cleanEx)
+                        {
+                            await _logger.Debug(source, "Errore eliminazione PDF temporaneo", cleanEx.Message);
+                        }
+
                         // Cleanup script temporaneo
                         try { File.Delete(scriptPath); } catch { }
 
                         return pdfBytes;
-                    }
-                    else
-                    {
-                        await _logger.Warning(source, $"PDF vuoto generato (tentativo {attempt})");
-                        File.Delete(pdfPath);
                     }
                 }
                 else
@@ -356,7 +353,7 @@ public class PdfGenerationService()
     {
         var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
         var logFile = $"/app/logs/puppeteer/pdf_{timestamp}.log";
-        
+
         return $@"
         const path = require('path');
         const fs = require('fs');

@@ -25,9 +25,8 @@ public class AdminFileManager
     public int TotalPdfCount { get; set; }                    // PDF trovati nel periodo
     public int IncludedPdfCount { get; set; }                 // PDF inclusi nello ZIP
     public decimal ZipFileSizeMB { get; set; }                // Dimensione ZIP in MB
-
-    // Percorso del file ZIP risultante
-    public string? ResultZipPath { get; set; }
+    public byte[]? ZipContent { get; set; }
+    public string ZipHash { get; set; } = string.Empty;
 
     // Informazioni aggiuntive
     public string? Notes { get; set; }
@@ -37,5 +36,5 @@ public class AdminFileManager
 
     // Metodi helper
     public bool IsCompleted => Status == "COMPLETED";
-    public bool HasZipFile => !string.IsNullOrEmpty(ResultZipPath);
+    public bool HasZipFile => ZipContent != null && ZipContent.Length > 0;
 }

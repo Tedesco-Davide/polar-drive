@@ -110,7 +110,7 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
   };
 
   const handleDownloadZip = async (job: FileManager) => {
-    if (!job.resultZipPath || job.status !== "COMPLETED") return;
+    if (!job.hasZipFile || job.status !== "COMPLETED") return;
 
     try {
       const response = await fetch(`/api/filemanager/${job.id}/download`, { method: "GET" });
@@ -197,7 +197,7 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
             {localJobs.map((job) => (
               <tr key={job.id} className="border-b border-gray-300 dark:border-gray-600">
                 <td className="p-4 space-x-2">
-                  {job.status === "COMPLETED" && job.resultZipPath ? (
+                  {job.status === "COMPLETED" && job.hasZipFile ? (
                     <button className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600" title={t("admin.downloadZip")} onClick={() => handleDownloadZip(job)}>
                       <FileArchive size={16} />
                     </button>

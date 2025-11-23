@@ -11,8 +11,6 @@ namespace PolarDrive.WebApi.Controllers;
 [Route("api/[controller]")]
 public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logger) : ControllerBase
 {
-    private readonly string _zipStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "storage", "filemanager-zips");
-
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<AdminFileManager>>> GetAll(
         [FromQuery] int page = 1,
@@ -131,15 +129,11 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
         if (!job.IsCompleted || !job.HasZipFile)
             return BadRequest("Il file ZIP non è ancora pronto per il download");
 
-        if (!System.IO.File.Exists(job.ResultZipPath))
-            return NotFound("Il file ZIP non è più disponibile");
-
         await db.SaveChangesAsync();
 
-        var zipBytes = await System.IO.File.ReadAllBytesAsync(job.ResultZipPath);
         var fileName = $"PDF_Reports_{job.PeriodStart:yyyyMMdd}_{job.PeriodEnd:yyyyMMdd}_{job.Id}.zip";
 
-        return File(zipBytes, "application/zip", fileName);
+        return File(job.ZipContent!, "application/zip", fileName);
     }
 
     [HttpPatch("{id}/notes")]
@@ -161,21 +155,6 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
         var job = await db.AdminFileManager.FindAsync(id);
         if (job == null)
             return NotFound();
-
-        // Rimuovi il file ZIP se esiste
-        if (job.HasZipFile && System.IO.File.Exists(job.ResultZipPath))
-        {
-            try
-            {
-                System.IO.File.Delete(job.ResultZipPath);
-            }
-            catch (Exception ex)
-            {
-                _ = logger.Warning(
-                    "FileManagerCleanupService.CleanupJob",
-                    $"Impossibile eliminare il file ZIP {job.ResultZipPath}: {ex.Message}"
-                );            }
-        }
 
         db.AdminFileManager.Remove(job);
         await db.SaveChangesAsync();
@@ -250,32 +229,19 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
             job.StartedAt = DateTime.Now;
             await scopedDb.SaveChangesAsync();
 
-            if (!Directory.Exists(_zipStoragePath))
-            {
-                Directory.CreateDirectory(_zipStoragePath);
-            }
-
             var adjustedPeriodEnd = job.PeriodEnd;
             if (job.PeriodEnd.TimeOfDay == TimeSpan.Zero)
             {
                 adjustedPeriodEnd = job.PeriodEnd.AddDays(1).AddSeconds(-1);
             }
 
-            var jobPeriodStartUtc = job.PeriodStart.Kind == DateTimeKind.Utc
-                ? job.PeriodStart
-                : job.PeriodStart.ToUniversalTime();
-
-            var jobPeriodEndUtc = adjustedPeriodEnd.Kind == DateTimeKind.Utc
-                ? adjustedPeriodEnd
-                : adjustedPeriodEnd.ToUniversalTime();
-
             var pdfQuery = scopedDb.PdfReports
                 .AsNoTracking()
                 .Include(p => p.ClientCompany)
                 .Include(p => p.ClientVehicle)
                 .Where(p =>
-                    p.ReportPeriodStart <= jobPeriodEndUtc &&
-                    p.ReportPeriodEnd >= jobPeriodStartUtc
+                    p.ReportPeriodEnd >= job.PeriodStart &&
+                    p.ReportPeriodStart <= adjustedPeriodEnd
                 );
 
             if (job.CompanyList.Any())
@@ -309,45 +275,46 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
                 return;
             }
 
-            var zipFileName = $"pdf_reports_{jobId}_{DateTime.Now:yyyyMMddHHmmss}.zip";
-            var zipFilePath = Path.Combine(_zipStoragePath, zipFileName);
-
-            using (var zipArchive = ZipFile.Open(zipFilePath, ZipArchiveMode.Create))
+            using var zipStream = new MemoryStream();
+            using (var zipArchive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))
             {
                 var includedCount = 0;
 
                 foreach (var pdf in pdfReports)
                 {
-                    var pdfFilePath = GetReportPdfPath(pdf);
-
-                    if (System.IO.File.Exists(pdfFilePath))
+                    if (pdf.PdfContent == null || pdf.PdfContent.Length == 0)
                     {
-                        try
-                        {
-                            var companyName = SanitizeFileName(pdf.ClientCompany!.Name);
-                            var vin = SanitizeFileName(pdf.ClientVehicle!.Vin);
-                            var entryName = $"{companyName}_{vin}_{pdf.GeneratedAt:yyyyMMdd}_{pdf.Id}.pdf";
-
-                            zipArchive.CreateEntryFromFile(pdfFilePath, entryName);
-                            includedCount++;
-                        }
-                        catch (Exception ex)
-                        {
-                            _ = logger.Warning(ex.ToString(), "Failed to add PDF {PdfId} to ZIP archive", pdf.Id.ToString());
-                        }
+                        _ = logger.Warning("PDF content not available in DB for PDF {PdfId}", pdf.Id.ToString());
+                        continue;
                     }
-                    else
+
+                    try
                     {
-                        _ = logger.Warning("PDF file not found: {PdfFilePath} for PDF {PdfId}", pdfFilePath, pdf.Id.ToString());
+                        var companyName = SanitizeFileName(pdf.ClientCompany!.Name);
+                        var vin = SanitizeFileName(pdf.ClientVehicle!.Vin);
+                        var entryName = $"{companyName}_{vin}_{pdf.GeneratedAt:yyyyMMdd}_{pdf.Id}.pdf";
+
+                        var entry = zipArchive.CreateEntry(entryName, CompressionLevel.Optimal);
+                        using var entryStream = entry.Open();
+                        await entryStream.WriteAsync(pdf.PdfContent, 0, pdf.PdfContent.Length);
+
+                        includedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        _ = logger.Warning(ex.ToString(), "Failed to add PDF {PdfId} to ZIP archive", pdf.Id.ToString());
                     }
                 }
 
                 job.IncludedPdfCount = includedCount;
             }
 
-            var zipFileInfo = new FileInfo(zipFilePath);
-            job.ZipFileSizeMB = Math.Round((decimal)zipFileInfo.Length / (1024 * 1024), 2);
-            job.ResultZipPath = zipFilePath;
+            job.ZipContent = zipStream.ToArray();
+            job.ZipFileSizeMB = Math.Round((decimal)job.ZipContent.Length / (1024 * 1024), 2);
+
+            using var sha256 = System.Security.Cryptography.SHA256.Create();
+            var hashBytes = sha256.ComputeHash(job.ZipContent);
+            job.ZipHash = BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
             job.Status = "COMPLETED";
             job.CompletedAt = DateTime.Now;
 
@@ -374,17 +341,6 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
                 _ = logger.Error(saveEx.ToString(), "Failed to save FAILED status for job {JobId}", jobId.ToString());
             }
         }
-    }
-
-    private static string GetReportPdfPath(PdfReport report)
-    {
-        var generationDate = report.GeneratedAt ?? DateTime.Now;
-        var basePath = Directory.GetCurrentDirectory();
-
-        return Path.Combine(basePath, "storage", "reports",
-            generationDate.Year.ToString(),
-            generationDate.Month.ToString("D2"),
-            $"PolarDrive_PolarReport_{report.Id}.pdf");
     }
 
     private static string SanitizeFileName(string fileName)

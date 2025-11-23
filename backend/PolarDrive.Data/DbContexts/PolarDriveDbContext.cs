@@ -132,14 +132,16 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .IsRequired(false)
                     .HasDefaultValue(null);
 
-                entity.Property(e => e.ResultZipPath)
-                    .HasMaxLength(500);
-
                 entity.Property(e => e.RequestedBy)
                     .HasMaxLength(100);
 
                 entity.Property(e => e.ZipFileSizeMB)
                     .HasColumnType("FLOAT");
+
+                entity.Property(e => e.ZipHash)
+                    .HasMaxLength(64);
+
+                entity.HasIndex(e => e.ZipHash);
 
                 entity.Property(e => e.CompanyList)
                     .HasConversion(

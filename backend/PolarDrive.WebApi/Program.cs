@@ -104,7 +104,6 @@ builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
 // SCHEDULER
 builder.Services.AddHostedService<PolarDriveScheduler>();
-builder.Services.AddHostedService<FileCleanupService>();
 
 // SERVIZI OUTAGES
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
@@ -129,17 +128,6 @@ app.Use(async (context, next) =>
     }
     await next();
 });
-
-// CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER, OUTAGES E CONSENTS
-var storageBasePath = "storage";
-var fileManagerZipsPath = Path.Combine(storageBasePath, "filemanager-zips");
-
-// Crea le directory se non esistono
-Directory.CreateDirectory(storageBasePath);
-Directory.CreateDirectory(fileManagerZipsPath);
-
-Console.WriteLine($"📁 Storage directories created:");
-Console.WriteLine($"   - FileManager ZIPs: {Path.GetFullPath(fileManagerZipsPath)}");
 
 // Use Swagger only in development
 if (app.Environment.IsDevelopment())
@@ -185,94 +173,6 @@ using (var scope = app.Services.CreateScope())
         foreach (var (brand, count) in stats)
         {
             await logger.Info("Program.Main", $"- {brand}: {count} active vehicles");
-        }
-
-        // 🎯 INFO BASATA SULL'AMBIENTE
-        if (app.Environment.IsDevelopment())
-        {
-            Console.WriteLine();
-            Console.WriteLine("=== 🚀 DEVELOPMENT MODE ===");
-            Console.WriteLine("📊 PolarDriveScheduler Configuration:");
-            Console.WriteLine("   - Automatic reports every 3 minutes");
-            Console.WriteLine("   - Retry attempts every 1 minute");
-            Console.WriteLine("   - Max 5 retries per vehicle");
-            Console.WriteLine();
-            Console.WriteLine("🔧 API Endpoints available:");
-            Console.WriteLine("   - GET  /api/PdfReports - List all reports");
-            Console.WriteLine("   - GET  /api/PdfReports/{id}/download - Download report");
-            Console.WriteLine("   - PATCH /api/PdfReports/{id}/notes - Update notes");
-            Console.WriteLine();
-            Console.WriteLine("📦 File Manager Configuration:");
-            Console.WriteLine("   - ZIP files stored in: storage/filemanager-zips/");
-            Console.WriteLine("   - Cleanup service runs every 24 hours");
-            Console.WriteLine("   - Files older than 30 days are automatically removed");
-            Console.WriteLine();
-            Console.WriteLine("🔧 File Manager API Endpoints:");
-            Console.WriteLine("   - GET  /api/FileManager - List download jobs");
-            Console.WriteLine("   - POST /api/FileManager/filemanager-download - Create download request");
-            Console.WriteLine("   - GET  /api/FileManager/{id}/download - Download ZIP");
-            Console.WriteLine("   - GET  /api/FileManager/available-companies - Get available companies");
-            Console.WriteLine("   - GET  /api/FileManager/available-brands - Get available brands");
-            Console.WriteLine("   - GET  /api/FileManager/available-vins - Get available VINs");
-            Console.WriteLine();
-            Console.WriteLine("🔧 Outages API Endpoints:");
-            Console.WriteLine("   - GET  /api/OutagePeriods - List all outages");
-            Console.WriteLine("   - POST /api/OutagePeriods - Create new outage manually");
-            Console.WriteLine("   - POST /api/OutagePeriods/{id}/upload-zip - Upload ZIP to outage");
-            Console.WriteLine("   - GET  /api/OutagePeriods/{id}/download-zip - Download outage ZIP");
-            Console.WriteLine("   - DELETE /api/OutagePeriods/{id}/delete-zip - Delete outage ZIP");
-            Console.WriteLine("   - PATCH /api/OutagePeriods/{id}/resolve - Resolve ongoing outage");
-            Console.WriteLine("   - PATCH /api/OutagePeriods/{id}/notes - Update outage notes");
-            Console.WriteLine();
-            Console.WriteLine("🔧 Client Consents API Endpoints:");
-            Console.WriteLine("   - GET  /api/ClientConsents - List all consents");
-            Console.WriteLine("   - POST /api/ClientConsents - Create new consent manually");
-            Console.WriteLine("   - POST /api/ClientConsents/{id}/upload-zip - Upload ZIP to consent");
-            Console.WriteLine("   - GET  /api/ClientConsents/{id}/download - Download consent ZIP");
-            Console.WriteLine("   - DELETE /api/ClientConsents/{id}/delete-zip - Delete consent ZIP");
-            Console.WriteLine("   - PATCH /api/ClientConsents/{id}/notes - Update consent notes");
-            Console.WriteLine("   - GET  /api/ClientConsents/resolve-ids - Resolve company/vehicle IDs");
-            Console.WriteLine();
-            Console.WriteLine("✅ Upload Configuration:");
-            Console.WriteLine("   - Multipart/form-data support enabled");
-            Console.WriteLine("   - Max file size: 100MB");
-            Console.WriteLine("   - Buffering enabled for large uploads");
-            Console.WriteLine();
-            Console.WriteLine("📝 Report levels based on monitoring time:");
-            Console.WriteLine("   - < 5 min: Valutazione Iniziale");
-            Console.WriteLine("   - < 15 min: Analisi Rapida");
-            Console.WriteLine("   - < 30 min: Pattern Recognition");
-            Console.WriteLine("   - < 60 min: Behavioral Analysis");
-            Console.WriteLine("   - > 60 min: Deep Dive Analysis");
-            Console.WriteLine();
-            Console.WriteLine("📁 Storage Structure:");
-            Console.WriteLine("   - storage/reports/ → PDF reports");
-            Console.WriteLine("   - storage/filemanager-zips/ → File manager downloads");
-            Console.WriteLine("   - storage/outages-zips/ → Outage documentation");
-            Console.WriteLine("   - storage/companies/company-{id}/consents-zip/ → Client consent files per company");
-            Console.WriteLine("===============================");
-        }
-        else
-        {
-            Console.WriteLine();
-            Console.WriteLine("=== 🏭 PRODUCTION MODE ===");
-            Console.WriteLine("📊 PolarDriveScheduler Configuration:");
-            Console.WriteLine("   - Monthly reports on 1st at 05:00 UTC");
-            Console.WriteLine("   - Retry checks every hour");
-            Console.WriteLine("   - Max 5 retries with 5-hour delays");
-            Console.WriteLine();
-            Console.WriteLine("📦 File Manager:");
-            Console.WriteLine("   - PDF ZIP downloads available via /api/FileManager");
-            Console.WriteLine("   - Automatic cleanup enabled");
-            Console.WriteLine();
-            Console.WriteLine("✅ Upload Configuration:");
-            Console.WriteLine("   - Production-grade multipart support");
-            Console.WriteLine("   - 100MB upload limit configured");
-            Console.WriteLine();
-            Console.WriteLine("📁 Storage Directories:");
-            Console.WriteLine("   - Reports, FileManager, Outages & Consents ZIPs");
-            Console.WriteLine("   - Automatic directory creation on startup");
-            Console.WriteLine("===============================");
         }
     }
     catch (Exception ex)

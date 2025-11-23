@@ -99,7 +99,6 @@ RUN echo "✅ Verifying Puppeteer installation..." \
 
 # Directory che usi nel codice + font
 RUN mkdir -p /app/storage/reports \
-    && mkdir -p /app/storage/filemanager-zips \
     && mkdir -p /app/TempFiles \
     && mkdir -p /app/logs/puppeteer \
     && mkdir -p /app/logs \
