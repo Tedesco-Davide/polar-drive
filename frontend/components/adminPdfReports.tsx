@@ -23,6 +23,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const pageSize = 5;
 
   const fetchReports = async (page: number, searchQuery: string = "") => {
@@ -42,6 +43,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       setTotalCount(data.totalCount);
       setTotalPages(data.totalPages);
       setCurrentPage(data.page);
+      setStatusCounts(data.statusCounts || {});
 
       logFrontendEvent(
         "AdminPdfReports",
@@ -300,6 +302,13 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
           {t("admin.vehicleReports.tableHeader")} ➜ {totalCount}{" "}
           {t("admin.vehicleReports.tableHeaderTotals")}
+          {statusCounts["REGENERATING"] > 0 &&
+            ` | ${statusCounts["REGENERATING"]} ${t("admin.vehicleReports.tableHeaderRegenerating")}`}
+          {statusCounts["PROCESSING"] > 0 &&
+            ` | ${statusCounts["PROCESSING"]} ${t("admin.vehicleReports.tableHeaderProcessing")}`}
+          {statusCounts["ERROR"] > 0 && ` | ${statusCounts["ERROR"]} ${t("admin.vehicleReports.tableHeaderInError")}`}
+          {statusCounts["NO-DATA"] > 0 &&
+            ` | ${statusCounts["NO-DATA"]} ${t("admin.vehicleReports.tableHeaderNoData")}`}
         </h1>
       </div>
 

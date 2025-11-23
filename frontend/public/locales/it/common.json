@@ -207,6 +207,10 @@
 
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totali",
+  "admin.vehicleReports.tableHeaderRegenerating": "in rigenerazione",
+  "admin.vehicleReports.tableHeaderProcessing": "in processing",
+  "admin.vehicleReports.tableHeaderInError": "in errore",
+  "admin.vehicleReports.tableHeaderNoData": "senza dati",
   "admin.vehicleReports.reportPeriod": "Periodo di rilevanza",
   "admin.vehicleReports.clientCompanyVATName": "Azienda interessata",
   "admin.vehicleReports.vehicleVinDisplay": "Veicolo interessato",

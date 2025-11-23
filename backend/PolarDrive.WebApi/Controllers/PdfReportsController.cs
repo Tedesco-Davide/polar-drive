@@ -39,37 +39,42 @@ public class PdfReportsController(
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var trimmedSearch = search.Trim();
-                
+
                 if (int.TryParse(trimmedSearch, out int searchId))
                 {
                     var searchIdStr = searchId.ToString();
                     query = query.Where(r => EF.Functions.Like(r.Id.ToString(), $"%{searchIdStr}%"));
-                    
+
                     await _logger.Info(source, "🔍 Ricerca per ID",
                         $"Pattern: '%{searchIdStr}%'");
                 }
                 else
                 {
                     var searchPattern = $"%{trimmedSearch}%";
-                    
+
                     var totalReportsWithStatus = await db.PdfReports
                         .Where(r => !string.IsNullOrEmpty(r.Status))
                         .CountAsync();
-                    
+
                     var distinctStatuses = await db.PdfReports
                         .Where(r => !string.IsNullOrEmpty(r.Status))
                         .Select(r => r.Status)
                         .Distinct()
                         .ToListAsync();
-                    
-                    query = query.Where(r => 
-                        !string.IsNullOrEmpty(r.Status) && 
+
+                    query = query.Where(r =>
+                        !string.IsNullOrEmpty(r.Status) &&
                         EF.Functions.Like(r.Status, searchPattern));
                 }
             }
 
             var totalCount = await query.CountAsync();
-            
+
+            var statusCounts = await query
+                .GroupBy(r => r.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.Status ?? "UNKNOWN", x => x.Count);
+
             await _logger.Info(source, "✅ Risultati trovati",
                 $"Total matches: {totalCount}");
 
@@ -103,13 +108,14 @@ public class PdfReportsController(
             await _logger.Info(source, "Mapping DTO completato",
                 $"Total: {result.Count}, Page: {page}");
 
-            return Ok(new PaginatedResponse<PdfReportDTO>
+            return Ok(new
             {
                 Data = result,
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
+                StatusCounts = statusCounts
             });
         }
         catch (Exception ex)
