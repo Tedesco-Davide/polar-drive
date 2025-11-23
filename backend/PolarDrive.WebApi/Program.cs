@@ -133,16 +133,13 @@ app.Use(async (context, next) =>
 // CREA LE DIRECTORY NECESSARIE PER IL FILE MANAGER, OUTAGES E CONSENTS
 var storageBasePath = "storage";
 var fileManagerZipsPath = Path.Combine(storageBasePath, "filemanager-zips");
-var outageZipsPath = Path.Combine(storageBasePath, "outages-zips");
 
 // Crea le directory se non esistono
 Directory.CreateDirectory(storageBasePath);
 Directory.CreateDirectory(fileManagerZipsPath);
-Directory.CreateDirectory(outageZipsPath);
 
 Console.WriteLine($"📁 Storage directories created:");
 Console.WriteLine($"   - FileManager ZIPs: {Path.GetFullPath(fileManagerZipsPath)}");
-Console.WriteLine($"   - Outage ZIPs: {Path.GetFullPath(outageZipsPath)}");
 
 // Use Swagger only in development
 if (app.Environment.IsDevelopment())

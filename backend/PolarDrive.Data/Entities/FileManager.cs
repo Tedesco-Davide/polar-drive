@@ -38,8 +38,4 @@ public class AdminFileManager
     // Metodi helper
     public bool IsCompleted => Status == "COMPLETED";
     public bool HasZipFile => !string.IsNullOrEmpty(ResultZipPath);
-    public TimeSpan? ProcessingDuration =>
-        StartedAt.HasValue && CompletedAt.HasValue
-            ? CompletedAt.Value - StartedAt.Value
-            : null;
 }
