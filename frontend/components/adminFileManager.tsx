@@ -277,7 +277,7 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
                       disabled={downloadingJobId === job.id}
                     >
                       {downloadingJobId === job.id ? (
-                        <span className="animate-spin">⏳</span>
+                        <AdminLoader inline />
                       ) : (
                         <FileArchive size={16} />
                       )}
