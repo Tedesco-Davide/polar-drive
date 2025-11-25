@@ -115,18 +115,49 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
     [HttpGet("{id}/download")]
     public async Task<IActionResult> DownloadZip(int id)
     {
-        var job = await db.AdminFileManager.FindAsync(id);
+        var job = await db.AdminFileManager
+            .Where(j => j.Id == id)
+            .Select(j => new { j.Id, j.Status, j.HasZipFile, j.PeriodStart, j.PeriodEnd })
+            .FirstOrDefaultAsync();
+
         if (job == null)
             return NotFound();
 
-        if (!job.IsCompleted || !job.HasZipFile)
+        if (job.Status != "COMPLETED" || !job.HasZipFile)
             return BadRequest("Il file ZIP non è ancora pronto per il download");
-
-        await db.SaveChangesAsync();
 
         var fileName = $"PDF_Reports_{job.PeriodStart:yyyyMMdd}_{job.PeriodEnd:yyyyMMdd}_{job.Id}.zip";
 
-        return File(job.ZipContent!, "application/zip", fileName);
+        return new FileCallbackResult("application/zip", async (outputStream, _) =>
+        {
+            var connectionString = db.Database.GetConnectionString();
+            await using var connection = new Microsoft.Data.SqlClient.SqlConnection(connectionString);
+            await connection.OpenAsync();
+
+            await using var command = connection.CreateCommand();
+            command.CommandText = "SELECT ZipContent FROM AdminFileManager WHERE Id = @Id";
+            command.Parameters.AddWithValue("@Id", id);
+            command.CommandTimeout = 600;
+
+            await using var reader = await command.ExecuteReaderAsync(System.Data.CommandBehavior.SequentialAccess);
+
+            if (!await reader.ReadAsync())
+                throw new InvalidOperationException("ZIP content not found");
+
+            const int bufferSize = 8192;
+            var buffer = new byte[bufferSize];
+            long bytesRead;
+            long fieldOffset = 0;
+
+            while ((bytesRead = reader.GetBytes(0, fieldOffset, buffer, 0, bufferSize)) > 0)
+            {
+                await outputStream.WriteAsync(buffer.AsMemory(0, (int)bytesRead));
+                fieldOffset += bytesRead;
+            }
+        })
+        {
+            FileDownloadName = fileName
+        };
     }
 
     [HttpPatch("{id}/notes")]
@@ -350,6 +381,34 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
             .ToArray());
 
         return string.IsNullOrEmpty(sanitized) ? "Unknown" : sanitized;
+    }
+}
+
+public class FileCallbackResult(string contentType, Func<Stream, ActionContext, Task> callback) : FileResult(contentType)
+{
+    private readonly Func<Stream, ActionContext, Task> _callback = callback ?? throw new ArgumentNullException(nameof(callback));
+
+    public override Task ExecuteResultAsync(ActionContext context)
+    {
+        var executor = new FileCallbackResultExecutor();
+        return executor.ExecuteAsync(context, this);
+    }
+
+    private class FileCallbackResultExecutor
+    {
+        public async Task ExecuteAsync(ActionContext context, FileCallbackResult result)
+        {
+            var response = context.HttpContext.Response;
+            response.ContentType = result.ContentType;
+
+            if (!string.IsNullOrEmpty(result.FileDownloadName))
+            {
+                response.Headers.Append("Content-Disposition",
+                    $"attachment; filename=\"{result.FileDownloadName}\"");
+            }
+
+            await result._callback(response.Body, context);
+        }
     }
 }
 

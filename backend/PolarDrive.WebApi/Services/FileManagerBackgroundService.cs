@@ -188,6 +188,7 @@ public class FileManagerBackgroundService(IServiceProvider serviceProvider, Pola
 
                     // Carica batch con PdfContent
                     var batchPdfs = await db.PdfReports
+                        .AsNoTracking()
                         .Include(p => p.ClientCompany)
                         .Include(p => p.ClientVehicle)
                         .Where(p => batchIds.Contains(p.Id))

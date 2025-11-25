@@ -30,6 +30,12 @@ builder.Services.Configure<KestrelServerOptions>(options =>
     options.Limits.MaxRequestBodySize = 100_000_000; // 100MB
 });
 
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MinResponseDataRate = null;
+    options.Limits.MaxResponseBufferSize = null;
+});
+
 // Add Web API services + Swagger
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
