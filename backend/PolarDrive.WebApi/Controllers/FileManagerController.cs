@@ -166,19 +166,17 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
     {
         _ = logger.Info("FileManagerController.UpdateNotes", $"Received request for job {id}", body.ToString());
 
-        var job = await db.AdminFileManager.FindAsync(id);
-
-        if (job == null)
-            return NotFound();
-
         if (!body.TryGetProperty("notes", out var notesProp))
             return BadRequest("Missing 'notes' field");
 
         var notesValue = notesProp.GetString();
-        _ = logger.Info("FileManagerController.UpdateNotes", $"Setting notes for job {id}", $"Value: {notesValue}");
 
-        job.Notes = notesValue;
-        await db.SaveChangesAsync();
+        var updated = await db.AdminFileManager
+            .Where(j => j.Id == id)
+            .ExecuteUpdateAsync(s => s.SetProperty(j => j.Notes, notesValue));
+
+        if (updated == 0)
+            return NotFound();
 
         _ = logger.Info("FileManagerController.UpdateNotes", $"Notes saved for job {id}");
         return NoContent();
