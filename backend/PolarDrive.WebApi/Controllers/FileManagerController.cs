@@ -5,6 +5,7 @@ using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
+using System.Text.Json;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -161,27 +162,37 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
     }
 
     [HttpPatch("{id}/notes")]
-    public async Task<IActionResult> UpdateNotes(int id, [FromBody] UpdateNotesRequest request)
+    public async Task<IActionResult> UpdateNotes(int id, [FromBody] JsonElement body)
     {
+        _ = logger.Info("FileManagerController.UpdateNotes", $"Received request for job {id}", body.ToString());
+
         var job = await db.AdminFileManager.FindAsync(id);
+
         if (job == null)
             return NotFound();
 
-        job.Notes = request.Notes;
+        if (!body.TryGetProperty("notes", out var notesProp))
+            return BadRequest("Missing 'notes' field");
+
+        var notesValue = notesProp.GetString();
+        _ = logger.Info("FileManagerController.UpdateNotes", $"Setting notes for job {id}", $"Value: {notesValue}");
+
+        job.Notes = notesValue;
         await db.SaveChangesAsync();
 
+        _ = logger.Info("FileManagerController.UpdateNotes", $"Notes saved for job {id}");
         return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteJob(int id)
     {
-        var job = await db.AdminFileManager.FindAsync(id);
-        if (job == null)
-            return NotFound();
+        var deleted = await db.AdminFileManager
+            .Where(j => j.Id == id)
+            .ExecuteDeleteAsync();
 
-        db.AdminFileManager.Remove(job);
-        await db.SaveChangesAsync();
+        if (deleted == 0)
+            return NotFound();
 
         return NoContent();
     }
@@ -420,5 +431,3 @@ public record AdminFileManagerRequest(
     List<string>? Brands = null,
     string? RequestedBy = null
 );
-
-public record UpdateNotesRequest(string Notes);
