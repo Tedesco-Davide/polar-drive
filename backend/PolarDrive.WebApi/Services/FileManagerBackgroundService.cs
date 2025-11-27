@@ -262,7 +262,18 @@ public class FileManagerBackgroundService(IServiceProvider serviceProvider, Pola
             job.ZipContent = zipBytes;
             job.Status = "COMPLETED";
             job.CompletedAt = DateTime.Now;
-            await db.SaveChangesAsync(stoppingToken);
+            await db.AdminFileManager
+            .Where(j => j.Id == job.Id)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(j => j.ZipContent, zipBytes)
+                .SetProperty(j => j.Status, "COMPLETED")
+                .SetProperty(j => j.CompletedAt, DateTime.Now)
+                .SetProperty(j => j.HasZipFile, true)
+                .SetProperty(j => j.ZipFileSizeMB, job.ZipFileSizeMB)
+                .SetProperty(j => j.ZipHash, job.ZipHash)
+                .SetProperty(j => j.TotalPdfCount, job.TotalPdfCount)
+                .SetProperty(j => j.IncludedPdfCount, job.IncludedPdfCount), stoppingToken);
+
 
             _ = _logger.Info("FileManagerBackgroundService",
                 $"Job {job.Id} completed: {job.IncludedPdfCount}/{job.TotalPdfCount} PDFs, {job.ZipFileSizeMB}MB");

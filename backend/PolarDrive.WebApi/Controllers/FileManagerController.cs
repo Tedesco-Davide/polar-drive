@@ -82,7 +82,30 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
     [HttpGet("{id}")]
     public async Task<ActionResult<AdminFileManager>> GetById(int id)
     {
-        var job = await db.AdminFileManager.FindAsync(id);
+        var job = await db.AdminFileManager
+            .Where(j => j.Id == id)
+            .Select(j => new AdminFileManager
+            {
+                Id = j.Id,
+                RequestedAt = j.RequestedAt,
+                PeriodStart = j.PeriodStart,
+                PeriodEnd = j.PeriodEnd,
+                CompanyList = j.CompanyList,
+                VinList = j.VinList,
+                BrandList = j.BrandList,
+                Status = j.Status,
+                RequestedBy = j.RequestedBy,
+                StartedAt = j.StartedAt,
+                CompletedAt = j.CompletedAt,
+                TotalPdfCount = j.TotalPdfCount,
+                IncludedPdfCount = j.IncludedPdfCount,
+                ZipFileSizeMB = j.ZipFileSizeMB,
+                ZipHash = j.ZipHash,
+                Notes = j.Notes,
+                HasZipFile = j.HasZipFile,
+            })
+            .FirstOrDefaultAsync();
+
         if (job == null)
             return NotFound();
 
@@ -249,7 +272,29 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
         using var scope = HttpContext.RequestServices.CreateScope();
         var scopedDb = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
-        var job = await scopedDb.AdminFileManager.FindAsync(jobId);
+        var job = await scopedDb.AdminFileManager
+            .Where(j => j.Id == jobId)
+            .Select(j => new AdminFileManager
+            {
+                Id = j.Id,
+                RequestedAt = j.RequestedAt,
+                PeriodStart = j.PeriodStart,
+                PeriodEnd = j.PeriodEnd,
+                CompanyList = j.CompanyList,
+                VinList = j.VinList,
+                BrandList = j.BrandList,
+                Status = j.Status,
+                RequestedBy = j.RequestedBy,
+                StartedAt = j.StartedAt,
+                CompletedAt = j.CompletedAt,
+                TotalPdfCount = j.TotalPdfCount,
+                IncludedPdfCount = j.IncludedPdfCount,
+                ZipFileSizeMB = j.ZipFileSizeMB,
+                ZipHash = j.ZipHash,
+                Notes = j.Notes,
+            })
+            .FirstOrDefaultAsync();
+
         if (job == null)
         {
             _ = logger.Error("Job {JobId} not found in database", jobId.ToString());
@@ -258,9 +303,11 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
 
         try
         {
-            job.Status = "PROCESSING";
-            job.StartedAt = DateTime.Now;
-            await scopedDb.SaveChangesAsync();
+            await scopedDb.AdminFileManager
+                .Where(j => j.Id == jobId)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(j => j.Status, "PROCESSING")
+                    .SetProperty(j => j.StartedAt, DateTime.Now));
 
             var adjustedPeriodEnd = job.PeriodEnd;
             if (job.PeriodEnd.TimeOfDay == TimeSpan.Zero)
