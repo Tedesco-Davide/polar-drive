@@ -82,7 +82,16 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
+  const [searchType, setSearchType] = useState<"id" | "status">("id");
   const pageSize = 10;
+  const fileManagerStatuses = [
+    "PENDING",
+    "PROCESSING",
+    "COMPLETED",
+    "FAILED",
+    "CANCELLED",
+    "UPLOADING",
+  ];
 
   const fetchJobs = async (page: number, searchQuery: string = "") => {
     try {
@@ -91,7 +100,11 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
-      if (searchQuery) params.append("search", searchQuery);
+      if (searchQuery) {
+        params.append("search", searchQuery);
+        const type = searchType === "id" ? "id" : "status";
+        params.append("searchType", type);
+      }
 
       const res = await fetch(`/api/filemanager?${params}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -252,7 +265,7 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
                 </button>{" "}
                 {t("admin.actions")}
               </th>
-              <th className="p-4">{t("admin.filemanager.requestedAt")}</th>
+              <th className="p-4">{t("admin.generatedInfo")}</th>
               <th className="p-4">{t("admin.filemanager.status")}</th>
               <th className="p-4">{t("admin.filemanager.period")}</th>
               <th className="p-4">{t("admin.filemanager.duration")}</th>
@@ -305,9 +318,10 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
                 </td>
                 <td className="p-4">
                   {formatDateToDisplay(job.requestedAt)}
-                  <div>
-                    {t("admin.from")} {job.requestedBy || "-"}
+                  <div className="text-xs text-gray-400 mt-1">
+                    ID {job.id} - {t("admin.from")} {job.requestedBy || "-"}
                   </div>
+                  <div></div>
                 </td>
                 <td className="p-4">
                   <Chip className={getStatusColor(job.status)}>
@@ -405,6 +419,10 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
+          searchMode="id-or-status"
+          externalSearchType={searchType}
+          onSearchTypeChange={setSearchType}
+          availableStatuses={fileManagerStatuses}
         />
       </div>
 

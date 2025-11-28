@@ -11,6 +11,7 @@ type SearchBarProps = {
   searchMode?: "id-or-status" | "vin-or-company" | "default";
   externalSearchType?: "id" | "status";
   onSearchTypeChange?: (type: "id" | "status") => void;
+  availableStatuses?: string[];
 };
 
 export default function SearchBar({
@@ -22,6 +23,7 @@ export default function SearchBar({
   searchMode = "default",
   externalSearchType,
   onSearchTypeChange,
+  availableStatuses,
 }: SearchBarProps) {
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(query);
@@ -29,7 +31,7 @@ export default function SearchBar({
     externalSearchType || "id"
   );
 
-  const availableStatuses = [
+  const defaultStatuses = availableStatuses || [
     "PDF-READY",
     "REGENERATING",
     "PROCESSING",
@@ -129,7 +131,7 @@ export default function SearchBar({
             className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
           >
             <option value="">{t("admin.searchButton.selectStatus")}</option>
-            {availableStatuses.map((status) => (
+            {defaultStatuses.map((status) => (
               <option key={status} value={status}>
                 {status}
               </option>

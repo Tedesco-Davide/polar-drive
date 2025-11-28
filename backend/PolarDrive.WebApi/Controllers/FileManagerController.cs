@@ -17,7 +17,8 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
     public async Task<ActionResult<PaginatedResponse<AdminFileManager>>> GetAll(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] string? searchType = "id")
     {
         try
         {
@@ -26,12 +27,20 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
             // Filtro ricerca
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(j =>
-                    j.Status.Contains(search) ||
-                    (j.RequestedBy != null && j.RequestedBy.Contains(search)) ||
-                    j.CompanyList.Any(c => c.Contains(search)) ||
-                    j.VinList.Any(v => v.Contains(search)) ||
-                    j.BrandList.Any(b => b.Contains(search)));
+                var trimmed = search.Trim();
+                
+                if (searchType == "id" && int.TryParse(trimmed, out int searchId))
+                {
+                    var searchIdStr = searchId.ToString();
+                    query = query.Where(j => EF.Functions.Like(j.Id.ToString(), $"%{searchIdStr}%"));
+                }
+                else if (searchType == "status")
+                {
+                    var pattern = $"%{trimmed}%";
+                    query = query.Where(j => 
+                        !string.IsNullOrEmpty(j.Status) && 
+                        EF.Functions.Like(j.Status, pattern));
+                }
             }
 
             var totalCount = await query.CountAsync();

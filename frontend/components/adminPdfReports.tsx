@@ -327,7 +327,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
               </button>{" "}
               {t("admin.actions")}
             </th>
-            <th className="p-4">{t("admin.vehicleReports.generatedInfo")}</th>
+            <th className="p-4">{t("admin.generatedInfo")}</th>
             <th className="p-4">{t("admin.vehicleReports.fileInfo")}</th>
             <th className="p-4">{t("admin.vehicleReports.reportPeriod")}</th>
             <th className="p-4">
