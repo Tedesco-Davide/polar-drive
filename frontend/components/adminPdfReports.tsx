@@ -283,14 +283,17 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   };
 
   const canRegenerate = (report: PdfReport): boolean => {
-    // Se ha hash o PDF completo, è immutabile
-    if (report.pdfHash && report.pdfHash.trim().length > 0) {
+    const hasHash = !!report.pdfHash && report.pdfHash.trim().length > 0;
+
+    const hasPdfContent = report.hasPdfFile && report.pdfFileSize > 0;
+
+    // Se ha hash e PDF completo, è immutabile
+    if (hasHash && hasPdfContent) {
       return false;
     }
-    if (report.hasPdfFile && report.pdfFileSize > 0) {
-      return false;
-    }
-    // Solo error è rigenerabile
+
+    // Se manca il contenuto PDF (anche se c'è già l'hash),
+    // resta rigenerabile solo se in stato ERROR
     return report.status === "ERROR";
   };
 
@@ -303,12 +306,21 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           {t("admin.vehicleReports.tableHeader")} ➜ {totalCount}{" "}
           {t("admin.vehicleReports.tableHeaderTotals")}
           {statusCounts["REGENERATING"] > 0 &&
-            ` | ${statusCounts["REGENERATING"]} ${t("admin.vehicleReports.tableHeaderRegenerating")}`}
+            ` | ${statusCounts["REGENERATING"]} ${t(
+              "admin.vehicleReports.tableHeaderRegenerating"
+            )}`}
           {statusCounts["PROCESSING"] > 0 &&
-            ` | ${statusCounts["PROCESSING"]} ${t("admin.vehicleReports.tableHeaderProcessing")}`}
-          {statusCounts["ERROR"] > 0 && ` | ${statusCounts["ERROR"]} ${t("admin.vehicleReports.tableHeaderInError")}`}
+            ` | ${statusCounts["PROCESSING"]} ${t(
+              "admin.vehicleReports.tableHeaderProcessing"
+            )}`}
+          {statusCounts["ERROR"] > 0 &&
+            ` | ${statusCounts["ERROR"]} ${t(
+              "admin.vehicleReports.tableHeaderInError"
+            )}`}
           {statusCounts["NO-DATA"] > 0 &&
-            ` | ${statusCounts["NO-DATA"]} ${t("admin.vehicleReports.tableHeaderNoData")}`}
+            ` | ${statusCounts["NO-DATA"]} ${t(
+              "admin.vehicleReports.tableHeaderNoData"
+            )}`}
         </h1>
       </div>
 
