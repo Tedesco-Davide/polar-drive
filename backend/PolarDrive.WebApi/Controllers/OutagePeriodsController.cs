@@ -19,7 +19,8 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
     public async Task<ActionResult<PaginatedResponse<object>>> Get(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 5,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] string? searchType = "id")
     {
         try
         {
@@ -32,13 +33,29 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
                 .AsQueryable();
 
             // Filtro ricerca
-            if (!string.IsNullOrWhiteSpace(search))
+if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(o =>
-                    (o.ClientVehicle != null && o.ClientVehicle.Vin.Contains(search)) ||
-                    (o.ClientCompany != null && o.ClientCompany.VatNumber.Contains(search)) ||
-                    o.OutageType.Contains(search) ||
-                    o.OutageBrand.Contains(search));
+                var trimmed = search.Trim();
+                
+                if (searchType == "id" && int.TryParse(trimmed, out int searchId))
+                {
+                    var searchIdStr = searchId.ToString();
+                    query = query.Where(o => EF.Functions.Like(o.Id.ToString(), $"%{searchIdStr}%"));
+                }
+                else if (searchType == "status")
+                {
+                    var pattern = $"%{trimmed}%";
+                    var statusValue = trimmed.ToUpper();
+                    
+                    if (statusValue.Contains("ONGOING"))
+                    {
+                        query = query.Where(o => o.OutageEnd == null);
+                    }
+                    else if (statusValue.Contains("RESOLVED"))
+                    {
+                        query = query.Where(o => o.OutageEnd != null);
+                    }
+                }
             }
 
             var totalCount = await query.CountAsync();

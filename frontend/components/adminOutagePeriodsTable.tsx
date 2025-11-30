@@ -55,6 +55,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
+  const [searchType, setSearchType] = useState<"id" | "status">("id");
   const pageSize = 5;
 
   const fetchOutages = async (page: number, searchQuery: string = "") => {
@@ -64,8 +65,11 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
-      if (searchQuery) params.append("search", searchQuery);
-
+      if (searchQuery) {
+        params.append("search", searchQuery);
+        const type = searchType === "id" ? "id" : "status";
+        params.append("searchType", type);
+      }
       const res = await fetch(`/api/outageperiods?${params}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
 
@@ -328,11 +332,16 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
                 </div>
               </td>
               <td className="px-4 py-3">
-                {outage.autoDetected ? (
-                  <CircleCheck size={30} className="text-green-600" />
-                ) : (
-                  <CircleX size={30} className="text-red-600" />
-                )}
+                <div className="flex flex-wrap items-center gap-1">
+                  {outage.autoDetected ? (
+                    <CircleCheck size={30} className="text-green-600" />
+                  ) : (
+                    <CircleX size={30} className="text-red-600" />
+                  )}
+                  <div className="text-xs text-gray-400 ml-1">
+                    ID {outage.id}
+                  </div>
+                </div>
               </td>
               <td className="px-4 py-3">
                 <Chip className={getStatusColor(outage.status)}>
@@ -392,6 +401,10 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
+          searchMode="id-or-status"
+          externalSearchType={searchType}
+          onSearchTypeChange={setSearchType}
+          availableStatuses={["OUTAGE-ONGOING", "OUTAGE-RESOLVED"]}
         />
       </div>
 

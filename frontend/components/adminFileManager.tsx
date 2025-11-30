@@ -321,7 +321,6 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
                   <div className="text-xs text-gray-400 mt-1">
                     ID {job.id} - {t("admin.from")} {job.requestedBy || "-"}
                   </div>
-                  <div></div>
                 </td>
                 <td className="p-4">
                   <Chip className={getStatusColor(job.status)}>
