@@ -13,11 +13,16 @@ import AdminLoader from "./adminLoader";
 
 const getConsentTypeColor = (type: string) => {
   switch (type) {
-    case "Consent Activation": return "bg-green-100 text-green-700 border-green-500";
-    case "Consent Deactivation": return "bg-yellow-100 text-yellow-800 border-yellow-500";
-    case "Consent Stop Data Fetching": return "bg-red-100 text-red-700 border-red-500";
-    case "Consent Reactivation": return "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-500";
-    default: return "bg-gray-100 text-polarNight border-gray-400";
+    case "Consent Activation":
+      return "bg-green-100 text-green-700 border-green-500";
+    case "Consent Deactivation":
+      return "bg-yellow-100 text-yellow-800 border-yellow-500";
+    case "Consent Stop Data Fetching":
+      return "bg-red-100 text-red-700 border-red-500";
+    case "Consent Reactivation":
+      return "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-500";
+    default:
+      return "bg-gray-100 text-polarNight border-gray-400";
   }
 };
 
@@ -26,12 +31,14 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const [selectedConsentForNotes, setSelectedConsentForNotes] = useState<ClientConsent | null>(null);
+  const [selectedConsentForNotes, setSelectedConsentForNotes] =
+    useState<ClientConsent | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
+  const [searchType, setSearchType] = useState<"id" | "status">("id");
   const pageSize = 5;
 
   const fetchConsents = async (page: number, searchQuery: string = "") => {
@@ -41,8 +48,11 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
-      if (searchQuery) params.append("search", searchQuery);
-
+      if (searchQuery) {
+        params.append("search", searchQuery);
+        const type = searchType === "id" ? "id" : "status";
+        params.append("searchType", type);
+      }
       const res = await fetch(`/api/clientconsents?${params}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
 
@@ -52,9 +62,19 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       setTotalPages(data.totalPages);
       setCurrentPage(data.page);
 
-      logFrontendEvent("AdminClientConsentsTable", "INFO", "Consents loaded", `Page: ${data.page}, Total: ${data.totalCount}`);
+      logFrontendEvent(
+        "AdminClientConsentsTable",
+        "INFO",
+        "Consents loaded",
+        `Page: ${data.page}, Total: ${data.totalCount}`
+      );
     } catch (err) {
-      logFrontendEvent("AdminClientConsentsTable", "ERROR", "Failed to load consents", String(err));
+      logFrontendEvent(
+        "AdminClientConsentsTable",
+        "ERROR",
+        "Failed to load consents",
+        String(err)
+      );
     } finally {
       setLoading(false);
     }
@@ -86,7 +106,9 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       const contentDisposition = response.headers.get("content-disposition");
       let filename = `consent_${consentId}.zip`;
       if (contentDisposition) {
-        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=["']?([^"';]*)["']?/);
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=["']?([^"';]*)["']?/
+        );
         if (filenameMatch && filenameMatch[1]) filename = filenameMatch[1];
       }
 
@@ -100,7 +122,8 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Download failed";
+      const errorMessage =
+        error instanceof Error ? error.message : "Download failed";
       alert(`${t("admin.downloadError")}: ${errorMessage}`);
     }
   };
@@ -115,7 +138,11 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
 
       if (!response.ok) throw new Error("HTTP " + response.status);
 
-      setConsents(prev => prev.map(c => c.id === updated.id ? { ...c, notes: updated.notes } : c));
+      setConsents((prev) =>
+        prev.map((c) =>
+          c.id === updated.id ? { ...c, notes: updated.notes } : c
+        )
+      );
       setSelectedConsentForNotes(null);
       setTimeout(() => fetchConsents(currentPage, query), 200);
     } catch {
@@ -132,10 +159,16 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
           {t("admin.clientConsents.tableHeader")} ➜ {totalCount}
         </h1>
         <button
-          className={`${showForm ? "bg-red-500 hover:bg-red-600" : "bg-blue-500 hover:bg-blue-600"} text-softWhite px-6 py-2 rounded font-medium transition-colors`}
+          className={`${
+            showForm
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-blue-500 hover:bg-blue-600"
+          } text-softWhite px-6 py-2 rounded font-medium transition-colors`}
           onClick={() => setShowForm(!showForm)}
         >
-          {showForm ? t("admin.clientConsents.addNewConsent") : t("admin.clientConsents.undoAddNewConsent")}
+          {showForm
+            ? t("admin.clientConsents.addNewConsent")
+            : t("admin.clientConsents.undoAddNewConsent")}
         </button>
       </div>
 
@@ -143,7 +176,9 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
         <AdminClientConsentAddForm
           t={t}
           onSubmitSuccess={() => setShowForm(false)}
-          refreshClientConsents={async () => await fetchConsents(currentPage, query)}
+          refreshClientConsents={async () =>
+            await fetchConsents(currentPage, query)
+          }
         />
       )}
 
@@ -151,35 +186,63 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">
-              <button onClick={handleRefresh} disabled={isRefreshing} className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50">
-                <span className="uppercase text-xs tracking-widest">{t("admin.tableRefreshButton")}</span>
-              </button> {t("admin.actions")}
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+              >
+                <span className="uppercase text-xs tracking-widest">
+                  {t("admin.tableRefreshButton")}
+                </span>
+              </button>{" "}
+              {t("admin.actions")}
             </th>
             <th className="p-4">{t("admin.clientConsents.consentType")}</th>
             <th className="p-4">{t("admin.clientConsents.uploadDate")}</th>
-            <th className="p-4">{t("admin.clientConsents.companyVatNumber")} — {t("admin.clientConsents.vehicleVIN")}</th>
+            <th className="p-4">
+              {t("admin.clientConsents.companyVatNumber")} —{" "}
+              {t("admin.clientConsents.vehicleVIN")}
+            </th>
             <th className="p-4">{t("admin.clientConsents.hash")}</th>
           </tr>
         </thead>
         <tbody>
           {consents.map((consent) => (
-            <tr key={consent.id} className="border-b border-gray-300 dark:border-gray-600">
+            <tr
+              key={consent.id}
+              className="border-b border-gray-300 dark:border-gray-600"
+            >
               <td className="px-4 py-3">
                 <div className="flex items-center space-x-2">
                   {consent.hasZipFile && (
-                    <button onClick={() => handleZipDownload(consent.id)} className="p-2 bg-green-500 hover:bg-green-600 text-white rounded" title={t("admin.downloadZip")}>
+                    <button
+                      onClick={() => handleZipDownload(consent.id)}
+                      className="p-2 bg-green-500 hover:bg-green-600 text-white rounded"
+                      title={t("admin.downloadZip")}
+                    >
                       <Download size={16} />
                     </button>
                   )}
-                  <button onClick={() => setSelectedConsentForNotes(consent)} className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded" title={t("admin.openNotesModal")}>
+                  <button
+                    onClick={() => setSelectedConsentForNotes(consent)}
+                    className="p-2 bg-blue-500 hover:bg-blue-600 text-white rounded"
+                    title={t("admin.openNotesModal")}
+                  >
                     <NotebookPen size={16} />
                   </button>
                 </div>
               </td>
               <td className="p-4">
-                <Chip className={getConsentTypeColor(consent.consentType)}>{consent.consentType}</Chip>
+                <Chip className={getConsentTypeColor(consent.consentType)}>
+                  {consent.consentType}
+                </Chip>
               </td>
-              <td className="p-4">{formatDateToDisplay(consent.uploadDate)}</td>
+              <td className="p-4">
+                {formatDateToDisplay(consent.uploadDate)}
+                <div className="text-xs text-gray-400 mt-1">
+                  ID {consent.id}
+                </div>
+              </td>
               <td className="p-4">
                 <div className="text-sm">
                   <div className="font-mono">{consent.companyVatNumber}</div>
@@ -194,12 +257,40 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls currentPage={currentPage} totalPages={totalPages} onPrev={() => setCurrentPage(p => Math.max(1, p - 1))} onNext={() => setCurrentPage(p => Math.min(totalPages, p + 1))} />
-        <SearchBar query={query} setQuery={setQuery} resetPage={() => setCurrentPage(1)} />
+        <PaginationControls
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+        />
+        <SearchBar
+          query={query}
+          setQuery={setQuery}
+          resetPage={() => setCurrentPage(1)}
+          searchMode="id-or-status"
+          externalSearchType={searchType}
+          onSearchTypeChange={setSearchType}
+          statusLabel={t("admin.clientConsents.consentType")}
+          selectPlaceholder={t("admin.searchButton.selectConsent")}
+          availableStatuses={[
+            "Consent Activation",
+            "Consent Deactivation",
+            "Consent Stop Data Fetching",
+            "Consent Reactivation",
+          ]}
+        />
       </div>
 
       {selectedConsentForNotes && (
-        <NotesModal entity={selectedConsentForNotes} isOpen={!!selectedConsentForNotes} title={t("admin.clientConsents.notes.modalTitle")} notesField="notes" onSave={handleNotesUpdate} onClose={() => setSelectedConsentForNotes(null)} t={t} />
+        <NotesModal
+          entity={selectedConsentForNotes}
+          isOpen={!!selectedConsentForNotes}
+          title={t("admin.clientConsents.notes.modalTitle")}
+          notesField="notes"
+          onSave={handleNotesUpdate}
+          onClose={() => setSelectedConsentForNotes(null)}
+          t={t}
+        />
       )}
     </div>
   );

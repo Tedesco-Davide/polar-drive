@@ -20,7 +20,8 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
     public async Task<ActionResult<PaginatedResponse<ClientConsentDTO>>> Get(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 5,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] string? searchType = "id")
     {
         try
         {
@@ -35,11 +36,20 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
             // Filtro ricerca
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(c =>
-                    (c.ClientCompany != null && c.ClientCompany.VatNumber.Contains(search)) ||
-                    (c.ClientVehicle != null && c.ClientVehicle.Vin.Contains(search)) ||
-                    c.ConsentType.Contains(search) ||
-                    c.ConsentHash.Contains(search));
+                var trimmed = search.Trim();
+
+                if (searchType == "id" && int.TryParse(trimmed, out int searchId))
+                {
+                    var searchIdStr = searchId.ToString();
+                    query = query.Where(c => EF.Functions.Like(c.Id.ToString(), $"%{searchIdStr}%"));
+                }
+                else if (searchType == "status")
+                {
+                    var pattern = $"%{trimmed}%";
+                    query = query.Where(c =>
+                        !string.IsNullOrEmpty(c.ConsentType) &&
+                        EF.Functions.Like(c.ConsentType, pattern));
+                }
             }
 
             var totalCount = await query.CountAsync();

@@ -62,6 +62,7 @@
   "admin.searchButton": "Search",
   "admin.status": "Status",
   "admin.searchButton.selectStatus": "-- Select Status --",
+  "admin.searchButton.selectConsent": "-- Select Consent --",
   "admin.vehicleReports.searchPlaceholder": "Search by ID or Status",
   "admin.company": "Company",
   "admin.vehicles.searchVinPlaceholder": "Search by VIN",
