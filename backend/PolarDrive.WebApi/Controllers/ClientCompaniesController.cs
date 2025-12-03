@@ -16,7 +16,8 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
     public async Task<ActionResult<PaginatedResponse<object>>> Get(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 5,
-        [FromQuery] string? search = null)
+        [FromQuery] string? search = null,
+        [FromQuery] string? searchType = "vat")
     {
         try
         {
@@ -44,14 +45,17 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
             // Filtro ricerca
             if (!string.IsNullOrWhiteSpace(search))
             {
-                query = query.Where(c =>
-                    c.VatNumber.Contains(search) ||
-                    c.Name.Contains(search) ||
-                    c.Address.Contains(search) ||
-                    c.Email.Contains(search) ||
-                    c.DisplayReferentName.Contains(search) ||
-                    c.DisplayReferentEmail.Contains(search) ||
-                    c.CorrespondingVehicleVin.Contains(search));
+                var trimmed = search.Trim();
+                var pattern = $"%{trimmed}%";
+
+                if (searchType == "vat")
+                {
+                    query = query.Where(c => EF.Functions.Like(c.VatNumber, pattern));
+                }
+                else if (searchType == "name")
+                {
+                    query = query.Where(c => EF.Functions.Like(c.Name, pattern));
+                }
             }
 
             var totalCount = await query.CountAsync();

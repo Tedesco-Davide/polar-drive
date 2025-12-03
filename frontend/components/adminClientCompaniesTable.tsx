@@ -22,6 +22,7 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
+  const [searchType, setSearchType] = useState<"id" | "status">("id");
   const pageSize = 5;
 
   const fetchClients = async (page: number, searchQuery: string = "") => {
@@ -31,7 +32,11 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
         page: page.toString(),
         pageSize: pageSize.toString(),
       });
-      if (searchQuery) params.append("search", searchQuery);
+      if (searchQuery) {
+        params.append("search", searchQuery);
+        const type = searchType === "id" ? "vat" : "name";
+        params.append("searchType", type);
+      }
 
       const res = await fetch(`/api/clientcompanies?${params}`);
       if (!res.ok) throw new Error("HTTP " + res.status);
@@ -174,6 +179,11 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
+          searchMode="vin-or-company"
+          externalSearchType={searchType}
+          onSearchTypeChange={setSearchType}
+          vatLabel={t("admin.clientCompany.vatNumber")}
+          companyLabel={t("admin.clientCompany.name")}
         />
       </div>
 
