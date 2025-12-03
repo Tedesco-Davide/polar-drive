@@ -29,6 +29,7 @@ services:
       - "9090:9090"
     networks:
       - polardrive-network-dev
+    restart: always
 
   api:
     container_name: polardrive-api-dev
@@ -76,6 +77,7 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - polardrive-network-dev
+    restart: always
 
   frontend:
     container_name: polardrive-frontend-dev
@@ -88,6 +90,7 @@ services:
       - "3000:3000"
     networks:
       - polardrive-network-dev
+    restart: always
 
 networks:
   polardrive-network-dev:

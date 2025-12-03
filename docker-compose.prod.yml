@@ -48,6 +48,7 @@ services:
       - "host.docker.internal:host-gateway"
     networks:
       - polardrive-network-prod
+    restart: always
 
   mock-api:
     profiles:
@@ -64,6 +65,7 @@ services:
       - "3001:3000"
     networks:
       - polardrive-network-prod
+    restart: always
 
 networks:
   polardrive-network-prod:
