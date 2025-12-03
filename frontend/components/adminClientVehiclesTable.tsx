@@ -224,6 +224,8 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
           searchMode="vin-or-company"
           externalSearchType={searchType}
           onSearchTypeChange={setSearchType}
+          vatLabel={t("admin.clientCompany.vatNumber")}
+          companyLabel={t("admin.clientCompany.name")}
         />
       </div>
 
