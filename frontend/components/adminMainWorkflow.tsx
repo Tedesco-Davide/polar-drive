@@ -708,7 +708,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
           searchMode="vin-or-company"
           externalSearchType={searchType}
           onSearchTypeChange={setSearchType}
-          vatLabel={t("admin.clientCompany.vatNumber")}
+          vatLabel={t("admin.vehicleVIN")}
           companyLabel={t("admin.clientCompany.name")}
         />
       </div>

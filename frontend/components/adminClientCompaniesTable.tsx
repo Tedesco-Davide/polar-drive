@@ -184,6 +184,8 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
           onSearchTypeChange={setSearchType}
           vatLabel={t("admin.clientCompany.vatNumber")}
           companyLabel={t("admin.clientCompany.name")}
+          vinPlaceholder={t("admin.vehicles.searchVatPlaceholder")}
+          companyPlaceholder={t("admin.vehicles.searchCompanyPlaceholder")}
         />
       </div>
 

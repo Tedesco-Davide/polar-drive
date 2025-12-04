@@ -67,6 +67,7 @@
   "admin.company": "Azienda",
   "admin.vehicles.searchVinPlaceholder": "Ricerca per VIN",
   "admin.vehicles.searchCompanyPlaceholder": "Ricerca per Nome Azienda",
+  "admin.vehicles.searchVatPlaceholder": "Ricerca per Partita IVA",
 
   "admin.mainWorkflow.alerts.confirmGenerateProfile": "Vuoi generare il profilo completo per l'azienda",
   "admin.mainWorkflow.alerts.clientProfileGenerated": "Profilo cliente generato e scaricato con successo!",

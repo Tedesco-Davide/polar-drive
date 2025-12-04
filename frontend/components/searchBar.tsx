@@ -16,6 +16,8 @@ type SearchBarProps = {
   selectPlaceholder?: string;
   vatLabel?: string;
   companyLabel?: string;
+  vinPlaceholder?: string;
+  companyPlaceholder?: string;
 };
 
 export default function SearchBar({
@@ -32,6 +34,8 @@ export default function SearchBar({
   selectPlaceholder,
   vatLabel,
   companyLabel,
+  vinPlaceholder,
+  companyPlaceholder,
 }: SearchBarProps) {
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(query);
@@ -211,8 +215,9 @@ export default function SearchBar({
           onKeyDown={handleKeyDown}
           placeholder={
             searchType === "id"
-              ? t("admin.vehicles.searchVinPlaceholder")
-              : t("admin.vehicles.searchCompanyPlaceholder")
+              ? vinPlaceholder || t("admin.vehicles.searchVinPlaceholder")
+              : companyPlaceholder ||
+                t("admin.vehicles.searchCompanyPlaceholder")
           }
           className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
         />

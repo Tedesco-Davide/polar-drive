@@ -67,6 +67,7 @@
   "admin.company": "Company",
   "admin.vehicles.searchVinPlaceholder": "Search by VIN",
   "admin.vehicles.searchCompanyPlaceholder": "Search by Company Name",
+  "admin.vehicles.searchVatPlaceholder": "Search by VAT Number",
 
   "admin.mainWorkflow.alerts.confirmGenerateProfile": "Do you want to generate the complete profile for the company",
   "admin.mainWorkflow.alerts.clientProfileGenerated": "Client profile generated and downloaded successfully!",
