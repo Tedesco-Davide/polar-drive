@@ -18,6 +18,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<ClientToken> ClientTokens => Set<ClientToken>();
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
+    public DbSet<ClientProfilePdf> ClientProfilePdfs => Set<ClientProfilePdf>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -229,7 +230,22 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.FromPhoneNumber);
                 entity.HasIndex(e => e.ReceivedAt);
                 entity.HasIndex(e => e.ProcessingStatus);
-            });           
+            });
+
+            modelBuilder.Entity<ClientProfilePdf>(entity =>
+            {
+                entity.ToTable("ClientProfilePdf");
+
+                entity.HasOne(e => e.ClientCompany)
+                    .WithMany()
+                    .HasForeignKey(e => e.ClientCompanyId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(e => e.PdfContent).HasColumnType("VARBINARY(MAX)");
+                entity.Property(e => e.FileName).HasMaxLength(255);
+                entity.HasIndex(e => e.ClientCompanyId);
+                entity.HasIndex(e => e.GeneratedAt);
+            });       
         }
         catch (Exception ex)
         {

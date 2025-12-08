@@ -49,10 +49,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
         }
     }
 
-    /// <summary>
-    /// Genera un PDF completo del profilo cliente con tutte le informazioni aggregate
-    /// </summary>
-    [HttpPost("{companyId}/generate-profile-pdf")]
+[HttpPost("{companyId}/generate-profile-pdf")]
     public async Task<IActionResult> GenerateClientProfilePdf(int companyId)
     {
         try
@@ -72,7 +69,6 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
                 return NotFound(new { message = "Dati del profilo non disponibili", errorCode = "PROFILE_DATA_NOT_FOUND" });
             }
 
-            // ✅ CARICA I FONT UNA VOLTA SOLA
             var basePath = "/app/wwwroot/fonts/satoshi";
             var satoshiRegular = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
             var satoshiBold = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
@@ -101,7 +97,6 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
                 GeneratedAt = DateTime.Now
             };
 
-            // OPZIONI PERSONALIZZATE PER HEADER E FOOTER
             var pdfOptions = new PdfConversionOptions
             {
                 HeaderTemplate = $@"
@@ -174,23 +169,25 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
                     </html>"
             };
 
-            // PASSA LE OPZIONI AL SERVIZIO PDF
             var pdfBytes = await _pdfService.ConvertHtmlToPdfAsync(htmlContent, tempReport, pdfOptions);
-
-            var contentType = "application/pdf";
             var fileName = GenerateProfileFileName(profileData.CompanyInfo);
 
-            if (System.Text.Encoding.UTF8.GetString(pdfBytes).StartsWith("<!DOCTYPE html") ||
-                System.Text.Encoding.UTF8.GetString(pdfBytes).StartsWith("<html"))
+            var clientProfilePdf = new ClientProfilePdf
             {
-                contentType = "text/html";
-                fileName = fileName.Replace(".pdf", ".html");
-            }
+                ClientCompanyId = companyId,
+                FileName = fileName,
+                PdfContent = pdfBytes,
+                GeneratedAt = DateTime.Now,
+                FileSizeBytes = pdfBytes.Length
+            };
+
+            _db.ClientProfilePdfs.Add(clientProfilePdf);
+            await _db.SaveChangesAsync();
 
             await _logger.Info("ClientProfileController.GenerateClientProfilePdf",
-                "PDF generated successfully", $"Size: {pdfBytes.Length} bytes");
+                "PDF generated and saved to DB", $"Size: {pdfBytes.Length} bytes, RecordId: {clientProfilePdf.Id}");
 
-            return File(pdfBytes, contentType, fileName);
+            return File(pdfBytes, "application/pdf", fileName);
         }
         catch (Exception ex)
         {
