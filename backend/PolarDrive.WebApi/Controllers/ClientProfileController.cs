@@ -49,7 +49,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
         }
     }
 
-[HttpPost("{companyId}/generate-profile-pdf")]
+    [HttpPost("{companyId}/generate-profile-pdf")]
     public async Task<IActionResult> GenerateClientProfilePdf(int companyId)
     {
         try
@@ -72,7 +72,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
             var basePath = "/app/wwwroot/fonts/satoshi";
             var satoshiRegular = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
             var satoshiBold = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
-            
+
             var fontStyles = $@"
                 @font-face {{
                     font-family: 'Satoshi';
@@ -315,7 +315,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
 
         // ✅ Path assoluto nel container Docker
         var basePath = "/app/wwwroot/fonts/satoshi";
-        
+
         var satoshiRegular = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
         var satoshiBold = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
         var satoshiBlack = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Black.b64"));
@@ -383,8 +383,6 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
                     padding: 25px;
                     margin-bottom: 20px;
                     border-left: 5px solid #667eea;
-                    break-inside: avoid;
-                    page-break-inside: avoid;
                 }}
                 .section h2 {{
                     color: #667eea;
@@ -452,8 +450,6 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
                     border-radius: 8px;
                     padding: 20px;
                     margin-bottom: 20px;
-                    break-inside: avoid;
-                    page-break-inside: avoid;
                 }}
                 .vehicle-header {{
                     border-bottom: 2px solid #667eea;
@@ -550,7 +546,6 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
             </div>
         </div>" : "";
 
-        // ✅ NUOVO: Mostra sessioni attive aggregate
         var activeSessions = company.ActiveSessionsCompany > 0 ? $@"
         <div class='stat-card' style='border-color: #10b981; background: #f0fdf4;'>
             <div class='stat-number' style='color: #10b981;'>{company.ActiveSessionsCompany}</div>
@@ -567,43 +562,40 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
             <div class='info-grid'>
                 <div class='info-item'>
                     <div class='info-label'>Ragione Sociale</div>
-                    <div class='info-value'>{company.Name}</div>
+                    <div class='info-value'>{(string.IsNullOrWhiteSpace(company.Name) ? "-" : company.Name)}</div>
                 </div>
                 <div class='info-item'>
                     <div class='info-label'>Partita IVA</div>
-                    <div class='info-value'>{company.VatNumber}</div>
+                    <div class='info-value'>{(string.IsNullOrWhiteSpace(company.VatNumber) ? "-" : company.VatNumber)}</div>
                 </div>
-                {(!string.IsNullOrWhiteSpace(company.Address) ? $@"
                 <div class='info-item'>
                     <div class='info-label'>Indirizzo</div>
-                    <div class='info-value'>{company.Address}</div>
-                </div>" : "")}
+                    <div class='info-value'>{(string.IsNullOrWhiteSpace(company.Address) ? "-" : company.Address)}</div>
+                </div>
                 <div class='info-item'>
                     <div class='info-label'>Email</div>
-                    <div class='info-value'>{company.Email}</div>
+                    <div class='info-value'>{(string.IsNullOrWhiteSpace(company.Email) ? "-" : company.Email)}</div>
                 </div>
-                {(!string.IsNullOrWhiteSpace(company.PecAddress) ? $@"
                 <div class='info-item'>
                     <div class='info-label'>PEC</div>
-                    <div class='info-value'>{company.PecAddress}</div>
-                </div>" : "")}
-                {(!string.IsNullOrWhiteSpace(company.LandlineNumber) ? $@"
+                    <div class='info-value'>{(string.IsNullOrWhiteSpace(company.PecAddress) ? "-" : company.PecAddress)}</div>
+                </div>
                 <div class='info-item'>
                     <div class='info-label'>Telefono</div>
-                    <div class='info-value'>{company.LandlineNumber}</div>
-                </div>" : "")}
+                    <div class='info-value'>{(string.IsNullOrWhiteSpace(company.LandlineNumber) ? "-" : company.LandlineNumber)}</div>
+                </div>
                 <div class='info-item'>
                     <div class='info-label'>Data Registrazione</div>
                     <div class='info-value'>{company.CompanyCreatedAt:dd/MM/yyyy} ({company.DaysRegistered} giorni fa)</div>
                 </div>
-                {(company.FirstVehicleActivation.HasValue ? $@"
                 <div class='info-item'>
                     <div class='info-label'>Prima Attivazione Veicolo</div>
-                    <div class='info-value'>{company.FirstVehicleActivation:dd/MM/yyyy HH:mm}</div>
-                </div>" : "")}
+                    <div class='info-value'>{(company.FirstVehicleActivation.HasValue ? $"{company.FirstVehicleActivation:dd/MM/yyyy HH:mm}" : "-")}</div>
+                </div>
             </div>
-
-            <h3 style='margin-top: 30px; margin-bottom: 15px; color: #495057;'>📈 Statistiche Flotta</h3>
+        </div>
+        <div class='section' style='page-break-before: always;'>
+            <h2>📈 Statistiche Flotta</h2>
             <div class='stats-grid'>
                 <div class='stat-card'>
                     <div class='stat-number'>{company.TotalVehicles}</div>
@@ -615,7 +607,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
                 </div>
                 <div class='stat-card'>
                     <div class='stat-number'>{company.FetchingVehicles}</div>
-                    <div class='stat-label'>In Acquisizione</div>
+                    <div class='stat-label'>Acquisizione Dati</div>
                 </div>
                 <div class='stat-card'>
                     <div class='stat-number'>{company.AuthorizedVehicles}</div>
@@ -680,7 +672,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
                             !string.IsNullOrWhiteSpace(vehicle.VehicleMobileNumber) ||
                             !string.IsNullOrWhiteSpace(vehicle.ReferentEmail) ? $@"
         <div class='info-grid' style='margin-top: 20px;'>
-            <h4 style='grid-column: 1 / -1; margin: 10px 0;'>👤 Referente Veicolo</h4>
+            <h4 style='grid-column: 1 / -1; margin-bottom: 5px;'>👤 Referente Veicolo</h4>
             {(!string.IsNullOrWhiteSpace(vehicle.ReferentName) ? $@"
             <div class='info-item'>
                 <div class='info-label'>Nome Referente</div>
