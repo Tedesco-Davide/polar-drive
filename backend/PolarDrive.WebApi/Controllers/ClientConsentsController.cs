@@ -266,6 +266,5 @@ public class CreateConsentRequest
     public int ClientCompanyId { get; set; }
     public int VehicleId { get; set; }
     public string ConsentType { get; set; } = string.Empty;
-    public DateTime UploadDate { get; set; }
     public string? Notes { get; set; }
 }
