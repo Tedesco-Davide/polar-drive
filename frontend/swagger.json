@@ -2152,18 +2152,6 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
-          },
-          "landlineNumbers": {
-            "type": "string",
-            "nullable": true
-          },
-          "mobileNumbers": {
-            "type": "string",
-            "nullable": true
-          },
-          "associatedPhones": {
-            "type": "string",
-            "nullable": true
           }
         },
         "additionalProperties": false

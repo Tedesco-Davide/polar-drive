@@ -41,9 +41,6 @@ public class ClientFullProfileViewDto
     
     public DateTime? FirstVehicleActivation { get; set; }
     public DateTime? LastReportGeneratedCompany { get; set; }
-    public string? LandlineNumbers { get; set; }
-    public string? MobileNumbers { get; set; }
-    public string? AssociatedPhones { get; set; }
 
     // ========================================
     // DATI VEICOLO (nullable se non ci sono veicoli)

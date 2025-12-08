@@ -41,9 +41,6 @@ public class CompanyProfileInfo
     public DateTime? LastActiveSessionExpiresCompany { get; set; }
     public DateTime? FirstVehicleActivation { get; set; }
     public DateTime? LastReportGeneratedCompany { get; set; }
-    public string? LandlineNumbers { get; set; }
-    public string? MobileNumbers { get; set; }
-    public string? AssociatedPhones { get; set; }
 }
 
 /// <summary>

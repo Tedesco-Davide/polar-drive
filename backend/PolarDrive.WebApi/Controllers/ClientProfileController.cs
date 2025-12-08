@@ -260,9 +260,6 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
 
                     FirstVehicleActivation = firstRow.FirstVehicleActivation,
                     LastReportGeneratedCompany = firstRow.LastReportGeneratedCompany,
-                    LandlineNumbers = firstRow.LandlineNumbers,
-                    MobileNumbers = firstRow.MobileNumbers,
-                    AssociatedPhones = firstRow.AssociatedPhones
                 },
                 Vehicles = rawData
                     .Where(r => r.VehicleId.HasValue)
