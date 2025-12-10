@@ -55,7 +55,9 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState<"id" | "status">("id");
+  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">(
+    "id"
+  );
   const pageSize = 5;
 
   const fetchOutages = async (page: number, searchQuery: string = "") => {
@@ -258,7 +260,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
             </th>
             <th className="p-4">{t("admin.outagePeriods.autoDetected")}</th>
             <th className="p-4">{t("admin.outagePeriods.status")}</th>
-            <th className="p-4">{t("admin.outagePeriods.outageType")}</th>
+            <th className="p-4">{t("admin.outageType")}</th>
             <th className="p-4">{t("admin.outagePeriods.outageBrand")}</th>
             <th className="p-4">
               {t("admin.outagePeriods.outageStart")} -{" "}
@@ -404,7 +406,9 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
           searchMode="id-or-status"
           externalSearchType={searchType}
           onSearchTypeChange={setSearchType}
+          outageLabel={t("admin.outageType")}
           availableStatuses={["OUTAGE-ONGOING", "OUTAGE-RESOLVED"]}
+          availableOutageTypes={["Outage Vehicle", "Outage Fleet Api"]}
         />
       </div>
 

@@ -312,7 +312,7 @@ export default function AdminOutagePeriodsAddForm({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
-            {t("admin.outagePeriods.outageType")}
+            {t("admin.outageType")}
           </span>
           <select
             name="outageType"

@@ -91,7 +91,7 @@ WORKDIR /app
 RUN echo '{"name": "polardrive-pdf", "version": "1.0.0", "description": "PDF generation for PolarDrive"}' > package.json
 
 RUN echo "📦 Installing Puppeteer..." \
-    && npm install puppeteer@23.11.1 --save --no-optional \
+    && npm install puppeteer@^24.15.0 --save --omit=optional \
     && npm cache clean --force
 
 RUN echo "✅ Verifying Puppeteer installation..." \
@@ -123,7 +123,7 @@ USER app
 # Scarica Chrome per Puppeteer come utente 'app'
 RUN echo "🌐 Downloading Chrome for Puppeteer as app..." \
     && cd /app \
-    && npx puppeteer browsers install chrome \
+    && npx puppeteer@^24.15.0 browsers install chrome \
     && echo "✅ Chrome downloaded successfully"
 
 # Verifica Chrome installato usando la HOME corretta

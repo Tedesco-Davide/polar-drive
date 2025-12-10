@@ -38,7 +38,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState<"id" | "status">("id");
+  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">("id");
   const pageSize = 5;
 
   const fetchConsents = async (page: number, searchQuery: string = "") => {
@@ -50,8 +50,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       });
       if (searchQuery) {
         params.append("search", searchQuery);
-        const type = searchType === "id" ? "id" : "status";
-        params.append("searchType", type);
+        params.append("searchType", searchType);
       }
       const res = await fetch(`/api/clientconsents?${params}`);
       if (!res.ok) throw new Error("HTTP " + res.status);

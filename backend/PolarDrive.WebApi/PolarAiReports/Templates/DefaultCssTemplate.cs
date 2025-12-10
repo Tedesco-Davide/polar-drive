@@ -473,17 +473,20 @@ public static class DefaultCssTemplate
             width: 135px;
         }
 
-        .detailed-log-badge-default-profile,
-        .detailed-log-badge-success-dataValidated {
+        .detailed-log-badge-default-profile {
             background: #f5f5f5;
         }
 
-        .detailed-log-badge-success-profile {
-            background: #4a9a59;
+        .detailed-log-badge-success-dataValidated {
+            background: #a9c7afff;
         }
 
         .detailed-log-badge-warning-dataValidated {
-            background: #fff080;
+            background: #f0df62ff;
+        }
+
+        .detailed-log-badge-error-dataValidated {
+            background: #b97272ff;
         }
 
         .cert-warning {

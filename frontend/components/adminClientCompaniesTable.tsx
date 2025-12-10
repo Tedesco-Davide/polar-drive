@@ -22,7 +22,7 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState<"id" | "status">("id");
+  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">("id");
   const pageSize = 5;
 
   const fetchClients = async (page: number, searchQuery: string = "") => {

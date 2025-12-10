@@ -33,10 +33,10 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
                 .AsQueryable();
 
             // Filtro ricerca
-if (!string.IsNullOrWhiteSpace(search))
+            if (!string.IsNullOrWhiteSpace(search))
             {
                 var trimmed = search.Trim();
-                
+
                 if (searchType == "id" && int.TryParse(trimmed, out int searchId))
                 {
                     var searchIdStr = searchId.ToString();
@@ -44,9 +44,8 @@ if (!string.IsNullOrWhiteSpace(search))
                 }
                 else if (searchType == "status")
                 {
-                    var pattern = $"%{trimmed}%";
                     var statusValue = trimmed.ToUpper();
-                    
+
                     if (statusValue.Contains("ONGOING"))
                     {
                         query = query.Where(o => o.OutageEnd == null);
@@ -55,6 +54,10 @@ if (!string.IsNullOrWhiteSpace(search))
                     {
                         query = query.Where(o => o.OutageEnd != null);
                     }
+                }
+                else if (searchType == "outageType")
+                {
+                    query = query.Where(o => o.OutageType == trimmed);
                 }
             }
 

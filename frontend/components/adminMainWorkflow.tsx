@@ -61,7 +61,7 @@ export default function AdminMainWorkflow() {
     clientOAuthAuthorized: false,
   });
 
-  const [searchType, setSearchType] = useState<"id" | "status">("id");
+  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">("id");
 
 const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
     try {
@@ -576,6 +576,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                       : "bg-gray-400 cursor-not-allowed opacity-20"
                   } text-softWhite rounded`}
                   disabled={!entry.isVehicleActive}
+                  title={t("admin.mainWorkflow.alerts.adaptiveSmsTooltip")}
                   onClick={() => {
                     if (entry.isVehicleActive) {
                       setSelectedVehicleForSms({
@@ -594,6 +595,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                 <button
                   className="p-2 text-softWhite rounded bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
                   disabled={generatingProfileId === entry.companyId}
+                  title={t("admin.mainWorkflow.alerts.clientProfileTooltip")}
                   onClick={() =>
                     handleGenerateClientProfile(
                       entry.companyId,
@@ -610,6 +612,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                 </button>
                 <button
                   className="p-2 bg-yellow-500 hover:bg-yellow-600 text-softWhite rounded"
+                  title={t("admin.mainWorkflow.alerts.clientZipConsentsTooltip")}
                   onClick={() =>
                     handleDownloadAllConsents(
                       entry.companyVatNumber,

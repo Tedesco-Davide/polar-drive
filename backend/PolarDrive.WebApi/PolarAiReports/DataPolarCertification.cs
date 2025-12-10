@@ -247,6 +247,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                 var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized)
                     ? "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>"
                     : "<span class='detailed-log-badge-warning-dataValidated'>Dati operativi da validare</span>";
+
                 var formattedDate = $"{record.Timestamp:dd-MM-yyyy}".Replace("-", "/");
                 
                 sb.AppendLine("<tr class='record-present'>");
@@ -259,8 +260,8 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
             {
                 sb.AppendLine("<tr class='record-missing'>");
                 sb.AppendLine($"<td>{currentTime:dd-MM-yyyy} - {currentTime:HH:mm}</td>");
-                sb.AppendLine("<td><span class='badge-default'>No</span></td>");
-                sb.AppendLine("<td><span class='badge-warning'>Dati operativi da validare</span></td>");
+                sb.AppendLine("<td><span class='detailed-log-badge-default-profile'> - </span></td>");
+                sb.AppendLine("<td><span class='detailed-log-badge-error-dataValidated'>Record da validare</span></td>");
                 sb.AppendLine("</tr>");
             }
 

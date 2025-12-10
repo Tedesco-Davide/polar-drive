@@ -9,15 +9,18 @@ type SearchBarProps = {
   onSearch?: (searchValue: string) => void;
   placeholderKey?: string;
   searchMode?: "id-or-status" | "vin-or-company" | "default";
-  externalSearchType?: "id" | "status";
-  onSearchTypeChange?: (type: "id" | "status") => void;
+  externalSearchType?: "id" | "status" | "outageType";
+  onSearchTypeChange?: (type: "id" | "status" | "outageType") => void;
   availableStatuses?: string[];
   statusLabel?: string;
+  outageLabel?: string;
+  outageTypePlaceholder?: string;
   selectPlaceholder?: string;
   vatLabel?: string;
   companyLabel?: string;
   vinPlaceholder?: string;
   companyPlaceholder?: string;
+  availableOutageTypes?: string[];
 };
 
 export default function SearchBar({
@@ -31,15 +34,18 @@ export default function SearchBar({
   onSearchTypeChange,
   availableStatuses,
   statusLabel,
+  outageLabel,
+  outageTypePlaceholder,
   selectPlaceholder,
   vatLabel,
   companyLabel,
   vinPlaceholder,
   companyPlaceholder,
+  availableOutageTypes,
 }: SearchBarProps) {
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(query);
-  const [searchType, setSearchType] = useState<"id" | "status">(
+  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">(
     externalSearchType || "id"
   );
 
@@ -107,6 +113,20 @@ export default function SearchBar({
           >
             {statusLabel || t("admin.status")}
           </button>
+          <button
+            onClick={() => {
+              setSearchType("outageType");
+              onSearchTypeChange?.("outageType");
+              setLocalValue("");
+            }}
+            className={`px-4 py-2 text-sm font-medium transition-colors ${
+              searchType === "outageType"
+                ? "bg-blue-500 text-white"
+                : "text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+            }`}
+          >
+            {outageLabel || t("admin.outageType")}
+          </button>
         </div>
 
         <button
@@ -136,7 +156,7 @@ export default function SearchBar({
             placeholder={t("admin.vehicleReports.searchPlaceholder")}
             className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
           />
-        ) : (
+        ) : searchType === "status" ? (
           <select
             value={localValue}
             onChange={(e) => setLocalValue(e.target.value)}
@@ -148,6 +168,19 @@ export default function SearchBar({
             {defaultStatuses.map((status) => (
               <option key={status} value={status}>
                 {status}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <select
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
+          >
+            <option value="">{outageTypePlaceholder || t("admin.searchButton.outageTypePlaceholder")}</option>
+            {(availableOutageTypes || []).map((type) => (
+              <option key={type} value={type}>
+                {type}
               </option>
             ))}
           </select>
