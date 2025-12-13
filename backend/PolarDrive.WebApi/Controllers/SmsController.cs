@@ -31,7 +31,7 @@ public class SmsController(
     /// </summary>
     [HttpGet("webhook")] // Vonage può chiamare in GET
     [HttpPost("webhook")]
-    public async Task<ActionResult> ReceiveSms([FromForm] SmsWebhookDTO? dto)
+    public async Task<ActionResult> ReceiveSms([FromQuery] SmsWebhookDTO? dto)
     {
         // Leggi dai parametri HTTP se dto è nullo o parziale
         string from = dto?.From 

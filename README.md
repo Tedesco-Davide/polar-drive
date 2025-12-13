@@ -4,6 +4,10 @@ Repository per il progetto **PolarDrive**.
 
 ---
 
+### 🟠 CLOUDFARE
+
+- LE CONFIGURAZIONI PRINCIPALI SONO SOTTO => C:\Users\Tedesco Davide\.cloudflared
+
 ### ⚙️ GENERICHE COMUNI
 
 - backend/PolarDrive.WebApi/Constants/CommonConstants.cs => CONTIENE CONFIG PRINCIPALI APPLICATIVO => ESEMPIO: MONTHLY_HOURS_THRESHOLD

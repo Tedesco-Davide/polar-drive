@@ -169,7 +169,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             LastDeactivationAt = ParseDate(dto.LastDeactivationAt),
             CreatedAt = DateTime.Now,
             ReferentName = dto.ReferentName,
-            VehicleMobileNumber = dto.VehicleMobileNumber,
+            VehicleMobileNumber = NormalizePhoneNumber(dto.VehicleMobileNumber),
             ReferentEmail = dto.ReferentEmail,
         };
 
@@ -281,7 +281,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
         vehicle.FirstActivationAt = ParseDate(dto.FirstActivationAt);
         vehicle.LastDeactivationAt = ParseDate(dto.LastDeactivationAt);
         vehicle.ReferentName = dto.ReferentName;
-        vehicle.VehicleMobileNumber = dto.VehicleMobileNumber;
+        vehicle.VehicleMobileNumber = NormalizePhoneNumber(dto.VehicleMobileNumber);
         vehicle.ReferentEmail = dto.ReferentEmail;
 
         await db.SaveChangesAsync();
@@ -293,5 +293,27 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
     private static DateTime? ParseDate(string? date)
     {
         return DateTime.TryParse(date, out var d) ? d : null;
+    }
+
+    /// <summary>
+    /// Normalizza il numero di telefono aggiungendo +39 se necessario
+    /// </summary>
+    private static string? NormalizePhoneNumber(string? phoneNumber)
+    {
+        if (string.IsNullOrWhiteSpace(phoneNumber))
+            return phoneNumber;
+
+        var trimmed = phoneNumber.Trim();
+        
+        // Se inizia già con +, mantienilo così
+        if (trimmed.StartsWith("+"))
+            return trimmed;
+        
+        // Se sono 10 cifre, aggiungi +39
+        if (trimmed.Length == 10 && trimmed.All(char.IsDigit))
+            return $"+39{trimmed}";
+        
+        // Altrimenti ritorna così com'è
+        return trimmed;
     }
 }

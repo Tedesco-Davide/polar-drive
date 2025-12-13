@@ -206,7 +206,8 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       return;
     }
 
-    const vehicleMobileNumberRegex = /^[0-9]{10}$/;
+    // Accetta 10 cifre (3926321311) o +39 seguito da 10 cifre (+393926321311)
+    const vehicleMobileNumberRegex = /^(\+39)?[0-9]{10}$/;
     if (!vehicleMobileNumberRegex.test(formData.vehicleMobileNumber)) {
       alert(t("admin.validation.invalidMobile"));
       return;

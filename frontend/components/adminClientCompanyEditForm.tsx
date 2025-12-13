@@ -62,7 +62,7 @@ export default function AdminClientCompanyEditForm({
     // ✅ Cellulare referente obbligatorio + esattamente 10 cifre
     if (
       !formData.vehicleMobileNumber?.trim() ||
-      !/^[0-9]{10}$/.test(formData.vehicleMobileNumber.trim())
+      !/^(\+39)?[0-9]{10}$/.test(formData.vehicleMobileNumber.trim())
     ) {
       alert(t("admin.validation.invalidMobile"));
       return;
