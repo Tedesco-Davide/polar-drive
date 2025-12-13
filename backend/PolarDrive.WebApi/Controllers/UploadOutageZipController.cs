@@ -18,6 +18,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
     private readonly PolarDriveLogger _logger = new();
 
     [HttpPost]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadOutage(
         [FromForm] string outageType,
         [FromForm] string outageBrand,
@@ -208,6 +209,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
     }
 
     [HttpPost("{outageId}/upload-zip")]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> UploadZipToExistingOutage(
         int outageId,
         [FromForm] IFormFile zipFile,
