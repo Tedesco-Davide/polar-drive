@@ -236,20 +236,20 @@ public class PdfReportsController(
                 .FirstOrDefaultAsync(r => r.Id == id);
 
             if (report == null)
-                return NotFound(new { errorCode = "REPORT_NOT_FOUND", message = "Report non trovato" });
+                return NotFound(new { errorCode = "REPORT_NOT_FOUND" });
 
             if (!string.IsNullOrWhiteSpace(report.PdfHash) &&
                 report.PdfContent != null &&
                 report.PdfContent.Length > 0)
             {
-                return Conflict(new { errorCode = "REPORT_ALREADY_COMPLETED", message = "Report già completato e certificato" });
+                return Conflict(new { errorCode = "REPORT_ALREADY_COMPLETED" });
             }
 
             var regenerableStatuses = new[] { "PROCESSING", "ERROR" };
             if (!string.IsNullOrWhiteSpace(report.Status) &&
                 !regenerableStatuses.Contains(report.Status))
             {
-                return BadRequest(new { errorCode = "REPORT_NOT_REGENERABLE", message = "Report non rigenerabile", status = report.Status });
+                return BadRequest(new { errorCode = "REPORT_NOT_REGENERABLE", status = report.Status });
             }
 
             // Salva parametri

@@ -192,12 +192,12 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
       setDownloadingJobId(null);
     } catch {
       setDownloadingJobId(null);
-      alert("Errore durante il download del file ZIP");
+      alert(t("admin.filemanager.error.downloadZipFailed"));
     }
   };
 
   const handleDeleteJob = async (job: FileManager) => {
-    if (!confirm("Sei sicuro di voler eliminare questo job di download PDF?"))
+    if (!confirm(t("admin.filemanager.confirmDeleteJob")))
       return;
 
     try {
@@ -209,7 +209,7 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
       setLocalJobs((prev) => prev.filter((j) => j.id !== job.id));
       setTimeout(() => fetchJobs(currentPage, query), 200);
     } catch {
-      alert("Errore durante l'eliminazione del job");
+      alert(t("admin.filemanager.error.deleteJobFailed"));
     }
   };
 

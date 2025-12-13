@@ -207,7 +207,7 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         try
         {
             var company = await _db.ClientCompanies.FirstOrDefaultAsync(c => c.VatNumber == vatNumber);
-            if (company == null) return NotFound(new { success = false, message = "Azienda non trovata" });
+            if (company == null) return NotFound(new { success = false, errorCode = "COMPANY_NOT_FOUND" });
 
             var allConsents = await _db.ClientConsents
                 .Include(c => c.ClientVehicle)
@@ -216,11 +216,11 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
                 .ToListAsync();
 
             if (!allConsents.Any())
-                return Ok(new { success = true, hasData = false, message = "Nessun consenso trovato" });
+                return Ok(new { success = true, hasData = false, errorCode = "NO_CONSENTS_FOUND" });
 
             var consentsWithZip = allConsents.Where(c => c.ZipContent != null && c.ZipContent.Length > 0).ToList();
             if (!consentsWithZip.Any())
-                return Ok(new { success = true, hasData = false, message = "Nessun file disponibile" });
+                return Ok(new { success = true, hasData = false, errorCode = "NO_FILES_AVAILABLE" });
 
             using var zipStream = new MemoryStream();
             using (var archive = new ZipArchive(zipStream, ZipArchiveMode.Create, leaveOpen: true))

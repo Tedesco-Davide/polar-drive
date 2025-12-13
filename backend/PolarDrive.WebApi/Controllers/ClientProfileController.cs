@@ -30,13 +30,13 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
             var company = await _db.ClientCompanies.FindAsync(companyId);
             if (company == null)
             {
-                return NotFound(new { message = "Azienda non trovata", errorCode = "COMPANY_NOT_FOUND" });
+                return NotFound(new { errorCode = "COMPANY_NOT_FOUND" });
             }
 
             var profileData = await GetClientProfileDataAsync(companyId);
             if (profileData == null)
             {
-                return NotFound(new { message = "Dati del profilo non disponibili", errorCode = "PROFILE_DATA_NOT_FOUND" });
+                return NotFound(new { errorCode = "PROFILE_DATA_NOT_FOUND" });
             }
 
             return Ok(profileData);
@@ -45,7 +45,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
         {
             await _logger.Error("ClientProfileController.GetClientProfileData",
                 $"Error retrieving client profile data for company {companyId}", ex.ToString());
-            return StatusCode(500, new { errorCode = "INTERNAL_SERVER_ERROR", message = "Errore interno del server" });
+            return StatusCode(500, new { errorCode = "INTERNAL_SERVER_ERROR" });
         }
     }
 
@@ -60,13 +60,13 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
             var company = await _db.ClientCompanies.FindAsync(companyId);
             if (company == null)
             {
-                return NotFound(new { errorCode = "COMPANY_NOT_FOUND", message = "Azienda non trovata" });
+                return NotFound(new { errorCode = "COMPANY_NOT_FOUND" });
             }
 
             var profileData = await GetClientProfileDataAsync(companyId);
             if (profileData == null)
             {
-                return NotFound(new { message = "Dati del profilo non disponibili", errorCode = "PROFILE_DATA_NOT_FOUND" });
+                return NotFound(new { errorCode = "PROFILE_DATA_NOT_FOUND" });
             }
 
             var basePath = "/app/wwwroot/fonts/satoshi";

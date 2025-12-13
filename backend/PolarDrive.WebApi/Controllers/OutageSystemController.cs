@@ -301,7 +301,7 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
 
             if (outageDetectionService == null)
             {
-                return BadRequest(new { error = "OutageDetectionService not available" });
+                return BadRequest(new { errorCode = "SERVICE_NOT_AVAILABLE" });
             }
 
             // Esegui tutti i controlli

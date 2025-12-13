@@ -251,7 +251,6 @@
   "admin.backend.REPORT_NOT_REGENERABLE": "Report not regenerable (status: {{status}})",
   "admin.backend.COMPANY_NOT_FOUND": "Company not found",
   "admin.backend.PROFILE_DATA_NOT_FOUND": "Profile data not available",
-  "admin.backend.INTERNAL_SERVER_ERROR": "Internal server error",
   "admin.backend.DUPLICATE_CONSENT_HASH": "This file has already been uploaded (duplicate hash)",
   "admin.vehicleReports.fullHash": "Full Hash",
   "admin.vehicleReports.hashCopied": "Hash copied!",
@@ -345,5 +344,13 @@
   "admin.outagePeriods.validation.outageEndBeforeStart": "End date cannot be earlier than start date",
   "admin.outagePeriods.validation.outageEndInFuture": "End date cannot be in the future",
   "admin.vehicleReports.regenerateConfirmationMessage": "⚠️ REPORT REGENERATION\n\nReport ID: {{id}}\nCompany: {{companyName}} ({{companyVatNumber}})\nVehicle: {{vehicleVin}}\nPeriod: {{start}} - {{end}}\n\nCurrent status: {{status}}\n\nThis operation will start report regeneration.\nThe process might take several minutes.\n\n⚠️ NOTE: If the report has already been completed successfully,\nregeneration will be blocked for compliance.\n\nProceed?",
-  "admin.vehicleReports.regenerationStarted": "✅ REGENERATION STARTED\n\nReport ID: {{id}}\n\nThe process has been started in background.\nThe page will refresh automatically.\n\nStatus: {{status}}\n\nNote: The process might take several minutes"
+  "admin.vehicleReports.regenerationStarted": "✅ REGENERATION STARTED\n\nReport ID: {{id}}\n\nThe process has been started in background.\nThe page will refresh automatically.\n\nStatus: {{status}}\n\nNote: The process might take several minutes",
+  "admin.filemanager.error.downloadZipFailed": "Error downloading ZIP file",
+  "admin.filemanager.confirmDeleteJob": "Are you sure you want to delete this PDF download job?",
+  "admin.filemanager.error.deleteJobFailed": "Error deleting job",
+  "admin.backend.BRAND_REQUIRED": "Brand is required",
+  "admin.backend.SERVICE_NOT_AVAILABLE": "Service not available",
+  "admin.backend.INTERNAL_SERVER_ERROR": "Internal server error",
+  "admin.backend.NO_CONSENTS_FOUND": "No consents found",
+  "admin.backend.NO_FILES_AVAILABLE": "No files available"
 }

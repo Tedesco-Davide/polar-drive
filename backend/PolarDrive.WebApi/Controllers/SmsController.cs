@@ -734,7 +734,7 @@ public class SmsController(
         {
             if (string.IsNullOrWhiteSpace(brand))
             {
-                return BadRequest(new { error = "Brand obbligatorio" });
+                return BadRequest(new { errorCode = "BRAND_REQUIRED" });
             }
 
             var consents = await _db.SmsAdaptiveGdpr
