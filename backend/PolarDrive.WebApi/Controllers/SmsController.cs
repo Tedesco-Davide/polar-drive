@@ -31,23 +31,32 @@ public class SmsController(
     /// </summary>
     [HttpGet("webhook")] // Vonage può chiamare in GET
     [HttpPost("webhook")]
-    public async Task<ActionResult> ReceiveSms([FromQuery] SmsWebhookDTO? dto)
+    [Consumes("application/x-www-form-urlencoded", "application/json")]
+    public async Task<ActionResult> ReceiveSms([FromForm] SmsWebhookDTO? dto)
     {
-        // Leggi dai parametri HTTP se dto è nullo o parziale
-        string from = dto?.From 
-            ?? GetParam("msisdn") 
+        // Unifica parametri Vonage (msisdn, text) e custom (From, Body)
+        string from = dto?.msisdn 
+            ?? dto?.From 
+            ?? GetParam("msisdn")
+            ?? GetParam("From")
             ?? string.Empty;
 
-        string to = dto?.To
+        string to = dto?.to
+            ?? dto?.To
             ?? GetParam("to")
+            ?? GetParam("To")
             ?? string.Empty;
 
-        string body = dto?.Body
+        string body = dto?.text
+            ?? dto?.Body
             ?? GetParam("text")
+            ?? GetParam("Body")
             ?? string.Empty;
 
-        string messageId = dto?.MessageSid
+        string messageId = dto?.messageId
+            ?? dto?.MessageSid
             ?? GetParam("messageId")
+            ?? GetParam("MessageSid")
             ?? string.Empty;
 
         var auditLog = new SmsAuditLog
@@ -181,7 +190,7 @@ public class SmsController(
     private async Task<ActionResult> HandleAdaptiveGdprCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
     {
         // Estrai parametri: "ADAPTIVE_GDPR Rossi Mario +393331234567"
-        var parts = dto.Body.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var parts = dto.Body?.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
         if (parts.Length < 4)  // comando + cognome + nome + numero
         {
             auditLog.ProcessingStatus = "ERROR";
@@ -236,7 +245,7 @@ public class SmsController(
             AdaptiveSurnameName = fullName,
             ReceivedAt = DateTime.Now,
             ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
-            MessageContent = dto.Body,
+            MessageContent = dto.Body!,
             ParsedCommand = "ADAPTIVE_PROFILE_OFF",
             ConsentAccepted = false,
             SmsAdaptiveGdprId = gdprRequest.Id
@@ -300,7 +309,7 @@ public class SmsController(
         // Invia SMS di conferma
         var confirmMessage = $@"Autorizzazione ADAPTIVE_GDPR confermata per {gdprRequest.Brand} da {gdprRequest.ClientCompany?.Name} ID Consenso: #{gdprRequest.Id} ❌ Consenso revocabile rispondendo a questo SMS con: STOP";
 
-        await _smsConfig.SendSmsAsync(dto.From, confirmMessage);
+        await _smsConfig.SendSmsAsync(dto.From!, confirmMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
         auditLog.ResponseSent = confirmMessage;
@@ -346,7 +355,7 @@ public class SmsController(
         // Invia SMS di conferma revoca
         var stopMessage = $@"Autorizzazione ADAPTIVE_GDPR rimossa per {gdprRequest.Brand} ID Consenso: #{gdprRequest.Id} ❌ Tutti i consensi ed i dati personali / informazioni sono state rimosse dal sistema a norma del GDPR";
 
-        await _smsConfig.SendSmsAsync(dto.From, stopMessage);
+        await _smsConfig.SendSmsAsync(dto.From!, stopMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
         auditLog.ResponseSent = stopMessage;
@@ -398,7 +407,7 @@ public class SmsController(
     private async Task<ActionResult> HandleAdaptiveProfileCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
     {
         // Estrai parametri: "ADAPTIVE_PROFILE Rossi Mario +393331234567 VIN123ABC456"
-        var parts = dto.Body.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var parts = dto.Body!.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length < 5)  // comando + cognome + nome + numero + VIN
         {
             auditLog.ProcessingStatus = "ERROR";
@@ -457,7 +466,7 @@ public class SmsController(
             // Invia SMS al VehicleMobileNumber (il mittente)
             var warningMessage = $@"ATTENZIONE {vehicle.ReferentName}! Procedura ADAPTIVE_GDPR mai eseguita per {fullName} ({targetPhone}). Completare la procedura ADAPTIVE_GDPR prima di continuare";
 
-            await _smsConfig.SendSmsAsync(dto.From, warningMessage);
+            await _smsConfig.SendSmsAsync(dto.From!, warningMessage);
 
             auditLog.ResponseSent = warningMessage;
             await SaveAuditLogAsync(auditLog);

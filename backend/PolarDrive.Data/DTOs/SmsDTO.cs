@@ -3,21 +3,21 @@ using System.ComponentModel.DataAnnotations;
 namespace PolarDrive.Data.DTOs;
 
 /// <summary>
-/// DTO per webhook SMS
+/// DTO per webhook SMS (Vonage usa: msisdn, to, text, messageId)
 /// </summary>
 public class SmsWebhookDTO
 {
-    [Required]
-    public string MessageSid { get; set; } = string.Empty;
+    public string? messageId { get; set; }
+    public string? MessageSid { get; set; }
+    
+    public string? msisdn { get; set; }
+    public string? From { get; set; }
 
-    [Required]
-    public string From { get; set; } = string.Empty;
+    public string? to { get; set; }
+    public string? To { get; set; }
 
-    [Required]
-    public string To { get; set; } = string.Empty;
-
-    [Required]
-    public string Body { get; set; } = string.Empty;
+    public string? text { get; set; }
+    public string? Body { get; set; }
 }
 
 /// <summary>
