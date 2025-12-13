@@ -35,8 +35,8 @@ public class SmsController(
     public async Task<ActionResult> ReceiveSms([FromForm] SmsWebhookDTO? dto)
     {
         // Unifica parametri Vonage (msisdn, text) e custom (From, Body)
-        string from = dto?.msisdn 
-            ?? dto?.From 
+        string from = dto?.msisdn
+            ?? dto?.From
             ?? GetParam("msisdn")
             ?? GetParam("From")
             ?? string.Empty;
@@ -109,7 +109,7 @@ public class SmsController(
             // 📱 2. PARSING COMANDO
             var command = ParseSmsCommand(body);
 
-            // 🎯 3. G<<<ESTIONE COMANDI
+            // 🎯 3. GESTIONE COMANDI
             if (command.StartsWith("ADAPTIVE_GDPR"))
                 return await HandleAdaptiveGdprCommand(
                     new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command, from);
@@ -201,15 +201,71 @@ public class SmsController(
             return OkSms(errorResponse);
         }
 
-        var surname = parts[1];
-        var name = parts[2];
-        var fullName = $"{surname} {name}";  // "Rossi Mario"
-        var targetPhone = NormalizePhoneNumber(parts[3]);
+        // Support flexible formats: "ADAPTIVE_GDPR Cognome Nome Numero" OR "ADAPTIVE_GDPR Numero Cognome Nome"
+        string surname;
+        string name;
+        string fullName;
+        string targetPhoneRaw;
+
+        bool IsPhoneToken(string token) => Regex.IsMatch(token ?? string.Empty, "[0-9]");
+
+        if (IsPhoneToken(parts[1]))
+        {
+            // format: ADAPTIVE_GDPR <phone> <surname> <name>
+            targetPhoneRaw = parts[1];
+            surname = parts.Length > 2 ? parts[2] : string.Empty;
+            name = parts.Length > 3 ? parts[3] : string.Empty;
+        }
+        else if (parts.Length > 3 && IsPhoneToken(parts[3]))
+        {
+            // format: ADAPTIVE_GDPR <surname> <name> <phone>
+            surname = parts[1];
+            name = parts[2];
+            targetPhoneRaw = parts[3];
+        }
+        else
+        {
+            // fallback: find first token containing digits
+            var phoneToken = parts.FirstOrDefault(p => IsPhoneToken(p));
+            if (phoneToken == null)
+            {
+                auditLog.ProcessingStatus = "ERROR";
+                auditLog.ErrorMessage = "Formato comando ADAPTIVE_GDPR non valido (numero mancante)";
+                var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa formato: ADAPTIVE_GDPR Cognome Nome 3334455666");
+                auditLog.ResponseSent = errorResponse;
+                await SaveAuditLogAsync(auditLog);
+                return OkSms(errorResponse);
+            }
+
+            targetPhoneRaw = phoneToken;
+            // attempt to assign surname/name from first two non-command tokens
+            surname = parts.Length > 1 ? parts[1] : string.Empty;
+            name = parts.Length > 2 ? parts[2] : string.Empty;
+        }
+
+        fullName = $"{surname} {name}".Trim();
+        var targetPhone = NormalizePhoneNumber(targetPhoneRaw);
 
         // Verifica che il mittente sia un VehicleMobileNumber registrato
-        var vehicle = await _db.ClientVehicles
+        var normalizedFrom = NormalizePhoneNumber(from);
+
+        // Confronto più tollerante: compariamo solo le cifre (rimuovendo + e altri simboli)
+        // e accettiamo anche che uno dei due numeri sia suffisso dell'altro (es. +39XXXXXXXXXX vs XXXXXXXXXX).
+        static string DigitsOnly(string s) => Regex.Replace(s ?? string.Empty, "\\D", "");
+
+        var fromDigits = DigitsOnly(normalizedFrom);
+
+        // Carica in memoria solo i veicoli attivi e poi fai il matching tollerante sui numeri
+        var candidates = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == from && v.IsActiveFlag);
+            .Where(v => v.IsActiveFlag)
+            .ToListAsync();
+
+        var vehicle = candidates.FirstOrDefault(v =>
+        {
+            var vDigits = DigitsOnly(NormalizePhoneNumber(v.VehicleMobileNumber ?? string.Empty));
+            return vDigits == fromDigits || vDigits.EndsWith(fromDigits) || fromDigits.EndsWith(vDigits);
+        });
 
         if (vehicle == null)
         {
@@ -222,43 +278,85 @@ public class SmsController(
         }
 
         // Crea richiesta GDPR con tutti i campi obbligatori
-        var gdprRequest = new SmsAdaptiveGdpr
-        {
-            AdaptiveNumber = targetPhone,
-            AdaptiveSurnameName = fullName,
-            Brand = vehicle.Brand,
-            ClientCompanyId = vehicle.ClientCompanyId,
-            ConsentToken = SmsAdaptiveGdpr.GenerateSecureToken(),
-            RequestedAt = DateTime.Now,
-            ConsentAccepted = false,
-            AttemptCount = 1
-        };
+        var gdprRequest = await _db.SmsAdaptiveGdpr
+                    .FirstOrDefaultAsync(g => g.AdaptiveNumber == targetPhone
+                                           && g.AdaptiveSurnameName == fullName
+                                           && g.Brand == vehicle.Brand);
 
-        _db.SmsAdaptiveGdpr.Add(gdprRequest);
+        if (gdprRequest == null)
+        {
+            gdprRequest = new SmsAdaptiveGdpr
+            {
+                AdaptiveNumber = targetPhone,
+                AdaptiveSurnameName = fullName,
+                Brand = vehicle.Brand,
+                ClientCompanyId = vehicle.ClientCompanyId,
+                ConsentToken = SmsAdaptiveGdpr.GenerateSecureToken(),
+                RequestedAt = DateTime.Now,
+                ConsentAccepted = false,
+                AttemptCount = 1
+            };
+            _db.SmsAdaptiveGdpr.Add(gdprRequest);
+        }
+        else
+        {
+            gdprRequest.AttemptCount++;
+            gdprRequest.RequestedAt = DateTime.Now;
+            gdprRequest.ConsentToken = SmsAdaptiveGdpr.GenerateSecureToken();
+        }
+
         await _db.SaveChangesAsync();
 
         // Crea riga ADAPTIVE_PROFILE (vuota, in attesa di attivazione)
-        var profileEvent = new SmsAdaptiveProfile
-        {
-            VehicleId = vehicle.Id,
-            AdaptiveNumber = targetPhone,
-            AdaptiveSurnameName = fullName,
-            ReceivedAt = DateTime.Now,
-            ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
-            MessageContent = dto.Body!,
-            ParsedCommand = "ADAPTIVE_PROFILE_OFF",
-            ConsentAccepted = false,
-            SmsAdaptiveGdprId = gdprRequest.Id
-        };
+        var profileEvent = await _db.SmsAdaptiveProfile
+                    .FirstOrDefaultAsync(p => p.VehicleId == vehicle.Id && p.AdaptiveNumber == targetPhone);
 
-        _db.SmsAdaptiveProfile.Add(profileEvent);
+        if (profileEvent == null)
+        {
+            profileEvent = new SmsAdaptiveProfile
+            {
+                VehicleId = vehicle.Id,
+                AdaptiveNumber = targetPhone,
+                AdaptiveSurnameName = fullName,
+                ReceivedAt = DateTime.Now,
+                ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
+                MessageContent = dto.Body!,
+                ParsedCommand = "ADAPTIVE_PROFILE_OFF",
+                ConsentAccepted = false,
+                SmsAdaptiveGdprId = gdprRequest.Id
+            };
+            _db.SmsAdaptiveProfile.Add(profileEvent);
+        }
+        else
+        {
+            profileEvent.AdaptiveSurnameName = fullName;
+            profileEvent.ReceivedAt = DateTime.Now;
+            profileEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD);
+            profileEvent.MessageContent = dto.Body!;
+            profileEvent.SmsAdaptiveGdprId = gdprRequest.Id;
+        }
+
         await _db.SaveChangesAsync();
 
         // Invia SMS al numero target
-        var gdprMessage = $@"DataPolar - Procedura ADAPTIVE_GDPR - Consenso utilizzo {vehicle.Brand} da {vehicle.ClientCompany?.Name} Per guidare questo veicolo e dare il suo apporto di Ricerca & Sviluppo, deve accettare il trattamento dati GPS/telemetria come richiesto da {vehicle.Brand}. 📄 Informativa completa: [short.link/gdpr-pdf] Risponda: ✅ ACCETTO - per dare consenso esplicito ℹ️ Ignora SMS per negare il consenso";
+        var gdprMessage = $"DataPolar: Consenso GDPR per {vehicle.Brand} e Google Ads. Info: short.link/gdpr. Rispondi ACCETTO per confermare.";
+
+        // Validazione preventiva: assicuriamoci che il numero target contenga cifre vere
+        var targetDigits = DigitsOnly(targetPhone);
+        if (string.IsNullOrWhiteSpace(targetDigits) || targetDigits.Length < 6)
+        {
+            auditLog.ProcessingStatus = "ERROR";
+            auditLog.ErrorMessage = "Numero destinatario non valido";
+            var invalidResponse = GenerateSmsResponse("❌ Numero destinatario non valido. Verifica il formato del numero.");
+            auditLog.ResponseSent = invalidResponse;
+            await SaveAuditLogAsync(auditLog);
+            await _logger.Warning("Sms.GDPR", "Invalid target phone detected", $"From: {from}, TargetRaw: {targetPhone}");
+            return OkSms(invalidResponse);
+        }
 
         await _smsConfig.SendSmsAsync(targetPhone, gdprMessage);
 
+        auditLog.VehicleIdResolved = vehicle.Id;
         auditLog.ProcessingStatus = "SUCCESS";
         auditLog.ResponseSent = GenerateSmsResponse($"✅ Richiesta GDPR inviata a {fullName} ({targetPhone})");
         await SaveAuditLogAsync(auditLog);
@@ -272,11 +370,16 @@ public class SmsController(
     // Gestione ACCETTO
     private async Task<ActionResult> HandleAccettoCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string from)
     {
-        var gdprRequest = await _db.SmsAdaptiveGdpr
+        var fromDigits = DigitsOnly(NormalizePhoneNumber(from));
+
+        var gdprCandidates = await _db.SmsAdaptiveGdpr
             .Include(g => g.ClientCompany)
-            .Where(g => g.AdaptiveNumber == from && !g.ConsentAccepted)
+            .Where(g => !g.ConsentAccepted)
             .OrderByDescending(g => g.RequestedAt)
-            .FirstOrDefaultAsync();
+            .ToListAsync();
+
+        var gdprRequest = gdprCandidates
+            .FirstOrDefault(g => DigitsOnly(NormalizePhoneNumber(g.AdaptiveNumber)) == fromDigits);
 
         if (gdprRequest == null)
         {
@@ -295,9 +398,12 @@ public class SmsController(
         gdprRequest.UserAgent = Request.Headers["User-Agent"].ToString();
 
         // Aggiorna tutte le righe ADAPTIVE_PROFILE legate a questo numero
-        var profileEvents = await _db.SmsAdaptiveProfile
-            .Where(p => p.AdaptiveNumber == from)
+        var profileCandidates = await _db.SmsAdaptiveProfile
             .ToListAsync();
+
+        var profileEvents = profileCandidates
+            .Where(p => DigitsOnly(NormalizePhoneNumber(p.AdaptiveNumber)) == fromDigits)
+            .ToList();
 
         foreach (var pe in profileEvents)
         {
@@ -321,10 +427,15 @@ public class SmsController(
     // Gestione STOP
     private async Task<ActionResult> HandleStopCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string from)
     {
-        var gdprRequest = await _db.SmsAdaptiveGdpr
-            .Where(g => g.AdaptiveNumber == from && g.ConsentAccepted)
+        var fromDigits = DigitsOnly(NormalizePhoneNumber(from));
+
+        var gdprCandidates = await _db.SmsAdaptiveGdpr
+            .Where(g => g.ConsentAccepted)
             .OrderByDescending(g => g.ConsentGivenAt)
-            .FirstOrDefaultAsync();
+            .ToListAsync();
+
+        var gdprRequest = gdprCandidates
+            .FirstOrDefault(g => DigitsOnly(NormalizePhoneNumber(g.AdaptiveNumber)) == fromDigits);
 
         if (gdprRequest == null)
         {
@@ -340,9 +451,12 @@ public class SmsController(
         gdprRequest.ConsentAccepted = false;
 
         // Disattiva tutte le righe ADAPTIVE_PROFILE
-        var profileEvents = await _db.SmsAdaptiveProfile
-            .Where(p => p.AdaptiveNumber == from)
+        var profileCandidates = await _db.SmsAdaptiveProfile
             .ToListAsync();
+
+        var profileEvents = profileCandidates
+            .Where(p => DigitsOnly(NormalizePhoneNumber(p.AdaptiveNumber)) == fromDigits)
+            .ToList();
 
         foreach (var pe in profileEvents)
         {
@@ -439,8 +553,10 @@ public class SmsController(
             return OkSms(errorResponse);
         }
 
-        // Verifica che il mittente sia autorizzato per questo specifico veicolo
-        if (vehicle.VehicleMobileNumber != from)
+        // Verifica che il mittente sia autorizzato per questo specifico veicolo (comparazione digit-only)
+        var fromDigits = DigitsOnly(NormalizePhoneNumber(from));
+        var vehicleDigits = DigitsOnly(NormalizePhoneNumber(vehicle.VehicleMobileNumber ?? string.Empty));
+        if (vehicleDigits != fromDigits && !vehicleDigits.EndsWith(fromDigits) && !fromDigits.EndsWith(vehicleDigits))
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = $"Mittente non autorizzato per VIN {targetVin}";
@@ -543,7 +659,7 @@ public class SmsController(
             return true;
 
         // Vonage usa 'sig' (query/form) oppure header 'X-Nexmo-Signature'.
-        var provided = GetParam("sig") 
+        var provided = GetParam("sig")
                     ?? Request.Headers["X-Nexmo-Signature"].FirstOrDefault();
 
         if (string.IsNullOrEmpty(provided))
@@ -582,11 +698,11 @@ public class SmsController(
 
         return algo switch
         {
-            "md5"   => ToHex(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
-            "sha1"  => ToHex(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
-            "sha256"=> ToHex(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
-            "sha512"=> ToHex(System.Security.Cryptography.SHA512.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
-            _       => string.Empty
+            "md5" => ToHex(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
+            "sha1" => ToHex(System.Security.Cryptography.SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
+            "sha256" => ToHex(System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
+            "sha512" => ToHex(System.Security.Cryptography.SHA512.HashData(System.Text.Encoding.UTF8.GetBytes(concat))),
+            _ => string.Empty
         };
     }
 
@@ -629,6 +745,8 @@ public class SmsController(
         // Non aggiungiamo più prefissi automatici (es. +39). Conserviamo il numero così com'è.
         return cleaned;
     }
+
+    private static string DigitsOnly(string s) => Regex.Replace(s ?? string.Empty, "\\D", "");
 
     private async Task SaveAuditLogAsync(SmsAuditLog auditLog)
     {
@@ -820,7 +938,7 @@ public class SmsController(
         {
             // CORREZIONE: Verificare che il DbSet sia corretto
             var totalCount = await _db.SmsAuditLog.CountAsync();
-            
+
             var logs = await _db.SmsAuditLog
                 .OrderByDescending(l => l.ReceivedAt)
                 .Skip((page - 1) * pageSize)
@@ -870,8 +988,8 @@ public class SmsController(
                 .ToListAsync();
 
             var totalSessions = sessions.Count;
-            var activeSessions = sessions.Count(s => s.ConsentAccepted 
-                                                && s.ParsedCommand == "ADAPTIVE_PROFILE_ON" 
+            var activeSessions = sessions.Count(s => s.ConsentAccepted
+                                                && s.ParsedCommand == "ADAPTIVE_PROFILE_ON"
                                                 && s.ExpiresAt > DateTime.Now);
             var lastSession = sessions.MaxBy(s => s.ReceivedAt)?.ReceivedAt;
             var firstSession = sessions.MinBy(s => s.ReceivedAt)?.ReceivedAt;
