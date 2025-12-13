@@ -453,23 +453,25 @@ public static class DefaultCssTemplate
             border-right: 1px solid rgba(139, 159, 242, 0.1);
         }
 
-        .detailed-log-badge-success-profile, 
+        .detailed-log-badge-success-profile,
         .detailed-log-badge-default-profile,
         .detailed-log-badge-success-dataValidated,
-        .detailed-log-badge-warning-dataValidated {
+        .detailed-log-badge-warning-dataValidated,
+        .detailed-log-badge-error-dataValidated {
             text-align: center;
             display: inline-block;
             padding: 0px 5px;
             border-radius: 3px;
         }
 
-        .detailed-log-badge-success-profile, 
+        .detailed-log-badge-success-profile,
         .detailed-log-badge-default-profile {
             width: 20px;
         }
 
         .detailed-log-badge-success-dataValidated,
-        .detailed-log-badge-warning-dataValidated {
+        .detailed-log-badge-warning-dataValidated,
+        .detailed-log-badge-error-dataValidated {
             width: 135px;
         }
 
