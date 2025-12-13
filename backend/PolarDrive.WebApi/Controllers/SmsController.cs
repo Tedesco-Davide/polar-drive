@@ -397,13 +397,13 @@ public class SmsController(
     /// </summary>
     private async Task<ActionResult> HandleAdaptiveProfileCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
     {
-        // Estrai parametri: "ADAPTIVE_PROFILE Rossi Mario +393331234567"
+        // Estrai parametri: "ADAPTIVE_PROFILE Rossi Mario +393331234567 VIN123ABC456"
         var parts = dto.Body.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 4)  // comando + cognome + nome + numero
+        if (parts.Length < 5)  // comando + cognome + nome + numero + VIN
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Formato comando ADAPTIVE_PROFILE non valido";
-            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILE Cognome Nome NUMERO-DI-TELEFONO");
+            var errorResponse = GenerateSmsResponse("❌ Formato non valido. Usa: ADAPTIVE_PROFILE Cognome Nome NUMERO-DI-TELEFONO VIN");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
@@ -413,17 +413,29 @@ public class SmsController(
         var name = parts[2];
         var fullName = $"{surname} {name}";  // "Rossi Mario"
         var targetPhone = NormalizePhoneNumber(parts[3]);
+        var targetVin = parts[4].ToUpper().Trim();  // VIN dal comando
 
-        // Verifica che il mittente sia un VehicleMobileNumber registrato
+        // Cerca veicolo per VIN specificato nel comando
         var vehicle = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == dto.From && v.IsActiveFlag);
+            .FirstOrDefaultAsync(v => v.Vin == targetVin && v.IsActiveFlag);
 
         if (vehicle == null)
         {
             auditLog.ProcessingStatus = "ERROR";
-            auditLog.ErrorMessage = "Mittente non autorizzato";
-            var errorResponse = GenerateSmsResponse("❌ Solo il Cellulare Operativo Autorizzato può attivare la procedura ADAPTIVE_PROFILE.");
+            auditLog.ErrorMessage = $"Veicolo con VIN {targetVin} non trovato o non attivo";
+            var errorResponse = GenerateSmsResponse($"❌ Veicolo con VIN {targetVin} non trovato o non attivo.");
+            auditLog.ResponseSent = errorResponse;
+            await SaveAuditLogAsync(auditLog);
+            return OkSms(errorResponse);
+        }
+
+        // Verifica che il mittente sia autorizzato per questo specifico veicolo
+        if (vehicle.VehicleMobileNumber != dto.From)
+        {
+            auditLog.ProcessingStatus = "ERROR";
+            auditLog.ErrorMessage = $"Mittente non autorizzato per VIN {targetVin}";
+            var errorResponse = GenerateSmsResponse($"❌ Non sei autorizzato a gestire ADAPTIVE_PROFILE per il veicolo {targetVin}.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);

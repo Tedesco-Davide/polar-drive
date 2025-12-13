@@ -367,5 +367,56 @@ public class PdfReportsController(
         }
     }
 
+    /// <summary>
+    /// Verifica se esistono report in stato PROCESSING.
+    /// Utilizzato per bloccare nuove rigenerazioni mentre un report è in elaborazione.
+    /// </summary>
+    [HttpGet("has-processing")]
+    public async Task<ActionResult<object>> HasProcessingReports()
+    {
+        const string source = "PdfReportsController.HasProcessingReports";
+
+        try
+        {
+            var processingReport = await db.PdfReports
+                .Where(r => r.Status == "PROCESSING")
+                .Select(r => new
+                {
+                    r.Id,
+                    r.Status,
+                    CompanyName = r.ClientCompany != null ? r.ClientCompany.Name : null,
+                    VehicleVin = r.ClientVehicle != null ? r.ClientVehicle.Vin : null,
+                    r.GeneratedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (processingReport != null)
+            {
+                await _logger.Info(source, "⚠️ Report in PROCESSING trovato",
+                    $"ReportId: {processingReport.Id}, Company: {processingReport.CompanyName}");
+
+                return Ok(new
+                {
+                    hasProcessing = true,
+                    processingReportId = processingReport.Id,
+                    companyName = processingReport.CompanyName,
+                    vehicleVin = processingReport.VehicleVin,
+                    message = "Un report è attualmente in elaborazione. Attendere il completamento prima di avviare una nuova rigenerazione."
+                });
+            }
+
+            return Ok(new
+            {
+                hasProcessing = false,
+                message = "Nessun report in elaborazione"
+            });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Errore verifica report in PROCESSING", ex.ToString());
+            return StatusCode(500, new { hasProcessing = false, error = "Errore interno server" });
+        }
+    }
+
     //ASD
 }

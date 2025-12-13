@@ -65,6 +65,9 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
             
             var detailedTable = await GenerateDetailedLogTableAsync(vehicleId, MONTHLY_HOURS_THRESHOLD);
 
+            // Genera sezione ADAPTIVE_PROFILE con legenda e cards utilizzatori
+            var adaptiveProfileSection = await GenerateAdaptiveProfileLegendAndCardsAsync(vehicleId, MONTHLY_HOURS_THRESHOLD);
+
             return $@"
                 <div class='certification-datapolar'>
                     <h4 class='certification-datapolar-generic'>📋 Statistiche Generali (Lifetime)</h4>
@@ -75,6 +78,8 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                     
                     <h4 class='detailed-log-table-title'>💽 Tabella Dettagliata Log Timestamp Certificati - Ultime 720 ore (30 giorni)</h4>
                     {detailedTable}
+
+                    {adaptiveProfileSection}
                 </div>";
         }
         catch (Exception ex)
@@ -270,6 +275,130 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
 
         sb.AppendLine("</tbody>");
         sb.AppendLine("</table>");
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// 📋 Genera sezione HTML con legenda e cards degli utilizzatori ADAPTIVE_PROFILE
+    /// Mostra chi ha utilizzato il laboratorio mobile nel periodo di reporting
+    /// </summary>
+    public async Task<string> GenerateAdaptiveProfileLegendAndCardsAsync(int vehicleId, int dataHours)
+    {
+        var sb = new StringBuilder();
+
+        // Trova il primo record effettivo del veicolo per calcolare il periodo
+        var now = DateTime.Now;
+        var maxStartTime = now.AddHours(-dataHours);
+
+        // Recupera tutte le sessioni ADAPTIVE_PROFILE nel periodo
+        var adaptiveSessions = await _dbContext.SmsAdaptiveProfile
+            .Where(p => p.VehicleId == vehicleId 
+                    && p.ReceivedAt >= maxStartTime 
+                    && p.ConsentAccepted)
+            .OrderByDescending(p => p.ReceivedAt)
+            .ToListAsync();
+
+        // Conta quanti record con IsSmsAdaptiveProfile = true nel periodo
+        var adaptiveRecordsCount = await _dbContext.VehiclesData
+            .Where(vd => vd.VehicleId == vehicleId 
+                    && vd.Timestamp >= maxStartTime 
+                    && vd.IsSmsAdaptiveProfile)
+            .CountAsync();
+
+        // Se non ci sono sessioni ADAPTIVE_PROFILE, ritorna sezione vuota con solo legenda
+        sb.AppendLine("<div class='adaptive-profile-section'>");
+        
+        // --- LEGENDA ---
+        sb.AppendLine("<h4 class='adaptive-profile-legend-title'>📖 Legenda Certificazione Utilizzi</h4>");
+        sb.AppendLine("<div class='adaptive-profile-legend'>");
+        
+        sb.AppendLine("<div class='adaptive-legend-item adaptive-legend-yes'>");
+        sb.AppendLine("<div class='adaptive-legend-badge'>Adaptive = SÌ</div>");
+        sb.AppendLine("<div class='adaptive-legend-description'>");
+        sb.AppendLine("<p>I dati di utilizzo del laboratorio mobile sono certificati anche in relazione all'identità degli utilizzatori terzi, secondo le procedure <strong>ADAPTIVE_GDPR</strong> ed <strong>ADAPTIVE_PROFILE</strong> descritte nel Contratto Principale e nei relativi allegati.</p>");
+        sb.AppendLine("<p>In questo caso, per la fascia oraria indicata:</p>");
+        sb.AppendLine("<ul>");
+        sb.AppendLine("<li>È tracciato l'utilizzatore (o gli utilizzatori) che hanno usato il laboratorio mobile</li>");
+        sb.AppendLine("<li>È disponibile la documentazione associata alle procedure eseguite</li>");
+        sb.AppendLine("</ul>");
+        sb.AppendLine("</div>");
+        sb.AppendLine("</div>");
+
+        sb.AppendLine("<div class='adaptive-legend-item adaptive-legend-no'>");
+        sb.AppendLine("<div class='adaptive-legend-badge'>Adaptive = NO</div>");
+        sb.AppendLine("<div class='adaptive-legend-description'>");
+        sb.AppendLine("<p>I dati di utilizzo del laboratorio mobile sono raccolti e certificati a livello tecnico-operativo, in modalità standard.</p>");
+        sb.AppendLine("<p>In assenza delle procedure <strong>ADAPTIVE_GDPR</strong> ed <strong>ADAPTIVE_PROFILE</strong>:</p>");
+        sb.AppendLine("<ul>");
+        sb.AppendLine("<li>Non è certificabile l'uso da parte di utilizzatori terzi specifici</li>");
+        sb.AppendLine("<li>Non è disponibile documentazione nominativa riferita a quella specifica finestra temporale</li>");
+        sb.AppendLine("</ul>");
+        sb.AppendLine("</div>");
+        sb.AppendLine("</div>");
+
+        sb.AppendLine("</div>"); // chiude .adaptive-profile-legend
+
+        // --- CARDS UTILIZZATORI ---
+        if (adaptiveSessions.Any())
+        {
+            sb.AppendLine("<h4 class='adaptive-profile-cards-title'>👥 Utilizzatori Terzi Autorizzati nel Periodo</h4>");
+            sb.AppendLine("<div class='adaptive-profile-cards-container'>");
+
+            // Raggruppa per utilizzatore (stesso numero + nome)
+            var userGroups = adaptiveSessions
+                .GroupBy(s => new { s.AdaptiveNumber, s.AdaptiveSurnameName })
+                .ToList();
+
+            foreach (var userGroup in userGroups)
+            {
+                var latestSession = userGroup.OrderByDescending(s => s.ReceivedAt).First();
+                var sessionsCount = userGroup.Count();
+                var firstSession = userGroup.OrderBy(s => s.ReceivedAt).First();
+                var isActive = latestSession.ExpiresAt > now;
+                var statusClass = isActive ? "active" : "expired";
+                var statusText = isActive ? "✅ Attivo" : "⏱️ Scaduto";
+
+                sb.AppendLine($"<div class='adaptive-profile-card {statusClass}'>");
+                
+                sb.AppendLine("<div class='adaptive-card-header'>");
+                sb.AppendLine($"<span class='adaptive-card-name'>👤 {latestSession.AdaptiveSurnameName}</span>");
+                sb.AppendLine($"<span class='adaptive-card-status {statusClass}'>{statusText}</span>");
+                sb.AppendLine("</div>");
+
+                sb.AppendLine("<div class='adaptive-card-body'>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📱 Telefono:</span><span class='adaptive-card-value'>{latestSession.AdaptiveNumber}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📅 Prima attivazione:</span><span class='adaptive-card-value'>{firstSession.ReceivedAt:dd/MM/yyyy HH:mm}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>🔄 Ultima attivazione:</span><span class='adaptive-card-value'>{latestSession.ReceivedAt:dd/MM/yyyy HH:mm}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>⏰ Scadenza profilo:</span><span class='adaptive-card-value'>{latestSession.ExpiresAt:dd/MM/yyyy HH:mm}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>🔢 Sessioni totali:</span><span class='adaptive-card-value'>{sessionsCount}</span></div>");
+                sb.AppendLine("</div>");
+
+                sb.AppendLine("</div>"); // chiude .adaptive-profile-card
+            }
+
+            sb.AppendLine("</div>"); // chiude .adaptive-profile-cards-container
+
+            // --- RIEPILOGO STATISTICO ---
+            sb.AppendLine("<div class='adaptive-profile-summary'>");
+            sb.AppendLine("<h5>📊 Riepilogo ADAPTIVE_PROFILE</h5>");
+            sb.AppendLine("<table class='adaptive-summary-table'>");
+            sb.AppendLine($"<tr><td>Utilizzatori terzi profilati</td><td>{userGroups.Count}</td></tr>");
+            sb.AppendLine($"<tr><td>Sessioni totali nel periodo</td><td>{adaptiveSessions.Count}</td></tr>");
+            sb.AppendLine($"<tr><td>Record certificati con Adaptive=Sì</td><td>{adaptiveRecordsCount}</td></tr>");
+            sb.AppendLine($"<tr><td>Profili attualmente attivi</td><td>{userGroups.Count(g => g.OrderByDescending(s => s.ReceivedAt).First().ExpiresAt > now)}</td></tr>");
+            sb.AppendLine("</table>");
+            sb.AppendLine("</div>");
+        }
+        else
+        {
+            sb.AppendLine("<div class='adaptive-profile-no-sessions'>");
+            sb.AppendLine("<p>ℹ️ Nel periodo analizzato non risultano sessioni ADAPTIVE_PROFILE attive per questo veicolo.</p>");
+            sb.AppendLine("<p>Il laboratorio mobile è stato utilizzato esclusivamente da soggetti interni all'azienda oppure non sono state eseguite le procedure ADAPTIVE_GDPR ed ADAPTIVE_PROFILE per eventuali utilizzatori terzi.</p>");
+            sb.AppendLine("</div>");
+        }
+
+        sb.AppendLine("</div>"); // chiude .adaptive-profile-section
 
         return sb.ToString();
     }

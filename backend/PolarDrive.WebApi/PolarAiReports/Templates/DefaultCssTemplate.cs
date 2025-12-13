@@ -480,15 +480,15 @@ public static class DefaultCssTemplate
         }
 
         .detailed-log-badge-success-dataValidated {
-            background: #a9c7afff;
+            background: #dfffe5ff;
         }
 
         .detailed-log-badge-warning-dataValidated {
-            background: #f0df62ff;
+            background: #fffbdcff;
         }
 
         .detailed-log-badge-error-dataValidated {
-            background: #b97272ff;
+            background: #ffdcdcff;
         }
 
         .cert-warning {
@@ -741,6 +741,236 @@ public static class DefaultCssTemplate
             .section {
                 margin: 15px 10px;
             }
+
+            .adaptive-profile-cards-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ============================================
+           SEZIONE ADAPTIVE_PROFILE - LEGENDA E CARDS
+           ============================================ */
+
+        .adaptive-profile-section {
+            margin: 30px 20px;
+            page-break-inside: avoid;
+        }
+
+        .adaptive-profile-legend-title,
+        .adaptive-profile-cards-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 20px 0 15px 0;
+            color: #2d3748;
+            border-bottom: 2px solid #8b9ff2;
+            padding-bottom: 8px;
+        }
+
+        .adaptive-profile-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .adaptive-legend-item {
+            border-radius: 10px;
+            padding: 20px;
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+
+        .adaptive-legend-yes {
+            background: linear-gradient(135deg, rgba(72, 187, 120, 0.15) 0%, rgba(72, 187, 120, 0.08) 100%);
+            border: 1px solid rgba(72, 187, 120, 0.4);
+        }
+
+        .adaptive-legend-no {
+            background: linear-gradient(135deg, rgba(203, 203, 203, 0.15) 0%, rgba(203, 203, 203, 0.08) 100%);
+            border: 1px solid rgba(160, 160, 160, 0.4);
+        }
+
+        .adaptive-legend-badge {
+            display: inline-block;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+        }
+
+        .adaptive-legend-yes .adaptive-legend-badge {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+
+        .adaptive-legend-no .adaptive-legend-badge {
+            background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+            color: white;
+        }
+
+        .adaptive-legend-description {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #4a5568;
+        }
+
+        .adaptive-legend-description p {
+            margin: 8px 0;
+        }
+
+        .adaptive-legend-description ul {
+            margin: 10px 0;
+            padding-left: 25px;
+        }
+
+        .adaptive-legend-description li {
+            margin: 5px 0;
+        }
+
+        /* CARDS UTILIZZATORI */
+
+        .adaptive-profile-cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .adaptive-profile-card {
+            border-radius: 12px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+            page-break-inside: avoid;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+
+        .adaptive-profile-card.active {
+            border: 2px solid #48bb78;
+        }
+
+        .adaptive-profile-card.expired {
+            border: 2px solid #a0aec0;
+        }
+
+        .adaptive-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+
+        .adaptive-profile-card.active .adaptive-card-header {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        .adaptive-profile-card.expired .adaptive-card-header {
+            background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+        }
+
+        .adaptive-card-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: white;
+        }
+
+        .adaptive-card-status {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 4px 10px;
+            border-radius: 15px;
+            background: rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .adaptive-card-body {
+            padding: 20px;
+            background: white;
+        }
+
+        .adaptive-card-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(139, 159, 242, 0.1);
+        }
+
+        .adaptive-card-row:last-child {
+            border-bottom: none;
+        }
+
+        .adaptive-card-label {
+            font-size: 12px;
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .adaptive-card-value {
+            font-size: 13px;
+            color: #2d3748;
+            font-weight: 600;
+        }
+
+        /* RIEPILOGO */
+
+        .adaptive-profile-summary {
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(139, 159, 242, 0.08) 0%, rgba(156, 130, 199, 0.08) 100%);
+            border: 1px solid rgba(139, 159, 242, 0.2);
+            border-radius: 12px;
+            page-break-inside: avoid;
+        }
+
+        .adaptive-profile-summary h5 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 0 15px 0;
+            color: #4a5568;
+        }
+
+        .adaptive-summary-table {
+            width: 100%;
+            margin: 0;
+        }
+
+        .adaptive-summary-table td {
+            padding: 10px 15px;
+            font-size: 13px;
+        }
+
+        .adaptive-summary-table td:first-child {
+            font-weight: 500;
+            color: #4a5568;
+        }
+
+        .adaptive-summary-table td:last-child {
+            font-weight: 700;
+            color: #2d3748;
+            text-align: right;
+        }
+
+        /* NO SESSIONS MESSAGE */
+
+        .adaptive-profile-no-sessions {
+            padding: 25px;
+            background: linear-gradient(135deg, rgba(203, 213, 224, 0.15) 0%, rgba(203, 213, 224, 0.08) 100%);
+            border: 1px solid rgba(160, 174, 192, 0.3);
+            border-radius: 12px;
+            text-align: center;
+            margin: 15px 0 20px 0 0;
+        }
+
+        .adaptive-profile-no-sessions p {
+            margin: 10px 0;
+            font-size: 13px;
+            color: #4a5568;
+            line-height: 1.6;
         }
 
         /* OTTIMIZZAZIONI SPECIFICHE PER STAMPA */
