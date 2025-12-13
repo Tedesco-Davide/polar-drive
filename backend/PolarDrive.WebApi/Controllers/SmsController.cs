@@ -109,22 +109,22 @@ public class SmsController(
             // 📱 2. PARSING COMANDO
             var command = ParseSmsCommand(body);
 
-            // 🎯 3. GESTIONE COMANDI
+            // 🎯 3. G<<<ESTIONE COMANDI
             if (command.StartsWith("ADAPTIVE_GDPR"))
                 return await HandleAdaptiveGdprCommand(
-                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command);
+                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command, from);
 
             if (command.StartsWith("ADAPTIVE_PROFILE"))
                 return await HandleAdaptiveProfileCommand(
-                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command);
+                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command, from);
 
             if (command == "ACCETTO")
                 return await HandleAccettoCommand(
-                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog);
+                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, from);
 
             if (command == "STOP")
                 return await HandleStopCommand(
-                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog);
+                    new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, from);
 
             // ❌ Comando non riconosciuto
             auditLog.ProcessingStatus = "ERROR";
@@ -187,7 +187,7 @@ public class SmsController(
     }
 
     // Gestione ADAPTIVE_GDPR
-    private async Task<ActionResult> HandleAdaptiveGdprCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
+    private async Task<ActionResult> HandleAdaptiveGdprCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command, string from)
     {
         // Estrai parametri: "ADAPTIVE_GDPR Rossi Mario +393331234567"
         var parts = dto.Body?.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
@@ -209,7 +209,7 @@ public class SmsController(
         // Verifica che il mittente sia un VehicleMobileNumber registrato
         var vehicle = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == dto.From && v.IsActiveFlag);
+            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == from && v.IsActiveFlag);
 
         if (vehicle == null)
         {
@@ -264,17 +264,17 @@ public class SmsController(
         await SaveAuditLogAsync(auditLog);
 
         await _logger.Info("Sms.GDPR", "GDPR request sent",
-            $"From: {dto.From}, To: {targetPhone}, Name: {fullName}, Brand: {vehicle.Brand}");
+            $"From: {from}, To: {targetPhone}, Name: {fullName}, Brand: {vehicle.Brand}");
 
         return OkSms(auditLog.ResponseSent);
     }
 
     // Gestione ACCETTO
-    private async Task<ActionResult> HandleAccettoCommand(SmsWebhookDTO dto, SmsAuditLog auditLog)
+    private async Task<ActionResult> HandleAccettoCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string from)
     {
         var gdprRequest = await _db.SmsAdaptiveGdpr
             .Include(g => g.ClientCompany)
-            .Where(g => g.AdaptiveNumber == dto.From && !g.ConsentAccepted)
+            .Where(g => g.AdaptiveNumber == from && !g.ConsentAccepted)
             .OrderByDescending(g => g.RequestedAt)
             .FirstOrDefaultAsync();
 
@@ -296,7 +296,7 @@ public class SmsController(
 
         // Aggiorna tutte le righe ADAPTIVE_PROFILE legate a questo numero
         var profileEvents = await _db.SmsAdaptiveProfile
-            .Where(p => p.AdaptiveNumber == dto.From)
+            .Where(p => p.AdaptiveNumber == from)
             .ToListAsync();
 
         foreach (var pe in profileEvents)
@@ -309,7 +309,7 @@ public class SmsController(
         // Invia SMS di conferma
         var confirmMessage = $@"Autorizzazione ADAPTIVE_GDPR confermata per {gdprRequest.Brand} da {gdprRequest.ClientCompany?.Name} ID Consenso: #{gdprRequest.Id} ❌ Consenso revocabile rispondendo a questo SMS con: STOP";
 
-        await _smsConfig.SendSmsAsync(dto.From!, confirmMessage);
+        await _smsConfig.SendSmsAsync(from, confirmMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
         auditLog.ResponseSent = confirmMessage;
@@ -319,10 +319,10 @@ public class SmsController(
     }
 
     // Gestione STOP
-    private async Task<ActionResult> HandleStopCommand(SmsWebhookDTO dto, SmsAuditLog auditLog)
+    private async Task<ActionResult> HandleStopCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string from)
     {
         var gdprRequest = await _db.SmsAdaptiveGdpr
-            .Where(g => g.AdaptiveNumber == dto.From && g.ConsentAccepted)
+            .Where(g => g.AdaptiveNumber == from && g.ConsentAccepted)
             .OrderByDescending(g => g.ConsentGivenAt)
             .FirstOrDefaultAsync();
 
@@ -341,7 +341,7 @@ public class SmsController(
 
         // Disattiva tutte le righe ADAPTIVE_PROFILE
         var profileEvents = await _db.SmsAdaptiveProfile
-            .Where(p => p.AdaptiveNumber == dto.From)
+            .Where(p => p.AdaptiveNumber == from)
             .ToListAsync();
 
         foreach (var pe in profileEvents)
@@ -355,7 +355,7 @@ public class SmsController(
         // Invia SMS di conferma revoca
         var stopMessage = $@"Autorizzazione ADAPTIVE_GDPR rimossa per {gdprRequest.Brand} ID Consenso: #{gdprRequest.Id} ❌ Tutti i consensi ed i dati personali / informazioni sono state rimosse dal sistema a norma del GDPR";
 
-        await _smsConfig.SendSmsAsync(dto.From!, stopMessage);
+        await _smsConfig.SendSmsAsync(from, stopMessage);
 
         auditLog.ProcessingStatus = "SUCCESS";
         auditLog.ResponseSent = stopMessage;
@@ -404,7 +404,7 @@ public class SmsController(
     /// <summary>
     /// Gestione comando ADAPTIVE_PROFILE
     /// </summary>
-    private async Task<ActionResult> HandleAdaptiveProfileCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command)
+    private async Task<ActionResult> HandleAdaptiveProfileCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command, string from)
     {
         // Estrai parametri: "ADAPTIVE_PROFILE Rossi Mario +393331234567 VIN123ABC456"
         var parts = dto.Body!.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -440,7 +440,7 @@ public class SmsController(
         }
 
         // Verifica che il mittente sia autorizzato per questo specifico veicolo
-        if (vehicle.VehicleMobileNumber != dto.From)
+        if (vehicle.VehicleMobileNumber != from)
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = $"Mittente non autorizzato per VIN {targetVin}";
@@ -466,7 +466,7 @@ public class SmsController(
             // Invia SMS al VehicleMobileNumber (il mittente)
             var warningMessage = $@"ATTENZIONE {vehicle.ReferentName}! Procedura ADAPTIVE_GDPR mai eseguita per {fullName} ({targetPhone}). Completare la procedura ADAPTIVE_GDPR prima di continuare";
 
-            await _smsConfig.SendSmsAsync(dto.From!, warningMessage);
+            await _smsConfig.SendSmsAsync(from, warningMessage);
 
             auditLog.ResponseSent = warningMessage;
             await SaveAuditLogAsync(auditLog);
@@ -617,7 +617,7 @@ public class SmsController(
         return Content(message, "text/plain"); // 200 OK con text/plain
     }
 
-    private string NormalizePhoneNumber(string phoneNumber)
+    private static string NormalizePhoneNumber(string phoneNumber)
     {
         // Rimuove spazi, trattini, parentesi
         var cleaned = Regex.Replace(phoneNumber, @"[\s\-\(\)]", "");
@@ -626,10 +626,7 @@ public class SmsController(
         if (cleaned.StartsWith("00"))
             cleaned = "+" + cleaned.Substring(2);
 
-        // Se non inizia con +, aggiunge prefisso Italia
-        if (!cleaned.StartsWith("+"))
-            cleaned = "+39" + cleaned;
-
+        // Non aggiungiamo più prefissi automatici (es. +39). Conserviamo il numero così com'è.
         return cleaned;
     }
 

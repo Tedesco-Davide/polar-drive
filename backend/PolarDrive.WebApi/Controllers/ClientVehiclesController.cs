@@ -296,7 +296,8 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
     }
 
     /// <summary>
-    /// Normalizza il numero di telefono aggiungendo +39 se necessario
+    /// Normalizza il numero di telefono rimuovendo spazi e caratteri non numerici
+    /// e sostituendo il prefisso internazionale 00 con +. Non aggiunge prefissi nazionali.
     /// </summary>
     private static string? NormalizePhoneNumber(string? phoneNumber)
     {
@@ -304,16 +305,14 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             return phoneNumber;
 
         var trimmed = phoneNumber.Trim();
-        
-        // Se inizia già con +, mantienilo così
-        if (trimmed.StartsWith("+"))
-            return trimmed;
-        
-        // Se sono 10 cifre, aggiungi +39
-        if (trimmed.Length == 10 && trimmed.All(char.IsDigit))
-            return $"+39{trimmed}";
-        
-        // Altrimenti ritorna così com'è
+
+        // Se inizia con 00, sostituisce con +
+        if (trimmed.StartsWith("00"))
+            trimmed = "+" + trimmed.Substring(2);
+
+        // Rimuove spazi, trattini e parentesi
+        trimmed = System.Text.RegularExpressions.Regex.Replace(trimmed, @"[\s\-\(\)]", "");
+
         return trimmed;
     }
 }
