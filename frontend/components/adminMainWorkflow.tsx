@@ -61,7 +61,7 @@ export default function AdminMainWorkflow() {
     clientOAuthAuthorized: false,
   });
 
-  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">("id");
+  const [searchType, setSearchType] = useState<"id" | "status">("id");
 
 const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
     try {
@@ -710,7 +710,11 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
           resetPage={() => setCurrentPage(1)}
           searchMode="vin-or-company"
           externalSearchType={searchType}
-          onSearchTypeChange={setSearchType}
+          onSearchTypeChange={(type) => {
+            if (type === "id" || type === "status") {
+              setSearchType(type);
+            }
+          }}
           vatLabel={t("admin.vehicleVIN")}
           companyLabel={t("admin.clientCompany.name")}
         />

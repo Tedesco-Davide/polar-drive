@@ -23,7 +23,7 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">("id");
+  const [searchType, setSearchType] = useState<"id" | "status">("id");
   const pageSize = 5;
 
   const fetchVehicles = async (page: number, searchQuery: string = "") => {
@@ -223,7 +223,11 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
           resetPage={() => setCurrentPage(1)}
           searchMode="vin-or-company"
           externalSearchType={searchType}
-          onSearchTypeChange={setSearchType}
+          onSearchTypeChange={(type) => {
+            if (type === "id" || type === "status") {
+              setSearchType(type);
+            }
+          }}
           vatLabel={t("admin.vehicleVIN")}
           companyLabel={t("admin.clientCompany.name")}
         />

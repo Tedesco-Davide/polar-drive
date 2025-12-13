@@ -82,7 +82,7 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">("id");
+  const [searchType, setSearchType] = useState<"id" | "status">("id");
   const pageSize = 10;
   const fileManagerStatuses = [
     "PENDING",
@@ -420,7 +420,11 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
           resetPage={() => setCurrentPage(1)}
           searchMode="id-or-status"
           externalSearchType={searchType}
-          onSearchTypeChange={setSearchType}
+          onSearchTypeChange={(type) => {
+            if (type === "id" || type === "status") {
+              setSearchType(type);
+            }
+          }}
           availableStatuses={fileManagerStatuses}
         />
       </div>

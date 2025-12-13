@@ -57,7 +57,7 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
                 }
                 else if (searchType == "outageType")
                 {
-                    query = query.Where(o => o.OutageType == trimmed);
+                    query = query.Where(o => o.OutageType.Contains(trimmed));
                 }
             }
 

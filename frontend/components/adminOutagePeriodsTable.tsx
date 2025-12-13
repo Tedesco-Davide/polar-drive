@@ -69,8 +69,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
       });
       if (searchQuery) {
         params.append("search", searchQuery);
-        const type = searchType === "id" ? "id" : "status";
-        params.append("searchType", type);
+        params.append("searchType", searchType);
       }
       const res = await fetch(`/api/outageperiods?${params}`);
       if (!res.ok) throw new Error("HTTP " + res.status);

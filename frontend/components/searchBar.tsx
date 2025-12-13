@@ -113,20 +113,22 @@ export default function SearchBar({
           >
             {statusLabel || t("admin.status")}
           </button>
-          <button
-            onClick={() => {
-              setSearchType("outageType");
-              onSearchTypeChange?.("outageType");
-              setLocalValue("");
-            }}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              searchType === "outageType"
-                ? "bg-blue-500 text-white"
-                : "text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-            }`}
-          >
-            {outageLabel || t("admin.outageType")}
-          </button>
+          {availableOutageTypes && availableOutageTypes.length > 0 && (
+            <button
+              onClick={() => {
+                setSearchType("outageType");
+                onSearchTypeChange?.("outageType");
+                setLocalValue("");
+              }}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                searchType === "outageType"
+                  ? "bg-blue-500 text-white"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+              }`}
+            >
+              {outageLabel || t("admin.outageType")}
+            </button>
+          )}
         </div>
 
         <button
