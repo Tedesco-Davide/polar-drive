@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.Helpers;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -91,18 +92,25 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
     }
 
     [HttpPost]
-    public async Task<IActionResult> Post([FromBody] CreateConsentRequest request)
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> Post(
+        [FromForm] int clientCompanyId,
+        [FromForm] int vehicleId,
+        [FromForm] string consentType,
+        [FromForm] string uploadDate,
+        [FromForm] string? notes,
+        [FromForm] IFormFile? zipFile)
     {
         try
         {
             await _logger.Info("ClientConsentsController.Post", "Creating new consent manually",
-                JsonSerializer.Serialize(request));
+                $"ClientCompanyId: {clientCompanyId}, VehicleId: {vehicleId}, ConsentType: {consentType}");
 
-            var company = await _db.ClientCompanies.FindAsync(request.ClientCompanyId);
+            var company = await _db.ClientCompanies.FindAsync(clientCompanyId);
             if (company == null) return NotFound("Company not found");
 
             var vehicle = await _db.ClientVehicles
-                .FirstOrDefaultAsync(v => v.Id == request.VehicleId && v.ClientCompanyId == request.ClientCompanyId);
+                .FirstOrDefaultAsync(v => v.Id == vehicleId && v.ClientCompanyId == clientCompanyId);
             if (vehicle == null) return NotFound("Vehicle not found or not associated with company");
 
             var validConsentTypes = new[] {
@@ -111,17 +119,31 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
                 "Consent Stop Data Fetching",
                 "Consent Reactivation"
             };
-            if (!validConsentTypes.Contains(request.ConsentType))
+            if (!validConsentTypes.Contains(consentType))
                 return BadRequest($"Invalid consent type. Valid types: {string.Join(", ", validConsentTypes)}");
+
+            byte[]? zipContent = null;
+            string zipHash = "";
+
+            if (zipFile != null && zipFile.Length > 0)
+            {
+                using var ms = new MemoryStream();
+                await zipFile.CopyToAsync(ms);
+                zipContent = ms.ToArray();
+                
+                ms.Position = 0;
+                zipHash = GenericHelpers.ComputeContentHash(ms);
+            }
 
             var consent = new ClientConsent
             {
-                ClientCompanyId = request.ClientCompanyId,
-                VehicleId = request.VehicleId,
+                ClientCompanyId = clientCompanyId,
+                VehicleId = vehicleId,
                 UploadDate = DateTime.Now,
-                ConsentType = request.ConsentType,
-                Notes = request.Notes ?? "Manually inserted",
-                ConsentHash = "",
+                ConsentType = consentType,
+                Notes = notes!,
+                ConsentHash = zipHash,
+                ZipContent = zipContent
             };
 
             _db.ClientConsents.Add(consent);

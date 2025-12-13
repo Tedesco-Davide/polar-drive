@@ -176,7 +176,7 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
                 OutageEnd = request.OutageEnd,
                 VehicleId = request.VehicleId,
                 ClientCompanyId = request.ClientCompanyId,
-                Notes = request.Notes ?? "Manually inserted"
+                Notes = request.Notes!
             };
 
             _db.OutagePeriods.Add(outage);

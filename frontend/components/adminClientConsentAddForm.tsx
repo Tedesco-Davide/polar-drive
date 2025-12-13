@@ -182,7 +182,7 @@ export default function AdminClientConsentAddForm({
         formDataToSend.append("vehicleId", resolvedIds.vehicleId!.toString());
         formDataToSend.append("consentType", formData.consentType);
         formDataToSend.append("uploadDate", formData.uploadDate);
-        formDataToSend.append("notes", formData.notes || "Manually inserted");
+        formDataToSend.append("notes", formData.notes);
         formDataToSend.append("zipFile", formData.zipFile!);
 
         const response = await fetch(`/api/clientconsents`, {

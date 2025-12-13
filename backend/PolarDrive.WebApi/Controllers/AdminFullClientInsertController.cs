@@ -18,6 +18,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext) : Co
     private readonly PolarDriveLogger _logger = new();
 
     [HttpPost]
+    [Consumes("multipart/form-data")]
     [RequestSizeLimit(100_000_000)] // ZIP up to 100MB
     public async Task<IActionResult> Post([FromForm] AdminFullClientInsertRequest request)
     {
