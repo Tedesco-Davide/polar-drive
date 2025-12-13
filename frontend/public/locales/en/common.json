@@ -237,6 +237,8 @@
   "admin.vehicleReports.monitored": "tot monitored",
   "admin.vehicleReports.pdfNotAvailable": "PDF not available, downloaded HTML instead.",
   "admin.vehicleReports.actionDisabledProcessing": "Elaborating report...",
+  "admin.vehicleReports.regenerationBlockedTitle": "⚠️ REGENERATION BLOCKED",
+  "admin.vehicleReports.regenerationBlockedMessage": "A report is currently being processed.\n\nReport in progress:\n• ID: {{reportId}}\n• Company: {{companyName}}\n• VIN: {{vehicleVin}}\n\nPlease wait for completion before regenerating other reports.",
   "admin.vehicleReports.fullHash": "Full Hash",
   "admin.vehicleReports.hashCopied": "Hash copied!",
   "admin.vehicleReports.errors.noDataAvailable": "No data available for this period.",

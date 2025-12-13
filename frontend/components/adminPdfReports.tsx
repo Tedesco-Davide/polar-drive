@@ -173,13 +173,13 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         const checkData = await checkRes.json();
         if (checkData.hasProcessing) {
           alert(
-            `⚠️ RIGENERAZIONE BLOCCATA\n\n` +
-              `${checkData.message}\n\n` +
-              `Report in elaborazione:\n` +
-              `• ID: ${checkData.processingReportId}\n` +
-              `• Azienda: ${checkData.companyName || "N/A"}\n` +
-              `• VIN: ${checkData.vehicleVin || "N/A"}\n\n` +
-              `Attendere il completamento prima di rigenerare altri report.`
+            t("admin.vehicleReports.regenerationBlockedTitle") +
+              "\n\n" +
+              t("admin.vehicleReports.regenerationBlockedMessage", {
+                reportId: checkData.processingReportId,
+                companyName: checkData.companyName || "N/A",
+                vehicleVin: checkData.vehicleVin || "N/A",
+              })
           );
           logFrontendEvent(
             "AdminPdfReports",
