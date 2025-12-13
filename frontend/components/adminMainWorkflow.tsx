@@ -309,7 +309,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       });
       setShowForm(false);
     } catch (error) {
-      alert(`Errore durante l'inserimento: ${error}`);
+      alert(t("admin.mainWorkflow.insertError", { error: String(error) }));
     }
   };
 

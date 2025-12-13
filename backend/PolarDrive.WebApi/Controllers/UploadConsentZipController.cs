@@ -104,7 +104,7 @@ public class UploadConsentZipController(PolarDriveDbContext db) : ControllerBase
         if (existingConsent != null)
         {
             await _logger.Warning("UploadConsentZipController", "Duplicate consent hash detected.", $"ExistingId: {existingConsent.Id}, Hash: {hash}");
-            return Conflict(new { message = "CONFLICT - SERVER ERROR: This file has an existing and validated Hash, therefore has already been uploaded!", existingId = existingConsent.Id });
+            return Conflict(new { errorCode = "DUPLICATE_CONSENT_HASH", message = "This file has an existing and validated Hash, therefore has already been uploaded!", existingId = existingConsent.Id });
         }
 
         // Save to DB (BLOB)

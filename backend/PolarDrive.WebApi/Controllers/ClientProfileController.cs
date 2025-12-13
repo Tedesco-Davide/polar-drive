@@ -45,7 +45,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
         {
             await _logger.Error("ClientProfileController.GetClientProfileData",
                 $"Error retrieving client profile data for company {companyId}", ex.ToString());
-            return StatusCode(500, new { message = "Errore interno del server", errorCode = "INTERNAL_SERVER_ERROR" });
+            return StatusCode(500, new { errorCode = "INTERNAL_SERVER_ERROR", message = "Errore interno del server" });
         }
     }
 
@@ -60,7 +60,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
             var company = await _db.ClientCompanies.FindAsync(companyId);
             if (company == null)
             {
-                return NotFound(new { message = "Azienda non trovata", errorCode = "COMPANY_NOT_FOUND" });
+                return NotFound(new { errorCode = "COMPANY_NOT_FOUND", message = "Azienda non trovata" });
             }
 
             var profileData = await GetClientProfileDataAsync(companyId);

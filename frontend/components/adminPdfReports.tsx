@@ -136,7 +136,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
 
       if (isHtml) alert(t("admin.vehicleReports.pdfNotAvailable"));
     } catch (error) {
-      alert(`Errore download: ${error}`);
+      alert(t("admin.vehicleReports.downloadError", { error: String(error) }));
     } finally {
       setDownloadingId(null);
     }
@@ -236,32 +236,36 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
 
       if (response.status === 409) {
         alert(
-          `REGENERATION BLOCKED\n\n` +
-            `${data.message}\n\n` +
-            `PDF Hash: ${data.pdfHash}\n` +
-            `Generated: ${
-              data.generatedAt ? formatDateToDisplay(data.generatedAt) : "N/A"
-            }\n\n`
+          t("admin.vehicleReports.regenerationBlocked409Title") +
+            "\n\n" +
+            t("admin.vehicleReports.regenerationBlocked409Message", {
+              message: data.message || "",
+              pdfHash: data.pdfHash || "N/A",
+              generatedAt: data.generatedAt ? formatDateToDisplay(data.generatedAt) : "N/A"
+            })
         );
 
         logFrontendEvent(
           "AdminPdfReports",
           "WARNING",
           "Regeneration blocked - report already exists",
-          `ReportId: ${report.id}, PdfHash: ${data.pdfHash}`
+          `ReportId: ${report.id}, ErrorCode: ${data.errorCode}, PdfHash: ${data.pdfHash}`
         );
       } else if (response.status === 400) {
         alert(
-          `Operation not allowed\n\n` +
-            `${data.message}\n\n` +
-            `Status: ${data.status}`
+          t("admin.vehicleReports.operationNotAllowedTitle") +
+            "\n\n" +
+            t("admin.vehicleReports.operationNotAllowedMessage", {
+              message: data.message || "",
+              status: data.status || "N/A"
+            })
         );
 
         logFrontendEvent(
           "AdminPdfReports",
           "WARNING",
           "Regeneration not allowed",
-          `ReportId: ${report.id}, Status: ${data.status}`
+          `ReportId: ${report.id}, ErrorCode: ${data.errorCode}, Status: ${data.status}`
         );
       } else if (response.status === 202) {
         alert(
@@ -305,9 +309,12 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         error instanceof Error ? error.message : String(error);
 
       alert(
-        `REGENERATION ERROR\n\n` +
-          `Report ID: ${report.id}\n\n` +
-          `${errorMessage}\n\n`
+        t("admin.vehicleReports.regenerationErrorTitle") +
+          "\n\n" +
+          t("admin.vehicleReports.regenerationErrorMessage", {
+            reportId: report.id,
+            errorMessage
+          })
       );
 
       logFrontendEvent("AdminPdfReports", "ERROR", "Regeneration error");
