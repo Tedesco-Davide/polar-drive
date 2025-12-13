@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon, Menu, X } from "lucide-react";
+import { Sun, Moon } from "lucide-react";
 import { useTranslation } from "next-i18next";
 import { useRouter } from "next/router";
 import { gsap } from "gsap";
@@ -13,12 +13,10 @@ import LanguageSwitcher from "./languageSwitcher";
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { ready } = useTranslation("header");
   const router = useRouter();
   const headerRef = useRef<HTMLHeadElement>(null);
-  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -46,54 +44,6 @@ export default function Header() {
       });
     }
   }, [scrolled]);
-
-  const toggleMobileMenu = () => {
-    setMenuOpen(!menuOpen);
-
-    if (mobileMenuRef.current) {
-      if (!menuOpen) {
-        // Opening animation
-        gsap.fromTo(
-          mobileMenuRef.current,
-          { opacity: 0, y: -20 },
-          { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" }
-        );
-
-        // Animate menu items
-        const menuItems =
-          mobileMenuRef.current.querySelectorAll(".mobile-nav-item");
-        gsap.fromTo(
-          menuItems,
-          { opacity: 0, y: 20 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 0.3,
-            stagger: 0.1,
-            delay: 0.1,
-            ease: "power2.out",
-          }
-        );
-      } else {
-        // Closing animation
-        gsap.to(mobileMenuRef.current, {
-          opacity: 0,
-          y: -20,
-          duration: 0.3,
-          ease: "power2.in",
-        });
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (ready && mounted) {
-      const timer = setTimeout(() => {
-        setMenuOpen(false);
-      }, 50);
-      return () => clearTimeout(timer);
-    }
-  }, [ready, router.locale, mounted]);
 
   // ✅ Renderizza sempre l'header, ma con fallback per i testi
   return (
@@ -152,25 +102,6 @@ export default function Header() {
               </div>
             </button>
           )}
-
-          {/* Mobile Menu Button */}
-          <button
-            className={`md:hidden p-2.5 rounded-xl hover:bg-white/20 dark:hover:bg-white/10 transition-all duration-300 border border-white/20 dark:border-white/10 hover:border-coldIndigo/30 dark:hover:border-glacierBlue/30 ${
-              mounted
-                ? "opacity-0 animate-[fadeIn_0.5s_ease-in-out_0.5s_forwards]"
-                : "opacity-0"
-            }`}
-            onClick={toggleMobileMenu}
-            aria-label="Toggle menu"
-          >
-            <div className="relative w-6 h-6">
-              {menuOpen ? (
-                <X className="w-6 h-6 transition-transform duration-300 rotate-90" />
-              ) : (
-                <Menu className="w-6 h-6 transition-transform duration-300" />
-              )}
-            </div>
-          </button>
         </div>
       </div>
 
