@@ -133,9 +133,8 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
                 <span className="uppercase text-xs tracking-widest">
                   {t("admin.tableRefreshButton")}
                 </span>
-              </button>{" "}
-              {t("admin.actions")}
-            </th>{" "}
+              </button>
+            </th>
             <th className="p-4">{t("admin.vehicleVIN")}</th>
             <th className="p-4">{t("admin.clientVehicle.fuelType")}</th>
             <th className="p-4">{t("admin.clientVehicle.brand")}</th>

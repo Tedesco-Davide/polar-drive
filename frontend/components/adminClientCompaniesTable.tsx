@@ -121,8 +121,7 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
                 <span className="uppercase text-xs tracking-widest">
                   {t("admin.tableRefreshButton")}
                 </span>
-              </button>{" "}
-              {t("admin.actions")}
+              </button>
             </th>
             <th className="p-4">{t("admin.clientCompany.vatNumber")}</th>
             <th className="p-4">{t("admin.clientCompany.name")}</th>

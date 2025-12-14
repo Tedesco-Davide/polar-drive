@@ -4,7 +4,7 @@ Repository per il progetto **PolarDrive**.
 
 ---
 
-### 🟠 CLOUDFARE
+### 🟠 CLOUDFARED
 
 - LE CONFIGURAZIONI PRINCIPALI SONO SOTTO => C:\Users\Tedesco Davide\.cloudflared
 

@@ -14,7 +14,8 @@ import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowInputForm"
 import PaginationControls from "@/components/paginationControls";
 import VehicleStatusToggle from "./vehicleStatusToggle";
 import Chip from "./chip";
-import AdminSmsManagementModal from "./adminSmsManagementModal";
+import AdminSmsProfileModal from "./AdminSmsProfileModal";
+import AdminSmsGdprModal from "./AdminSmsGdprModal";
 
 export default function AdminMainWorkflow() {
   const { t } = useTranslation("");
@@ -27,6 +28,7 @@ export default function AdminMainWorkflow() {
     null
   );
   const [smsModalOpen, setSmsModalOpen] = useState(false);
+  const [smsGdprModalOpen, setSmsGdprModalOpen] = useState(false);
   const [selectedVehicleForSms, setSelectedVehicleForSms] = useState<{
     id: number;
     vin: string;
@@ -506,7 +508,15 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                   {t("admin.tableRefreshButton")}
                 </span>
               </button>{" "}
-              {t("admin.actions")}
+              <button
+                onClick={() => setSmsGdprModalOpen(true)}
+                className="px-2 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+                title={t("admin.smsManagement.buttonGdpr")}
+              >
+                <span className="uppercase text-xs tracking-widest">
+                    🔐 {t("admin.smsManagement.buttonGdprShort")}
+                </span>
+              </button>
             </th>
             <th className="p-4">
               {t("admin.mainWorkflow.headers.isVehicleAuthorized")}
@@ -722,7 +732,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       </div>
 
       {selectedVehicleForSms && (
-        <AdminSmsManagementModal
+        <AdminSmsProfileModal
           isOpen={smsModalOpen}
           onClose={() => {
             setSmsModalOpen(false);
@@ -735,6 +745,12 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
           isVehicleActive={selectedVehicleForSms.isActive}
         />
       )}
+
+      <AdminSmsGdprModal
+        isOpen={smsGdprModalOpen}
+        onClose={() => setSmsGdprModalOpen(false)}
+        brand="Tesla"
+      />
     </div>
   );
 }

@@ -193,8 +193,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
                 <span className="uppercase text-xs tracking-widest">
                   {t("admin.tableRefreshButton")}
                 </span>
-              </button>{" "}
-              {t("admin.actions")}
+              </button>
             </th>
             <th className="p-4">{t("admin.clientConsents.consentType")}</th>
             <th className="p-4">{t("admin.clientConsents.uploadDate")}</th>

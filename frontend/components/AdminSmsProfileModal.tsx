@@ -6,7 +6,6 @@ import {
   AlertCircle,
   Clock,
   User,
-  Shield,
 } from "lucide-react";
 
 import { logFrontendEvent } from "@/utils/logger";
@@ -35,16 +34,7 @@ interface AdaptiveProfileSession {
   consentAccepted: boolean;
 }
 
-interface GdprConsent {
-  id: number;
-  phoneNumber: string;
-  brand: string;
-  requestedAt: string;
-  consentGivenAt: string | null;
-  consentAccepted: boolean;
-}
-
-interface AdminSmsManagementModalProps {
+interface AdminSmsProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   vehicleId: number;
@@ -54,7 +44,7 @@ interface AdminSmsManagementModalProps {
   isVehicleActive: boolean;
 }
 
-export default function AdminSmsManagementModal({
+export default function AdminSmsProfileModal({
   isOpen,
   onClose,
   vehicleId,
@@ -62,13 +52,12 @@ export default function AdminSmsManagementModal({
   vehicleBrand,
   companyName,
   isVehicleActive,
-}: AdminSmsManagementModalProps) {
+}: AdminSmsProfileModalProps) {
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
   const [auditLogs, setAuditLogs] = useState<SmsAuditLog[]>([]);
   const [profileSessions, setProfileSessions] = useState<AdaptiveProfileSession[]>([]);
-  const [gdprConsents, setGdprConsents] = useState<GdprConsent[]>([]);
-  const [activeTab, setActiveTab] = useState<"profile" | "gdpr" | "audit">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "audit">("profile");
 
     const loadData = useCallback(async () => {
     try {
@@ -76,7 +65,6 @@ export default function AdminSmsManagementModal({
 
         let sessions: AdaptiveProfileSession[] = [];
         let vehicleLogs: SmsAuditLog[] = [];
-        let consents: GdprConsent[] = [];
 
         // Carica sessioni ADAPTIVE_PROFILE
         const profileResponse = await fetch(`/api/SmsAdaptiveProfile/${vehicleId}/history`);
@@ -95,22 +83,15 @@ export default function AdminSmsManagementModal({
         setAuditLogs(vehicleLogs);
         }
 
-        // Carica consensi GDPR
-        const gdprResponse = await fetch(`/api/Sms/gdpr/consents?brand=${vehicleBrand}`);
-        if (gdprResponse.ok) {
-        consents = await gdprResponse.json();
-        setGdprConsents(consents);
-        }
-
         logFrontendEvent(
-            "AdminSmsManagement",
+            "AdminSmsProfile",
             "INFO",
             "SMS data loaded successfully",
             "VehicleId: " + vehicleId + ", Sessions: " + sessions.length + ", Logs: " + vehicleLogs.length
         );
     } catch (error) {
         logFrontendEvent(
-            "AdminSmsManagement",
+            "AdminSmsProfile",
             "ERROR",
             "Failed to load SMS data",
             error instanceof Error ? error.message : String(error)
@@ -118,7 +99,7 @@ export default function AdminSmsManagementModal({
     } finally {
         setLoading(false);
     }
-    }, [vehicleId, vehicleBrand]);
+    }, [vehicleId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -170,9 +151,9 @@ export default function AdminSmsManagementModal({
         {/* Header + Status */}
         <div className="flex items-start justify-between mb-4">
           <div>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
               <h2 className="text-xl font-semibold text-polarNight dark:text-softWhite mb-0">
-                🔐 {t("admin.smsManagement.title")}
+                🔐 {t("admin.smsManagement.titleProfile")}
               </h2>
 
               <div className="flex items-center space-x-2">
@@ -258,17 +239,6 @@ export default function AdminSmsManagementModal({
           </button>
           <button
             className={`px-4 py-2 font-medium ml-4 ${
-              activeTab === "gdpr"
-                ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite dark:border-articWhite"
-                : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            }`}
-            onClick={() => setActiveTab("gdpr")}
-          >
-            <Shield size={16} className="inline mr-2" />
-            {t("admin.smsManagement.tabs.gdpr")} ({gdprConsents.length})
-          </button>
-          <button
-            className={`px-4 py-2 font-medium ml-4 ${
               activeTab === "audit"
                 ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite dark:border-articWhite"
                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
@@ -347,60 +317,6 @@ export default function AdminSmsManagementModal({
             </div>
           )}
 
-          {/* Tab GDPR */}
-          {activeTab === "gdpr" && (
-            <div>
-              {gdprConsents.length === 0 ? (
-                <p className="text-gray-500 py-8">
-                  {t("admin.smsManagement.noConsentsFound")} {vehicleBrand}
-                </p>
-              ) : (
-                gdprConsents.map((consent) => (
-                  <div
-                    key={consent.id}
-                    className={`p-4 rounded-lg mb-3 ${
-                      consent.consentAccepted
-                        ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-                        : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center space-x-2">
-                        <Shield size={16} />
-                        <span className="font-semibold text-polarNight dark:text-softWhite">
-                          {consent.phoneNumber}
-                        </span>
-                      </div>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          consent.consentAccepted
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                            : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                        }`}
-                      >
-                        {consent.consentAccepted ? t("admin.smsManagement.gdprStatusActive") : t("admin.smsManagement.gdprStatusRevoked")}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {t("admin.smsManagement.brandLabel")}:{" "}{consent.brand}
-                      <br />
-                      {t("admin.smsManagement.requestedLabel")}:{" "}{formatDate(consent.requestedAt)}
-                      {consent.consentGivenAt && (
-                        <>
-                          <br />
-                          {t("admin.smsManagement.acceptedLabel")}:{" "}{formatDate(consent.consentGivenAt)}
-                        </>
-                      )}
-                    </div>
-                    <div className="mt-2 text-xs text-gray-500">
-                      {t("admin.smsManagement.consentIdLabel")}:{" #"}{consent.id}
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-
           {/* Tab AUDIT */}
           {activeTab === "audit" && (
             <div>
@@ -462,7 +378,7 @@ export default function AdminSmsManagementModal({
           <button
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {
-              logFrontendEvent("SmsModal", "INFO", "SMS modal closed");
+              logFrontendEvent("SmsProfileModal", "INFO", "SMS Profile modal closed");
               onClose();
             }}
           >

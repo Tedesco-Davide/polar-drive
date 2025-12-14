@@ -355,6 +355,10 @@
   "admin.backend.NO_FILES_AVAILABLE": "No files available",
 
   "admin.smsManagement.title": "Adaptive SMS Management",
+  "admin.smsManagement.titleProfile": "Adaptive SMS Profile Management",
+  "admin.smsManagement.titleGdpr": "SMS GDPR Statuses",
+  "admin.smsManagement.buttonGdpr": "SMS GDPR Statuses",
+  "admin.smsManagement.buttonGdprShort": "GDPR",
   "admin.smsManagement.vehicleActiveStatus": "Vehicle ACTIVE",
   "admin.smsManagement.vehicleInactiveStatus": "Vehicle INACTIVE",
   "admin.smsManagement.vehicleInactiveWarning": "⚠️ The vehicle must be active for Adaptive procedures",
