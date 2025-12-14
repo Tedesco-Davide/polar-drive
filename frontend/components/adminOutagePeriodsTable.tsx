@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { TFunction } from "i18next";
 import {
   NotebookPen,
@@ -60,7 +60,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
   );
   const pageSize = 5;
 
-  const fetchOutages = async (page: number, searchQuery: string = "") => {
+  const fetchOutages = useCallback(async (page: number, searchQuery: string = "") => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -96,16 +96,16 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchType]);
 
   useEffect(() => {
     fetchOutages(currentPage, query);
-  }, [currentPage, query]);
+  }, [currentPage, query, fetchOutages]);
 
   useEffect(() => {
     const interval = setInterval(() => fetchOutages(currentPage, query), 60000);
     return () => clearInterval(interval);
-  }, [currentPage, query]);
+  }, [currentPage, query, fetchOutages]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

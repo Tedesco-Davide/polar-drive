@@ -157,7 +157,7 @@ export default function AdminSmsManagementModal({
     const diff = expires.getTime() - now.getTime();
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return diff > 0 ? hours + "h " + minutes + "m" : "Scaduto";
+    return diff > 0 ? hours + "h " + minutes + "m" : t("admin.smsManagement.statusExpired");
   };
 
   if (!isOpen) return null;
@@ -167,41 +167,42 @@ export default function AdminSmsManagementModal({
   return (
     <div className="fixed top-[64px] md:top-[0px] inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm note-modal">
       <div className="w-full h-full p-6 relative overflow-y-auto bg-softWhite dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-none rounded-lg md:h-auto md:w-11/12">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        {/* Header + Status */}
+        <div className="flex items-start justify-between mb-4">
           <div>
-            <h2 className="text-xl font-semibold text-polarNight dark:text-softWhite mb-2">
-              🔐 Gestione SMS Adaptive
-            </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="flex items-center space-x-3">
+              <h2 className="text-xl font-semibold text-polarNight dark:text-softWhite mb-0">
+                🔐 {t("admin.smsManagement.title")}
+              </h2>
+
+              <div className="flex items-center space-x-2">
+                {isVehicleActive ? (
+                  <CheckCircle className="text-green-500" size={16} />
+                ) : (
+                  <AlertCircle className="text-red-500" size={16} />
+                )}
+                <span
+                  className={`font-semibold ${
+                    isVehicleActive
+                      ? "text-green-700 dark:text-green-300"
+                      : "text-red-700 dark:text-red-300"
+                  }`}
+                >
+                  {isVehicleActive ? t("admin.smsManagement.vehicleActiveStatus") : t("admin.smsManagement.vehicleInactiveStatus")}
+                </span>
+              </div>
+            </div>
+
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
               {companyName} - {vehicleBrand} {vehicleVin}
             </p>
-          </div>
-        </div>
 
-        {/* Status Veicolo */}
-        <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <div className="flex items-center space-x-2">
-            {isVehicleActive ? (
-              <CheckCircle className="text-green-500" size={16} />
-            ) : (
-              <AlertCircle className="text-red-500" size={16} />
+            {!isVehicleActive && (
+              <p className="text-sm text-red-600 dark:text-red-400 mt-1">
+                {t("admin.smsManagement.vehicleInactiveWarning")}
+              </p>
             )}
-            <span
-              className={`font-semibold ${
-                isVehicleActive
-                  ? "text-green-700 dark:text-green-300"
-                  : "text-red-700 dark:text-red-300"
-              }`}
-            >
-              Veicolo {isVehicleActive ? "ATTIVO" : "INATTIVO"}
-            </span>
           </div>
-          {!isVehicleActive && (
-            <p className="text-sm text-red-600 dark:text-red-400 mt-1">
-              ⚠️ Il veicolo deve essere attivo per le procedure Adaptive
-            </p>
-          )}
         </div>
 
         {/* Sessioni Attive */}
@@ -210,7 +211,7 @@ export default function AdminSmsManagementModal({
             <div className="flex items-center space-x-2 mb-3">
               <CheckCircle className="text-blue-500" size={20} />
               <span className="font-semibold text-blue-700 dark:text-blue-300">
-                {activeSessions.length} Sessione/i ADAPTIVE_PROFILE Attiva/e
+                {activeSessions.length} {t("admin.smsManagement.activeSessions")}
               </span>
             </div>
             {activeSessions.map((session) => (
@@ -227,7 +228,7 @@ export default function AdminSmsManagementModal({
                       </span>
                     </div>
                     <div className="text-xs text-gray-500 mt-1">
-                      Scade: {formatDate(session.expiresAt)}
+                      {t("admin.smsManagement.expiresAt")}: {formatDate(session.expiresAt)}
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
@@ -253,7 +254,7 @@ export default function AdminSmsManagementModal({
             onClick={() => setActiveTab("profile")}
           >
             <User size={16} className="inline mr-2" />
-            Profile ({profileSessions.length})
+            {t("admin.smsManagement.tabs.profile")} ({profileSessions.length})
           </button>
           <button
             className={`px-4 py-2 font-medium ml-4 ${
@@ -264,7 +265,7 @@ export default function AdminSmsManagementModal({
             onClick={() => setActiveTab("gdpr")}
           >
             <Shield size={16} className="inline mr-2" />
-            Consensi GDPR ({gdprConsents.length})
+            {t("admin.smsManagement.tabs.gdpr")} ({gdprConsents.length})
           </button>
           <button
             className={`px-4 py-2 font-medium ml-4 ${
@@ -275,7 +276,7 @@ export default function AdminSmsManagementModal({
             onClick={() => setActiveTab("audit")}
           >
             <MessageSquare size={16} className="inline mr-2" />
-            Audit SMS ({auditLogs.length})
+            {t("admin.smsManagement.tabs.audit")} ({auditLogs.length})
           </button>
         </div>
 
@@ -285,8 +286,8 @@ export default function AdminSmsManagementModal({
           {activeTab === "profile" && (
             <div>
               {profileSessions.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  Nessuna sessione ADAPTIVE_PROFILE registrata
+                <p className="text-gray-500 py-8">
+                  {t("admin.smsManagement.noSessionsFound")}
                 </p>
               ) : (
                 profileSessions.map((session) => (
@@ -298,11 +299,11 @@ export default function AdminSmsManagementModal({
                         : "bg-gray-50 dark:bg-gray-800"
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 mb-2">
                       <div className="flex items-center space-x-2">
                         <User size={16} />
                         <span className="font-semibold text-polarNight dark:text-softWhite">
-                          {session.adaptiveSurnameName || "Nome non specificato"}
+                          {session.adaptiveSurnameName || t("admin.smsManagement.defaultName")}
                         </span>
                         <span className="text-sm text-gray-600 dark:text-gray-400">
                           {session.adaptiveNumber}
@@ -315,16 +316,16 @@ export default function AdminSmsManagementModal({
                             : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
                         }`}
                       >
-                        {isSessionActive(session) ? "ATTIVO" : "SCADUTO"}
+                        {isSessionActive(session) ? t("admin.smsManagement.statusActive") : t("admin.smsManagement.statusExpired")}
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Inizio: {formatDate(session.receivedAt)}
+                      {t("admin.smsManagement.sessionStartLabel")}: {formatDate(session.receivedAt)}
                       <br />
-                      Scadenza: {formatDate(session.expiresAt)}
+                      {t("admin.smsManagement.sessionExpiryLabel")}: {formatDate(session.expiresAt)}
                       {isSessionActive(session) && (
                         <span className="ml-2 text-green-600 dark:text-green-400 font-medium">
-                          (Rimanente: {getRemainingTime(session.expiresAt)})
+                          ({t("admin.smsManagement.remainingLabel")}: {getRemainingTime(session.expiresAt)})
                         </span>
                       )}
                     </div>
@@ -336,9 +337,9 @@ export default function AdminSmsManagementModal({
                             : "text-red-600 dark:text-red-400"
                         }`}
                       >
-                        Consenso: {session.consentAccepted ? "✅ Attivo" : "❌ Revocato"}
+                        {t("admin.smsManagement.consentLabel")}:{" "}{session.consentAccepted ? t("admin.smsManagement.consentStatusActive") : t("admin.smsManagement.consentStatusRevoked")}
                       </span>
-                      <span className="text-gray-500">Comando: {session.parsedCommand}</span>
+                      <span className="text-gray-500">{t("admin.smsManagement.commandLabel")}:{" "}{session.parsedCommand}</span>
                     </div>
                   </div>
                 ))
@@ -350,8 +351,8 @@ export default function AdminSmsManagementModal({
           {activeTab === "gdpr" && (
             <div>
               {gdprConsents.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  Nessun consenso GDPR registrato per {vehicleBrand}
+                <p className="text-gray-500 py-8">
+                  {t("admin.smsManagement.noConsentsFound")} {vehicleBrand}
                 </p>
               ) : (
                 gdprConsents.map((consent) => (
@@ -363,7 +364,7 @@ export default function AdminSmsManagementModal({
                         : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 mb-2">
                       <div className="flex items-center space-x-2">
                         <Shield size={16} />
                         <span className="font-semibold text-polarNight dark:text-softWhite">
@@ -377,22 +378,22 @@ export default function AdminSmsManagementModal({
                             : "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
                         }`}
                       >
-                        {consent.consentAccepted ? "ATTIVO" : "REVOCATO"}
+                        {consent.consentAccepted ? t("admin.smsManagement.gdprStatusActive") : t("admin.smsManagement.gdprStatusRevoked")}
                       </span>
                     </div>
                     <div className="text-sm text-gray-600 dark:text-gray-400">
-                      Brand: {consent.brand}
+                      {t("admin.smsManagement.brandLabel")}:{" "}{consent.brand}
                       <br />
-                      Richiesto: {formatDate(consent.requestedAt)}
+                      {t("admin.smsManagement.requestedLabel")}:{" "}{formatDate(consent.requestedAt)}
                       {consent.consentGivenAt && (
                         <>
                           <br />
-                          Accettato: {formatDate(consent.consentGivenAt)}
+                          {t("admin.smsManagement.acceptedLabel")}:{" "}{formatDate(consent.consentGivenAt)}
                         </>
                       )}
                     </div>
                     <div className="mt-2 text-xs text-gray-500">
-                      ID Consenso: #{consent.id}
+                      {t("admin.smsManagement.consentIdLabel")}:{" #"}{consent.id}
                     </div>
                   </div>
                 ))
@@ -404,13 +405,13 @@ export default function AdminSmsManagementModal({
           {activeTab === "audit" && (
             <div>
               {auditLogs.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  Nessun SMS ricevuto per questo veicolo
+                <p className="text-gray-500 py-8">
+                  {t("admin.smsManagement.noAuditLogsFound")}
                 </p>
               ) : (
                     auditLogs.map((log) => (
                     <div key={log.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2 mb-2">
                         <div className="flex items-center space-x-2">
                             <span
                             className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
@@ -428,20 +429,20 @@ export default function AdminSmsManagementModal({
                         
                         {/* ✅ AGGIUNGI QUESTA SEZIONE */}
                         <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                        📞 Da: <span className="font-medium">{log.fromPhoneNumber}</span>
+                        {t("admin.smsManagement.smsFrom")}:{" "}<span className="font-medium">{log.fromPhoneNumber}</span>
                         {" → "}
-                        📱 A: <span className="font-medium">{log.toPhoneNumber}</span>
+                        {t("admin.smsManagement.smsTo")}:{" "}<span className="font-medium">{log.toPhoneNumber}</span>
                         </div>
-                        
+
                         <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        📩 &quot;{log.messageBody}&quot;
+                        {t("admin.smsManagement.smsMessage")} &quot;{log.messageBody}&quot;
                         </div>
                         {log.errorMessage && (
                         <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                            ❌ {log.errorMessage}
+                            {t("admin.smsManagement.smsError")} {log.errorMessage}
                         </div>
                         )}
-                        <div className="text-xs text-gray-500 mt-2">SID: {log.messageSid}</div>
+                        <div className="text-xs text-gray-500 mt-2">{t("admin.smsManagement.smsSid")}:{" "}{log.messageSid}</div>
                     </div>
                     ))
               )}
@@ -457,7 +458,7 @@ export default function AdminSmsManagementModal({
         )}
 
         {/* Footer */}
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex">
           <button
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {
