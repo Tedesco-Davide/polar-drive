@@ -445,7 +445,11 @@ public class IntelligentDataAggregator(
             sb.AppendLine($"- Avg Speed: {aggregation.AvgSpeed:F1} km/h");
             
             if (aggregation.OdometerReadings.Count != 0)
-                sb.AppendLine($"- Odometer: {aggregation.OdometerReadings.Min():F0}-{aggregation.OdometerReadings.Max():F0} km");
+            {
+                aggregation.TotalKilometers = aggregation.OdometerReadings.Max() - aggregation.OdometerReadings.Min();
+                sb.AppendLine($"- Total Distance: {aggregation.TotalKilometers:F0} km");
+                sb.AppendLine($"- Odometer Range: {aggregation.OdometerReadings.Min():F0}-{aggregation.OdometerReadings.Max():F0} km");
+            }
             
             if (aggregation.GeographicZones.Count != 0)
             {
@@ -1002,6 +1006,7 @@ public class GoogleAdsTeslaDataAggregation
     // DRIVING (essenziale Google Ads)
     public List<int> Speeds { get; set; } = [];
     public List<decimal> OdometerReadings { get; set; } = [];
+    public decimal TotalKilometers { get; set; }
     public List<int> Headings { get; set; } = [];
     public Dictionary<string, int> ShiftStates { get; set; } = [];
 

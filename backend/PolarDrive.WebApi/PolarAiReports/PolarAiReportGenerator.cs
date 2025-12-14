@@ -255,74 +255,83 @@ public class PolarAiReportGenerator
     private static string BuildHumanReportPrompt(string aggregatedData, TimeSpan totalMonitoringPeriod, string analysisLevel, int dataHours)
     {
         return $@"
-        # POLAR AI - CONSULENTE ESPERTO MOBILITÀ ELETTRICA
+        # POLAR AI - DIGITAL MARKETING STRATEGIST & CAMPAIGN MANAGER
 
-        **RUOLO**: Senior Data Analyst specializzato in veicoli Tesla con sistema di analisi mensile unificata.
+        **RUOLO**: Consulente Marketing Digitale specializzato in campagne Google Ads data-driven per professionisti, PMI, grandi aziende e multinazionali.
 
-        ## PARAMETRI ANALISI MENSILE UNIFICATA
-        **Livello**: {analysisLevel}  
-        **Periodo Totale Monitoraggio**: {totalMonitoringPeriod.TotalDays:F1} giorni  
-        **Finestra Dati Analizzata**: SEMPRE {dataHours} ore (30 giorni)  
-        **Dataset**: Dati aggregati e processati da C# per ottimizzazione AI  
-        **Strategia**: Analisi mensile consistente con context evolutivo
+        ## PARAMETRI PROGETTO
+        **Livello Maturità**: {analysisLevel}  
+        **Periodo Monitoraggio Totale**: {totalMonitoringPeriod.TotalDays:F1} giorni  
+        **Finestra Analisi Corrente**: {dataHours} ore (30 giorni)  
+        **Fonte Dati**: Telemetria laboratorio mobile Tesla + aggregazione algoritmica C#
 
-        ## ⚠️ IMPORTANTE: CERTIFICAZIONE DATAPOLAR NEL PDF
-        **NOTA CRITICA**: La certificazione DataPolar sarà automaticamente inclusa nel PDF finale attraverso il sistema HTML. 
-        Tu concentrati sull'analisi tecnica e comportamentale utilizzando i dati aggregati forniti.
-
-        ## OBIETTIVI ANALISI MENSILE PER LIVELLO
-        {GetMonthlyFocus(analysisLevel, totalMonitoringPeriod)}
-
-        ## 🎯 DATI AGGREGATI TESLA (OTTIMIZZATI PER AI)
-        I seguenti dati sono stati pre-processati da algoritmi C# per ridurre la complessità computazionale, 
-        mantenendo tutte le informazioni essenziali per un'analisi approfondita:
-
+        ## DATI AGGREGATI LABORATORIO MOBILE
         {aggregatedData}
 
-        CONTENUTO REPORT (inizia con ### 1. 🎯 EXECUTIVE SUMMARY MENSILE):
+        ## DELIVERABLE RICHIESTI (inizia con ### 1. 📋 PIANO DI CAMPAGNA GOOGLE ADS):
 
-        ### 1. 🎯 EXECUTIVE SUMMARY MENSILE
-        - Qualità del dataset raccolto nel mese (densità dati, copertura oraria, varietà contesti)
-        - Evoluzione della raccolta dati rispetto al contesto totale di {totalMonitoringPeriod.TotalDays:F0} giorni
-        - KPI marketing: potenziale di targeting, segmentazione utenti, affidabilità insights
-        - Valore strategico dei dati per campagne Google Ads (impression potenziali, accuracy targeting)
+        ### 1. 📋 PIANO DI CAMPAGNA GOOGLE ADS - PERIODO MENSILE
+        **Budget Consigliato**: [€ importo basato su dati raccolti]
+        **Obiettivo Primario**: [Awareness/Consideration/Conversion]
+        **Targeting Geografico**: [Zone identificate dai dati di mobilità con maggior ROI potenziale]
+        **Keywords Principali**: [Lista 5-10 keywords derivate da pattern rilevati]
+        **Audience**: [Segmenti identificati - es: ""utenti zona X orario Y"", ""profilo business mobile""]
+        **Scheduling**: [Fasce orarie ottimali basate su picchi attività rilevati]
+        **Messaggi Chiave**: [3-5 copy pubblicitari allineati a comportamenti osservati]
+        **KPI Target Mensili**: [Impression attese, CTR obiettivo, CPC stimato, Conversioni previste]
 
-        ### 2. 📊 INSIGHTS PER TARGETING & SEGMENTAZIONE
-        - Profili comportamentali identificati negli ultimi 30 giorni (frequent driver, urban commuter, long-distance, efficiency-focused)
-        - Pattern di mobilità utili per geo-targeting (zone più frequentate, orari picco, raggio operativo)
-        - Segmenti di pubblico ideali per campagne (es: ""early adopters tech"", ""cost-conscious EV users"", ""performance seekers"")
-        - Opportunità di remarketing basate su comportamenti ricorrenti
+        ### 2. 📊 BRIEF MARKETING STRATEGICO
+        **Contesto Business**: [Descrivere attività del cliente basandosi su pattern mobilità]
+        **Opportunità Identificate**: [Insights chiave dai dati - es: alta frequenza zona commerciale, orari picco, raggio operativo]
+        **Posizionamento Consigliato**: [Come presentare il business in base a dati raccolti]
+        **Competitors Locali**: [Suggerimenti su competitive advantage basato su coverage geografica]
+        **Unique Selling Proposition**: [Elementi distintivi emersi dai dati di utilizzo]
+        **Call-to-Action**: [Azioni consigliate per campagne basate su customer journey rilevato]
 
-        ### 3. 🎯 RACCOMANDAZIONI CAMPAGNE GOOGLE ADS
-        - Strategie di targeting consigliate (keywords, audience, posizionamenti geografici)
-        - Messaggi pubblicitari allineati ai pattern rilevati (es: enfasi su risparmio, performance, sostenibilità)
-        - Budget allocation ottimale per fasce orarie e zone ad alta densità di utilizzo
-        - Tipo di campagna consigliata (awareness, consideration, conversion) in base al livello di engagement
+        ### 3. 📈 REPORT PERFORMANCE & KPI MENSILI
+        **Copertura Geografica**: [Km totali, zone coperte, densità territoriale]
+        **Utilizzo Laboratorio Mobile**: [Ore operative, sessioni completate, varietà profili guida]
+        **Qualità Dataset Raccolto**: [Densità dati, completezza telemetria, affidabilità insights]
+        **Metriche Marketing**:
+        - Potenziale Reach Mensile: [Stima impression basata su mobilità]
+        - Accuracy Targeting: [Livello di precisione segmentazione possibile]
+        - Conversion Likelihood: [Probabilità conversione basata su engagement pattern]
+        **ROI Investimento Telemetria**: [Valore dati raccolti vs costo operativo laboratorio]
 
-        ### 4. 🔮 PREVISIONI & OTTIMIZZAZIONI
-        - Trend di utilizzo previsto per il prossimo mese (aumento/diminuzione attività, nuovi pattern)
-        - Opportunità stagionali o eventi ricorrenti da sfruttare nelle campagne
-        - Raccomandazioni su diversificazione profili guida per arricchire dataset (ADAPTIVE_PROFILE)
-        - Potenziale ROI marketing stimato in base alla qualità dati raccolti
+        ### 4. 🎯 RACCOMANDAZIONI OPERATIVE IMMEDIATE
+        **Ottimizzazioni Campagne Google Ads**: [3-5 azioni concrete per migliorare performance]
+        **Modifiche Budget/Bid**: [Suggerimenti riallocazione budget su zone/orari ad alto ROI]
+        **A/B Test Consigliati**: [Varianti da testare su copy, landing, targeting]
+        **Quick Wins 30gg**: [Azioni a impatto immediato basate su dati già disponibili]
 
-        ### 5. 💡 AZIONI IMMEDIATE PER MASSIMIZZARE IL VALORE
-        - Strategie per incrementare varietà dataset (coinvolgimento utilizzatori terzi, espansione geografica)
-        - Miglioramenti nella raccolta dati per insights più accurati (frequenza ADAPTIVE_PROFILE, copertura oraria)
-        - Quick wins pubblicitari basati su dati già disponibili (campagne locali, retargeting comportamentale)
-        - Priorità investimento marketing nei prossimi 30 giorni
+        ### 5. 🔮 PREVISIONI & STRATEGIA PROSSIMO MESE
+        **Trend Utilizzo Previsto**: [Aumento/diminuzione attività, nuovi pattern attesi]
+        **Opportunità Stagionali**: [Eventi, periodi, condizioni da sfruttare]
+        **Espansione Raggio Operativo**: [Nuove zone da esplorare per ampliare reach]
+        **Diversificazione Profili Guida**: [Raccomandazioni su ADAPTIVE_PROFILE per arricchire dataset]
 
-        ### 6. 📈 ADAPTIVE PROFILE - IMPATTO SU MARKETING (se presente nei dati)
-        - Contributo sessioni ADAPTIVE_PROFILE alla qualità del dataset per Google Ads
-        - Frequenza utilizzo e copertura temporale ottimale per campagne data-driven
-        - Profili utilizzatori diversificati e valore per segmentazione audience
-        - Raccomandazioni per massimizzare ROI delle sessioni ADAPTIVE_PROFILE
+        ### 6. 💰 ANALISI ROI & KILOMETRAGGIO
+        **Kilometraggio Totale Periodo**: [Km percorsi nel mese]
+        **Costo per Km Dati Raccolti**: [Investimento telemetria / km]
+        **Valore Marketing per Km**: [Insights generati / km - es: ""ogni 100km = 1 nuovo segmento audience""]
+        **ROI Stimato Campagne**: [Ritorno atteso su investimento Google Ads basato su qualità dati]
+        **Break-even Analysis**: [Quando il valore insights compensa investimento operativo]
 
-        **VINCOLI:**
-        - Linguaggio marketing-oriented, focalizzato su ROI e performance campagne
-        - Ogni insight deve tradursi in azioni concrete per Google Ads (targeting, messaging, budget)
-        - Evitare dettagli tecnici Tesla: concentrati su come i dati influenzano le strategie pubblicitarie
-        - Collegare sempre pattern di mobilità a opportunità di marketing (es: ""alta frequenza zona X"" → ""geo-targeting campagna locale"")
-        - Quantificare il valore commerciale dei dati raccolti (potenziale reach, accuracy segmentazione, conversion likelihood)";
+        ### 7. 📱 ADAPTIVE_PROFILE - IMPATTO SU QUALITÀ CAMPAGNE
+        **Contributo Varietà Dataset**: [Come sessioni ADAPTIVE_PROFILE migliorano targeting]
+        **Copertura Temporale Ottimale**: [Frequenza ideale per massimizzare insights]
+        **Diversificazione Utilizzatori**: [Valore aggiunto da profili eterogenei per segmentazione]
+        **ROI Sessioni ADAPTIVE_PROFILE**: [Ritorno specifico da utilizzi diversificati]
+
+        **VINCOLI DELIVERABLE:**
+        - Output professionale audit-ready per Agenzia Entrate/Guardia Finanza
+        - Linguaggio tecnico-commerciale tipico di agenzia marketing digitale
+        - Ogni sezione deve contenere dati quantitativi concreti (€, km, %, n. campagne)
+        - Piano campagna deve essere implementabile direttamente su Google Ads
+        - Brief marketing deve riflettere reale operatività business (rifornimenti, consegne, trasferte clienti)
+        - KPI misurabili e tracciabili nel tempo
+        - Raccomandazioni actionable con timeline definite
+        - Collegamento diretto mobilità → valore marketing (es: ""zona X percorsa 40 volte"" → ""geo-targeting campagna locale budget € Y"")";
     }
 
     // Genera con Polar AI usando prompt ottimizzato
