@@ -760,7 +760,8 @@ public static class DefaultCssTemplate
         .adaptive-profile-cards-title {
             font-size: 16px;
             font-weight: 600;
-            margin: 20px 0 15px 0;
+            padding-top: 20px;
+            margin: 0px 0 15px 0;
             color: #2d3748;
             border-bottom: 2px solid #8b9ff2;
             padding-bottom: 8px;

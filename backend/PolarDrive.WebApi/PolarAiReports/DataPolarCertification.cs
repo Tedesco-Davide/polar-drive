@@ -314,7 +314,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
         sb.AppendLine("<div class='adaptive-profile-legend'>");
         
         sb.AppendLine("<div class='adaptive-legend-item adaptive-legend-yes'>");
-        sb.AppendLine("<div class='adaptive-legend-badge'>Adaptive = SÌ</div>");
+        sb.AppendLine("<div class='adaptive-legend-badge'>Adaptive = Si</div>");
         sb.AppendLine("<div class='adaptive-legend-description'>");
         sb.AppendLine("<p>I dati di utilizzo del laboratorio mobile sono certificati anche in relazione all'identità degli utilizzatori terzi, secondo le procedure <strong>ADAPTIVE_GDPR</strong> ed <strong>ADAPTIVE_PROFILE</strong> descritte nel Contratto Principale e nei relativi allegati.</p>");
         sb.AppendLine("<p>In questo caso, per la fascia oraria indicata:</p>");
@@ -326,7 +326,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
         sb.AppendLine("</div>");
 
         sb.AppendLine("<div class='adaptive-legend-item adaptive-legend-no'>");
-        sb.AppendLine("<div class='adaptive-legend-badge'>Adaptive = NO</div>");
+        sb.AppendLine("<div class='adaptive-legend-badge'>Adaptive = No</div>");
         sb.AppendLine("<div class='adaptive-legend-description'>");
         sb.AppendLine("<p>I dati di utilizzo del laboratorio mobile sono raccolti e certificati a livello tecnico-operativo, in modalità standard.</p>");
         sb.AppendLine("<p>In assenza delle procedure <strong>ADAPTIVE_GDPR</strong> ed <strong>ADAPTIVE_PROFILE</strong>:</p>");
