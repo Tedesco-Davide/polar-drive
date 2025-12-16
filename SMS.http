@@ -1,0 +1,12 @@
+### Variabili
+@api_key = 272f8ccd
+@api_secret = 57AZHUDdxtgK55GT
+@numero1 = 447441446357
+@numero2 = 447441446357
+@messaggio = ACCETTO
+
+### Invia SMS dal Numero 1 al Numero 2
+POST https://rest.nexmo.com/sms/json
+Content-Type: application/x-www-form-urlencoded
+
+from={{numero1}}&to={{numero2}}&text={{messaggio}}&api_key={{api_key}}&api_secret={{api_secret}}

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "next-i18next";
 import {
   MessageSquare,
@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Clock,
   User,
+  Search,
 } from "lucide-react";
 
 import { logFrontendEvent } from "@/utils/logger";
@@ -58,6 +59,8 @@ export default function AdminSmsProfileModal({
   const [auditLogs, setAuditLogs] = useState<SmsAuditLog[]>([]);
   const [profileSessions, setProfileSessions] = useState<AdaptiveProfileSession[]>([]);
   const [activeTab, setActiveTab] = useState<"profile" | "audit">("profile");
+  const [profileSearchFilter, setProfileSearchFilter] = useState("");
+  const [auditSearchFilter, setAuditSearchFilter] = useState("");
 
     const loadData = useCallback(async () => {
     try {
@@ -141,13 +144,43 @@ export default function AdminSmsProfileModal({
     return diff > 0 ? hours + "h " + minutes + "m" : t("admin.smsManagement.statusExpired");
   };
 
+  // Filtra le sessioni profilo in base alla ricerca
+  const filteredProfileSessions = useMemo(() => {
+    if (!profileSearchFilter.trim()) return profileSessions;
+    
+    const lowerSearch = profileSearchFilter.toLowerCase();
+    return profileSessions.filter(
+      (session) =>
+        session.adaptiveNumber.toLowerCase().includes(lowerSearch) ||
+        session.adaptiveSurnameName.toLowerCase().includes(lowerSearch) ||
+        session.id.toString().includes(lowerSearch) ||
+        session.parsedCommand.toLowerCase().includes(lowerSearch)
+    );
+  }, [profileSessions, profileSearchFilter]);
+
+  // Filtra gli audit logs in base alla ricerca
+  const filteredAuditLogs = useMemo(() => {
+    if (!auditSearchFilter.trim()) return auditLogs;
+    
+    const lowerSearch = auditSearchFilter.toLowerCase();
+    return auditLogs.filter(
+      (log) =>
+        log.fromPhoneNumber.toLowerCase().includes(lowerSearch) ||
+        log.toPhoneNumber.toLowerCase().includes(lowerSearch) ||
+        log.messageBody.toLowerCase().includes(lowerSearch) ||
+        log.messageSid.toLowerCase().includes(lowerSearch) ||
+        log.processingStatus.toLowerCase().includes(lowerSearch) ||
+        log.id.toString().includes(lowerSearch)
+    );
+  }, [auditLogs, auditSearchFilter]);
+
   if (!isOpen) return null;
 
   const activeSessions = profileSessions.filter(isSessionActive);
 
   return (
-    <div className="fixed top-[64px] md:top-[0px] inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm note-modal">
-      <div className="w-full h-full p-6 relative overflow-y-auto bg-softWhite dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-none rounded-lg md:h-auto md:w-11/12">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm note-modal p-4">
+      <div className="w-full max-w-7xl max-h-[80vh] p-6 relative flex flex-col bg-softWhite dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-lg rounded-lg">
         {/* Header + Status */}
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -251,117 +284,240 @@ export default function AdminSmsProfileModal({
         </div>
 
         {/* Content */}
-        <div className="min-h-[400px]">
+        <div className="flex-1 overflow-y-auto min-h-0 p-2">
           {/* Tab PROFILE */}
           {activeTab === "profile" && (
-            <div>
-              {profileSessions.length === 0 ? (
-                <p className="text-gray-500 py-8">
-                  {t("admin.smsManagement.noSessionsFound")}
+            <div className="h-full flex flex-col">
+              {/* Search Bar Profile */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={20}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Cerca per numero, nome, ID o comando..."
+                    value={profileSearchFilter}
+                    onChange={(e) => setProfileSearchFilter(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {filteredProfileSessions.length} di {profileSessions.length} risultati
                 </p>
-              ) : (
-                profileSessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className={`p-4 rounded-lg mb-3 ${
-                      isSessionActive(session)
-                        ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800"
-                        : "bg-gray-50 dark:bg-gray-800"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="flex items-center space-x-2">
-                        <User size={16} />
-                        <span className="font-semibold text-polarNight dark:text-softWhite">
-                          {session.adaptiveSurnameName || t("admin.smsManagement.defaultName")}
-                        </span>
-                        <span className="text-sm text-gray-600 dark:text-gray-400">
-                          {session.adaptiveNumber}
-                        </span>
-                      </div>
-                      <span
-                        className={`px-2 py-1 rounded text-xs font-medium ${
-                          isSessionActive(session)
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                            : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                        }`}
-                      >
-                        {isSessionActive(session) ? t("admin.smsManagement.statusActive") : t("admin.smsManagement.statusExpired")}
-                      </span>
-                    </div>
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      {t("admin.smsManagement.sessionStartLabel")}: {formatDate(session.receivedAt)}
-                      <br />
-                      {t("admin.smsManagement.sessionExpiryLabel")}: {formatDate(session.expiresAt)}
-                      {isSessionActive(session) && (
-                        <span className="ml-2 text-green-600 dark:text-green-400 font-medium">
-                          ({t("admin.smsManagement.remainingLabel")}: {getRemainingTime(session.expiresAt)})
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 flex items-center space-x-4 text-xs">
-                      <span
-                        className={`${
-                          session.consentAccepted
-                            ? "text-green-600 dark:text-green-400"
-                            : "text-red-600 dark:text-red-400"
-                        }`}
-                      >
-                        {t("admin.smsManagement.consentLabel")}:{" "}{session.consentAccepted ? t("admin.smsManagement.consentStatusActive") : t("admin.smsManagement.consentStatusRevoked")}
-                      </span>
-                      <span className="text-gray-500">{t("admin.smsManagement.commandLabel")}:{" "}{session.parsedCommand}</span>
-                    </div>
-                  </div>
-                ))
-              )}
+              </div>
+
+              {/* Table Profile */}
+              <div className="flex-1 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg">
+                {filteredProfileSessions.length === 0 ? (
+                  <p className="text-gray-500 py-8 text-center">
+                    {profileSearchFilter
+                      ? "Nessun risultato trovato"
+                      : t("admin.smsManagement.noSessionsFound")}
+                  </p>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          ID
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          <div className="flex items-center gap-2">
+                            <User size={14} />
+                            Nome/Numero
+                          </div>
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Stato
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Comando
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Consenso
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Ricevuto
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Scadenza
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredProfileSessions.map((session) => (
+                        <tr
+                          key={session.id}
+                          className={`${
+                            isSessionActive(session)
+                              ? "bg-green-50 dark:bg-green-900/10 hover:bg-green-100 dark:hover:bg-green-900/20"
+                              : "bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          } transition-colors`}
+                        >
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                            #{session.id}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm font-semibold text-polarNight dark:text-softWhite">
+                              {session.adaptiveSurnameName || t("admin.smsManagement.defaultName")}
+                            </div>
+                            <div className="text-xs text-gray-600 dark:text-gray-400">
+                              {session.adaptiveNumber}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                isSessionActive(session)
+                                  ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                                  : "bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                              }`}
+                            >
+                              {isSessionActive(session) ? t("admin.smsManagement.statusActive") : t("admin.smsManagement.statusExpired")}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                            {session.parsedCommand}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`text-xs font-medium ${
+                                session.consentAccepted
+                                  ? "text-green-600 dark:text-green-400"
+                                  : "text-red-600 dark:text-red-400"
+                              }`}
+                            >
+                              {session.consentAccepted ? t("admin.smsManagement.consentStatusActive") : t("admin.smsManagement.consentStatusRevoked")}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                            {formatDate(session.receivedAt)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-gray-600 dark:text-gray-300">
+                              {formatDate(session.expiresAt)}
+                            </div>
+                            {isSessionActive(session) && (
+                              <div className="text-xs text-green-600 dark:text-green-400 font-medium">
+                                {getRemainingTime(session.expiresAt)}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           )}
 
           {/* Tab AUDIT */}
           {activeTab === "audit" && (
-            <div>
-              {auditLogs.length === 0 ? (
-                <p className="text-gray-500 py-8">
-                  {t("admin.smsManagement.noAuditLogsFound")}
+            <div className="h-full flex flex-col">
+              {/* Search Bar Audit */}
+              <div className="mb-4">
+                <div className="relative">
+                  <Search
+                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                    size={20}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Cerca per numero, messaggio, stato o SID..."
+                    value={auditSearchFilter}
+                    onChange={(e) => setAuditSearchFilter(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {filteredAuditLogs.length} di {auditLogs.length} risultati
                 </p>
-              ) : (
-                    auditLogs.map((log) => (
-                    <div key={log.id} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3">
-                        <div className="flex items-center gap-2 mb-2">
-                        <div className="flex items-center space-x-2">
-                            <span
-                            className={`px-2 py-1 rounded text-xs font-medium ${getStatusColor(
-                                log.processingStatus
-                            )}`}
-                            >
-                            {log.processingStatus}
-                            </span>
-                            <span className="font-semibold text-polarNight dark:text-softWhite">
-                            {log.fromPhoneNumber}
-                            </span>
-                        </div>
-                        <span className="text-xs text-gray-500">{formatDate(log.receivedAt)}</span>
-                        </div>
-                        
-                        {/* ✅ AGGIUNGI QUESTA SEZIONE */}
-                        <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                        {t("admin.smsManagement.smsFrom")}:{" "}<span className="font-medium">{log.fromPhoneNumber}</span>
-                        {" → "}
-                        {t("admin.smsManagement.smsTo")}:{" "}<span className="font-medium">{log.toPhoneNumber}</span>
-                        </div>
+              </div>
 
-                        <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                        {t("admin.smsManagement.smsMessage")} &quot;{log.messageBody}&quot;
-                        </div>
-                        {log.errorMessage && (
-                        <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                            {t("admin.smsManagement.smsError")} {log.errorMessage}
-                        </div>
-                        )}
-                        <div className="text-xs text-gray-500 mt-2">{t("admin.smsManagement.smsSid")}:{" "}{log.messageSid}</div>
-                    </div>
-                    ))
-              )}
+              {/* Table Audit */}
+              <div className="flex-1 overflow-y-auto border border-gray-300 dark:border-gray-600 rounded-lg">
+                {filteredAuditLogs.length === 0 ? (
+                  <p className="text-gray-500 py-8 text-center">
+                    {auditSearchFilter
+                      ? "Nessun risultato trovato"
+                      : t("admin.smsManagement.noAuditLogsFound")}
+                  </p>
+                ) : (
+                  <table className="w-full">
+                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          ID
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Stato
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Da
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          A
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Messaggio
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          Ricevuto
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                          SID
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                      {filteredAuditLogs.map((log) => (
+                        <tr
+                          key={log.id}
+                          className="bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                            #{log.id}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(
+                                log.processingStatus
+                              )}`}
+                            >
+                              {log.processingStatus}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm font-semibold text-polarNight dark:text-softWhite">
+                            {log.fromPhoneNumber}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                            {log.toPhoneNumber}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="text-sm text-gray-600 dark:text-gray-300 max-w-md truncate">
+                              {log.messageBody}
+                            </div>
+                            {log.errorMessage && (
+                              <div className="text-xs text-red-600 dark:text-red-400 mt-1">
+                                ⚠️ {log.errorMessage}
+                              </div>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                            {formatDate(log.receivedAt)}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500 dark:text-gray-400 font-mono">
+                            {log.messageSid}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -374,7 +530,7 @@ export default function AdminSmsProfileModal({
         )}
 
         {/* Footer */}
-        <div className="mt-6 flex">
+        <div className="mt-6 flex flex-shrink-0 pt-4 border-t border-gray-200 dark:border-gray-700">
           <button
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {

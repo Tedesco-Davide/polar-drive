@@ -339,7 +339,7 @@ public class SmsController(
         await _db.SaveChangesAsync();
 
         // Invia SMS al numero target
-        var gdprMessage = $"DataPolar: Consenso GDPR per {vehicle.Brand} e Google Ads. Info: short.link/gdpr. Rispondi ACCETTO per confermare.";
+        var gdprMessage = $"DataPolar: Consenso GDPR per {vehicle.Brand} e Google Ads. Info: FUTURELINKPDF. Rispondi ACCETTO per confermare.";
 
         // Validazione preventiva: assicuriamoci che il numero target contenga cifre vere
         var targetDigits = DigitsOnly(targetPhone);

@@ -91,7 +91,7 @@ public class SmsService(IConfiguration configuration, PolarDriveLogger logger) :
 
             var request = new SendSmsRequest
             {
-                To = NormalizeForVonage(phoneNumber),
+                To = phoneNumber,
                 From = _config.PhoneNumber,
                 Text = message
             };
@@ -135,22 +135,5 @@ public class SmsService(IConfiguration configuration, PolarDriveLogger logger) :
             _ = _logger.Error(ex.ToString(), "Vonage SendSmsAsync exception per {PhoneNumber}", phoneNumber);
             return false;
         }
-    }
-
-    private static string NormalizeForVonage(string phoneNumber)
-    {
-        var digits = System.Text.RegularExpressions.Regex.Replace(phoneNumber ?? "", @"\D", "");
-        if (string.IsNullOrEmpty(digits)) return phoneNumber!;
-
-        if (digits.StartsWith("39") && digits.Length >= 11)
-            return "+" + digits;
-
-        if (digits.Length == 10 && digits.StartsWith("3"))
-            return "+39" + digits;
-
-        if (phoneNumber!.StartsWith("+"))
-            return phoneNumber;
-
-        return "+39" + digits;
     }
 }

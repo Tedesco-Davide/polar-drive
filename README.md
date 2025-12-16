@@ -8,6 +8,15 @@ Repository per il progetto **PolarDrive**.
 
 - LE CONFIGURAZIONI PRINCIPALI SONO SOTTO => C:\Users\Tedesco Davide\.cloudflared
 
+### 📞 VONAGE
+
+- CELLULARE PRINCIPALE Vonage__PhoneNumber => Dentro .env.dev ed .env.prod
+- CHIAMATE DA TESTARE FULL ONLINE => Dentro SMS.http 
+- CHIAMATE DA TESTARE FULL ONLINE => 
+    @numero1 e @numero2 sono uguali ma paghi x2 il costo SMS
+    se @numero1 e @numero2 sono diversi => Mittente non autorizzato
+    siccome @numero1 e @numero2 sono uguali, ricevono SMS di conferma, e quindi anche => Comando non riconosciuto
+
 ### ⚙️ GENERICHE COMUNI
 
 - backend/PolarDrive.WebApi/Constants/CommonConstants.cs => CONTIENE CONFIG PRINCIPALI APPLICATIVO => ESEMPIO: MONTHLY_HOURS_THRESHOLD
@@ -15,11 +24,23 @@ Repository per il progetto **PolarDrive**.
 - COMMENTARE PER NON INVIARE DATI A GOOGLE => await googleAds.SendAiInsightsToGoogleAds(insights, vehicleId, vehicle.Vin);
 - CONTIENE FORMATTING PER EVENTUALI SBAGLI STAMPA AI => private static string FormatInsightsForHtml(string insights)
 
-### 🐳 DOCKER DEV
+### 🐳 DOCKER DEV - PRINCIPALI
 
 _(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
 
-DEV => INFO SU OLLAMA
+=> FULL DOWN ED UP
+
+- RIMUOVERE ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml down
+- REBUILD ALL IMMAGINI DEV => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
+docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
+docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
+- START ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
+
+### 🐳 DOCKER DEV - SECONDARI
+
+_(Tasto destro sulla cartella ROOT principale del progetto → Open in integrated Terminal)_
+
+=> OLLAMA
 
 - RIMUOVERE CONTAINER OLLAMA (DA NON FARE MAI) => docker compose -f docker-compose.ollama.dev.yml down
 - PULL MODELLO ANCHE SE GIÀ SCARICATO => docker compose -f docker-compose.ollama.dev.yml run --rm ollama-init
@@ -31,35 +52,27 @@ DEV => INFO SU OLLAMA
 - LISTA MODELLI => curl http://localhost:11434/api/tags
 - SCARICARE MODELLO => ESEMPIO: docker exec -it polardrive-ollama-dev ollama pull deepseek-r1:8b
 
-DEV => COMANDI GENERICI => FULL DOWN ED UP
-
-- RIMUOVERE ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml down
-- REBUILD ALL IMMAGINI DEV => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
-docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
-docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
-- START ALL CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d
-
-DEV => !!!UNA TANTUM!!! => LAUNCH INIT DB PER RESETTARE IL DB DataPolar_PolarDrive_DB_DEV =>
+!!!UNA TANTUM!!! => LAUNCH INIT DB PER RESETTARE IL DB DataPolar_PolarDrive_DB_DEV =>
 
 - REBUILD IMMAGINE INITDB => docker build -f backend/PolarDriveInitDB.Cli/Dockerfile -t polardrive-initdb:latest .
 - AZIONE INIT DB => docker compose -f docker-compose.dev.yml --env-file .env.dev run --rm initdb
 - RIMUOVERE IMMAGINE INITDB => docker rmi -f polardrive-initdb:latest
 
-DEV => REBUILD TESLA-MOCK-API-SERVICE POST MODIFICHE =>
+=> REBUILD TESLA-MOCK-API-SERVICE POST MODIFICHE =>
 
 - RIMUOVERE CONTAINER DEV => docker rm -f polardrive-mock-api-dev
 - REBUILD IMMAGINE TESLA MOCK => docker build -f backend/PolarDrive.TeslaMockApiService/Dockerfile -t polardrive-mock:latest .
 - START CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d mock-api
 - LOGS => docker compose -f docker-compose.dev.yml logs -f mock
 
-DEV => REBUILD POLARDRIVE-WEB-API POST MODIFICHE =>
+=> REBUILD POLARDRIVE-WEB-API POST MODIFICHE =>
 
 - RIMUOVERE CONTAINER DEV => docker rm -f polardrive-api-dev
 - REBUILD IMMAGINE WEB-API => docker build -f backend/PolarDrive.WebApi/Dockerfile -t polardrive-api:latest .
 - START CONTAINER DEV => docker compose -f docker-compose.dev.yml --env-file .env.dev up -d api
 - LOGS => docker compose -f docker-compose.dev.yml logs -f api
 
-DEV => REBUILD FRONTEND POST MODIFICHE =>
+=> REBUILD FRONTEND POST MODIFICHE =>
 
 - RIMUOVERE CONTAINER DEV => docker rm -f polardrive-frontend-dev
 - REBUILD IMMAGINE DEV FRONTEND => docker build -f frontend/Dockerfile -t polardrive-frontend:latest .
