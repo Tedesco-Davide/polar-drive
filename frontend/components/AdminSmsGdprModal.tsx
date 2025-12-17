@@ -7,6 +7,7 @@ import { logFrontendEvent } from "@/utils/logger";
 interface GdprConsent {
   id: number;
   phoneNumber: string;
+  adaptiveSurnameName: string;
   brand: string;
   requestedAt: string;
   consentGivenAt: string | null;
@@ -76,6 +77,7 @@ export default function AdminSmsGdprModal({
     return gdprConsents.filter(
       (consent) =>
         consent.phoneNumber.toLowerCase().includes(lowerSearch) ||
+        consent.adaptiveSurnameName.toLowerCase().includes(lowerSearch) ||
         consent.brand.toLowerCase().includes(lowerSearch) ||
         consent.id.toString().includes(lowerSearch)
     );
@@ -140,6 +142,9 @@ export default function AdminSmsGdprModal({
                     </div>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
+                    Nome
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                     Stato
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
@@ -168,6 +173,9 @@ export default function AdminSmsGdprModal({
                     </td>
                     <td className="px-4 py-3 text-sm font-semibold text-polarNight dark:text-softWhite">
                       {consent.phoneNumber}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                      {consent.adaptiveSurnameName}
                     </td>
                     <td className="px-4 py-3">
                       <span

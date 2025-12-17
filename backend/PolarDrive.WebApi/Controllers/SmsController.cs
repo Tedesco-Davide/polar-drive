@@ -413,7 +413,7 @@ public class SmsController(
         await _db.SaveChangesAsync();
 
         // Invia SMS di conferma
-        var confirmMessage = $@"Autorizzazione ADAPTIVE_GDPR confermata per {gdprRequest.Brand} da {gdprRequest.ClientCompany?.Name} ID Consenso: #{gdprRequest.Id} ❌ Consenso revocabile rispondendo a questo SMS con: STOP";
+        var confirmMessage = $@"Autorizzazione ADAPTIVE_GDPR confermata per {gdprRequest.Brand} da {gdprRequest.ClientCompany?.Name} ID Consenso: #{gdprRequest.Id}. Consenso revocabile rispondendo a questo SMS con: STOP";
 
         await _smsConfig.SendSmsAsync(from, confirmMessage);
 

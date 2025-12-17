@@ -3,7 +3,7 @@
 @api_secret = 57AZHUDdxtgK55GT
 @numero1 = 447441446357
 @numero2 = 447441446357
-@messaggio = ACCETTO
+@messaggio = Accetto
 
 ### Invia SMS dal Numero 1 al Numero 2
 POST https://rest.nexmo.com/sms/json

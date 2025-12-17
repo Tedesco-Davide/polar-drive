@@ -496,8 +496,8 @@ export default function AdminSmsProfileModal({
                           <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                             {log.toPhoneNumber}
                           </td>
-                          <td className="px-4 py-3">
-                            <div className="text-sm text-gray-600 dark:text-gray-300 max-w-md truncate">
+                          <td className="px-4 py-3 max-w-xs">
+                            <div className="text-sm text-gray-600 dark:text-gray-300 whitespace-normal break-words">
                               {log.messageBody}
                             </div>
                             {log.errorMessage && (
