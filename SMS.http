@@ -1,9 +1,17 @@
+### Lista Possibili Comandi SMS
+
+ADAPTIVE_GDPR NOME COGNOME 447441446357
+RISPOSTA: ACCETTO ( OPPURE IGNORARE )
+
+ADAPTIVE_PROFILE NOME COGNOME 447441446357 VINNUMBER
+RISPOSTA: NESSUNA ( REGISTRAZIONE FINESTRA 24 ORE )
+
 ### Variabili
 @api_key = 272f8ccd
 @api_secret = 57AZHUDdxtgK55GT
 @numero1 = 447441446357
 @numero2 = 447441446357
-@messaggio = Accetto
+@messaggio =
 
 ### Invia SMS dal Numero 1 al Numero 2
 POST https://rest.nexmo.com/sms/json
