@@ -309,7 +309,9 @@ public class SmsController(
 
         // Crea riga ADAPTIVE_PROFILE (vuota, in attesa di attivazione)
         var profileEvent = await _db.SmsAdaptiveProfile
-                    .FirstOrDefaultAsync(p => p.VehicleId == vehicle.Id && p.AdaptiveNumber == targetPhone);
+                    .FirstOrDefaultAsync(p => p.VehicleId == vehicle.Id 
+                                           && p.AdaptiveNumber == targetPhone 
+                                           && p.AdaptiveSurnameName == fullName);
 
         if (profileEvent == null)
         {
@@ -593,7 +595,8 @@ public class SmsController(
         // Trova o crea riga ADAPTIVE_PROFILE
         var profileEvent = await _db.SmsAdaptiveProfile
             .Where(p => p.VehicleId == vehicle.Id
-                    && p.AdaptiveNumber == targetPhone)
+                    && p.AdaptiveNumber == targetPhone
+                    && p.AdaptiveSurnameName == fullName)
             .OrderByDescending(p => p.ReceivedAt)
             .FirstOrDefaultAsync();
 
@@ -621,6 +624,7 @@ public class SmsController(
             profileEvent.AdaptiveSurnameName = fullName;
             profileEvent.ReceivedAt = DateTime.Now;
             profileEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD);
+            profileEvent.MessageContent = dto.Body!;
             profileEvent.ParsedCommand = "ADAPTIVE_PROFILE_ON";
             profileEvent.ConsentAccepted = true;
             profileEvent.SmsAdaptiveGdprId = gdprConsent.Id;

@@ -70,7 +70,7 @@ export default function AdminSmsProfileModal({
         let vehicleLogs: SmsAuditLog[] = [];
 
         // Carica sessioni ADAPTIVE_PROFILE
-        const profileResponse = await fetch(`/api/SmsAdaptiveProfile/${vehicleId}/history`);
+        const profileResponse = await fetch(`/api/Sms/adaptive-profile/${vehicleId}/history`);
         if (profileResponse.ok) {
         sessions = await profileResponse.json();
         setProfileSessions(sessions);
