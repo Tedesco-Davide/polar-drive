@@ -19,13 +19,6 @@ public class SmsController(
     private readonly ISmsConfigurationService _smsConfig = smsConfig;
     private readonly PolarDriveLogger _logger = new();
 
-    [HttpGet("test-sms")]
-    public async Task<IActionResult> TestSendSms([FromServices] ISmsConfigurationService sms)
-    {
-        await sms.SendSmsAsync("+393926321311", "🚀 Test SMS PolarDrive via Vonage OK");
-        return Ok("SMS di test inviato.");
-    }
-
     /// <summary>
     /// 🎯 WEBHOOK PRINCIPALE - Riceve SMS
     /// </summary>
@@ -57,7 +50,7 @@ public class SmsController(
             ?? dto?.MessageSid
             ?? GetParam("messageId")
             ?? GetParam("MessageSid")
-            ?? string.Empty;
+            ?? Guid.NewGuid().ToString();
 
         var auditLog = new SmsAuditLog
         {

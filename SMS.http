@@ -11,10 +11,16 @@ RISPOSTA: NESSUNA ( REGISTRAZIONE FINESTRA 24 ORE )
 @api_secret = 57AZHUDdxtgK55GT
 @numero1 = 447441446357
 @numero2 = 447441446357
-@messaggio =
+@messaggio = ADAPTIVE_GDPR Tedesco Davide 447441446357
 
 ### Invia SMS dal Numero 1 al Numero 2
 POST https://rest.nexmo.com/sms/json
 Content-Type: application/x-www-form-urlencoded
 
 from={{numero1}}&to={{numero2}}&text={{messaggio}}&api_key={{api_key}}&api_secret={{api_secret}}
+
+### Test Webhook Ricezione SMS senza VONAGE ( per provare il workflow )
+### Parametrizzare &text=
+curl -X POST https://dev-api.datapolar.dev/api/Sms/webhook \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "msisdn=447441446357&to=447441446357&text="
