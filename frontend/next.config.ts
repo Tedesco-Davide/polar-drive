@@ -8,9 +8,6 @@ const nextConfig: NextConfig = {
     localeDetection: false,
   },
   output: "standalone",
-  eslint: {
-    ignoreDuringBuilds: false,
-  },
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
   },

@@ -44,7 +44,7 @@ module.exports = {
       },
       colors: {
         // 🎨 DataPolar Palette
-        articWhite: "#F8F9FA",
+        arcticWhite: "#F8F9FA",
         softWhite: "#F8F9FA",
         glacierBlue: "#A7C6ED",
         polarNight: "#1C2D44",

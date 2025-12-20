@@ -1,8 +1,9 @@
 @import "./fonts.css";
+@import "./animations.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-@import "./animations.css";
 
 * {
   -webkit-font-smoothing: antialiased;
@@ -24,7 +25,7 @@ html {
 }
 
 body {
-  @apply font-sans antialiased bg-articWhite text-polarNight dark:bg-polarNight dark:text-articWhite;
+  @apply font-sans antialiased bg-arcticWhite text-polarNight dark:bg-polarNight dark:text-arcticWhite;
 }
 
 .note-modal {

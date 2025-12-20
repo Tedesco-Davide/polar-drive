@@ -117,12 +117,12 @@ export default function VehicleStatusToggle({
       isActive ? (
         <div className="flex justify-center text-green-600 gap-1">
           <CircleCheck size={20} />
-          <span className="text-polarNight dark:text-articWhite">Active</span>
+          <span className="text-polarNight dark:text-arcticWhite">Active</span>
         </div>
       ) : (
         <div className="flex justify-center text-red-600 gap-1">
           <CircleX size={20} />
-          <span className="text-polarNight dark:text-articWhite">
+          <span className="text-polarNight dark:text-arcticWhite">
             NotActive
           </span>
         </div>
@@ -130,12 +130,12 @@ export default function VehicleStatusToggle({
     ) : isFetching ? (
       <div className="flex justify-center text-green-600 gap-1">
         <CircleCheck size={20} />
-        <span className="text-polarNight dark:text-articWhite">Fetching</span>
+        <span className="text-polarNight dark:text-arcticWhite">Fetching</span>
       </div>
     ) : (
       <div className="flex justify-center text-red-600 gap-1">
         <CircleX size={20} />
-        <span className="text-polarNight dark:text-articWhite">
+        <span className="text-polarNight dark:text-arcticWhite">
           NotFetching
         </span>
       </div>

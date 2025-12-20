@@ -262,7 +262,7 @@ export default function AdminSmsProfileModal({
           <button
             className={`px-4 py-2 font-medium ${
               activeTab === "profile"
-                ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite dark:border-articWhite"
+                ? "border-b-2 text-polarNight border-polarNight dark:text-arcticWhite dark:border-arcticWhite"
                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
             onClick={() => setActiveTab("profile")}
@@ -273,7 +273,7 @@ export default function AdminSmsProfileModal({
           <button
             className={`px-4 py-2 font-medium ml-4 ${
               activeTab === "audit"
-                ? "border-b-2 text-polarNight border-polarNight dark:text-articWhite dark:border-articWhite"
+                ? "border-b-2 text-polarNight border-polarNight dark:text-arcticWhite dark:border-arcticWhite"
                 : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
             }`}
             onClick={() => setActiveTab("audit")}

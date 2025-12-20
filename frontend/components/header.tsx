@@ -50,7 +50,7 @@ export default function Header() {
     <header
       key={`header-${router.locale}-${ready}`}
       ref={headerRef}
-      className="fixed top-0 left-0 w-full z-[100] bg-articWhite/20 dark:bg-polarNight/20 backdrop-blur-md border-b border-white/20 dark:border-white/10 text-polarNight dark:text-articWhite transition-all duration-300"
+      className="fixed top-0 left-0 w-full z-[100] bg-arcticWhite/20 dark:bg-polarNight/20 backdrop-blur-md border-b border-white/20 dark:border-white/10 text-polarNight dark:text-arcticWhite transition-all duration-300"
     >
       <div className="px-6 flex h-16 items-center justify-between">
         {/* Logo */}
