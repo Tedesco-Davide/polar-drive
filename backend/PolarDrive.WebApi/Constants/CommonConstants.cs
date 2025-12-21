@@ -8,6 +8,9 @@ namespace PolarDrive.WebApi.Constants
         // Finestra di tempo in ore, utilizzata per SMS ADAPTIVE_GDPR ed ADAPTIVE_PROFILE
         public const int SMS_ADPATIVE_HOURS_THRESHOLD = 24;
 
+        // Finestra di tempo minuti, tra una richiesta SMS ADAPTIVE_GDPR e l'altra, per lo stesso utilizzatore
+        public const int SMS_ADPATIVE_GDPR_REQUEST_INTERVAL_MINUTES = 35;
+
         // Valori usati nel controller dei Reports, insieme anche a monthly, per determinare tipo cadenza Report
         public const int DAILY_HOURS_THRESHOLD = 24;
         public const int WEEKLY_HOURS_THRESHOLD = 168;
