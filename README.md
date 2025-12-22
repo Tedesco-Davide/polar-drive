@@ -53,15 +53,19 @@ _(Tasto destro sulla cartella ROOT principale del progetto → Open in integrate
 
 => OLLAMA
 
-- RIMUOVERE CONTAINER OLLAMA (DA NON FARE MAI) => docker compose -f docker-compose.ollama.dev.yml down
-- PULL MODELLO ANCHE SE GIÀ SCARICATO => docker compose -f docker-compose.ollama.dev.yml run --rm ollama-init
+RIAVVIO VELOCE =>
 
 - STOPPARE CONTAINER OLLAMA => docker compose -f docker-compose.ollama.dev.yml stop
 - AVVIO OLLAMA => docker compose -f docker-compose.ollama.dev.yml up -d ollama
 - VERIFICA STATO => docker compose -f docker-compose.ollama.dev.yml ps
 - VERIFICA HEALTH => docker inspect polardrive-ollama-dev --format='{{.State.Health.Status}}'
 - LISTA MODELLI => curl http://localhost:11434/api/tags
-- SCARICARE MODELLO => ESEMPIO: docker exec -it polardrive-ollama-dev ollama pull deepseek-r1:8b
+
+COMANDI LENTI IMPATTANTI =>
+
+- RIMUOVERE CONTAINER OLLAMA (DA NON FARE MAI) => docker compose -f docker-compose.ollama.dev.yml down
+- PULL MODELLO ANCHE SE GIÀ SCARICATO => docker compose -f docker-compose.ollama.dev.yml run --rm ollama-init
+- SCARICARE MODELLO => ESEMPIO: docker exec -it polardrive-ollama-dev ollama pull qwen2.5:14b
 
 !!!UNA TANTUM!!! => LAUNCH INIT DB PER RESETTARE IL DB DataPolar_PolarDrive_DB_DEV =>
 

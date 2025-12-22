@@ -490,10 +490,10 @@ export default function AdminSmsProfileModal({
                               {log.processingStatus}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm font-semibold text-polarNight dark:text-softWhite">
+                          <td className="px-4 py-3 text-sm text-polarNight dark:text-softWhite">
                             {log.fromPhoneNumber}
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
+                          <td className="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">
                             {log.toPhoneNumber}
                           </td>
                           <td className="px-4 py-3 max-w-xs">

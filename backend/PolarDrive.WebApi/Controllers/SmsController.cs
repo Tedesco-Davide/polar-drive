@@ -122,7 +122,7 @@ public class SmsController(
             // Comando non riconosciuto
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Comando non riconosciuto";
-            var errorResponse = GenerateSmsResponse("Comando non valido. Usa ADAPTIVE_GDPR o ADAPTIVE_PROFILE.");
+            var errorResponse = GenerateSmsResponse("Comando non valido. Usa ADAPTIVE_GDPR o ADAPTIVE_PROFILE");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
 
@@ -264,7 +264,7 @@ public class SmsController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Mittente non autorizzato";
-            var errorResponse = GenerateSmsResponse("Solo il Cellulare Operativo Autorizzato registrato può richiedere i consensi GDPR.");
+            var errorResponse = GenerateSmsResponse("Solo il Cellulare Operativo Autorizzato registrato può richiedere i consensi GDPR");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
@@ -585,7 +585,7 @@ public class SmsController(
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = $"Mittente non autorizzato per VIN {targetVin}";
-            var errorResponse = GenerateSmsResponse($"Non sei autorizzato a gestire ADAPTIVE_PROFILE per il veicolo {targetVin}.");
+            var errorResponse = GenerateSmsResponse($"Non sei autorizzato a gestire ADAPTIVE_PROFILE per il veicolo {targetVin}");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);

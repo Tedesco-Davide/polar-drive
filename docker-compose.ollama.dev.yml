@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
 
   ollama:
@@ -12,6 +10,8 @@ services:
       - OLLAMA_KEEP_ALIVE=24h
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      - OLLAMA_NUM_GPU=1
+      - OLLAMA_FLASH_ATTENTION=1
     volumes:
       - ollama-models-dev:/root/.ollama
     networks:
@@ -44,8 +44,8 @@ services:
       export OLLAMA_HOST=http://ollama:11434
       echo "⏳ Attendendo Ollama..."
       until ollama list >/dev/null 2>&1; do sleep 2; done
-      echo "📥 Scaricamento modello deepseek-r1:8b..."
-      ollama pull deepseek-r1:8b
+      echo "📥 Scaricamento modello..."
+      ollama pull qwen2.5:14b
       echo "✅ PolarAi Modello DEV pronto"
     restart: "no"
 

@@ -200,10 +200,6 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(e => new { e.AdaptiveNumber, e.AdaptiveSurnameName });
-
-                // UNIQUE constraint: evita profili duplicati per stesso numero + veicolo
-                entity.HasIndex(e => new { e.VehicleId, e.AdaptiveNumber })
-                    .IsUnique();
             });
 
             modelBuilder.Entity<PhoneVehicleMapping>(entity =>

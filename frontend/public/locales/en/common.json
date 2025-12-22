@@ -362,7 +362,7 @@
   "admin.smsManagement.vehicleActiveStatus": "Vehicle ACTIVE",
   "admin.smsManagement.vehicleInactiveStatus": "Vehicle INACTIVE",
   "admin.smsManagement.vehicleInactiveWarning": "⚠️ The vehicle must be active for Adaptive procedures",
-  "admin.smsManagement.activeSessions": "Active ADAPTIVE_PROFILE Session(s)",
+  "admin.smsManagement.activeSessions": "Active ADAPTIVE_PROFILE Sessions",
   "admin.smsManagement.noActiveSessions": "No active sessions",
   "admin.smsManagement.tabs.profile": "Profile",
   "admin.smsManagement.tabs.gdpr": "GDPR Consents",

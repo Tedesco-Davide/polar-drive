@@ -1,26 +1,59 @@
-### Lista Possibili Comandi SMS
+###################### LISTA POSSIBILI COMANDI VIA SMS
 
-ADAPTIVE_GDPR NOME COGNOME 447441446357
-RISPOSTA: ACCETTO ( OPPURE IGNORARE )
+ADAPTIVE_GDPR NOME COGNOME NUMERO_TELEFONO
+RISPOSTA: ACCETTO (conferma consenso) OPPURE IGNORARE (scade dopo 35min)
 
-ADAPTIVE_PROFILE NOME COGNOME 447441446357 VINNUMBER
-RISPOSTA: NESSUNA ( REGISTRAZIONE FINESTRA 24 ORE )
+ADAPTIVE_PROFILE NOME COGNOME NUMERO_TELEFONO VIN
+RISPOSTA: NESSUNA (registrazione automatica finestra 24 ore)
 
-### Variabili
+STOP
+RISPOSTA: NESSUNA (revoca consensi accettati O richieste pendenti)
+
+###################### VARIABILI
+
 @api_key = 272f8ccd
 @api_secret = 57AZHUDdxtgK55GT
-@numero1 = 447441446357
-@numero2 = 447441446357
-@messaggio = ADAPTIVE_GDPR Tedesco Davide 447441446357
+@cellulare_operativo_autorizzato = 447441446357
+@numero_vonage_datapolar = 447441446357
+@messaggio_adaptive_gdpr = ADAPTIVE_GDPR Tedesco Davide 447441446357
+@messaggio_adaptive_profile = ADAPTIVE_PROFILE Tedesco Davide 447441446357 5YJ3000000NEXUS01
 
-### Invia SMS dal Numero 1 al Numero 2
+###################### INVIO SMS REALI TRAMITE VONAGE API
+
+### Invia SMS ADAPTIVE_GDPR
 POST https://rest.nexmo.com/sms/json
 Content-Type: application/x-www-form-urlencoded
 
-from={{numero1}}&to={{numero2}}&text={{messaggio}}&api_key={{api_key}}&api_secret={{api_secret}}
+from={{numero_vonage_datapolar}}&to={{cellulare_operativo_autorizzato}}&text={{messaggio_adaptive_gdpr}}&api_key={{api_key}}&api_secret={{api_secret}}
 
-### Test Webhook Ricezione SMS senza VONAGE ( per provare il workflow )
-### Parametrizzare &text=
-curl -X POST https://dev-api.datapolar.dev/api/Sms/webhook \
-  -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "msisdn=447441446357&to=447441446357&text="
+### Invia SMS ADAPTIVE_PROFILE
+POST https://rest.nexmo.com/sms/json
+Content-Type: application/x-www-form-urlencoded
+
+from={{numero_vonage_datapolar}}&to={{cellulare_operativo_autorizzato}}&text={{messaggio_adaptive_profile}}&api_key={{api_key}}&api_secret={{api_secret}}
+
+###################### TEST PER SIMULARE CHIAMATE VONAGE AL WEBHOOK ( SIMULAZIONE )
+
+### TEST ADAPTIVE_GDPR
+POST https://dev-api.datapolar.dev/api/Sms/webhook
+Content-Type: application/x-www-form-urlencoded
+
+msisdn={{cellulare_operativo_autorizzato}}&to={{numero_vonage_datapolar}}&text={{messaggio_adaptive_gdpr}}
+
+### Test ACCETTO
+POST https://dev-api.datapolar.dev/api/Sms/webhook
+Content-Type: application/x-www-form-urlencoded
+
+msisdn={{cellulare_operativo_autorizzato}}&to={{numero_vonage_datapolar}}&text=ACCETTO
+
+### Test STOP
+POST https://dev-api.datapolar.dev/api/Sms/webhook
+Content-Type: application/x-www-form-urlencoded
+
+msisdn={{cellulare_operativo_autorizzato}}&to={{numero_vonage_datapolar}}&text=STOP
+
+### Test ADAPTIVE_PROFILE
+POST https://dev-api.datapolar.dev/api/Sms/webhook
+Content-Type: application/x-www-form-urlencoded
+
+msisdn={{cellulare_operativo_autorizzato}}&to={{numero_vonage_datapolar}}&text={{messaggio_adaptive_profile}}
