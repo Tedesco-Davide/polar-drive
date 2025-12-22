@@ -412,22 +412,4 @@ public class PolarAiReportGenerator
             return null;
         }
     }
-
-    // Focus specifico per analisi mensile in base al livello
-    private static string GetMonthlyFocus(string analysisLevel, TimeSpan totalMonitoringPeriod)
-    {
-        var contextInfo = totalMonitoringPeriod.TotalDays < 30
-            ? $"(Dati parziali: {totalMonitoringPeriod.TotalDays:F0} giorni disponibili)"
-            : "(Mese completo di dati)";
-
-        return analysisLevel switch
-        {
-            "Valutazione Iniziale" => $"- Stabilire baseline mensili e identificare pattern iniziali {contextInfo}\n- Comprendere abitudini di utilizzo nel primo periodo",
-            "Analisi Settimanale" => $"- Identificare cicli settimanali nel contesto mensile {contextInfo}\n- Analizzare comportamenti ricorrenti negli ultimi 30 giorni",
-            "Deep Dive Mensile" => $"- Modellare comportamenti mensili complessi {contextInfo}\n- Prevedere trend basati su pattern mensili consolidati",
-            "Assessment Trimestrale" => $"- Analisi mensile nel contesto trimestrale {contextInfo}\n- Ottimizzazioni mensili con visione a medio termine",
-            "Analisi Comprensiva" => $"- Intelligence mensile avanzata nel contesto storico {contextInfo}\n- Ottimizzazione strategica basata su analisi mensile approfondita",
-            _ => $"- Analisi mensile generale {contextInfo}"
-        };
-    }
 }

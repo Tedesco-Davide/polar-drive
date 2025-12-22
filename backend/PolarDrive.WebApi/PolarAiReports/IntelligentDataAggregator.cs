@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -20,12 +19,24 @@ public class IntelligentDataAggregator(
     private readonly PolarDriveLoggerFileSpecific _loggerFileSpecific = new("IntelligentDataAggregator");
     private readonly int _maxRetryAttempts = maxRetryAttempts;
     private readonly TimeSpan _baseDelay = TimeSpan.FromMilliseconds(baseDelayMs);
-    private readonly Random _jitterRandom = new Random();
-    private readonly Stopwatch _totalStopwatch = new Stopwatch();
+    private readonly Random _jitterRandom = new();
+    private readonly Stopwatch _totalStopwatch = new();
     private readonly HashSet<string> _processedRecords = [];
     private readonly List<ProcessingError> _processingErrors = [];
     private readonly Dictionary<string, int> _processingStats = [];
     private readonly Dictionary<string, TimeSpan> _processingTimes = [];
+    private const int MaxListSize = 200;
+
+    // Reservoir Sampling: limita liste a MaxListSize elementi mantenendo rappresentatività statistica.
+    // Primi 200 valori → aggiunti direttamente. Successivi → probabilità decrescente di sostituire uno esistente.
+    // Risultato: campione uniforme di tutti i record processati, RAM costante indipendentemente dal volume dati.
+    private static void AddWithLimit<T>(List<T> list, T value)
+    {
+        if (list.Count < MaxListSize)
+            list.Add(value);
+        else if (Random.Shared.Next(list.Count) < MaxListSize)
+            list[Random.Shared.Next(MaxListSize)] = value;
+    }
 
     public async Task<(string text, GoogleAdsTeslaDataAggregation data)> GenerateGoogleAdsAggregatedInsights(List<string> rawJsonAnonymizedList, int vehicleId)
     {
@@ -135,6 +146,7 @@ public class IntelligentDataAggregator(
                     LogProcessingStep("Progress",
                         $"Processati {processedRecords}/{rawJsonAnonymizedList.Count} JSON " +
                         $"(Velocità media: {processedRecords / _totalStopwatch.Elapsed.TotalSeconds:F1} JSON/sec)");
+                    GC.Collect(0, GCCollectionMode.Optimized, false);
                 }
             }
             catch (JsonException ex)
@@ -158,6 +170,8 @@ public class IntelligentDataAggregator(
                 recordStopwatch?.Stop();
             }
         }
+
+        _processedRecords.Clear();
 
         // Aggiungi dati SMS Adaptive Profile
         await AddAdaptiveProfileDataComplete(vehicleId, aggregation);
@@ -210,15 +224,18 @@ public class IntelligentDataAggregator(
         {
             var speed = GetSafeIntValue(driveState, "speed");
             if (speed > 0 && DataValidator.IsValidSpeed(speed))
-                aggregation.Speeds.Add(speed);
+                AddWithLimit(aggregation.Speeds, speed);
 
             var odometer = GetSafeDecimalValue(driveState, "odometer");
-            if (odometer > 0)
-                aggregation.OdometerReadings.Add(odometer);
+                if (odometer > 0)
+                {
+                    if (odometer < aggregation.OdometerMin) aggregation.OdometerMin = odometer;
+                    if (odometer > aggregation.OdometerMax) aggregation.OdometerMax = odometer;
+                }
 
             var heading = GetSafeIntValue(driveState, "heading");
             if (heading >= 0 && heading <= 360)
-                aggregation.Headings.Add(heading);
+                AddWithLimit(aggregation.Headings, heading);
 
             var shiftState = GetSafeStringValue(driveState, "shift_state");
             if (!string.IsNullOrEmpty(shiftState))
@@ -242,11 +259,11 @@ public class IntelligentDataAggregator(
         {
             var batteryLevel = GetSafeIntValue(chargeState, "battery_level");
             if (batteryLevel > 0 && DataValidator.IsValidBatteryLevel(batteryLevel))
-                aggregation.BatteryLevels.Add(batteryLevel);
+                AddWithLimit(aggregation.BatteryLevels, batteryLevel);
 
             var batteryRange = GetSafeDecimalValue(chargeState, "battery_range");
             if (batteryRange > 0)
-                aggregation.BatteryRanges.Add(DataNormalizer.NormalizeDistance(batteryRange));
+                AddWithLimit(aggregation.BatteryRanges, DataNormalizer.NormalizeDistance(batteryRange));
 
             var chargingState = GetSafeStringValue(chargeState, "charging_state");
             if (!string.IsNullOrEmpty(chargingState))
@@ -257,11 +274,11 @@ public class IntelligentDataAggregator(
 
             var chargeRate = GetSafeDecimalValue(chargeState, "charge_rate");
             if (chargeRate >= 0 && chargeRate <= 250)
-                aggregation.ChargeRates.Add(chargeRate);
+                AddWithLimit(aggregation.ChargeRates, chargeRate);
 
             var chargeLimit = GetSafeIntValue(chargeState, "charge_limit_soc");
             if (chargeLimit > 0 && DataValidator.IsValidBatteryLevel(chargeLimit))
-                aggregation.ChargeLimits.Add(chargeLimit);
+                AddWithLimit(aggregation.ChargeLimits, chargeLimit);
 
             if (GetSafeBooleanValue(chargeState, "fast_charger_present"))
                 aggregation.FastChargerUsageCount++;
@@ -275,7 +292,7 @@ public class IntelligentDataAggregator(
             {
                 var normalized = DataNormalizer.NormalizeTemperature(insideTemp);
                 if (DataValidator.IsValidTemperature(normalized))
-                    aggregation.InsideTemperatures.Add(normalized);
+                    AddWithLimit(aggregation.InsideTemperatures, normalized);
             }
 
             var outsideTemp = GetSafeDecimalValue(climateState, "outside_temp");
@@ -283,7 +300,7 @@ public class IntelligentDataAggregator(
             {
                 var normalized = DataNormalizer.NormalizeTemperature(outsideTemp);
                 if (DataValidator.IsValidTemperature(normalized))
-                    aggregation.OutsideTemperatures.Add(normalized);
+                    AddWithLimit(aggregation.OutsideTemperatures, normalized);
             }
 
             var isClimateOn = GetSafeBooleanValue(climateState, "is_climate_on");
@@ -307,7 +324,7 @@ public class IntelligentDataAggregator(
             foreach (var pressure in new[] { tpmsFL, tpmsFR, tpmsRL, tpmsRR })
             {
                 if (pressure > 0 && DataValidator.IsValidTirePressure(pressure))
-                    aggregation.TirePressures.Add(pressure);
+                    AddWithLimit(aggregation.TirePressures, pressure);
             }
         }
 
@@ -444,11 +461,11 @@ public class IntelligentDataAggregator(
             sb.AppendLine("### 🚗 DRIVING");
             sb.AppendLine($"- Avg Speed: {aggregation.AvgSpeed:F1} km/h");
             
-            if (aggregation.OdometerReadings.Count != 0)
+            if (aggregation.OdometerMax > aggregation.OdometerMin)
             {
-                aggregation.TotalKilometers = aggregation.OdometerReadings.Max() - aggregation.OdometerReadings.Min();
+                aggregation.TotalKilometers = aggregation.OdometerMax - aggregation.OdometerMin;
                 sb.AppendLine($"- Total Distance: {aggregation.TotalKilometers:F0} km");
-                sb.AppendLine($"- Odometer Range: {aggregation.OdometerReadings.Min():F0}-{aggregation.OdometerReadings.Max():F0} km");
+                sb.AppendLine($"- Odometer Range: {aggregation.OdometerMin:F0}-{aggregation.OdometerMax:F0} km");
             }
             
             if (aggregation.GeographicZones.Count != 0)
@@ -1005,7 +1022,8 @@ public class GoogleAdsTeslaDataAggregation
 {
     // DRIVING (essenziale Google Ads)
     public List<int> Speeds { get; set; } = [];
-    public List<decimal> OdometerReadings { get; set; } = [];
+    public decimal OdometerMin { get; set; } = decimal.MaxValue;
+    public decimal OdometerMax { get; set; } = decimal.MinValue;
     public decimal TotalKilometers { get; set; }
     public List<int> Headings { get; set; } = [];
     public Dictionary<string, int> ShiftStates { get; set; } = [];
