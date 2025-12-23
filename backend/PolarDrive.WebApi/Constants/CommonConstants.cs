@@ -2,7 +2,7 @@ namespace PolarDrive.WebApi.Constants
 {
     public static class CommonConstants
     {
-        // Ore corrispondenti a 30 giorni, per calcolo di mese intero
+        // Ore corrispondenti a 30 giorni, per calcolo di mese intero, ed ottimizzazione procedure dati sulla base del periodo mensile
         public const int MONTHLY_HOURS_THRESHOLD = 720;
 
         // Finestra di tempo in ore, utilizzata per SMS ADAPTIVE_GDPR ed ADAPTIVE_PROFILE

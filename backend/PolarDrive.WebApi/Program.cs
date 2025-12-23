@@ -109,7 +109,7 @@ builder.Services.AddScoped<GoogleAdsIntegrationService>();
 builder.Services.AddScoped<VehicleApiServiceRegistry>();
 builder.Services.AddScoped<VehicleDataService>();
 
-// SERVIZIO PER GENERAZIONE REPORT
+// SERVIZIO GENERAZIONE REPORT
 builder.Services.AddScoped<PdfGenerationService>();
 builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
@@ -124,6 +124,9 @@ builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 // SERVIZI SMS
 builder.Services.AddScoped<ISmsConfigurationService, SmsService>();
 builder.Services.AddScoped<SmsController>();
+
+// SERVIZIO ARCHIVIAZIONE DATI VEICOLI
+builder.Services.AddHostedService<VehiclesDataArchiveService>();
 
 // Registrazione HttpClientFactory per le chiamate alle API esterne
 builder.Services.AddHttpClient();

@@ -159,6 +159,19 @@ try
     {
         await db.Database.EnsureCreatedAsync();
         Console.WriteLine("✅ Database schema created successfully");
+        // Comprimi tabella VehiclesData
+        Console.WriteLine("📋 Step 2b: Applying table compression...");
+        try
+        {
+            await db.Database.ExecuteSqlRawAsync(
+                "ALTER TABLE dbo.VehiclesData REBUILD WITH (DATA_COMPRESSION = PAGE);"
+            );
+            Console.WriteLine("✅ VehiclesData table compression applied");
+        }
+        catch (Exception compressEx)
+        {
+            Console.WriteLine($"⚠️  Compression skipped: {compressEx.Message}");
+        }
     }
     catch (Exception createEx)
     {

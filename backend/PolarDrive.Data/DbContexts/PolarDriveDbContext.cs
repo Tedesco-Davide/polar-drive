@@ -11,6 +11,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<ClientConsent> ClientConsents => Set<ClientConsent>();
     public DbSet<PdfReport> PdfReports => Set<PdfReport>();
     public DbSet<VehicleData> VehiclesData => Set<VehicleData>();
+    public DbSet<VehicleDataArchive> VehiclesDataArchive => Set<VehicleDataArchive>();
     public DbSet<SmsAdaptiveGdpr> SmsAdaptiveGdpr { get; set; }
     public DbSet<SmsAdaptiveProfile> SmsAdaptiveProfile => Set<SmsAdaptiveProfile>();
     public DbSet<SmsAuditLog> SmsAuditLog { get; set; }
@@ -83,6 +84,14 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .WithMany(cv => cv.VehiclesData)
                     .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<VehicleDataArchive>(entity =>
+            {
+                entity.ToTable("VehiclesDataArchive");
+                
+                entity.HasIndex(e => e.VehicleId);
+                entity.HasIndex(e => e.Timestamp);
             });
 
             modelBuilder.Entity<OutagePeriod>(entity =>
