@@ -594,6 +594,7 @@ public class SmsController(
         // ⚠️ VERIFICA CHE ESISTA CONSENSO GDPR ATTIVO
         var gdprConsent = await _db.SmsAdaptiveGdpr
             .Where(g => g.AdaptiveNumber == targetPhone
+                    && g.AdaptiveSurnameName == fullName // Impedisce di usare il consenso GDPR di una persona per creare il profilo di un'altra
                     && g.Brand == vehicle.Brand
                     && g.ConsentAccepted)
             .OrderByDescending(g => g.ConsentGivenAt)
