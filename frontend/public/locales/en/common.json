@@ -233,8 +233,6 @@
   "admin.vehicleReports.failedUpdateNotes": "Error updating Notes for PDF Reports",
   "admin.vehicleReports.tableRefreshSuccess": "PDF reports refresh completed successfully",
   "admin.vehicleReports.tableRefreshFail": "PDF reports refresh failed",
-  "admin.vehicleReports.totalRecords": "total records to date",
-  "admin.vehicleReports.monitored": "tot monitored",
   "admin.vehicleReports.pdfNotAvailable": "PDF not available, downloaded HTML instead.",
   "admin.vehicleReports.actionDisabledProcessing": "Elaborating report...",
   "admin.vehicleReports.regenerationBlockedTitle": "⚠️ REGENERATION BLOCKED",

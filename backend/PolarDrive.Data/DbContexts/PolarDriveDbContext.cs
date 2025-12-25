@@ -72,6 +72,10 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => new { e.ClientCompanyId, e.VehicleId, e.ReportPeriodStart, e.ReportPeriodEnd })
                     .IsUnique();
 
+                entity.Property(e => e.Status).HasMaxLength(50);
+
+                entity.HasIndex(e => e.Status);
+
                 entity.Property(e => e.GeneratedAt)
                     .IsRequired(false);
 

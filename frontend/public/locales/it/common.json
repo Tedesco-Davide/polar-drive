@@ -233,8 +233,6 @@
   "admin.vehicleReports.failedUpdateNotes": "Errore nell'aggiornamento delle Note per PDF Reports",
   "admin.vehicleReports.tableRefreshSuccess": "PDF reports refresh completato con successo",
   "admin.vehicleReports.tableRefreshFail": "PDF reports refresh fallito",
-  "admin.vehicleReports.totalRecords": "record totali ad oggi",
-  "admin.vehicleReports.monitored": "tot monitorate",
   "admin.vehicleReports.pdfNotAvailable": "PDF non disponibile, scaricato HTML.",
   "admin.vehicleReports.actionDisabledProcessing": "Report in elaborazione...",
   "admin.vehicleReports.regenerationBlockedTitle": "⚠️ RIGENERAZIONE BLOCCATA",

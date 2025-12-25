@@ -23,7 +23,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
-  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const pageSize = 5;
 
   const fetchReports = async (page: number, searchQuery: string = "") => {
@@ -43,7 +42,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       setTotalCount(data.totalCount);
       setTotalPages(data.totalPages);
       setCurrentPage(data.page);
-      setStatusCounts(data.statusCounts || {});
 
       logFrontendEvent(
         "AdminPdfReports",
@@ -118,12 +116,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       const blob = await response.blob();
       const contentType = response.headers.get("Content-Type") || "";
       const isHtml = contentType.includes("text/html");
-      const fileName = `PolarDrive_PolarReport_${report.reportType.replace(
-        /\s+/g,
-        "_"
-      )}_${report.id}_${report.vehicleVin}_${
-        report.reportPeriodStart.split("T")[0]
-      }${isHtml ? ".html" : ".pdf"}`;
+      const fileName = `PolarDrive_PolarReport_${report.id}_${report.vehicleVin}_${report.reportPeriodStart.split("T")[0]}${isHtml ? ".html" : ".pdf"}`;
 
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -346,22 +339,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
           {t("admin.vehicleReports.tableHeader")} ➜ {totalCount}{" "}
           {t("admin.vehicleReports.tableHeaderTotals")}
-          {statusCounts["REGENERATING"] > 0 &&
-            ` | ${statusCounts["REGENERATING"]} ${t(
-              "admin.vehicleReports.tableHeaderRegenerating"
-            )}`}
-          {statusCounts["PROCESSING"] > 0 &&
-            ` | ${statusCounts["PROCESSING"]} ${t(
-              "admin.vehicleReports.tableHeaderProcessing"
-            )}`}
-          {statusCounts["ERROR"] > 0 &&
-            ` | ${statusCounts["ERROR"]} ${t(
-              "admin.vehicleReports.tableHeaderInError"
-            )}`}
-          {statusCounts["NO-DATA"] > 0 &&
-            ` | ${statusCounts["NO-DATA"]} ${t(
-              "admin.vehicleReports.tableHeaderNoData"
-            )}`}
         </h1>
       </div>
 
@@ -469,18 +446,12 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                   )}
                 </td>
                 <td className="p-4">
-                  {report.generatedAt
+                {report.generatedAt
                     ? formatDateToDisplay(report.generatedAt)
                     : "-"}
-                  {report.monitoringDurationHours >= 0 && (
-                    <div className="text-xs text-gray-400 mt-1">
-                      ID {report.id} -{" "}
-                      {report.monitoringDurationHours < 1
-                        ? "< 1h"
-                        : Math.round(report.monitoringDurationHours) + "h"}{" "}
-                      {t("admin.vehicleReports.monitored")}
-                    </div>
-                  )}
+                <div className="text-xs text-gray-400 mt-1">
+                    ID {report.id}
+                </div>
                 </td>
                 <td className="p-4">
                   <div className="space-y-1 flex flex-col w-[150px]">
@@ -512,22 +483,11 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                   <div>
                     {formatDateToDisplay(report.reportPeriodStart)} -{" "}
                     {formatDateToDisplay(report.reportPeriodEnd)}
-                    <div className="text-xs text-gray-400">
-                      {report.dataRecordsCount}{" "}
-                      {t("admin.vehicleReports.totalRecords")}
-                    </div>
                   </div>
                 </td>
                 <td className="p-4">
                   <div>
                     {report.companyVatNumber} - {report.companyName}
-                  </div>
-                  <div className="flex flex-wrap items-center gap-1">
-                    {report.reportType && (
-                      <div className="text-xs text-gray-400 mt-1">
-                        {t(report.reportType)}
-                      </div>
-                    )}
                   </div>
                 </td>
                 <td className="p-4">

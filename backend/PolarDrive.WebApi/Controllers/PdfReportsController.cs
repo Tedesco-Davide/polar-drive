@@ -31,79 +31,71 @@ public class PdfReportsController(
             await _logger.Info(source, "Requested filtered list of PDF reports",
                 $"Page: {page}, PageSize: {pageSize}");
 
-            var query = db.PdfReports
-                .Include(r => r.ClientCompany)
-                .Include(r => r.ClientVehicle)
-                .AsQueryable();
+            var baseQuery = db.PdfReports.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var trimmedSearch = search.Trim();
-
                 if (int.TryParse(trimmedSearch, out int searchId))
                 {
-                    var searchIdStr = searchId.ToString();
-                    query = query.Where(r => EF.Functions.Like(r.Id.ToString(), $"%{searchIdStr}%"));
-
-                    await _logger.Info(source, "🔍 Ricerca per ID",
-                        $"Pattern: '%{searchIdStr}%'");
+                    baseQuery = baseQuery.Where(r => r.Id == searchId);
                 }
                 else
                 {
                     var searchPattern = $"%{trimmedSearch}%";
-
-                    var totalReportsWithStatus = await db.PdfReports
-                        .Where(r => !string.IsNullOrEmpty(r.Status))
-                        .CountAsync();
-
-                    var distinctStatuses = await db.PdfReports
-                        .Where(r => !string.IsNullOrEmpty(r.Status))
-                        .Select(r => r.Status)
-                        .Distinct()
-                        .ToListAsync();
-
-                    query = query.Where(r =>
-                        !string.IsNullOrEmpty(r.Status) &&
-                        EF.Functions.Like(r.Status, searchPattern));
+                    baseQuery = baseQuery.Where(r => EF.Functions.Like(r.Status, searchPattern));
                 }
             }
 
-            var totalCount = await query.CountAsync();
+            var totalCount = await baseQuery.CountAsync();
 
-            var statusCounts = await query
-                .GroupBy(r => r.Status)
-                .Select(g => new { Status = g.Key, Count = g.Count() })
-                .ToDictionaryAsync(x => x.Status ?? "UNKNOWN", x => x.Count);
-
-            await _logger.Info(source, "✅ Risultati trovati",
-                $"Total matches: {totalCount}");
-
-            var reports = await query
+            var reports = await baseQuery
                 .OrderByDescending(r => r.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
+                .Select(r => new
+                {
+                    r.Id,
+                    r.ReportPeriodStart,
+                    r.ReportPeriodEnd,
+                    r.GeneratedAt,
+                    r.Notes,
+                    r.Status,
+                    r.PdfHash,
+                    HasPdf = r.PdfContent != null,
+                    PdfSize = r.PdfContent != null ? (long)r.PdfContent.Length : 0L,
+                    CompanyVatNumber = r.ClientCompany != null ? r.ClientCompany.VatNumber : null,
+                    CompanyName = r.ClientCompany != null ? r.ClientCompany.Name : null,
+                    VehicleId = r.ClientVehicle != null ? (int?)r.ClientVehicle.Id : null,
+                    VehicleVin = r.ClientVehicle != null ? r.ClientVehicle.Vin : null,
+                    VehicleModel = r.ClientVehicle != null ? r.ClientVehicle.Model : null,
+                    VehicleBrand = r.ClientVehicle != null ? r.ClientVehicle.Brand : null
+                })
                 .ToListAsync();
 
-            var vehicleIds = reports.Select(r => r.VehicleId).Distinct().ToList();
-            var vehicleStats = await db.VehiclesData
-                .Where(vd => vehicleIds.Contains(vd.VehicleId))
-                .GroupBy(vd => vd.VehicleId)
-                .Select(g => new
-                {
-                    VehicleId = g.Key,
-                    TotalCount = g.Count(),
-                    FirstRecord = g.Min(vd => vd.Timestamp),
-                    LastRecord = g.Max(vd => vd.Timestamp)
-                })
-                .ToDictionaryAsync(x => x.VehicleId);
-
-            var result = new List<PdfReportDTO>();
-            foreach (var report in reports)
+            // Map directly to DTOs without heavy VehiclesData queries
+            var result = reports.Select(report => new PdfReportDTO
             {
-                var stats = vehicleStats.GetValueOrDefault(report.VehicleId);
-                var dto = MapReportToDto(report, stats);
-                result.Add(dto);
-            }
+                Id = report.Id,
+                ReportPeriodStart = report.ReportPeriodStart.ToString("o"),
+                ReportPeriodEnd = report.ReportPeriodEnd.ToString("o"),
+                GeneratedAt = report.GeneratedAt?.ToString("o"),
+                CompanyVatNumber = report.CompanyVatNumber ?? "",
+                CompanyName = report.CompanyName ?? "",
+                VehicleVin = report.VehicleVin ?? "",
+                VehicleModel = report.VehicleModel ?? "",
+                VehicleBrand = report.VehicleBrand ?? "",
+                Notes = report.Notes,
+                HasPdfFile = report.HasPdf,
+                HasHtmlFile = false,
+                DataRecordsCount = 0, // Removed: heavy query on VehiclesData
+                PdfFileSize = report.PdfSize,
+                HtmlFileSize = 0,
+                MonitoringDurationHours = 0, // Removed: heavy query on VehiclesData
+                ReportType = "Report",
+                Status = report.HasPdf ? "PDF-READY" : (!string.IsNullOrEmpty(report.Status) ? report.Status : "PROCESSING"),
+                PdfHash = report.PdfHash ?? ""
+            }).ToList();
 
             await _logger.Info(source, "Mapping DTO completato",
                 $"Total: {result.Count}, Page: {page}");
@@ -114,8 +106,7 @@ public class PdfReportsController(
                 TotalCount = totalCount,
                 Page = page,
                 PageSize = pageSize,
-                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize),
-                StatusCounts = statusCounts
+                TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
             });
         }
         catch (Exception ex)
