@@ -370,7 +370,6 @@ public class PdfGenerationService()
             const timestamp = new Date().toISOString();
             const line = `[${{timestamp}}] ${{msg}}\n`;
             fs.appendFileSync(logFile, line);
-            console.log(msg);
         }}
 
         log('🔍 Starting PDF conversion...');

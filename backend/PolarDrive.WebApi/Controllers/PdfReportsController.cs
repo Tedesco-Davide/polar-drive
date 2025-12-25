@@ -369,8 +369,9 @@ public class PdfReportsController(
 
         try
         {
+            // Controlla sia PROCESSING che REGENERATING
             var processingReport = await db.PdfReports
-                .Where(r => r.Status == "PROCESSING")
+                .Where(r => r.Status == "PROCESSING" || r.Status == "REGENERATING")
                 .Select(r => new
                 {
                     r.Id,

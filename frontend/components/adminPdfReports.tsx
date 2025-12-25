@@ -161,27 +161,26 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   const handleRegenerate = async (report: PdfReport) => {
     // 🔒 Check se esiste un report in PROCESSING prima di mostrare l'alert
     try {
-      const checkRes = await fetch("/api/pdfreports/has-processing");
-      if (checkRes.ok) {
-        const checkData = await checkRes.json();
-        if (checkData.hasProcessing) {
-          alert(
-            t("admin.vehicleReports.regenerationBlockedTitle") +
-              "\n\n" +
-              t("admin.vehicleReports.regenerationBlockedMessage", {
-                reportId: checkData.processingReportId,
-                companyName: checkData.companyName || "N/A",
-                vehicleVin: checkData.vehicleVin || "N/A",
-              })
-          );
-          logFrontendEvent(
-            "AdminPdfReports",
-            "WARNING",
-            "Regeneration blocked - another report is PROCESSING",
-            `ProcessingReportId: ${checkData.processingReportId}, RequestedReportId: ${report.id}`
-          );
-          return;
-        }
+      const checkRes = await fetch("/api/pdfreports/has-processing");      
+      const checkData = await checkRes.json();
+      
+      if (checkData.hasProcessing) {
+        alert(
+          t("admin.vehicleReports.regenerationBlockedTitle") +
+            "\n\n" +
+            t("admin.vehicleReports.regenerationBlockedMessage", {
+              reportId: checkData.processingReportId,
+              companyName: checkData.companyName || "N/A",
+              vehicleVin: checkData.vehicleVin || "N/A",
+            })
+        );
+        logFrontendEvent(
+          "AdminPdfReports",
+          "WARNING",
+          "Regeneration blocked - another report is PROCESSING",
+          "ProcessingReportId: ${checkData.processingReportId}, RequestedReportId: ${report.id}"
+        );
+        return;
       }
     } catch (checkError) {
       logFrontendEvent(
@@ -190,7 +189,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         "Failed to check processing status",
         String(checkError)
       );
-      // In caso di errore nel check, non blocchiamo ma loggiamo
     }
 
     const confirmMessage = t(
