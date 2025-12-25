@@ -756,11 +756,13 @@ namespace PolarDrive.WebApi.Services
 
             foreach (var report in staleReports)
             {
+                var previousStatus = report.Status; // Salva lo stato prima di modificarlo
+                
                 report.Status = "ERROR";
-                report.Notes = $"Auto-recovered from stale {report.Status} state at {DateTime.Now:yyyy-MM-dd HH:mm}. Original notes: {report.Notes}";
+                report.Notes = $"Auto-recovered from stale {previousStatus} state at {DateTime.Now:yyyy-MM-dd HH:mm}. Original notes: {report.Notes}";
 
                 _ = _logger.Warning(source,
-                    $"Report {report.Id} moved to ERROR (was stuck in {report.Status} since {report.CreatedAt})");
+                    $"Report {report.Id} moved to ERROR (was stuck in {previousStatus} since {report.CreatedAt})");
             }
 
             await db.SaveChangesAsync(stoppingToken);
