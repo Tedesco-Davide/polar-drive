@@ -59,6 +59,10 @@ namespace PolarDrive.WebApi.Constants
         public const int DEV_RETRY_ORPHAN_PDF_REPEAT_MINUTES = 2;
         public const int PROD_RETRY_ORPHAN_PDF_REPEAT_HOURS = 1;
 
+        // Frequenza di check e retry generazione report falliti spostati in stato ERROR
+        public const int DEV_RETRY_FAILED_PDF_REPEAT_MINUTES = 2;
+        public const int PROD_RETRY_FAILED_PDF_REPEAT_HOURS = 1;
+
         // Frequenza di archiviazione dati dalla tabella VehicleData alla tabella VehicleDataArchive
         public const int DATA_ARCHIVE_FREQUENCY_HOURS = 24;
     }

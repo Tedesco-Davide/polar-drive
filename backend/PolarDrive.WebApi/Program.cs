@@ -117,6 +117,9 @@ builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 builder.Services.AddHostedService<PolarDriveScheduler>();
 builder.Services.AddHostedService<FileManagerBackgroundService>();
 
+// SERVIZIO RIGENERAZIONE AUTOMATICA REPORT FALLITI
+builder.Services.AddHostedService<ReportRegenerationService>();
+
 // SERVIZI OUTAGES
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
 builder.Services.AddHostedService<OutageDetectionBackgroundService>();
