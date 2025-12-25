@@ -198,6 +198,25 @@ namespace PolarDrive.WebApi.Services
                 using var scope = _serviceProvider.CreateScope();
                 var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
+                // 🔒 Verifica che non ci siano già report in PROCESSING o REGENERATING (escluso il report corrente se rigenerazione)
+                var hasProcessingQuery = db.PdfReports
+                    .Where(r => r.Status == "PROCESSING" || r.Status == "REGENERATING");
+                
+                if (existingReportId.HasValue)
+                {
+                    hasProcessingQuery = hasProcessingQuery.Where(r => r.Id != existingReportId.Value);
+                }
+
+                var hasProcessing = await hasProcessingQuery.AnyAsync();
+
+                if (hasProcessing)
+                {
+                    _ = _logger.Warning(source,
+                        "⏸️ Another report is being processed, cannot start new generation",
+                        $"VehicleId: {vehicleId}, ReportId: {existingReportId?.ToString() ?? "NEW"}");
+                    return false;
+                }
+
                 PdfReport? report;
 
                 // ===== BRANCH RIGENERAZIONE =====
@@ -436,6 +455,19 @@ namespace PolarDrive.WebApi.Services
                 "ReportGenerationService.GenerateReportForVehicle",
                 $"🧠 Generating {period.AnalysisLevel} for {vehicle.Vin} | {period.Start:yyyy-MM-dd HH:mm} to {period.End:yyyy-MM-dd HH:mm} | Report #{reportCount + 1} | DataRecords in period: {dataCountInPeriod}"
             );
+
+            // 🔒 Verifica che non ci siano già report in PROCESSING o REGENERATING
+            var hasProcessing = await db.PdfReports
+                .AnyAsync(r => r.Status == "PROCESSING" || r.Status == "REGENERATING");
+
+            if (hasProcessing)
+            {
+                _ = _logger.Warning(
+                    "ReportGenerationService.GenerateReportForVehicle",
+                    $"⏸️ Another report is being processed, skipping generation for {vehicle.Vin}"
+                );
+                return; // Esce senza generare, riproverà al prossimo ciclo
+            }
 
             // Crea sempre il record del report per tracking
             var report = new PdfReport
