@@ -14,7 +14,7 @@ namespace PolarDrive.WebApi.Services
         Task<SchedulerResults> ProcessScheduledReportsAsync(ScheduleType scheduleType, CancellationToken stoppingToken = default);
         Task<RetryResults> ProcessRetriesAsync(CancellationToken stoppingToken = default);
         Task<bool> GenerateSingleReportAsync(int companyId, int vehicleId, DateTime periodStart, DateTime periodEnd, bool isRegeneration = false, int? existingReportId = null);
-        Task<int> RecoverStaleProcessingReportsAsync(CancellationToken stoppingToken = default);
+        Task<int> RecoverOrphanProcessingReportsAsync(CancellationToken stoppingToken = default);
     }
 
     public class ReportGenerationService(IServiceProvider serviceProvider, PolarDriveLogger logger, IWebHostEnvironment env) : IReportGenerationService
@@ -31,7 +31,7 @@ namespace PolarDrive.WebApi.Services
         {
             var results = new SchedulerResults();
 
-            var recoveredCount = await RecoverStaleProcessingReportsAsync(stoppingToken);
+            var recoveredCount = await RecoverOrphanProcessingReportsAsync(stoppingToken);
             if (recoveredCount > 0) 
             {
                 _ = _logger.Info(
@@ -700,9 +700,9 @@ namespace PolarDrive.WebApi.Services
             };
         }
 
-        public async Task<int> RecoverStaleProcessingReportsAsync(CancellationToken stoppingToken = default)
+        public async Task<int> RecoverOrphanProcessingReportsAsync(CancellationToken stoppingToken = default)
         {
-            const string source = "ReportGenerationService.RecoverStaleProcessingReportsAsync";
+            const string source = "ReportGenerationService.RecoverOrphanProcessingReportsAsync";
 
             var cutoffTime = _env.IsDevelopment() 
                 ? DateTime.Now.AddMinutes(-DEV_RETRY_ORPHAN_PDF_REPEAT_MINUTES)

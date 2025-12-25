@@ -55,8 +55,11 @@ namespace PolarDrive.WebApi.Constants
         public const int DEV_GRACE_PERIOD_INACTIVITY_TRESHOLD_MINUTES = 10;
         public const int PROD_GRACE_PERIOD_INACTIVITY_TRESHOLD_HOURS = 6;
 
-        // Frequenza dei controlli di PDF orfani per development / produzione
+        // Frequenza dei controlli di PDF rimasti in stato PROCESSING o REGENERATING => Spostati in stato ERROR
         public const int DEV_RETRY_ORPHAN_PDF_REPEAT_MINUTES = 2;
         public const int PROD_RETRY_ORPHAN_PDF_REPEAT_HOURS = 1;
+
+        // Frequenza di archiviazione dati dalla tabella VehicleData alla tabella VehicleDataArchive
+        public const int DATA_ARCHIVE_FREQUENCY_HOURS = 24;
     }
 }

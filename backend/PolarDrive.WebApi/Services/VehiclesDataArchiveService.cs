@@ -19,7 +19,7 @@ public class VehiclesDataArchiveService(IServiceScopeFactory scopeFactory, ILogg
                 logger.LogError(ex, "Errore durante archiviazione VehiclesData");
             }
             
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            await Task.Delay(TimeSpan.FromHours(DATA_ARCHIVE_FREQUENCY_HOURS), stoppingToken);
         }
     }
 
