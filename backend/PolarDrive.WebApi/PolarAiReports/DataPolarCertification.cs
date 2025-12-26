@@ -249,9 +249,8 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                     ? "<span class='detailed-log-badge-success-profile'>Sì</span>"
                     : "<span class='detailed-log-badge-default-profile'>No</span>";
 
-                var datiOperativi = !string.IsNullOrEmpty(record.RawJsonAnonymized)
-                    ? "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>"
-                    : "<span class='detailed-log-badge-warning-dataValidated'>Dati operativi da validare</span>";
+                // Se il record esiste nel database, viene certificato come "Dati operativi raccolti"
+                var datiOperativi = "<span class='detailed-log-badge-success-dataValidated'>Dati operativi raccolti</span>";
 
                 var formattedDate = $"{record.Timestamp:dd-MM-yyyy}".Replace("-", "/");
                 

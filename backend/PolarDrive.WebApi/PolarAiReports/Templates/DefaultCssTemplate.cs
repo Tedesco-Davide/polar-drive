@@ -456,7 +456,6 @@ public static class DefaultCssTemplate
         .detailed-log-badge-success-profile,
         .detailed-log-badge-default-profile,
         .detailed-log-badge-success-dataValidated,
-        .detailed-log-badge-warning-dataValidated,
         .detailed-log-badge-error-dataValidated {
             text-align: center;
             display: inline-block;
@@ -470,7 +469,6 @@ public static class DefaultCssTemplate
         }
 
         .detailed-log-badge-success-dataValidated,
-        .detailed-log-badge-warning-dataValidated,
         .detailed-log-badge-error-dataValidated {
             width: 135px;
         }
@@ -481,10 +479,6 @@ public static class DefaultCssTemplate
 
         .detailed-log-badge-success-dataValidated {
             background: #dfffe5ff;
-        }
-
-        .detailed-log-badge-warning-dataValidated {
-            background: #fffbdcff;
         }
 
         .detailed-log-badge-error-dataValidated {
