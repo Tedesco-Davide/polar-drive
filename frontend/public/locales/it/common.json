@@ -365,6 +365,7 @@
   "admin.smsManagement.tabs.profile": "Profile",
   "admin.smsManagement.tabs.gdpr": "Consensi GDPR",
   "admin.smsManagement.tabs.auditVehicleSpecific": "Audit SMS Veicolo Specifico",
+  "admin.smsManagement.tabs.auditSmsElabStatus": "Elaborazione SMS",
   "admin.smsManagement.noSessionsFound": "Nessuna sessione ADAPTIVE_PROFILE registrata",
   "admin.smsManagement.noConsentsFound": "Nessun consenso GDPR registrato per",
   "admin.smsManagement.noAuditLogsFound": "Nessun SMS ricevuto per questo veicolo",
