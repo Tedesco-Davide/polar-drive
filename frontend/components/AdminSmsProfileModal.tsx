@@ -279,7 +279,7 @@ export default function AdminSmsProfileModal({
             onClick={() => setActiveTab("audit")}
           >
             <MessageSquare size={16} className="inline mr-2" />
-            {t("admin.smsManagement.tabs.audit")} ({auditLogs.length})
+            {t("admin.smsManagement.tabs.auditVehicleSpecific")} ({auditLogs.length})
           </button>
         </div>
 
