@@ -330,13 +330,13 @@ export default function AdminSmsProfileModal({
                           </div>
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Stato
+                          {t("admin.smsManagement.profilingProcedureLabel")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                           Comando
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Consenso
+                          {t("admin.smsManagement.gdprConsentLabel")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                           Ricevuto
@@ -389,7 +389,7 @@ export default function AdminSmsProfileModal({
                                   : "text-red-600 dark:text-red-400"
                               }`}
                             >
-                              {session.consentAccepted ? t("admin.smsManagement.consentStatusActive") : t("admin.smsManagement.consentStatusRevoked")}
+                              {session.consentAccepted ? t("admin.smsManagement.gdprStatusActive") : t("admin.smsManagement.gdprStatusRevoked")}
                             </span>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">

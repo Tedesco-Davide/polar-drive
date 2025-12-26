@@ -376,8 +376,8 @@
   "admin.smsManagement.consentActive": "Attivo",
   "admin.smsManagement.consentRevoked": "Revocato",
   "admin.smsManagement.command": "Comando",
-  "admin.smsManagement.statusActive": "ATTIVO",
-  "admin.smsManagement.statusExpired": "SCADUTO",
+  "admin.smsManagement.statusActive": "IN CORSO",
+  "admin.smsManagement.statusExpired": "SCADUTA",
   "admin.smsManagement.brand": "Brand",
   "admin.smsManagement.requestedAt": "Richiesto",
   "admin.smsManagement.acceptedAt": "Accettato",
@@ -401,5 +401,6 @@
   "admin.smsManagement.consentStatusRevoked": "❌ Revocato",
   "admin.smsManagement.gdprConsentLabel": "CONSENSO GDPR",
   "admin.smsManagement.gdprStatusActive": "REGISTRATO",
-  "admin.smsManagement.gdprStatusRevoked": "REVOCATO"
+  "admin.smsManagement.gdprStatusRevoked": "REVOCATO",
+  "admin.smsManagement.profilingProcedureLabel": "PROCEDURA PROFILING"
 }
