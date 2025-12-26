@@ -16,6 +16,7 @@ import VehicleStatusToggle from "./vehicleStatusToggle";
 import Chip from "./chip";
 import AdminSmsProfileModal from "./AdminSmsProfileModal";
 import AdminSmsGdprModal from "./AdminSmsGdprModal";
+import AdminSmsAuditModal from "./AdminSmsAuditModal";
 
 export default function AdminMainWorkflow() {
   const { t } = useTranslation("");
@@ -29,6 +30,7 @@ export default function AdminMainWorkflow() {
   );
   const [smsModalOpen, setSmsModalOpen] = useState(false);
   const [smsGdprModalOpen, setSmsGdprModalOpen] = useState(false);
+  const [smsAuditModalOpen, setSmsAuditModalOpen] = useState(false);
   const [selectedVehicleForSms, setSelectedVehicleForSms] = useState<{
     id: number;
     vin: string;
@@ -516,6 +518,15 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                 <span className="uppercase text-xs tracking-widest">
                     🔐 {t("admin.smsManagement.buttonGdprShort")}
                 </span>
+              </button>{" "}
+              <button
+                onClick={() => setSmsAuditModalOpen(true)}
+                className="px-2 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+                title={t("admin.smsManagement.titleAudit")}
+              >
+                <span className="uppercase text-xs tracking-widest">
+                    📊 AUDIT
+                </span>
               </button>
             </th>
             <th className="p-4">
@@ -750,6 +761,11 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
         isOpen={smsGdprModalOpen}
         onClose={() => setSmsGdprModalOpen(false)}
         brand="Tesla"
+      />
+
+      <AdminSmsAuditModal
+        isOpen={smsAuditModalOpen}
+        onClose={() => setSmsAuditModalOpen(false)}
       />
     </div>
   );

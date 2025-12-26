@@ -357,6 +357,7 @@
   "admin.smsManagement.titleGdpr": "SMS GDPR Statuses",
   "admin.smsManagement.buttonGdpr": "SMS GDPR Statuses",
   "admin.smsManagement.buttonGdprShort": "GDPR",
+  "admin.smsManagement.titleAudit": "SMS Global Audit",
   "admin.smsManagement.vehicleActiveStatus": "Vehicle ACTIVE",
   "admin.smsManagement.vehicleInactiveStatus": "Vehicle INACTIVE",
   "admin.smsManagement.vehicleInactiveWarning": "⚠️ The vehicle must be active for Adaptive procedures",

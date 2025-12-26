@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "next-i18next";
-import { Shield, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 import { logFrontendEvent } from "@/utils/logger";
 
@@ -137,7 +137,6 @@ export default function AdminSmsGdprModal({
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                     <div className="flex items-center gap-2">
-                      <Shield size={14} />
                       Numero
                     </div>
                   </th>
@@ -171,7 +170,7 @@ export default function AdminSmsGdprModal({
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
                       #{consent.id}
                     </td>
-                    <td className="px-4 py-3 text-sm font-semibold text-polarNight dark:text-softWhite">
+                    <td className="px-4 py-3 text-sm text-polarNight dark:text-softWhite">
                       {consent.phoneNumber}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 dark:text-gray-300">
