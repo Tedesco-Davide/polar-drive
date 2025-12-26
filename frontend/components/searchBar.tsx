@@ -9,8 +9,8 @@ type SearchBarProps = {
   onSearch?: (searchValue: string) => void;
   placeholderKey?: string;
   searchMode?: "id-or-status" | "vin-or-company" | "default";
-  externalSearchType?: "id" | "status" | "outageType";
-  onSearchTypeChange?: (type: "id" | "status" | "outageType") => void;
+  externalSearchType?: "id" | "status" | "outageType" | "vin";
+  onSearchTypeChange?: (type: "id" | "status" | "outageType" | "vin") => void;
   availableStatuses?: string[];
   statusLabel?: string;
   outageLabel?: string;
@@ -21,6 +21,8 @@ type SearchBarProps = {
   vinPlaceholder?: string;
   companyPlaceholder?: string;
   availableOutageTypes?: string[];
+  showVinFilter?: boolean;
+  vinFilterLabel?: string;
 };
 
 export default function SearchBar({
@@ -42,10 +44,12 @@ export default function SearchBar({
   vinPlaceholder,
   companyPlaceholder,
   availableOutageTypes,
+  showVinFilter = false,
+  vinFilterLabel,
 }: SearchBarProps) {
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(query);
-  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">(
+  const [searchType, setSearchType] = useState<"id" | "status" | "outageType" | "vin">(
     externalSearchType || "id"
   );
 
@@ -63,9 +67,11 @@ export default function SearchBar({
 
   const handleSearch = () => {
     const trimmedValue = localValue.trim();
-    setQuery(trimmedValue);
+    // Se stiamo cercando per VIN, aggiungiamo il prefisso "VIN:" per il backend
+    const searchValue = searchType === "vin" && trimmedValue ? `VIN:${trimmedValue}` : trimmedValue;
+    setQuery(searchValue);
     resetPage();
-    onSearch?.(trimmedValue);
+    onSearch?.(searchValue);
   };
 
   const handleClear = () => {
@@ -113,6 +119,22 @@ export default function SearchBar({
           >
             {statusLabel || t("admin.status")}
           </button>
+          {showVinFilter && (
+            <button
+              onClick={() => {
+                setSearchType("vin");
+                onSearchTypeChange?.("vin");
+                setLocalValue("");
+              }}
+              className={`px-4 py-2 text-sm font-medium transition-colors ${
+                searchType === "vin"
+                  ? "bg-blue-500 text-white"
+                  : "text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+              }`}
+            >
+              {vinFilterLabel || "VIN"}
+            </button>
+          )}
           {availableOutageTypes && availableOutageTypes.length > 0 && (
             <button
               onClick={() => {
@@ -173,6 +195,15 @@ export default function SearchBar({
               </option>
             ))}
           </select>
+        ) : searchType === "vin" ? (
+          <input
+            type="text"
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
+            onKeyDown={handleKeyDown}
+            placeholder={vinPlaceholder || t("admin.vehicles.searchVinPlaceholder")}
+            className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
+          />
         ) : (
           <select
             value={localValue}

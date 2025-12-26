@@ -40,6 +40,14 @@ public class PdfReportsController(
                 {
                     baseQuery = baseQuery.Where(r => r.Id == searchId);
                 }
+                else if (trimmedSearch.StartsWith("VIN:", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Ricerca per VIN
+                    var vinSearch = trimmedSearch[4..].Trim();
+                    var vinPattern = $"%{vinSearch}%";
+                    baseQuery = baseQuery.Where(r => r.ClientVehicle != null && 
+                        EF.Functions.Like(r.ClientVehicle.Vin, vinPattern));
+                }
                 else
                 {
                     var searchPattern = $"%{trimmedSearch}%";

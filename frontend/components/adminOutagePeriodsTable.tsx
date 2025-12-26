@@ -55,7 +55,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
-  const [searchType, setSearchType] = useState<"id" | "status" | "outageType">(
+  const [searchType, setSearchType] = useState<"id" | "status" | "outageType" | "vin">(
     "id"
   );
   const pageSize = 5;

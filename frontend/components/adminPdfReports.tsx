@@ -511,13 +511,15 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        {/* ✅ Usa la modalità speciale per dropdown ID/Status */}
+        {/* ✅ Usa la modalità speciale per dropdown ID/Status/VIN */}
         <SearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
           onSearch={handleSearch}
           searchMode="id-or-status"
+          showVinFilter={true}
+          vinPlaceholder={t("admin.vehicles.searchVinPlaceholder")}
         />
       </div>
 
