@@ -107,12 +107,15 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
                 });
             }
 
+            var hasActiveAdaptiveProfile = await _db.SmsAdaptiveProfile.AnyAsync(p => p.VehicleId == vehicle.Id && p.ConsentAccepted && p.ExpiresAt > DateTime.Now);
+
             // Salva nel database
             var vehicleDataRecord = new VehicleData
             {
                 VehicleId = vehicle.Id,
                 Timestamp = DateTime.Now,
-                RawJsonAnonymized = anonymizedJson  // ✅ Dati anonimizzati
+                RawJsonAnonymized = anonymizedJson,
+                IsSmsAdaptiveProfile = hasActiveAdaptiveProfile
             };
 
             _db.VehiclesData.Add(vehicleDataRecord);

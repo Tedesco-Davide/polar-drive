@@ -454,11 +454,14 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
                 timestamp = DateTime.Now
             });
             
+            var hasActiveAdaptiveProfile = await _db.SmsAdaptiveProfile.AnyAsync(p => p.VehicleId == vehicle.Id && p.ConsentAccepted && p.ExpiresAt > DateTime.Now);
+
             var record = new VehicleData
             {
                 VehicleId = vehicle.Id,
                 Timestamp = DateTime.Now,
-                RawJsonAnonymized = statusJson
+                RawJsonAnonymized = statusJson,
+                IsSmsAdaptiveProfile = hasActiveAdaptiveProfile
             };
             
             _db.VehiclesData.Add(record);
@@ -569,11 +572,14 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
             var rawJsonText = data.GetRawText();
             var anonymizedJson = TeslaDataAnonymizerHelper.AnonymizeVehicleData(rawJsonText);
 
+            var hasActiveAdaptiveProfile = await _db.SmsAdaptiveProfile.AnyAsync(p => p.VehicleId == vehicle.Id && p.ConsentAccepted && p.ExpiresAt > DateTime.Now);
+
             var vehicleDataRecord = new VehicleData
             {
                 VehicleId = vehicle.Id,
                 Timestamp = DateTime.Now,
-                RawJsonAnonymized = anonymizedJson // Dati anonimizzati
+                RawJsonAnonymized = anonymizedJson,
+                IsSmsAdaptiveProfile = hasActiveAdaptiveProfile
             };
 
             _db.VehiclesData.Add(vehicleDataRecord);
