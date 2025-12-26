@@ -145,7 +145,7 @@ export default function AdminSmsGdprModal({
                     Nome
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Stato
+                    {t("admin.smsManagement.gdprConsentLabel")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                     Brand

@@ -399,6 +399,7 @@
   "admin.smsManagement.consentIdLabel": "Consent ID",
   "admin.smsManagement.consentStatusActive": "✅ Active",
   "admin.smsManagement.consentStatusRevoked": "❌ Revoked",
-  "admin.smsManagement.gdprStatusActive": "ACTIVE",
+  "admin.smsManagement.gdprConsentLabel": "GDPR CONSENT",
+  "admin.smsManagement.gdprStatusActive": "REGISTERED",
   "admin.smsManagement.gdprStatusRevoked": "REVOKED"
 }

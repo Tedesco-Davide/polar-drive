@@ -399,6 +399,7 @@
   "admin.smsManagement.consentIdLabel": "ID Consenso",
   "admin.smsManagement.consentStatusActive": "✅ Attivo",
   "admin.smsManagement.consentStatusRevoked": "❌ Revocato",
-  "admin.smsManagement.gdprStatusActive": "ATTIVO",
+  "admin.smsManagement.gdprConsentLabel": "CONSENSO GDPR",
+  "admin.smsManagement.gdprStatusActive": "REGISTRATO",
   "admin.smsManagement.gdprStatusRevoked": "REVOCATO"
 }
