@@ -56,7 +56,7 @@
   "admin.vehicleFound": "Veicolo trovato",
   "admin.noFileAvailable": "Nessun file disponibile per il download",
   "admin.downloadError": "Errore generico durante il download",
-  "admin.tableRefreshButton": "🔄REFRESH",
+  "admin.tableRefreshButton": " 🔄 REFRESH",
   "admin.clickToCopy": "Clicca per copiare",
   "admin.generatedInfo": "Info di generazione",
 

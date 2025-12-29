@@ -491,16 +491,17 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
     <div className="relative">
       {(loading || isRefreshing || isStatusChanging || isSubmitting) && <AdminLoader local />}
 
-      <div className="flex items-center mb-12 space-x-3">
-        <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
+      {/* Header responsive */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6 sm:mb-12">
+        <h1 className="text-xl sm:text-2xl font-bold text-polarNight dark:text-softWhite">
           {t("admin.mainWorkflow.tableHeader")} ➜ {totalCount}
         </h1>
         <button
           className={`${
             showForm
-              ? "bg-dataRed hover:bg-red-600"
-              : "bg-blue-500 hover:bg-blue-600"
-          } text-softWhite px-6 py-2 rounded`}
+              ? "bg-dataRed hover:bg-red-600 active:bg-red-700"
+              : "bg-blue-500 hover:bg-blue-600 active:bg-blue-700"
+          } text-softWhite px-4 sm:px-6 py-3 sm:py-2 rounded text-sm sm:text-base font-medium transition-colors w-full sm:w-auto`}
           onClick={() => setShowForm(!showForm)}
         >
           {showForm
@@ -519,7 +520,237 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
         />
       )}
 
-      <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
+      {/* Toolbar SOLO per mobile - visibile solo sotto lg */}
+      <div className="lg:hidden grid grid-cols-3 gap-2 mb-4 p-3 bg-gray-200 dark:bg-gray-700 rounded-lg">
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="px-2 py-3 bg-blue-500 text-white rounded text-xs font-medium hover:bg-blue-600 active:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          {t("admin.tableRefreshButton")}
+        </button>
+        <button
+          onClick={() => setSmsGdprModalOpen(true)}
+          className="px-2 py-3 bg-green-500 text-white rounded text-xs font-medium hover:bg-green-600 active:bg-green-700 transition-colors"
+          title={t("admin.smsManagement.buttonGdpr")}
+        >
+          🔐 GDPR
+        </button>
+        <button
+          onClick={() => setSmsAuditModalOpen(true)}
+          className="px-2 py-3 bg-green-500 text-white rounded text-xs font-medium hover:bg-green-600 active:bg-green-700 transition-colors"
+          title={t("admin.smsManagement.titleAudit")}
+        >
+          📊 AUDIT
+        </button>
+      </div>
+
+      {/* Vista MOBILE: Card Layout */}
+      <div className="lg:hidden space-y-4">
+        {workflowData.map((entry, index) => (
+          <div
+            key={entry.id}
+            className="bg-softWhite dark:bg-gray-800 rounded-lg shadow-md border border-gray-300 dark:border-gray-600 overflow-hidden"
+          >
+            {/* Header Card con info veicolo */}
+            <div className="p-3 bg-gray-100 dark:bg-gray-700">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <span className="font-bold text-base text-polarNight dark:text-softWhite">
+                  {entry.brand} {entry.model}
+                </span>
+                <Chip
+                  className={`text-[10px] whitespace-nowrap px-2 py-1 ${
+                    entry.clientOAuthAuthorized
+                      ? "bg-green-100 text-green-700 border-green-500"
+                      : "bg-red-100 text-red-700 border-red-500"
+                  }`}
+                >
+                  {entry.clientOAuthAuthorized ? "✓ Auth" : "⏳ Pending"}
+                </Chip>
+              </div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
+                VIN: {entry.vehicleVIN}
+              </div>
+            </div>
+
+            {/* Dettagli Azienda */}
+            <div className="p-3 text-sm border-t border-gray-200 dark:border-gray-600">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-gray-500 dark:text-gray-400 text-xs">Azienda:</span>
+                <span className="font-medium text-polarNight dark:text-softWhite text-right text-xs truncate max-w-[65%]">
+                  {entry.companyName}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-500 dark:text-gray-400 text-xs">P.IVA:</span>
+                <span className="font-mono text-polarNight dark:text-softWhite text-xs">
+                  {entry.companyVatNumber}
+                </span>
+              </div>
+            </div>
+
+            {/* Toggle Status - Griglia fissa 2 colonne */}
+            <div className="p-3 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 text-center">
+                    Veicolo Attivo
+                  </span>
+                  <VehicleStatusToggle
+                    id={entry.id}
+                    isActive={entry.isVehicleActive}
+                    isFetching={entry.isVehicleFetchingData}
+                    field="IsActive"
+                    onStatusChange={(newIsActive, newIsFetching) => {
+                      setWorkflowData((prev) =>
+                        prev.map((w, i) =>
+                          i === index
+                            ? {
+                                ...w,
+                                isVehicleActive: newIsActive,
+                                isVehicleFetchingData: newIsFetching,
+                              }
+                            : w
+                        )
+                      );
+                    }}
+                    setLoading={setIsStatusChanging}
+                    refreshWorkflowData={async () =>
+                      await fetchWorkflowData(currentPage, query)
+                    }
+                    disabled={!entry.clientOAuthAuthorized}
+                  />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 text-center">
+                    Fetch Dati
+                  </span>
+                  <VehicleStatusToggle
+                    id={entry.id}
+                    isActive={entry.isVehicleActive}
+                    isFetching={entry.isVehicleFetchingData}
+                    field="IsFetching"
+                    onStatusChange={(newIsActive, newIsFetching) => {
+                      setWorkflowData((prev) =>
+                        prev.map((w, i) =>
+                          i === index
+                            ? {
+                                ...w,
+                                isVehicleActive: newIsActive,
+                                isVehicleFetchingData: newIsFetching,
+                              }
+                            : w
+                        )
+                      );
+                    }}
+                    setLoading={setIsStatusChanging}
+                    refreshWorkflowData={async () =>
+                      await fetchWorkflowData(currentPage, query)
+                    }
+                    disabled={!entry.clientOAuthAuthorized}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Bottoni Azioni - Grid 2x2 con style inline per garantire funzionamento */}
+            <div className="p-3 border-t border-gray-200 dark:border-gray-600">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <button
+                  style={{ minHeight: '44px' }}
+                  className={`flex items-center justify-center gap-1 p-2 ${
+                    !entry.clientOAuthAuthorized
+                      ? "bg-cyan-500 active:bg-cyan-700"
+                      : "bg-slate-400 cursor-not-allowed opacity-40"
+                  } text-white rounded-lg`}
+                  disabled={entry.clientOAuthAuthorized}
+                  onClick={async () => {
+                    if (entry.clientOAuthAuthorized || !entry.brand) return;
+                    try {
+                      const res = await fetch(
+                        `/api/VehicleOAuth/GenerateUrl?brand=${entry.brand.toLowerCase()}&vin=${entry.vehicleVIN}`
+                      );
+                      const data = await res.json();
+                      if (data?.url) {
+                        await navigator.clipboard.writeText(data.url);
+                        alert(t("admin.mainWorkflow.alerts.urlGenerationConfirm"));
+                      } else {
+                        alert(t("admin.mainWorkflow.alerts.urlGenerationFail"));
+                      }
+                    } catch {
+                      alert(t("admin.mainWorkflow.alerts.urlGenerationOAuthFail"));
+                    }
+                  }}
+                >
+                  <Link size={16} />
+                  <span className="text-xs font-medium">OAuth</span>
+                </button>
+                <button
+                  style={{ minHeight: '44px' }}
+                  className={`flex items-center justify-center gap-1 p-2 ${
+                    entry.isVehicleActive
+                      ? "bg-green-500 active:bg-green-700"
+                      : "bg-gray-400 cursor-not-allowed opacity-40"
+                  } text-white rounded-lg`}
+                  disabled={!entry.isVehicleActive}
+                  onClick={() => {
+                    if (entry.isVehicleActive) {
+                      setSelectedVehicleForSms({
+                        id: entry.id,
+                        brand: entry.brand,
+                        vin: entry.vehicleVIN,
+                        companyName: entry.companyName,
+                        isActive: entry.isVehicleActive,
+                      });
+                      setSmsModalOpen(true);
+                    }
+                  }}
+                >
+                  <MessageSquare size={16} />
+                  <span className="text-xs font-medium">SMS</span>
+                </button>
+                <button
+                  style={{ minHeight: '44px' }}
+                  className="flex items-center justify-center gap-1 p-2 text-white rounded-lg bg-purple-500 active:bg-purple-700 disabled:bg-gray-400 disabled:opacity-40"
+                  disabled={generatingProfileId === entry.companyId}
+                  onClick={() =>
+                    handleGenerateClientProfile(
+                      entry.companyId,
+                      entry.companyName,
+                      entry.companyVatNumber
+                    )
+                  }
+                >
+                  {generatingProfileId === entry.companyId ? (
+                    <AdminLoader inline />
+                  ) : (
+                    <>
+                      <UserSearch size={16} />
+                      <span className="text-xs font-medium">Profilo</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  style={{ minHeight: '44px' }}
+                  className="flex items-center justify-center gap-1 p-2 bg-yellow-500 active:bg-yellow-700 text-white rounded-lg"
+                  onClick={() =>
+                    handleDownloadAllConsents(
+                      entry.companyVatNumber,
+                      entry.companyName
+                    )
+                  }
+                >
+                  <FileArchive size={16} />
+                  <span className="text-xs font-medium">ZIP</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Vista DESKTOP: Table Layout */}
+      <table className="hidden lg:table w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
         <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
           <tr>
             <th className="p-4">
@@ -538,7 +769,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                 title={t("admin.smsManagement.buttonGdpr")}
               >
                 <span className="uppercase text-xs tracking-widest">
-                    🔐 {t("admin.smsManagement.buttonGdprShort")}
+                  🔐 {t("admin.smsManagement.buttonGdprShort")}
                 </span>
               </button>{" "}
               <button
@@ -547,7 +778,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                 title={t("admin.smsManagement.titleAudit")}
               >
                 <span className="uppercase text-xs tracking-widest">
-                    📊 AUDIT
+                  📊 AUDIT
                 </span>
               </button>
             </th>
@@ -741,27 +972,32 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
         </tbody>
       </table>
 
-      <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        />
-        <SearchBar
-          query={query}
-          setQuery={setQuery}
-          resetPage={() => setCurrentPage(1)}
-          searchMode="vin-or-company"
-          externalSearchType={searchType}
-          onSearchTypeChange={(type) => {
-            if (type === "id" || type === "status") {
-              setSearchType(type);
-            }
-          }}
-          vatLabel={t("admin.vehicleVIN")}
-          companyLabel={t("admin.clientCompany.name")}
-        />
+      {/* Controlli Paginazione e Ricerca - Full width su desktop */}
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4 mt-6 w-full">
+        <div className="order-2 lg:order-1 shrink-0">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          />
+        </div>
+        <div className="order-1 lg:order-2 flex-1 min-w-0">
+          <SearchBar
+            query={query}
+            setQuery={setQuery}
+            resetPage={() => setCurrentPage(1)}
+            searchMode="vin-or-company"
+            externalSearchType={searchType}
+            onSearchTypeChange={(type) => {
+              if (type === "id" || type === "status") {
+                setSearchType(type);
+              }
+            }}
+            vatLabel={t("admin.vehicleVIN")}
+            companyLabel={t("admin.clientCompany.name")}
+          />
+        </div>
       </div>
 
       {selectedVehicleForSms && (

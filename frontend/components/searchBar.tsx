@@ -224,7 +224,8 @@ export default function SearchBar({
 
   if (searchMode === "vin-or-company") {
     return (
-      <div className="flex-1 flex gap-2">
+      <div className="flex-1 flex flex-col sm:flex-row gap-2">
+        {/* Toggle VIN/Azienda - Full width su mobile */}
         <div className="flex bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
           <button
             onClick={() => {
@@ -232,7 +233,7 @@ export default function SearchBar({
               onSearchTypeChange?.("id");
               setLocalValue("");
             }}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 sm:flex-none px-4 py-3 sm:py-2 text-sm font-medium transition-colors ${
               searchType === "id"
                 ? "bg-blue-500 text-white"
                 : "text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
@@ -246,7 +247,7 @@ export default function SearchBar({
               onSearchTypeChange?.("status");
               setLocalValue("");
             }}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
+            className={`flex-1 sm:flex-none px-4 py-3 sm:py-2 text-sm font-medium transition-colors ${
               searchType === "status"
                 ? "bg-blue-500 text-white"
                 : "text-gray-600 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
@@ -256,37 +257,38 @@ export default function SearchBar({
           </button>
         </div>
 
-        <button
-          onClick={handleSearch}
-          className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          title={t("admin.searchButton")}
-        >
-          <Search size={16} />
-        </button>
-
-        {localValue && (
+        {/* Input e bottoni azione */}
+        <div className="flex gap-2 flex-1">
+          <input
+            type="text"
+            value={localValue}
+            onChange={(e) => setLocalValue(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={
+              searchType === "id"
+                ? vinPlaceholder || t("admin.vehicles.searchVinPlaceholder")
+                : companyPlaceholder ||
+                  t("admin.vehicles.searchCompanyPlaceholder")
+            }
+            className="flex-1 min-w-0 px-4 py-3 sm:py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
+          />
           <button
-            onClick={handleClear}
-            className="p-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-            title="Cancella"
+            onClick={handleSearch}
+            className="p-3 sm:p-2 bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 transition-colors"
+            title={t("admin.searchButton")}
           >
-            <X size={16} />
+            <Search size={20} className="sm:w-4 sm:h-4" />
           </button>
-        )}
-
-        <input
-          type="text"
-          value={localValue}
-          onChange={(e) => setLocalValue(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={
-            searchType === "id"
-              ? vinPlaceholder || t("admin.vehicles.searchVinPlaceholder")
-              : companyPlaceholder ||
-                t("admin.vehicles.searchCompanyPlaceholder")
-          }
-          className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
-        />
+          {localValue && (
+            <button
+              onClick={handleClear}
+              className="p-3 sm:p-2 bg-gray-400 text-white rounded hover:bg-gray-500 active:bg-gray-600 transition-colors"
+              title="Cancella"
+            >
+              <X size={20} className="sm:w-4 sm:h-4" />
+            </button>
+          )}
+        </div>
       </div>
     );
   }

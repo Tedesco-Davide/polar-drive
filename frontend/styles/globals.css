@@ -56,16 +56,16 @@ body {
 
 @layer components {
   .workflow-action {
-    @apply rounded w-[150px] px-[8px] pl-[5px] h-[32px] text-[16px] appearance-none cursor-pointer font-bold border hover:bg-blue-600 text-softWhite;
+    @apply rounded w-full max-w-[150px] px-[6px] h-[40px] text-[14px] appearance-none cursor-pointer font-bold border hover:bg-blue-600 text-softWhite;
 
     /* colore testo base + hover light */
     @apply text-gray-700 dark:text-softWhite hover:text-softWhite;
 
     /* testo icona (contenuto pseudo-elementi) */
-    @apply before:block before:text-center before:text-[18px] before:leading-[30px] before:text-gray-700 dark:before:text-softWhite hover:before:text-softWhite;
+    @apply before:block before:text-center before:text-[16px] before:leading-[38px] before:text-gray-700 dark:before:text-softWhite hover:before:text-softWhite;
 
     /* stile quando checked */
-    @apply checked:before:block checked:before:text-center checked:before:text-[19px] checked:before:leading-[30px] checked:font-bold;
+    @apply checked:before:block checked:before:text-center checked:before:text-[17px] checked:before:leading-[38px] checked:font-bold;
 
     /* disabled override */
     &:disabled {

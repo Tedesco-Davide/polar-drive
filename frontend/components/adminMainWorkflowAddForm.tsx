@@ -137,8 +137,9 @@ export default function AdminMainWorkflowInputForm({
       : [];
 
   return (
-    <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="bg-softWhite dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg mb-8 sm:mb-12 border border-gray-300 dark:border-gray-600">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        {/* P.IVA */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.mainWorkflow.labels.companyVatNumber")}
@@ -150,9 +151,11 @@ export default function AdminMainWorkflowInputForm({
             name="companyVatNumber"
             value={formData.companyVatNumber}
             onChange={handleChange}
-            className="input"
+            className="input h-12 text-base"
+            autoComplete="off"
           />
         </label>
+        {/* Nome Azienda */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.mainWorkflow.labels.companyName")}
@@ -161,9 +164,11 @@ export default function AdminMainWorkflowInputForm({
             name="companyName"
             value={formData.companyName}
             onChange={handleChange}
-            className="input"
+            className="input h-12 text-base"
+            autoComplete="off"
           />
         </label>
+        {/* Nome Referente */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.clientCompany.referentName")}
@@ -172,9 +177,11 @@ export default function AdminMainWorkflowInputForm({
             name="referentName"
             value={formData.referentName}
             onChange={handleChange}
-            className="input"
+            className="input h-12 text-base"
+            autoComplete="off"
           />
         </label>
+        {/* Telefono Veicolo */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.mainWorkflow.labels.vehicleMobileNumber")}
@@ -182,44 +189,51 @@ export default function AdminMainWorkflowInputForm({
           <input
             maxLength={10}
             pattern="[0-9]*"
-            inputMode="numeric"
+            inputMode="tel"
             name="vehicleMobileNumber"
             value={formData.vehicleMobileNumber}
             onChange={handleChange}
-            className="input"
+            className="input h-12 text-base"
+            autoComplete="tel"
           />
         </label>
+        {/* Email Referente */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.mainWorkflow.labels.referentEmail")}
           </span>
           <input
             name="referentEmail"
+            type="email"
+            inputMode="email"
             value={formData.referentEmail}
             onChange={handleChange}
-            className="input"
+            className="input h-12 text-base"
+            autoComplete="email"
           />
         </label>
+        {/* Upload ZIP */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.uploadZipSignedActivation")}
           </span>
-          <label className="flex flex-col">
+          <div className="relative">
             <input
               name="zipFilePath"
               type="file"
               accept=".zip"
               onChange={handleZipUpload}
-              className="input text-[12px]"
+              className="input w-full h-12 text-sm file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-sm file:bg-blue-500 file:text-white hover:file:bg-blue-600 file:cursor-pointer"
             />
-          </label>
+          </div>
         </label>
+        {/* Data Firma */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.mainWorkflow.labels.uploadDate")}
           </span>
           <DatePicker
-            className="input appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
+            className="input h-12 text-base appearance-none cursor-text bg-gray-800 text-softWhite border border-gray-600 rounded px-3 py-2 w-full"
             selected={
               formData.uploadDate ? new Date(formData.uploadDate) : null
             }
@@ -233,8 +247,10 @@ export default function AdminMainWorkflowInputForm({
             }}
             dateFormat="dd/MM/yyyy"
             placeholderText="dd/MM/yyyy"
+            withPortal
           />
         </label>
+        {/* Tipo Carburante */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.clientVehicle.fuelType")}
@@ -243,7 +259,7 @@ export default function AdminMainWorkflowInputForm({
             name="fuelType"
             value={formData.fuelType}
             onChange={handleChange}
-            className="input cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
+            className="input h-12 text-base cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
             required
           >
             <option value="">{t("admin.basicPlaceholder")}</option>
@@ -254,6 +270,7 @@ export default function AdminMainWorkflowInputForm({
             ))}
           </select>
         </label>
+        {/* Brand */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.clientVehicle.brand")}
@@ -262,7 +279,7 @@ export default function AdminMainWorkflowInputForm({
             name="brand"
             value={formData.brand}
             onChange={handleChange}
-            className="input cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
+            className="input h-12 text-base cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
             required
           >
             <option value="">{t("admin.basicPlaceholder")}</option>
@@ -273,6 +290,7 @@ export default function AdminMainWorkflowInputForm({
             ))}
           </select>
         </label>
+        {/* Modello */}
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.mainWorkflow.labels.model")}
@@ -281,7 +299,7 @@ export default function AdminMainWorkflowInputForm({
             name="model"
             value={formData.model}
             onChange={handleChange}
-            className="input cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
+            className="input h-12 text-base cursor-pointer bg-softWhite dark:bg-gray-700 dark:text-softWhite"
             required
             disabled={!formData.brand}
           >
@@ -293,7 +311,8 @@ export default function AdminMainWorkflowInputForm({
             ))}
           </select>
         </label>
-        <label className="flex flex-col">
+        {/* VIN */}
+        <label className="flex flex-col sm:col-span-2 lg:col-span-1">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
             {t("admin.mainWorkflow.labels.vehicleVIN")}
           </span>
@@ -302,12 +321,15 @@ export default function AdminMainWorkflowInputForm({
             name="vehicleVIN"
             value={formData.vehicleVIN}
             onChange={handleChange}
-            className="input"
+            className="input h-12 text-base uppercase"
+            autoComplete="off"
+            autoCapitalize="characters"
           />
         </label>
       </div>
+      {/* Submit Button - Full width su mobile */}
       <button
-        className="mt-6 bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-6 w-full sm:w-auto bg-green-700 text-softWhite px-6 py-3 sm:py-2 rounded text-base font-medium hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed active:bg-green-800 transition-colors"
         onClick={onSubmit}
         disabled={isSubmitting}
       >

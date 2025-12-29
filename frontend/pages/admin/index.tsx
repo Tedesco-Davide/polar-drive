@@ -100,7 +100,7 @@ export default function AdminDashboard() {
 
               {activeTab === "PolarDrive" && (
                 <div className="overflow-x-auto">
-                  <div className="mx-auto space-y-12 min-w-fit mb-12">
+                  <div className="mx-auto space-y-12 lg:min-w-fit mb-12">
                     <AdminMainWorkflow />
                     <AdminClientCompaniesTable t={t} />
                     <AdminClientVehiclesTable t={t} />
