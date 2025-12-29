@@ -394,7 +394,7 @@ public class OutageDetectionService(
         {
             "tesla" => _env.IsDevelopment()
                 ? "http://mock-api:9090/api/tesla/health"
-                : $"{GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])}api/tesla/health",
+                : $"{GenericHelpers.EnsureTrailingSlash(_cfg["TeslaApi:BaseUrl"])}api/1/vehicles",
 
             _ => throw new ArgumentException($"Unknown brand: {brand}")
         };
