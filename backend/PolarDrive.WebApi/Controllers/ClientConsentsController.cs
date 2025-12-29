@@ -93,6 +93,7 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
 
     [HttpPost]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(100_000_000)] // ZIP up to 100MB
     public async Task<IActionResult> Post(
         [FromForm] int clientCompanyId,
         [FromForm] int vehicleId,
