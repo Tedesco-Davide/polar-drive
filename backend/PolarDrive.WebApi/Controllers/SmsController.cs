@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.Data.DTOs;
+using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.Services;
 using System.Text.RegularExpressions;
 using static PolarDrive.WebApi.Constants.CommonConstants;
@@ -182,61 +183,43 @@ public class SmsController(
     // Gestione ADAPTIVE_GDPR
     private async Task<ActionResult> HandleAdaptiveGdprCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command, string from)
     {
-        // Estrai parametri: "ADAPTIVE_GDPR Rossi Mario +393331234567"
+        // Estrai parametri: "ADAPTIVE_GDPR Brand Cognome Nome +393331234567"
         var parts = dto.Body?.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
-        if (parts.Length < 4)  // comando + cognome + nome + numero
+        if (parts.Length < 5)  // comando + brand + cognome + nome + numero
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Formato comando ADAPTIVE_GDPR non valido";
-            var errorResponse = GenerateSmsResponse("Formato non valido. Usa formato: ADAPTIVE_GDPR Cognome Nome 3334455666");
+            var errorResponse = GenerateSmsResponse("Formato non valido. Usa formato: ADAPTIVE_GDPR Brand Cognome Nome 3334455666");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
         }
 
-        // Support flexible formats: "ADAPTIVE_GDPR Cognome Nome Numero" OR "ADAPTIVE_GDPR Numero Cognome Nome"
-        string surname;
-        string name;
-        string fullName;
-        string targetPhoneRaw;
+        // Valida il brand (case-insensitive)
+        var brandFromSms = parts[1];
+        var validBrands = VehicleConstants.ValidBrands;
+        var matchedBrand = validBrands.FirstOrDefault(b =>
+            b.Equals(brandFromSms, StringComparison.OrdinalIgnoreCase));
 
-        bool IsPhoneToken(string token) => Regex.IsMatch(token ?? string.Empty, "[0-9]");
-
-        if (IsPhoneToken(parts[1]))
+        if (matchedBrand == null)
         {
-            // format: ADAPTIVE_GDPR <phone> <surname> <name>
-            targetPhoneRaw = parts[1];
-            surname = parts.Length > 2 ? parts[2] : string.Empty;
-            name = parts.Length > 3 ? parts[3] : string.Empty;
-        }
-        else if (parts.Length > 3 && IsPhoneToken(parts[3]))
-        {
-            // format: ADAPTIVE_GDPR <surname> <name> <phone>
-            surname = parts[1];
-            name = parts[2];
-            targetPhoneRaw = parts[3];
-        }
-        else
-        {
-            // fallback: find first token containing digits
-            var phoneToken = parts.FirstOrDefault(p => IsPhoneToken(p));
-            if (phoneToken == null)
-            {
-                auditLog.ProcessingStatus = "ERROR";
-                auditLog.ErrorMessage = "Formato comando ADAPTIVE_GDPR non valido (numero mancante)";
-                var errorResponse = GenerateSmsResponse("Formato non valido. Usa formato: ADAPTIVE_GDPR Cognome Nome 3334455666");
-                auditLog.ResponseSent = errorResponse;
-                await SaveAuditLogAsync(auditLog);
-                return OkSms(errorResponse);
-            }
-
-            targetPhoneRaw = phoneToken;
-            // attempt to assign surname/name from first two non-command tokens
-            surname = parts.Length > 1 ? parts[1] : string.Empty;
-            name = parts.Length > 2 ? parts[2] : string.Empty;
+            auditLog.ProcessingStatus = "ERROR";
+            auditLog.ErrorMessage = $"Brand non esistente: {brandFromSms}";
+            var brandList = string.Join(", ", validBrands);
+            var errorResponse = GenerateSmsResponse($"Brand '{brandFromSms}' non esistente. Brand validi: {brandList}. Inviare SMS ADAPTIVE_GDPR con brand corretto.");
+            auditLog.ResponseSent = errorResponse;
+            await SaveAuditLogAsync(auditLog);
+            return OkSms(errorResponse);
         }
 
-        fullName = $"{surname} {name}".Trim();
+        // Usa il brand normalizzato (case corretto da vehicle-options.json)
+        var brand = matchedBrand;
+
+        // Formato fisso: ADAPTIVE_GDPR <brand> <cognome> <nome> <numero>
+        string surname = parts[2];
+        string name = parts[3];
+        string targetPhoneRaw = parts[4];
+        string fullName = $"{surname} {name}".Trim();
         var targetPhone = NormalizePhoneNumber(targetPhoneRaw);
 
         // Verifica che il mittente sia un VehicleMobileNumber registrato
@@ -270,6 +253,17 @@ public class SmsController(
             return OkSms(errorResponse);
         }
 
+        // Verifica che il brand specificato nell'SMS corrisponda al brand del veicolo mittente
+        if (!vehicle.Brand.Equals(brand, StringComparison.OrdinalIgnoreCase))
+        {
+            auditLog.ProcessingStatus = "ERROR";
+            auditLog.ErrorMessage = $"Brand SMS ({brand}) non corrisponde al brand del veicolo ({vehicle.Brand})";
+            var errorResponse = GenerateSmsResponse($"Il brand '{brand}' non corrisponde al brand del veicolo registrato ({vehicle.Brand}). Usa: ADAPTIVE_GDPR {vehicle.Brand} Cognome Nome Numero");
+            auditLog.ResponseSent = errorResponse;
+            await SaveAuditLogAsync(auditLog);
+            return OkSms(errorResponse);
+        }
+
         var targetDigits = DigitsOnly(targetPhone);
 
         var pendingRequests = await _db.SmsAdaptiveGdpr
@@ -293,8 +287,8 @@ public class SmsController(
 
         // Controlla se esiste già un consenso accettato per lo stesso numero ma con nome diverso
         var existingAcceptedForNumber = await _db.SmsAdaptiveGdpr
-            .Where(g => g.ConsentAccepted 
-                        && g.Brand == vehicle.Brand)
+            .Where(g => g.ConsentAccepted
+                        && g.Brand == brand)
             .ToListAsync();
 
         var conflictingConsent = existingAcceptedForNumber
@@ -306,7 +300,7 @@ public class SmsController(
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Numero già associato ad altra persona";
             var errorResponse = GenerateSmsResponse(
-                $"Il numero {targetPhone} è già associato a {conflictingConsent.AdaptiveSurnameName} per {vehicle.Brand}. Usa un numero diverso per {fullName}, oppure revoca prima il consenso di {conflictingConsent.AdaptiveSurnameName} con STOP.");
+                $"Il numero {targetPhone} è già associato a {conflictingConsent.AdaptiveSurnameName} per {brand}. Usa un numero diverso per {fullName}, oppure revoca prima il consenso di {conflictingConsent.AdaptiveSurnameName} con STOP.");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
@@ -316,7 +310,7 @@ public class SmsController(
         var gdprRequest = await _db.SmsAdaptiveGdpr
                     .FirstOrDefaultAsync(g => g.AdaptiveNumber == targetPhone
                                         && g.AdaptiveSurnameName == fullName
-                                        && g.Brand == vehicle.Brand);
+                                        && g.Brand == brand);
 
         if (gdprRequest != null && gdprRequest.ConsentAccepted)
         {
@@ -337,7 +331,7 @@ public class SmsController(
             {
                 AdaptiveNumber = targetPhone,
                 AdaptiveSurnameName = fullName,
-                Brand = vehicle.Brand,
+                Brand = brand,
                 ClientCompanyId = vehicle.ClientCompanyId,
                 ConsentToken = SmsAdaptiveGdpr.GenerateSecureToken(),
                 RequestedAt = DateTime.Now,
@@ -355,8 +349,9 @@ public class SmsController(
 
         await _db.SaveChangesAsync();
 
-        // Invia SMS al numero target
-        var gdprMessage = $"DataPolar: Consenso GDPR per {vehicle.Brand} e Google Ads. Info: FUTURELINKPDF. Rispondi ACCETTO per confermare.";
+        // Invia SMS al numero target con link GDPR specifico per brand
+        var gdprInfoLink = GetGdprInfoLinkForBrand(brand);
+        var gdprMessage = $"DataPolar: Consenso GDPR per {brand} e Google Ads. Info: {gdprInfoLink}. Rispondi ACCETTO per confermare.";
 
         // Validazione preventiva: assicuriamoci che il numero target contenga cifre vere        
         if (string.IsNullOrWhiteSpace(targetDigits) || targetDigits.Length < 6)
@@ -378,9 +373,23 @@ public class SmsController(
         await SaveAuditLogAsync(auditLog);
 
         await _logger.Info("Sms.GDPR", "GDPR request sent",
-            $"From: {from}, To: {targetPhone}, Name: {fullName}, Brand: {vehicle.Brand}");
+            $"From: {from}, To: {targetPhone}, Name: {fullName}, Brand: {brand}");
 
         return OkSms(auditLog.ResponseSent);
+    }
+
+    /// <summary>
+    /// Restituisce il link informativo GDPR specifico per brand.
+    /// </summary>
+    private static string GetGdprInfoLinkForBrand(string brand)
+    {
+        // Mapping brand -> link GDPR specifico
+        return brand.ToUpperInvariant() switch
+        {
+            "TESLA" => "FUTURELINKPDF_TESLA",
+            // Aggiungi altri brand quando disponibili
+            _ => $"FUTURELINKPDF_{brand.ToUpperInvariant()}"
+        };
     }
 
     // Gestione ACCETTO
@@ -545,23 +554,23 @@ public class SmsController(
     /// </summary>
     private async Task<ActionResult> HandleAdaptiveProfileCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string command, string from)
     {
-        // Estrai parametri: "ADAPTIVE_PROFILE Rossi Mario +393331234567 VIN123ABC456"
+        // Formato coerente con ADAPTIVE_GDPR: "ADAPTIVE_PROFILE VIN Cognome Nome +393331234567"
         var parts = dto.Body!.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (parts.Length < 5)  // comando + cognome + nome + numero + VIN
+        if (parts.Length < 5)  // comando + VIN + cognome + nome + numero
         {
             auditLog.ProcessingStatus = "ERROR";
             auditLog.ErrorMessage = "Formato comando ADAPTIVE_PROFILE non valido";
-            var errorResponse = GenerateSmsResponse("Formato non valido. Usa: ADAPTIVE_PROFILE Cognome Nome NUMERO-DI-TELEFONO VIN");
+            var errorResponse = GenerateSmsResponse("Formato non valido. Usa: ADAPTIVE_PROFILE VIN Cognome Nome 3334455666");
             auditLog.ResponseSent = errorResponse;
             await SaveAuditLogAsync(auditLog);
             return OkSms(errorResponse);
         }
 
-        var surname = parts[1];
-        var name = parts[2];
+        var targetVin = parts[1].ToUpper().Trim();  // VIN subito dopo il comando
+        var surname = parts[2];
+        var name = parts[3];
         var fullName = $"{surname} {name}";  // "Rossi Mario"
-        var targetPhone = NormalizePhoneNumber(parts[3]);
-        var targetVin = parts[4].ToUpper().Trim();  // VIN dal comando
+        var targetPhone = NormalizePhoneNumber(parts[4]);
 
         // Cerca veicolo per VIN specificato nel comando
         var vehicle = await _db.ClientVehicles
@@ -873,6 +882,24 @@ public class SmsController(
             await _logger.Error("Sms.GetStatus", "Error fetching profile status",
                 $"VehicleId: {vehicleId}, Error: {ex.Message}");
             return StatusCode(500, new { error = "Errore nel recupero dello stato" });
+        }
+    }
+
+    /// <summary>
+    /// Ottiene la lista dei brand disponibili per ADAPTIVE_GDPR
+    /// </summary>
+    [HttpGet("gdpr/brands")]
+    public ActionResult GetAvailableBrands()
+    {
+        try
+        {
+            var brands = VehicleConstants.ValidBrands;
+            return Ok(new { brands });
+        }
+        catch (Exception ex)
+        {
+            _logger.Error("Sms.GetBrands", "Error fetching available brands", ex.Message);
+            return StatusCode(500, new { error = "Errore nel recupero dei brand disponibili" });
         }
     }
 

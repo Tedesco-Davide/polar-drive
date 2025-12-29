@@ -782,7 +782,6 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       <AdminSmsGdprModal
         isOpen={smsGdprModalOpen}
         onClose={() => setSmsGdprModalOpen(false)}
-        brand="Tesla"
       />
 
       <AdminSmsAuditModal

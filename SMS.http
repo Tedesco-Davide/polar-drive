@@ -15,8 +15,8 @@ RISPOSTA: NESSUNA (revoca consensi accettati O richieste pendenti)
 @api_secret = 57AZHUDdxtgK55GT
 @cellulare_operativo_autorizzato = 447441446357
 @numero_vonage_datapolar = 447441446357
-@messaggio_adaptive_gdpr = ADAPTIVE_GDPR Tedesco Davide 447441446357
-@messaggio_adaptive_profile = ADAPTIVE_PROFILE Tedesco Davide 447441446357 5YJ3000000NEXUS01
+@messaggio_adaptive_gdpr = ADAPTIVE_GDPR Tesla Tedesco Davide 447441446357
+@messaggio_adaptive_profile = ADAPTIVE_PROFILE 5YJ3000000NEXUS01 Tedesco Davide 447441446357 
 
 ###################### INVIO SMS REALI TRAMITE VONAGE API
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "next-i18next";
-import { Search } from "lucide-react";
+import { Search, ChevronDown } from "lucide-react";
 
 import { logFrontendEvent } from "@/utils/logger";
 
@@ -17,25 +17,52 @@ interface GdprConsent {
 interface AdminSmsGdprModalProps {
   isOpen: boolean;
   onClose: () => void;
-  brand: string;
 }
 
 export default function AdminSmsGdprModal({
   isOpen,
   onClose,
-  brand,
 }: AdminSmsGdprModalProps) {
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
   const [gdprConsents, setGdprConsents] = useState<GdprConsent[]>([]);
   const [searchFilter, setSearchFilter] = useState("");
+  const [availableBrands, setAvailableBrands] = useState<string[]>([]);
+  const [selectedBrand, setSelectedBrand] = useState<string>("");
+  const [loadingBrands, setLoadingBrands] = useState(false);
 
-  const loadData = useCallback(async () => {
+  // Carica i brand disponibili
+  const loadBrands = useCallback(async () => {
+    try {
+      setLoadingBrands(true);
+      const response = await fetch("/api/Sms/gdpr/brands");
+      if (response.ok) {
+        const data = await response.json();
+        setAvailableBrands(data.brands || []);
+        // Seleziona il primo brand se non c'è già una selezione
+        if (data.brands?.length > 0 && !selectedBrand) {
+          setSelectedBrand(data.brands[0]);
+        }
+      }
+    } catch (error) {
+      logFrontendEvent(
+        "AdminSmsGdprModal",
+        "ERROR",
+        "Failed to load available brands",
+        error instanceof Error ? error.message : String(error)
+      );
+    } finally {
+      setLoadingBrands(false);
+    }
+  }, [selectedBrand]);
+
+  // Carica i consensi GDPR per il brand selezionato
+  const loadConsents = useCallback(async () => {
+    if (!selectedBrand) return;
+
     try {
       setLoading(true);
-
-      // Carica consensi GDPR
-      const gdprResponse = await fetch(`/api/Sms/gdpr/consents?brand=${brand}`);
+      const gdprResponse = await fetch(`/api/Sms/gdpr/consents?brand=${selectedBrand}`);
       if (gdprResponse.ok) {
         const consents = await gdprResponse.json();
         setGdprConsents(consents);
@@ -45,7 +72,7 @@ export default function AdminSmsGdprModal({
         "AdminSmsGdprModal",
         "INFO",
         "GDPR consents loaded successfully",
-        "Brand: " + brand + ", Consents: " + gdprConsents.length
+        "Brand: " + selectedBrand + ", Consents: " + gdprConsents.length
       );
     } catch (error) {
       logFrontendEvent(
@@ -57,13 +84,21 @@ export default function AdminSmsGdprModal({
     } finally {
       setLoading(false);
     }
-  }, [brand, gdprConsents.length]);
+  }, [selectedBrand, gdprConsents.length]);
 
+  // Carica i brand quando la modal si apre
   useEffect(() => {
     if (isOpen) {
-      loadData();
+      loadBrands();
     }
-  }, [isOpen, loadData]);
+  }, [isOpen, loadBrands]);
+
+  // Carica i consensi quando cambia il brand selezionato
+  useEffect(() => {
+    if (isOpen && selectedBrand) {
+      loadConsents();
+    }
+  }, [isOpen, selectedBrand, loadConsents]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString("it-IT");
@@ -90,13 +125,40 @@ export default function AdminSmsGdprModal({
       <div className="w-full max-w-7xl max-h-[80vh] p-6 relative flex flex-col bg-softWhite dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-lg rounded-lg">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-xl font-semibold text-polarNight dark:text-softWhite mb-0">
+          <div className="flex-1">
+            <h2 className="text-xl font-semibold text-polarNight dark:text-softWhite mb-2">
               🔐 {t("admin.smsManagement.titleGdpr")}
             </h2>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {t("admin.smsManagement.brandLabel")}: {brand}
-            </p>
+            {/* Brand Selector */}
+            <div className="flex items-center gap-2">
+              <label className="text-sm text-gray-600 dark:text-gray-400">
+                {t("admin.smsManagement.brandLabel")}:
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedBrand}
+                  onChange={(e) => setSelectedBrand(e.target.value)}
+                  disabled={loadingBrands}
+                  className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-10 text-sm text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-[150px]"
+                >
+                  {loadingBrands ? (
+                    <option value="">Caricamento...</option>
+                  ) : availableBrands.length === 0 ? (
+                    <option value="">Nessun brand disponibile</option>
+                  ) : (
+                    availableBrands.map((brand) => (
+                      <option key={brand} value={brand}>
+                        {brand}
+                      </option>
+                    ))
+                  )}
+                </select>
+                <ChevronDown
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                  size={16}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -126,7 +188,7 @@ export default function AdminSmsGdprModal({
             <p className="text-gray-500 py-8 text-center">
               {searchFilter
                 ? "Nessun risultato trovato"
-                : `${t("admin.smsManagement.noConsentsFound")} ${brand}`}
+                : `${t("admin.smsManagement.noConsentsFound")} ${selectedBrand}`}
             </p>
           ) : (
             <table className="w-full">
