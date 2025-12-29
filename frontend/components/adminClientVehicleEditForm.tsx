@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { TFunction } from "i18next";
 import { formatDateToDisplay } from "@/utils/date";
-import { vehicleOptions } from "@/types/vehicleOptions";
+import { useVehicleOptions } from "@/utils/useVehicleOptions";
 import { fuelTypeOptions } from "@/types/fuelTypes";
 import { logFrontendEvent } from "@/utils/logger";
 import axios from "axios";
@@ -23,6 +23,8 @@ export default function AdminClientVehicleEditForm({
   t,
   refreshWorkflowData,
 }: Props) {
+  const { options: vehicleOptions, loading: loadingOptions } = useVehicleOptions();
+  
   const [formData, setFormData] = useState<ClientVehicle>({
     ...vehicle,
     firstActivationAt: vehicle.firstActivationAt ?? "",
@@ -62,12 +64,13 @@ export default function AdminClientVehicleEditForm({
 
     if (name === "model") {
       const detectedFuelType =
-        vehicleOptions[formData.brand]?.models[value]?.fuelType ?? "";
+        vehicleOptions[formData.brand]?.models[value]?.fuelType;
 
       setFormData((prev) => ({
         ...prev,
         model: value,
-        fuelType: detectedFuelType,
+        // Preserva il fuelType esistente se non riesce a rilevarlo dalle opzioni
+        fuelType: detectedFuelType ?? prev.fuelType,
         trim: "",
         color: "",
       }));
@@ -115,10 +118,37 @@ export default function AdminClientVehicleEditForm({
         JSON.stringify(formData)
       );
 
-      await axios.put(
-        `/api/ClientVehicles/${formData.id}`,
-        formData
-      );
+      // Estrai clientCompanyId dal campo diretto o dall'oggetto nested
+      const companyId = formData.clientCompanyId || formData.clientCompany?.id || 0;
+
+      const response = await fetch(`/api/ClientVehicles/${formData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: formData.id,
+          clientCompanyId: companyId,
+          vin: formData.vin,
+          fuelType: formData.fuelType,
+          brand: formData.brand,
+          model: formData.model,
+          trim: formData.trim || '',
+          color: formData.color || '',
+          isActive: formData.isActive,
+          isFetching: formData.isFetching,
+          firstActivationAt: formData.firstActivationAt || null,
+          lastDeactivationAt: formData.lastDeactivationAt || null,
+          referentName: formData.referentName || null,
+          vehicleMobileNumber: formData.vehicleMobileNumber || null,
+          referentEmail: formData.referentEmail || null,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `HTTP ${response.status}`);
+      }
 
       await logFrontendEvent(
         "AdminClientVehicleEditForm",
@@ -147,6 +177,14 @@ export default function AdminClientVehicleEditForm({
       alert(err instanceof Error ? err.message : t("admin.genericApiError"));
     }
   };
+
+  if (loadingOptions) {
+    return (
+      <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600 flex items-center justify-center">
+        <span className="text-gray-600 dark:text-gray-300">{t("admin.loading")}</span>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600">

@@ -16,13 +16,27 @@ const nextConfig: NextConfig = {
   async rewrites() {
     // Legge da variabile d'ambiente al runtime
     const apiUrl = process.env.API_BACKEND_URL || 'http://host.docker.internal:8080';
-    
+
     console.log('🔧 [next.config] Proxy API →', apiUrl);
-    
+
     return [
       {
         source: '/api/:path*',
         destination: `${apiUrl}/api/:path*`,
+      },
+    ];
+  },
+
+  // ✅ Timeout per upload grandi (es. ZIP files)
+  serverExternalPackages: [],
+
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Connection', value: 'keep-alive' },
+        ],
       },
     ];
   },

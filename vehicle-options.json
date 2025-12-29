@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "lastUpdated": "2025-12-27",
+  "options": {
+    "Tesla": {
+      "models": {
+        "Model 3": {
+          "fuelType": "Electric",
+          "trims": [
+            "Trazione posteriore",
+            "Long Range a trazione posteriore",
+            "Long Range a trazione integrale",
+            "Performance a trazione integrale"
+          ],
+          "colors": [
+            "Bianco Perla",
+            "Blu Oceano",
+            "Nero Diamante",
+            "Grigio Stealth",
+            "Ultra Rosso",
+            "Argento Mercurio"
+          ]
+        },
+        "Model Y": {
+          "fuelType": "Electric",
+          "trims": [
+            "Trazione posteriore",
+            "Long Range a trazione posteriore",
+            "Long Range a trazione integrale",
+            "Performance a trazione integrale"
+          ],
+          "colors": [
+            "Bianco Perla",
+            "Blu Oceano",
+            "Nero Diamante",
+            "Grigio Stealth",
+            "Ultra Rosso",
+            "Argento Mercurio"
+          ]
+        },
+        "Model S": {
+          "fuelType": "Electric",
+          "trims": [
+            "Trazione integrale",
+            "Plaid"
+          ],
+          "colors": [
+            "Bianco Perla",
+            "Blu Frost",
+            "Nero Diamante",
+            "Grigio Stealth",
+            "Ultra Rosso",
+            "Argento Lunare"
+          ]
+        },
+        "Model X": {
+          "fuelType": "Electric",
+          "trims": [
+            "Trazione integrale",
+            "Plaid"
+          ],
+          "colors": [
+            "Bianco Perla",
+            "Blu Frost",
+            "Nero Diamante",
+            "Grigio Stealth",
+            "Ultra Rosso",
+            "Argento Lunare"
+          ]
+        }
+      }
+    }
+  }
+}

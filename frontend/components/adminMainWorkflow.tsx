@@ -25,6 +25,7 @@ export default function AdminMainWorkflow() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isStatusChanging, setIsStatusChanging] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [generatingProfileId, setGeneratingProfileId] = useState<number | null>(
     null
   );
@@ -237,6 +238,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const formDataToSend = new FormData();
       formDataToSend.append("CompanyName", formData.companyName);
@@ -256,18 +258,26 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       formDataToSend.append("UploadDate", formData.uploadDate);
       formDataToSend.append("ConsentZip", formData.zipFilePath);
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minuti timeout
+
       const response = await fetch(`/api/adminfullclientinsert`, {
         method: "POST",
         body: formDataToSend,
+        signal: controller.signal,
       });
+
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         let errorCode = "";
+        const responseText = await response.text();
+        console.error(`[AdminMainWorkflow] HTTP ${response.status}: ${responseText}`);
         try {
-          const json = await response.json();
+          const json = JSON.parse(responseText);
           errorCode = json.errorCode || "";
         } catch {
-          alert(`${t("admin.genericError")} ${await response.text()}`);
+          alert(`${t("admin.genericError")} HTTP ${response.status} - ${responseText || "Nessuna risposta dal server"}`);
           return;
         }
 
@@ -315,6 +325,8 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       setShowForm(false);
     } catch (error) {
       alert(t("admin.mainWorkflow.insertError", { error: String(error) }));
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -468,7 +480,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing || isStatusChanging) && <AdminLoader local />}
+      {(loading || isRefreshing || isStatusChanging || isSubmitting) && <AdminLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -494,6 +506,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
           setFormData={setFormData}
           onSubmit={handleSubmit}
           t={t}
+          isSubmitting={isSubmitting}
         />
       )}
 

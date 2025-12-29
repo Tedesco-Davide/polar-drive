@@ -67,6 +67,7 @@ services:
       - Ollama__RetryDelaySeconds=${OLLAMA_RETRY_DELAY_SECONDS}
     volumes:
       - ./LOGS_DEV:/app/Logs
+      - ./vehicle-options.json:/app/config/vehicle-options.json:ro
     ports:
       - "8080:8080"
     extra_hosts:

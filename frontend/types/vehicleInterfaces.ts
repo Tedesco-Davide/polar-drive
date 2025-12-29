@@ -18,6 +18,12 @@ export interface ClientVehicle {
   referentName?: string;
   vehicleMobileNumber?: string;
   referentEmail?: string;
+  // Oggetto nested ritornato dall'API
+  clientCompany?: {
+    id: number;
+    vatNumber: string;
+    name: string;
+  };
 }
 
 export interface VehicleWorkflow {

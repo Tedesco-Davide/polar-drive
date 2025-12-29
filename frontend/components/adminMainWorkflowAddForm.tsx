@@ -2,7 +2,7 @@ import { TFunction } from "i18next";
 import { adminWorkflowTypesInputForm } from "@/types/adminWorkflowTypes";
 import { formatDateToSave } from "@/utils/date";
 import { fuelTypeOptions } from "@/types/fuelTypes";
-import { vehicleOptions } from "@/types/vehicleOptions";
+import { useVehicleOptions } from "@/utils/useVehicleOptions";
 import { logFrontendEvent } from "@/utils/logger";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -14,6 +14,7 @@ type Props = {
   >;
   onSubmit: () => void;
   t: TFunction;
+  isSubmitting?: boolean;
 };
 
 export default function AdminMainWorkflowInputForm({
@@ -21,8 +22,11 @@ export default function AdminMainWorkflowInputForm({
   setFormData,
   onSubmit,
   t,
+  isSubmitting = false,
 }: Props) {
+  const { options: vehicleOptions, loading: loadingOptions } = useVehicleOptions();
   const brandOptions = Object.keys(vehicleOptions);
+  
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -39,12 +43,13 @@ export default function AdminMainWorkflowInputForm({
 
     if (name === "model") {
       const detectedFuelType =
-        vehicleOptions[formData.brand]?.models[value]?.fuelType ?? "";
+        vehicleOptions[formData.brand]?.models[value]?.fuelType;
 
       setFormData((prev) => ({
         ...prev,
         model: value,
-        fuelType: detectedFuelType,
+        // Preserva il fuelType esistente se non riesce a rilevarlo dalle opzioni
+        fuelType: detectedFuelType ?? prev.fuelType,
       }));
       return;
     }
@@ -302,10 +307,11 @@ export default function AdminMainWorkflowInputForm({
         </label>
       </div>
       <button
-        className="mt-6 bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600"
+        className="mt-6 bg-green-700 text-softWhite px-6 py-2 rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={onSubmit}
+        disabled={isSubmitting}
       >
-        {t("admin.mainWorkflow.button.confirmAddNewVehicle")}
+        {isSubmitting ? t("admin.loading") : t("admin.mainWorkflow.button.confirmAddNewVehicle")}
       </button>
     </div>
   );
