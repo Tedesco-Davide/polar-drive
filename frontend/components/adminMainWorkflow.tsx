@@ -324,7 +324,16 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       });
       setShowForm(false);
     } catch (error) {
-      alert(t("admin.mainWorkflow.insertError", { error: String(error) }));
+      const errorMessage = String(error);
+
+      // Gestione specifica per errore file modificato durante upload
+      if (errorMessage.includes("ERR_UPLOAD_FILE_CHANGED") ||
+          errorMessage.includes("upload file changed") ||
+          errorMessage.includes("Failed to fetch")) {
+        alert(t("admin.fileUploadChanged"));
+      } else {
+        alert(t("admin.mainWorkflow.insertError", { error: errorMessage }));
+      }
     } finally {
       setIsSubmitting(false);
     }
