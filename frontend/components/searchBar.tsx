@@ -49,9 +49,9 @@ export default function SearchBar({
 }: SearchBarProps) {
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(query);
-  const [searchType, setSearchType] = useState<"id" | "status" | "outageType" | "vin">(
-    externalSearchType || "id"
-  );
+  const [searchType, setSearchType] = useState<
+    "id" | "status" | "outageType" | "vin"
+  >(externalSearchType || "id");
 
   const defaultStatuses = availableStatuses || [
     "PDF-READY",
@@ -68,7 +68,10 @@ export default function SearchBar({
   const handleSearch = () => {
     const trimmedValue = localValue.trim();
     // Se stiamo cercando per VIN, aggiungiamo il prefisso "VIN:" per il backend
-    const searchValue = searchType === "vin" && trimmedValue ? `VIN:${trimmedValue}` : trimmedValue;
+    const searchValue =
+      searchType === "vin" && trimmedValue
+        ? `VIN:${trimmedValue}`
+        : trimmedValue;
     setQuery(searchValue);
     resetPage();
     onSearch?.(searchValue);
@@ -201,7 +204,9 @@ export default function SearchBar({
             value={localValue}
             onChange={(e) => setLocalValue(e.target.value.toUpperCase())}
             onKeyDown={handleKeyDown}
-            placeholder={vinPlaceholder || t("admin.vehicles.searchVinPlaceholder")}
+            placeholder={
+              vinPlaceholder || t("admin.vehicles.searchVinPlaceholder")
+            }
             className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
           />
         ) : (
@@ -210,7 +215,10 @@ export default function SearchBar({
             onChange={(e) => setLocalValue(e.target.value)}
             className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
           >
-            <option value="">{outageTypePlaceholder || t("admin.searchButton.outageTypePlaceholder")}</option>
+            <option value="">
+              {outageTypePlaceholder ||
+                t("admin.searchButton.outageTypePlaceholder")}
+            </option>
             {(availableOutageTypes || []).map((type) => (
               <option key={type} value={type}>
                 {type}
@@ -259,6 +267,13 @@ export default function SearchBar({
 
         {/* Input e bottoni azione */}
         <div className="flex gap-2 flex-1">
+          <button
+            onClick={handleSearch}
+            className="p-3 sm:p-2 bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 transition-colors"
+            title={t("admin.searchButton")}
+          >
+            <Search size={20} className="sm:w-4 sm:h-4" />
+          </button>
           <input
             type="text"
             value={localValue}
@@ -272,13 +287,6 @@ export default function SearchBar({
             }
             className="flex-1 min-w-0 px-4 py-3 sm:py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
           />
-          <button
-            onClick={handleSearch}
-            className="p-3 sm:p-2 bg-blue-500 text-white rounded hover:bg-blue-600 active:bg-blue-700 transition-colors"
-            title={t("admin.searchButton")}
-          >
-            <Search size={20} className="sm:w-4 sm:h-4" />
-          </button>
           {localValue && (
             <button
               onClick={handleClear}
