@@ -354,15 +354,11 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                 var latestSession = userGroup.OrderByDescending(s => s.ReceivedAt).First();
                 var sessionsCount = userGroup.Count();
                 var firstSession = userGroup.OrderBy(s => s.ReceivedAt).First();
-                var isActive = latestSession.ExpiresAt > now;
-                var statusClass = isActive ? "active" : "expired";
-                var statusText = isActive ? "✅ Attivo" : "⏱️ Scaduto";
 
-                sb.AppendLine($"<div class='adaptive-profile-card {statusClass}'>");
-                
+                sb.AppendLine("<div class='adaptive-profile-card'>");
+
                 sb.AppendLine("<div class='adaptive-card-header'>");
                 sb.AppendLine($"<span class='adaptive-card-name'>👤 {latestSession.AdaptiveSurnameName}</span>");
-                sb.AppendLine($"<span class='adaptive-card-status {statusClass}'>{statusText}</span>");
                 sb.AppendLine("</div>");
 
                 sb.AppendLine("<div class='adaptive-card-body'>");
@@ -385,7 +381,6 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
             sb.AppendLine($"<tr><td>Utilizzatori terzi profilati</td><td>{userGroups.Count}</td></tr>");
             sb.AppendLine($"<tr><td>Sessioni totali nel periodo</td><td>{adaptiveSessions.Count}</td></tr>");
             sb.AppendLine($"<tr><td>Record certificati con Adaptive=Sì</td><td>{adaptiveRecordsCount}</td></tr>");
-            sb.AppendLine($"<tr><td>Profili attualmente attivi</td><td>{userGroups.Count(g => g.OrderByDescending(s => s.ReceivedAt).First().ExpiresAt > now)}</td></tr>");
             sb.AppendLine("</table>");
             sb.AppendLine("</div>");
         }

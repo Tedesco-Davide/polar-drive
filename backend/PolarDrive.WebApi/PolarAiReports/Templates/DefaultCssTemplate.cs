@@ -842,14 +842,7 @@ public static class DefaultCssTemplate
             page-break-inside: avoid;
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
-        }
-
-        .adaptive-profile-card.active {
-            border: 2px solid #48bb78;
-        }
-
-        .adaptive-profile-card.expired {
-            border: 2px solid #a0aec0;
+            border: 2px solid rgba(139, 159, 242, 0.3);
         }
 
         .adaptive-card-header {
@@ -859,28 +852,12 @@ public static class DefaultCssTemplate
             padding: 15px 20px;
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
-        }
-
-        .adaptive-profile-card.active .adaptive-card-header {
-            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
-        }
-
-        .adaptive-profile-card.expired .adaptive-card-header {
-            background: linear-gradient(135deg, #a0aec0 0%, #718096 100%);
+            background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
         }
 
         .adaptive-card-name {
             font-weight: 600;
             font-size: 15px;
-            color: white;
-        }
-
-        .adaptive-card-status {
-            font-size: 12px;
-            font-weight: 500;
-            padding: 4px 10px;
-            border-radius: 15px;
-            background: rgba(255, 255, 255, 0.25);
             color: white;
         }
 
@@ -915,12 +892,13 @@ public static class DefaultCssTemplate
         /* RIEPILOGO */
 
         .adaptive-profile-summary {
-            margin-top: 25px;
+            margin-top: 40px;
             padding: 20px;
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.08) 0%, rgba(156, 130, 199, 0.08) 100%);
             border: 1px solid rgba(139, 159, 242, 0.2);
             border-radius: 12px;
             page-break-inside: avoid;
+            page-break-before: auto;
         }
 
         .adaptive-profile-summary h5 {
