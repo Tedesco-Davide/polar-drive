@@ -5,11 +5,14 @@ namespace PolarDrive.WebApi.Constants
         // Ore corrispondenti a 30 giorni, per calcolo di mese intero, ed ottimizzazione procedure dati sulla base del periodo mensile
         public const int MONTHLY_HOURS_THRESHOLD = 720;
 
+        // Cellulare Operativo PolarDrive, utilizzato per SMS ADAPTIVE_GDPR ed ADAPTIVE_PROFILE
+        public const string SMS_ADAPTIVE_MOBILE_NUMBER = "447441446357";
+
         // Finestra di tempo in ore, utilizzata per SMS ADAPTIVE_GDPR ed ADAPTIVE_PROFILE
-        public const int SMS_ADPATIVE_HOURS_THRESHOLD = 24;
+        public const int SMS_ADAPTIVE_HOURS_THRESHOLD = 24;
 
         // Finestra di tempo minuti, tra una richiesta SMS ADAPTIVE_GDPR e l'altra, per lo stesso utilizzatore
-        public const int SMS_ADPATIVE_GDPR_REQUEST_INTERVAL_MINUTES = 35;
+        public const int SMS_ADAPTIVE_GDPR_REQUEST_INTERVAL_MINUTES = 35;
 
         // Valori usati nel controller dei Reports, insieme anche a monthly, per determinare tipo cadenza Report
         public const int DAILY_HOURS_THRESHOLD = 24;

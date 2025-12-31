@@ -1,13 +1,13 @@
 ###################### LISTA POSSIBILI COMANDI VIA SMS
 
-ADAPTIVE_GDPR NOME COGNOME NUMERO_TELEFONO
-RISPOSTA: ACCETTO (conferma consenso) OPPURE IGNORARE (scade dopo 35min)
+// ADAPTIVE_GDPR NOME COGNOME NUMERO_TELEFONO
+// RISPOSTA: ACCETTO (conferma consenso) OPPURE IGNORARE (scade dopo 35min)
 
-ADAPTIVE_PROFILE NOME COGNOME NUMERO_TELEFONO VIN
-RISPOSTA: NESSUNA (registrazione automatica finestra 24 ore)
+// ADAPTIVE_PROFILE NOME COGNOME NUMERO_TELEFONO VIN
+// RISPOSTA: NESSUNA (registrazione automatica finestra 24 ore)
 
-STOP
-RISPOSTA: NESSUNA (revoca consensi accettati O richieste pendenti)
+//STOP
+//RISPOSTA: NESSUNA (revoca consensi accettati O richieste pendenti)
 
 ###################### VARIABILI
 

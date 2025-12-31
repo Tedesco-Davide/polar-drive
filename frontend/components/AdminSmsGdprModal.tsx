@@ -30,6 +30,7 @@ export default function AdminSmsGdprModal({
   const [availableBrands, setAvailableBrands] = useState<string[]>([]);
   const [selectedBrand, setSelectedBrand] = useState<string>("");
   const [loadingBrands, setLoadingBrands] = useState(false);
+  const [polarDriveMobileNumber, setPolarDriveMobileNumber] = useState<string>("");
 
   // Carica i brand disponibili
   const loadBrands = useCallback(async () => {
@@ -39,6 +40,7 @@ export default function AdminSmsGdprModal({
       if (response.ok) {
         const data = await response.json();
         setAvailableBrands(data.brands || []);
+        setPolarDriveMobileNumber(data.polarDriveMobileNumber || "");
         // Seleziona il primo brand se non c'è già una selezione
         if (data.brands?.length > 0 && !selectedBrand) {
           setSelectedBrand(data.brands[0]);
@@ -129,35 +131,48 @@ export default function AdminSmsGdprModal({
             <h2 className="text-xl font-semibold text-polarNight dark:text-softWhite mb-2">
               🔐 {t("admin.smsManagement.titleGdpr")}
             </h2>
-            {/* Brand Selector */}
-            <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-600 dark:text-gray-400">
-                {t("admin.smsManagement.brandLabel")}:
-              </label>
-              <div className="relative">
-                <select
-                  value={selectedBrand}
-                  onChange={(e) => setSelectedBrand(e.target.value)}
-                  disabled={loadingBrands}
-                  className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-10 text-sm text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-[150px]"
-                >
-                  {loadingBrands ? (
-                    <option value="">Caricamento...</option>
-                  ) : availableBrands.length === 0 ? (
-                    <option value="">Nessun brand disponibile</option>
-                  ) : (
-                    availableBrands.map((brand) => (
-                      <option key={brand} value={brand}>
-                        {brand}
-                      </option>
-                    ))
-                  )}
-                </select>
-                <ChevronDown
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
-                  size={16}
-                />
+            {/* Brand Selector e Cellulare Operativo PolarDrive */}
+            <div className="flex items-center gap-6 flex-wrap">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-gray-600 dark:text-gray-400">
+                  {t("admin.smsManagement.brandLabel")}:
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedBrand}
+                    onChange={(e) => setSelectedBrand(e.target.value)}
+                    disabled={loadingBrands}
+                    className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-10 text-sm text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-[150px]"
+                  >
+                    {loadingBrands ? (
+                      <option value="">Caricamento...</option>
+                    ) : availableBrands.length === 0 ? (
+                      <option value="">Nessun brand disponibile</option>
+                    ) : (
+                      availableBrands.map((brand) => (
+                        <option key={brand} value={brand}>
+                          {brand}
+                        </option>
+                      ))
+                    )}
+                  </select>
+                  <ChevronDown
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"
+                    size={16}
+                  />
+                </div>
               </div>
+              {/* Cellulare Operativo PolarDrive */}
+              {polarDriveMobileNumber && (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {t("admin.smsManagement.polarDriveMobileLabel")}:
+                  </span>
+                  <span className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    {polarDriveMobileNumber}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>

@@ -268,7 +268,7 @@ public class SmsController(
 
         var pendingRequests = await _db.SmsAdaptiveGdpr
             .Where(g => !g.ConsentAccepted 
-                        && g.RequestedAt >= DateTime.Now.AddMinutes(-SMS_ADPATIVE_GDPR_REQUEST_INTERVAL_MINUTES))
+                        && g.RequestedAt >= DateTime.Now.AddMinutes(-SMS_ADAPTIVE_GDPR_REQUEST_INTERVAL_MINUTES))
             .ToListAsync();
 
         var hasPendingRequest = pendingRequests.Any(g => 
@@ -642,7 +642,7 @@ public class SmsController(
                 AdaptiveNumber = targetPhone,
                 AdaptiveSurnameName = fullName,
                 ReceivedAt = DateTime.Now,
-                ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD),
+                ExpiresAt = DateTime.Now.AddHours(SMS_ADAPTIVE_HOURS_THRESHOLD),
                 MessageContent = dto.Body,
                 ParsedCommand = "ADAPTIVE_PROFILE_ON",
                 ConsentAccepted = true,
@@ -656,7 +656,7 @@ public class SmsController(
             // Aggiorna riga esistente (estende sessione di 24 ore)
             profileEvent.AdaptiveSurnameName = fullName;
             profileEvent.ReceivedAt = DateTime.Now;
-            profileEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADPATIVE_HOURS_THRESHOLD);
+            profileEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADAPTIVE_HOURS_THRESHOLD);
             profileEvent.MessageContent = dto.Body!;
             profileEvent.ParsedCommand = "ADAPTIVE_PROFILE_ON";
             profileEvent.ConsentAccepted = true;
@@ -671,7 +671,7 @@ public class SmsController(
         Azienda: {vehicle.ClientCompany?.Name} 
         Brand: {vehicle.Brand} 
         VIN: {vehicle.Vin} 
-        Validità profilo: {SMS_ADPATIVE_HOURS_THRESHOLD} ore";
+        Validità profilo: {SMS_ADAPTIVE_HOURS_THRESHOLD} ore";
 
         await _smsConfig.SendSmsAsync(targetPhone, confirmMessage);
 
@@ -894,7 +894,7 @@ public class SmsController(
         try
         {
             var brands = VehicleConstants.ValidBrands;
-            return Ok(new { brands });
+            return Ok(new { brands, polarDriveMobileNumber = SMS_ADAPTIVE_MOBILE_NUMBER });
         }
         catch (Exception ex)
         {
@@ -1062,7 +1062,7 @@ public class SmsController(
                 firstSession,
                 lastSession,
                 adaptiveDataPointsCollected = adaptiveDataCount,
-                totalHoursApprox = totalSessions * SMS_ADPATIVE_HOURS_THRESHOLD
+                totalHoursApprox = totalSessions * SMS_ADAPTIVE_HOURS_THRESHOLD
             });
         }
         catch (Exception ex)

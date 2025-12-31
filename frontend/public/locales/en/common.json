@@ -91,7 +91,7 @@
   "admin.mainWorkflow.labels.companyVatNumber": "Company VAT",
   "admin.mainWorkflow.labels.companyName": "Company Name",
   "admin.mainWorkflow.labels.referentName": "Referent Name",
-  "admin.mainWorkflow.labels.vehicleMobileNumber": "Referent Mobile",
+  "admin.mainWorkflow.labels.vehicleMobileNumber": "Authorized Operating Cell",
   "admin.mainWorkflow.labels.referentEmail": "Referent Email",
   "admin.mainWorkflow.labels.model": "Vehicle Model",
   "admin.mainWorkflow.labels.zipFilePath": ".zip Signed Consents",
@@ -405,5 +405,6 @@
   "admin.smsManagement.gdprConsentLabel": "GDPR CONSENT",
   "admin.smsManagement.gdprStatusActive": "REGISTERED",
   "admin.smsManagement.gdprStatusRevoked": "REVOKED",
-  "admin.smsManagement.profilingProcedureLabel": "PROFILING PROCEDURE"
+  "admin.smsManagement.profilingProcedureLabel": "PROFILING PROCEDURE",
+  "admin.smsManagement.polarDriveMobileLabel": "PolarDrive Operating Cell"
 }

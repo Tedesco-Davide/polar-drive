@@ -149,7 +149,7 @@
   "admin.clientCompany.pec": "PEC Aziendale",
   "admin.clientCompany.landline": "Telefono fisso",
   "admin.clientCompany.referentName": "Nome Referente",
-  "admin.clientCompany.vehicleMobileNumber": "Cell. Referente",
+  "admin.clientCompany.vehicleMobileNumber": "Cellullare Operativo Autorizzato",
   "admin.clientCompany.referentEmail": "Email Referente",
   "admin.clientCompany.editModal": "Modifica riga per: Tabella Aziende",
 
@@ -405,5 +405,6 @@
   "admin.smsManagement.gdprConsentLabel": "CONSENSO GDPR",
   "admin.smsManagement.gdprStatusActive": "REGISTRATO",
   "admin.smsManagement.gdprStatusRevoked": "REVOCATO",
-  "admin.smsManagement.profilingProcedureLabel": "PROCEDURA PROFILING"
+  "admin.smsManagement.profilingProcedureLabel": "PROCEDURA PROFILING",
+  "admin.smsManagement.polarDriveMobileLabel": "Cellulare Operativo PolarDrive"
 }

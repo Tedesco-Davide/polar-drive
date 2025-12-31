@@ -371,7 +371,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                 sb.AppendLine("</div>");
 
                 sb.AppendLine("<div class='adaptive-card-body'>");
-                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📱 Telefono:</span><span class='adaptive-card-value'>{latestSession.AdaptiveNumber}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📱 Telefono Utilizzatore:</span><span class='adaptive-card-value'>{latestSession.AdaptiveNumber}</span></div>");
                 sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📅 Prima attivazione:</span><span class='adaptive-card-value'>{firstSession.ReceivedAt:dd/MM/yyyy HH:mm}</span></div>");
                 sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>🔄 Ultima attivazione:</span><span class='adaptive-card-value'>{latestSession.ReceivedAt:dd/MM/yyyy HH:mm}</span></div>");
                 sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>⏰ Scadenza profilo:</span><span class='adaptive-card-value'>{latestSession.ExpiresAt:dd/MM/yyyy HH:mm}</span></div>");
