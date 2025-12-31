@@ -290,11 +290,13 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
         var now = DateTime.Now;
         var maxStartTime = now.AddHours(-dataHours);
 
-        // Recupera tutte le sessioni ADAPTIVE_PROFILE nel periodo
+        // Recupera tutte le sessioni ADAPTIVE_PROFILE_ON nel periodo
+        // IMPORTANTE => Non filtrare su ConsentAccepted perché ai fini di certificazione
+        // deve essere incluso chiunque abbia utilizzato la procedura, anche se poi ha revocato
         var adaptiveSessions = await _dbContext.SmsAdaptiveProfile
-            .Where(p => p.VehicleId == vehicleId 
-                    && p.ReceivedAt >= maxStartTime 
-                    && p.ConsentAccepted)
+            .Where(p => p.VehicleId == vehicleId
+                    && p.ReceivedAt >= maxStartTime
+                    && p.ParsedCommand == "ADAPTIVE_PROFILE_ON")
             .OrderByDescending(p => p.ReceivedAt)
             .ToListAsync();
 
@@ -355,10 +357,17 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                 var sessionsCount = userGroup.Count();
                 var firstSession = userGroup.OrderBy(s => s.ReceivedAt).First();
 
+                // Mostra badge solo per "Revocato" (chi ha risposto STOP)
+                // Non mostrare badge per Attivo/Scaduto - irrilevante per certificazione storica
+                var revokedBadge = !latestSession.ConsentAccepted
+                    ? "<span class='adaptive-card-status adaptive-status-revoked'> ⛔ Revocato</span>"
+                    : "";
+
                 sb.AppendLine("<div class='adaptive-profile-card'>");
 
                 sb.AppendLine("<div class='adaptive-card-header'>");
                 sb.AppendLine($"<span class='adaptive-card-name'>👤 {latestSession.AdaptiveSurnameName}</span>");
+                sb.AppendLine(revokedBadge);
                 sb.AppendLine("</div>");
 
                 sb.AppendLine("<div class='adaptive-card-body'>");
@@ -380,7 +389,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
             sb.AppendLine("<table class='adaptive-summary-table'>");
             sb.AppendLine($"<tr><td>Utilizzatori terzi profilati</td><td>{userGroups.Count}</td></tr>");
             sb.AppendLine($"<tr><td>Sessioni totali nel periodo</td><td>{adaptiveSessions.Count}</td></tr>");
-            sb.AppendLine($"<tr><td>Record certificati con Adaptive=Sì</td><td>{adaptiveRecordsCount}</td></tr>");
+            sb.AppendLine($"<tr><td>Numero records certificati con procedura attiva</td><td>{adaptiveRecordsCount}</td></tr>");
             sb.AppendLine("</table>");
             sb.AppendLine("</div>");
         }
