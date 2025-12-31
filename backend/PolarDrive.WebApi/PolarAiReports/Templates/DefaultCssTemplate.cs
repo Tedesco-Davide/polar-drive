@@ -473,7 +473,8 @@ public static class DefaultCssTemplate
             width: 135px;
         }
 
-        .detailed-log-badge-default-profile {
+        .detailed-log-badge-default-profile,
+        .detailed-log-badge-success-profile {
             background: #f5f5f5;
         }
 
@@ -958,7 +959,7 @@ public static class DefaultCssTemplate
             border: 1px solid rgba(160, 174, 192, 0.3);
             border-radius: 12px;
             text-align: center;
-            margin: 15px 0 20px 0 0;
+            margin: 10px 0 20px 0;
         }
 
         .adaptive-profile-no-sessions p {
