@@ -371,11 +371,11 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                 sb.AppendLine("</div>");
 
                 sb.AppendLine("<div class='adaptive-card-body'>");
-                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📱 Telefono Utilizzatore:</span><span class='adaptive-card-value'>{latestSession.AdaptiveNumber}</span></div>");
-                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📅 Prima attivazione:</span><span class='adaptive-card-value'>{firstSession.ReceivedAt:dd/MM/yyyy HH:mm}</span></div>");
-                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>🔄 Ultima attivazione:</span><span class='adaptive-card-value'>{latestSession.ReceivedAt:dd/MM/yyyy HH:mm}</span></div>");
-                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>⏰ Scadenza profilo:</span><span class='adaptive-card-value'>{latestSession.ExpiresAt:dd/MM/yyyy HH:mm}</span></div>");
-                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>🔢 Sessioni totali:</span><span class='adaptive-card-value'>{sessionsCount}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📱 Telefono Utilizzatore</span><span class='adaptive-card-value'>{latestSession.AdaptiveNumber}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>📅 Prima attivazione</span><span class='adaptive-card-value'>{firstSession.ReceivedAt:dd/MM/yyyy HH:mm}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>🔄 Ultima attivazione</span><span class='adaptive-card-value'>{latestSession.ReceivedAt:dd/MM/yyyy HH:mm}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>⏰ Scadenza profilo</span><span class='adaptive-card-value'>{latestSession.ExpiresAt:dd/MM/yyyy HH:mm}</span></div>");
+                sb.AppendLine($"<div class='adaptive-card-row'><span class='adaptive-card-label'>🔢 Sessioni totali</span><span class='adaptive-card-value'>{sessionsCount}</span></div>");
                 sb.AppendLine("</div>");
 
                 sb.AppendLine("</div>"); // chiude .adaptive-profile-card
@@ -384,6 +384,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
             sb.AppendLine("</div>"); // chiude .adaptive-profile-cards-container
 
             // --- RIEPILOGO STATISTICO ---
+            sb.AppendLine("<div class='adaptive-profile-summary-wrapper'>");
             sb.AppendLine("<div class='adaptive-profile-summary'>");
             sb.AppendLine("<h5>📊 Riepilogo ADAPTIVE_PROFILE</h5>");
             sb.AppendLine("<table class='adaptive-summary-table'>");
@@ -391,6 +392,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
             sb.AppendLine($"<tr><td>Sessioni totali nel periodo</td><td>{adaptiveSessions.Count}</td></tr>");
             sb.AppendLine($"<tr><td>Numero records certificati con procedura attiva</td><td>{adaptiveRecordsCount}</td></tr>");
             sb.AppendLine("</table>");
+            sb.AppendLine("</div>");
             sb.AppendLine("</div>");
         }
         else

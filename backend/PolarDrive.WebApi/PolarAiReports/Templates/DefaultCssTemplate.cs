@@ -891,14 +891,16 @@ public static class DefaultCssTemplate
 
         /* RIEPILOGO */
 
+        .adaptive-profile-summary-wrapper {
+            padding-top: 30px;
+            page-break-inside: avoid;
+        }
+
         .adaptive-profile-summary {
-            margin-top: 40px;
             padding: 20px;
             background: linear-gradient(135deg, rgba(139, 159, 242, 0.08) 0%, rgba(156, 130, 199, 0.08) 100%);
             border: 1px solid rgba(139, 159, 242, 0.2);
             border-radius: 12px;
-            page-break-inside: avoid;
-            page-break-before: auto;
         }
 
         .adaptive-profile-summary h5 {
