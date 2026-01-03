@@ -68,5 +68,30 @@ namespace PolarDrive.WebApi.Constants
 
         // Frequenza di archiviazione dati dalla tabella VehicleData alla tabella VehicleDataArchive
         public const int DATA_ARCHIVE_FREQUENCY_HOURS = 24;
+
+        // Parametri per GapAnalysisService.cs:
+        // Stampa PDF contenente analisi certificazione gap temporali sul fetch dati.
+        // Pesi per il calcolo della confidenza
+
+        // Record esistono prima e dopo?
+        public const double GAP_ANALYSIS_WEIGHT_CONTINUITY = 0.30; // 30%
+        // Progressione batteria coerente?
+        public const double GAP_ANALYSIS_WEIGHT_BATTERY = 0.25;    // 25%      
+        // Ora tipica di utilizzo?
+        public const double GAP_ANALYSIS_WEIGHT_PATTERN = 0.20;    // 20%    
+        // Gap singolo vs multipli?
+        public const double GAP_ANALYSIS_WEIGHT_GAP_LENGTH = 0.15; // 15%
+        // Pattern storico veicolo    
+        public const double GAP_ANALYSIS_WEIGHT_HISTORICAL = 0.10; // 10%
+        // Bonus confidenza in percentuale, nel caso si tratti di un problema tecnico documentato
+        public const double GAP_ANALYSIS_WEIGHT_TECH_PROBLEM = 15; // 15%
+        // Bonus confidenza per km percorsi (se odometro aumenta > GAP_ANALYSIS_KM_THRESHOLD tra record adiacenti)
+        public const double GAP_ANALYSIS_KM_BONUS = 5; // 5%
+        // Soglia minima km per considerare il veicolo "in movimento"
+        public const double GAP_ANALYSIS_KM_THRESHOLD = 10; // 10km
+
+        // Timeout HTTP in minuti per richieste lunghe (es. analisi gap estese)
+        // Usato per RequestHeadersTimeout, KeepAliveTimeout ed altri timeout frontend
+        public const int HTTP_LONG_REQUEST_TIMEOUT_MINUTES = 15; // 15 minuti
     }
 }

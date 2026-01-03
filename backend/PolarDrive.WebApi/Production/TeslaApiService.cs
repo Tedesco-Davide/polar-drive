@@ -371,6 +371,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
             if (!refreshed)
             {
                 await _logger.Error(source, $"Failed to refresh token for vehicle {vehicle.Vin} ({contractStatus})");
+                await LogFetchFailureAsync(vehicle.Id, FetchFailureReason.TOKEN_REFRESH_FAILED, $"Token refresh failed for vehicle {vehicle.Vin}");
                 return VehicleFetchResult.Error;
             }
         }
@@ -395,6 +396,8 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
                 case "offline":
                     await _logger.Info(source, $"Vehicle {vehicle.Vin} ({contractStatus}) is offline, OUTAGE PERIOD detected");
                     await SaveStatusRecord(vehicle.Vin, "OFFLINE", "Vehicle is offline, certified OUTAGE PERIOD");
+                    // Log per certificazione gap - veicolo offline è un problema tecnico documentato
+                    await LogFetchFailureAsync(vehicle.Id, FetchFailureReason.TESLA_VEHICLE_OFFLINE, "Vehicle is offline - no connectivity to Tesla servers");
                     return VehicleFetchResult.Success;
 
                 case "asleep":
@@ -404,6 +407,8 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
                     {
                         await _logger.Warning(source, $"Failed to wake up vehicle {vehicle.Vin} ({contractStatus}), vehicle in sleep mode");
                         await SaveStatusRecord(vehicle.Vin, "ASLEEP", "Vehicle in sleep mode");
+                        // Log per certificazione gap - veicolo in sleep è un problema tecnico documentato
+                        await LogFetchFailureAsync(vehicle.Id, FetchFailureReason.TESLA_VEHICLE_ASLEEP, "Vehicle in sleep mode and could not be woken up");
                         return VehicleFetchResult.Success;
                     }
                     // Aspetta più tempo per veicoli che erano dormienti
@@ -433,12 +438,32 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
         {
             await _logger.Error(source, $"HTTP error fetching data for vehicle {vehicle.Vin} ({contractStatus})", $"Status: {httpEx.Message}");
             await SaveStatusRecord(vehicle.Vin, "ERROR_HTTP", $"HTTP error: {httpEx.Message}");
+
+            // Log per certificazione gap
+            var failureReason = httpEx.StatusCode switch
+            {
+                System.Net.HttpStatusCode.TooManyRequests => FetchFailureReason.TESLA_API_RATE_LIMIT,
+                System.Net.HttpStatusCode.Unauthorized => FetchFailureReason.UNAUTHORIZED,
+                System.Net.HttpStatusCode.ServiceUnavailable => FetchFailureReason.TESLA_API_UNAVAILABLE,
+                System.Net.HttpStatusCode.GatewayTimeout => FetchFailureReason.TIMEOUT,
+                _ => FetchFailureReason.NETWORK_ERROR
+            };
+            await LogFetchFailureAsync(vehicle.Id, failureReason, httpEx.Message, (int?)httpEx.StatusCode, "https://owner-api.teslamotors.com");
+
+            return VehicleFetchResult.Success;
+        }
+        catch (TaskCanceledException tcEx)
+        {
+            await _logger.Error(source, $"Timeout fetching data for vehicle {vehicle.Vin} ({contractStatus})", tcEx.Message);
+            await SaveStatusRecord(vehicle.Vin, "ERROR_TIMEOUT", $"Request timeout: {tcEx.Message}");
+            await LogFetchFailureAsync(vehicle.Id, FetchFailureReason.TIMEOUT, tcEx.Message);
             return VehicleFetchResult.Success;
         }
         catch (Exception ex)
         {
             await _logger.Error(source, $"Error in Tesla API call for vehicle {vehicle.Vin} ({contractStatus})", ex.ToString());
             await SaveStatusRecord(vehicle.Vin, "ERROR_SYSTEM", $"System error: {ex.Message}");
+            await LogFetchFailureAsync(vehicle.Id, FetchFailureReason.UNKNOWN, ex.ToString());
             return VehicleFetchResult.Success;
         }
     }
@@ -448,12 +473,12 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
         var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
         if (vehicle != null)
         {
-            var statusJson = JsonSerializer.Serialize(new { 
-                polar_drive_status = status, 
+            var statusJson = JsonSerializer.Serialize(new {
+                polar_drive_status = status,
                 reason = reason,
                 timestamp = DateTime.Now
             });
-            
+
             var hasActiveAdaptiveProfile = await _db.SmsAdaptiveProfile.AnyAsync(p => p.VehicleId == vehicle.Id && p.ConsentAccepted && p.ExpiresAt > DateTime.Now);
 
             var record = new VehicleData
@@ -463,9 +488,41 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
                 RawJsonAnonymized = statusJson,
                 IsSmsAdaptiveProfile = hasActiveAdaptiveProfile
             };
-            
+
             _db.VehiclesData.Add(record);
             await _db.SaveChangesAsync();
+        }
+    }
+
+    /// <summary>
+    /// Salva un log di fallimento fetch per la certificazione probabilistica dei gap
+    /// </summary>
+    private async Task LogFetchFailureAsync(int vehicleId, string failureReason, string errorDetails, int? httpStatusCode = null, string? requestUrl = null, long? responseTimeMs = null)
+    {
+        const string source = "TeslaApiService.LogFetchFailure";
+
+        try
+        {
+            var failureLog = new FetchFailureLog
+            {
+                VehicleId = vehicleId,
+                AttemptedAt = DateTime.Now,
+                FailureReason = failureReason,
+                ErrorDetails = errorDetails.Length > 4000 ? errorDetails[..4000] : errorDetails,
+                HttpStatusCode = httpStatusCode,
+                RequestUrl = requestUrl?.Length > 500 ? requestUrl[..500] : requestUrl,
+                ResponseTimeMs = responseTimeMs
+            };
+
+            _db.FetchFailureLogs.Add(failureLog);
+            await _db.SaveChangesAsync();
+
+            await _logger.Debug(source, $"Logged fetch failure for vehicle ID {vehicleId}: {failureReason}");
+        }
+        catch (Exception ex)
+        {
+            // Non bloccare il flusso principale se il logging fallisce
+            await _logger.Warning(source, $"Failed to log fetch failure for vehicle ID {vehicleId}", ex.Message);
         }
     }
 

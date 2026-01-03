@@ -14,9 +14,9 @@ import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowAddForm";
 import PaginationControls from "@/components/paginationControls";
 import VehicleStatusToggle from "./vehicleStatusToggle";
 import Chip from "./chip";
-import AdminSmsProfileModal from "./AdminSmsProfileModal";
-import AdminSmsGdprModal from "./AdminSmsGdprModal";
-import AdminSmsAuditModal from "./AdminSmsAuditModal";
+import AdminSmsProfileModal from "./adminSmsProfileModal";
+import AdminSmsGdprModal from "./adminSmsGdprModal";
+import AdminSmsAuditModal from "./adminSmsAuditModal";
 
 export default function AdminMainWorkflow() {
   const { t } = useTranslation("");

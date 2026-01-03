@@ -1,5 +1,5 @@
-// ✅ Interface perfettamente allineata al PdfReportDTO backend
 export interface PdfReport {
+
   // Proprietà esistenti
   id: number;
   reportPeriodStart: string;
@@ -12,7 +12,7 @@ export interface PdfReport {
   vehicleModel: string;
   notes?: string;
 
-  // ✅ NOMI CORRETTI - DEVONO ESSERE camelCase COME RICEVUTI DAL BACKEND
+  // Nomenclatura camelCase coerente con quanto ricevuto dal backend
   hasPdfFile: boolean;
   hasHtmlFile: boolean;
   dataRecordsCount: number;

@@ -20,6 +20,8 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
     public DbSet<ClientProfilePdf> ClientProfilePdfs => Set<ClientProfilePdf>();
+    public DbSet<GapCertification> GapCertifications => Set<GapCertification>();
+    public DbSet<FetchFailureLog> FetchFailureLogs => Set<FetchFailureLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -258,7 +260,47 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.Property(e => e.FileName).HasMaxLength(255);
                 entity.HasIndex(e => e.ClientCompanyId);
                 entity.HasIndex(e => e.GeneratedAt);
-            });       
+            });
+
+            modelBuilder.Entity<GapCertification>(entity =>
+            {
+                entity.ToTable("GapCertifications");
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.PdfReport)
+                    .WithMany()
+                    .HasForeignKey(e => e.PdfReportId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.Property(e => e.JustificationText).HasMaxLength(2000);
+                entity.Property(e => e.CertificationHash).HasMaxLength(64);
+
+                entity.HasIndex(e => new { e.VehicleId, e.PdfReportId });
+                entity.HasIndex(e => e.GapTimestamp);
+                entity.HasIndex(e => e.CertifiedAt);
+            });
+
+            modelBuilder.Entity<FetchFailureLog>(entity =>
+            {
+                entity.ToTable("FetchFailureLogs");
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(e => e.FailureReason).HasMaxLength(50);
+                entity.Property(e => e.ErrorDetails).HasMaxLength(4000);
+                entity.Property(e => e.RequestUrl).HasMaxLength(500);
+
+                entity.HasIndex(e => new { e.VehicleId, e.AttemptedAt });
+                entity.HasIndex(e => e.FailureReason);
+                entity.HasIndex(e => e.AttemptedAt);
+            });
         }
         catch (Exception ex)
         {

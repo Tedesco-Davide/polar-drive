@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using PolarDrive.WebApi.PolarAiReports;
 using Microsoft.Data.SqlClient;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +35,8 @@ builder.WebHost.ConfigureKestrel(options =>
 {
     options.Limits.MinResponseDataRate = null;
     options.Limits.MaxResponseBufferSize = null;
+    options.Limits.RequestHeadersTimeout = TimeSpan.FromMinutes(HTTP_LONG_REQUEST_TIMEOUT_MINUTES);
+    options.Limits.KeepAliveTimeout = TimeSpan.FromMinutes(HTTP_LONG_REQUEST_TIMEOUT_MINUTES);
 });
 
 // Add Web API services + Swagger
@@ -112,6 +115,10 @@ builder.Services.AddScoped<VehicleDataService>();
 // SERVIZIO GENERAZIONE REPORT
 builder.Services.AddScoped<PdfGenerationService>();
 builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
+
+// SERVIZI GAP CERTIFICATION
+builder.Services.AddScoped<GapAnalysisService>();
+builder.Services.AddScoped<GapCertificationPdfService>();
 
 // SCHEDULER
 builder.Services.AddHostedService<PolarDriveScheduler>();

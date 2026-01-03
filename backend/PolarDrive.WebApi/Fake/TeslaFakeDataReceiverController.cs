@@ -51,6 +51,21 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
                 return NotFound($"Vehicle with VIN {vin} not found");
             }
 
+            // Log fallimento per testing certificazione gap (solo se veicolo esiste ma ha problemi)
+            async Task LogMockFetchFailure(string reason, string details)
+            {
+                var failureLog = new FetchFailureLog
+                {
+                    VehicleId = vehicle.Id,
+                    AttemptedAt = DateTime.Now,
+                    FailureReason = reason,
+                    ErrorDetails = details,
+                    RequestUrl = $"/api/TeslaFakeDataReceiver/ReceiveVehicleData/{vin}"
+                };
+                _db.FetchFailureLogs.Add(failureLog);
+                await _db.SaveChangesAsync();
+            }
+
             // Verifica brand Tesla
             if (!vehicle.Brand.Equals("tesla", StringComparison.CurrentCultureIgnoreCase))
             {
@@ -99,6 +114,8 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
             if (recentDataCount >= 50) // Max 50 record ogni 5 minuti in dev
             {
                 await _logger.Warning(source, "Rate limit exceeded for vehicle " + vin + ": " + recentDataCount + " records in last 5 minutes");
+                // Log per certificazione gap - rate limit simulato
+                await LogMockFetchFailure(FetchFailureReason.TESLA_API_RATE_LIMIT, $"Rate limit exceeded: {recentDataCount} records in last 5 minutes");
                 return StatusCode(429, new
                 {
                     success = false,
@@ -388,6 +405,129 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
         {
             await _logger.Error("TeslaFakeDataReceiverController.GetGlobalStats", "Error getting global stats", ex.ToString());
             return StatusCode(500, new { success = false, error = "Error retrieving global statistics" });
+        }
+    }
+
+    /// <summary>
+    /// Simula un fallimento di fetch per testing della certificazione gap
+    /// Uso: POST /api/TeslaFakeDataReceiver/SimulateFailure/{vin}?reason=TESLA_VEHICLE_OFFLINE
+    /// </summary>
+    [HttpPost("SimulateFailure/{vin}")]
+    public async Task<IActionResult> SimulateFetchFailure(string vin, [FromQuery] string reason = "UNKNOWN")
+    {
+        const string source = "TeslaFakeDataReceiverController.SimulateFetchFailure";
+
+        if (!_env.IsDevelopment())
+        {
+            return BadRequest("This endpoint is only available in development mode");
+        }
+
+        try
+        {
+            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+            if (vehicle == null)
+            {
+                return NotFound($"Vehicle with VIN {vin} not found");
+            }
+
+            // Valida il motivo del fallimento
+            var validReasons = new[] {
+                FetchFailureReason.TESLA_API_UNAVAILABLE,
+                FetchFailureReason.TESLA_API_RATE_LIMIT,
+                FetchFailureReason.TESLA_VEHICLE_OFFLINE,
+                FetchFailureReason.TESLA_VEHICLE_ASLEEP,
+                FetchFailureReason.NETWORK_ERROR,
+                FetchFailureReason.TIMEOUT,
+                FetchFailureReason.SERVER_ERROR,
+                FetchFailureReason.TOKEN_EXPIRED,
+                FetchFailureReason.TOKEN_REFRESH_FAILED,
+                FetchFailureReason.UNKNOWN
+            };
+
+            if (!validReasons.Contains(reason))
+            {
+                reason = FetchFailureReason.UNKNOWN;
+            }
+
+            var failureLog = new FetchFailureLog
+            {
+                VehicleId = vehicle.Id,
+                AttemptedAt = DateTime.Now,
+                FailureReason = reason,
+                ErrorDetails = $"[SIMULATED] Failure reason: {FetchFailureReason.GetDescription(reason)}",
+                RequestUrl = $"/api/TeslaFakeDataReceiver/SimulateFailure/{vin}"
+            };
+
+            _db.FetchFailureLogs.Add(failureLog);
+            await _db.SaveChangesAsync();
+
+            await _logger.Info(source, $"Simulated fetch failure for VIN {vin}: {reason}");
+
+            return Ok(new
+            {
+                success = true,
+                message = $"Simulated fetch failure logged for VIN {vin}",
+                failureId = failureLog.Id,
+                reason = reason,
+                description = FetchFailureReason.GetDescription(reason),
+                isTechnical = FetchFailureReason.IsTechnicalFailure(reason),
+                timestamp = failureLog.AttemptedAt
+            });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error simulating failure for VIN {vin}", ex.ToString());
+            return StatusCode(500, new { success = false, error = ex.Message });
+        }
+    }
+
+    /// <summary>
+    /// Lista i fallimenti loggati per un veicolo (utile per debug)
+    /// </summary>
+    [HttpGet("Failures/{vin}")]
+    public async Task<IActionResult> GetFetchFailures(string vin, [FromQuery] int limit = 50)
+    {
+        if (!_env.IsDevelopment())
+        {
+            return BadRequest("This endpoint is only available in development mode");
+        }
+
+        try
+        {
+            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+            if (vehicle == null)
+            {
+                return NotFound($"Vehicle with VIN {vin} not found");
+            }
+
+            var failures = await _db.FetchFailureLogs
+                .Where(f => f.VehicleId == vehicle.Id)
+                .OrderByDescending(f => f.AttemptedAt)
+                .Take(limit)
+                .Select(f => new
+                {
+                    f.Id,
+                    f.AttemptedAt,
+                    f.FailureReason,
+                    Description = FetchFailureReason.GetDescription(f.FailureReason),
+                    IsTechnical = FetchFailureReason.IsTechnicalFailure(f.FailureReason),
+                    f.ErrorDetails,
+                    f.HttpStatusCode,
+                    f.RequestUrl,
+                    f.ResponseTimeMs
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                vin = vin,
+                totalFailures = await _db.FetchFailureLogs.CountAsync(f => f.VehicleId == vehicle.Id),
+                failures = failures
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, error = ex.Message });
         }
     }
 

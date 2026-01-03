@@ -2,11 +2,12 @@ import { TFunction } from "i18next";
 import { PdfReport } from "@/types/reportInterfaces";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
-import { NotebookPen, FileBadge, RefreshCw } from "lucide-react";
+import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
 import Chip from "@/components/chip";
 import AdminLoader from "@/components/adminLoader";
 import NotesModal from "@/components/notesModal";
+import GapCertificationModal from "@/components/gapCertificationModal";
 import PaginationControls from "@/components/paginationControls";
 import SearchBar from "@/components/searchBar";
 
@@ -18,6 +19,11 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [regeneratingId, setRegeneratingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // Stato Gap Certification
+  const [selectedReportForCertification, setSelectedReportForCertification] =
+    useState<number | null>(null);
+  const [downloadingCertId, setDownloadingCertId] = useState<number | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -329,6 +335,54 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     return report.status === "ERROR";
   };
 
+  // Nota: Il check per gap viene fatto SOLO quando si apre la modale di certificazione
+  // Non facciamo più fetch preventivo per evitare overhead al caricamento
+
+  // Download Gap Certification in PDF
+  const handleDownloadCertification = async (reportId: number) => {
+    setDownloadingCertId(reportId);
+    try {
+      const response = await fetch(
+        `/api/pdfreports/${reportId}/download-gap-certification`
+      );
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      const blob = await response.blob();
+      const fileName = `PolarDrive_GapCertification_${reportId}_${new Date().toISOString().split("T")[0]}.pdf`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      logFrontendEvent(
+        "AdminPdfReports",
+        "INFO",
+        "Gap certification downloaded",
+        `ReportId: ${reportId}`
+      );
+    } catch (error) {
+      alert(t("admin.gapCertification.downloadError", { error: String(error) }));
+      logFrontendEvent(
+        "AdminPdfReports",
+        "ERROR",
+        "Gap certification download failed",
+        String(error)
+      );
+    } finally {
+      setDownloadingCertId(null);
+    }
+  };
+
+  // Gestione completamento certificazione - refresh della lista report
+  const handleCertificationComplete = async () => {
+    await fetchReports(currentPage, query);
+  };
+
   return (
     <div className="relative">
       {(loading || isRefreshing) && <AdminLoader local />}
@@ -391,8 +445,8 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     onClick={() => handleDownload(report)}
                     title={
                       isDownloadable
-                        ? "Scarica report"
-                        : "Report non disponibile per il download"
+                        ? t("admin.pdfReports.downloadReportButton")
+                        : t("admin.pdfReports.reportNotAvailable")
                     }
                   >
                     {downloadingId === report.id ? (
@@ -410,10 +464,30 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                       report.status === "REGENERATING"
                     }
                     onClick={() => setSelectedReportForNotes(report)}
-                    title="Modifica note"
+                    title={t("admin.pdfReports.editNotesButton")}
                   >
                     <NotebookPen size={16} />
                   </button>
+
+                  {!isRegeneratable && report.pdfHash && report.hasPdfFile && (
+                    <button
+                      className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
+                      disabled={
+                        downloadingId === report.id ||
+                        report.status === "PROCESSING" ||
+                        report.status === "REGENERATING"
+                      }
+                      onClick={() => {
+                        const confirmMessage = t("admin.gapCertification.openModalConfirmation");
+                        if (confirm(confirmMessage)) {
+                          setSelectedReportForCertification(report.id);
+                        }
+                      }}
+                      title={t("admin.gapCertification.openCertificationModal")}
+                    >
+                      <ShieldCheck size={16} />
+                    </button>
+                  )}
 
                   {isRegeneratable && (
                     <button
@@ -430,8 +504,8 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                       onClick={() => handleRegenerate(report)}
                       title={
                         report.pdfHash
-                          ? "Report certificato - immutabile"
-                          : `Rigenera report (Status: ${report.status})`
+                          ? t("admin.pdfReports.reportImmutable")
+                          : t("admin.pdfReports.regenerateReportButton", { status: report.status })
                       }
                     >
                       {isCurrentlyRegenerating ||
@@ -511,7 +585,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        {/* ✅ Usa la modalità speciale per dropdown ID/Status/VIN */}
         <SearchBar
           query={query}
           setQuery={setQuery}
@@ -531,6 +604,16 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           notesField="notes"
           onSave={handleNotesUpdate}
           onClose={() => setSelectedReportForNotes(null)}
+          t={t}
+        />
+      )}
+
+      {selectedReportForCertification && (
+        <GapCertificationModal
+          reportId={selectedReportForCertification}
+          isOpen={!!selectedReportForCertification}
+          onClose={() => setSelectedReportForCertification(null)}
+          onCertificationComplete={handleCertificationComplete}
           t={t}
         />
       )}
