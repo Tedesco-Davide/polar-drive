@@ -314,7 +314,7 @@ public class GapCertificationPdfService(
         sb.AppendLine("<li>Durata del gap temporale (15%)</li>");
         sb.AppendLine("<li>Affidabilità storica complessiva (10%)</li>");
         sb.AppendLine("</ul>");
-        sb.AppendLine("<p class='important'>IMPORTANTE: Questa certificazione si basa su inferenze statistiche e non costituisce prova diretta dell'utilizzo effettivo. I dati mancanti non sono stati ricostruiti, ma la loro assenza è stata analizzata nel contesto dei dati disponibili.</p>");
+        sb.AppendLine("<p class='important'>IMPORTANTE ➜ Questa certificazione si basa su inferenze statistiche e non costituisce prova diretta dell'utilizzo effettivo. I dati mancanti non sono stati ricostruiti, ma la loro assenza è stata analizzata nel contesto dei dati disponibili.</p>");
         sb.AppendLine("</div>");
 
         // Tabella gap
@@ -337,7 +337,7 @@ public class GapCertificationPdfService(
 
             sb.AppendLine("<tr>");
             sb.AppendLine($"<td>{cert.GapTimestamp:dd/MM/yyyy HH:mm}</td>");
-            sb.AppendLine($"<td class='confidence {confidenceClass}'>{cert.ConfidencePercentage:F1}%</td>");
+            sb.AppendLine($"<td><span class='confidence {confidenceClass}'>{cert.ConfidencePercentage:F1}%</span></td>");
             sb.AppendLine($"<td class='justification'>{cert.JustificationText}</td>");
             sb.AppendLine("</tr>");
         }
@@ -368,7 +368,7 @@ public class GapCertificationPdfService(
         sb.AppendLine("<div class='signature-section'>");
         sb.AppendLine($"<p><strong>Hash documento (SHA-256):</strong></p>");
         sb.AppendLine($"<p class='hash'>{certHash}</p>");
-        sb.AppendLine($"<p><strong>Generato manualmente da PolarDrive™</strong></p>");
+        sb.AppendLine($"<p><strong>Generato dalla piattaforma PolarDrive™</strong></p>");
         sb.AppendLine($"<p>© {DateTime.Now.Year} DataPolar S.r.l. - Tutti i diritti riservati</p>");
         sb.AppendLine("</div>");
         sb.AppendLine("</div>");

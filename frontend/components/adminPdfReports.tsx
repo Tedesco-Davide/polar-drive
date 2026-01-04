@@ -435,8 +435,8 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           {t("admin.vehicleReports.tableHeader")} ➜ {totalCount}{" "}
           {t("admin.vehicleReports.tableHeaderTotals")}
           {gapCertProcessing?.hasProcessing && (
-            <span className="ml-4 text-purple-600 dark:text-purple-400 animate-pulse">
-              ➜ {t("admin.gapCertification.processingInProgress", { id: gapCertProcessing.reportId })}
+            <span className="ml-2 text-purple-600 dark:text-purple-400 animate-pulse">
+             ➜ {t("admin.gapCertification.processingInProgress", { id: gapCertProcessing.reportId })}
             </span>
           )}
         </h1>

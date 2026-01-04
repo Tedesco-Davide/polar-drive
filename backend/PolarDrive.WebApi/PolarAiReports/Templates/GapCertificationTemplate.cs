@@ -275,33 +275,37 @@ public static class GapCertificationTemplate
             font-size: 12px;
             color: #4a5568;
             border-bottom: 1px solid rgba(139, 159, 242, 0.1);
-            vertical-align: top;
+            vertical-align: middle;
         }
 
         /* CONFIDENCE BADGES */
-        .confidence {
-            font-weight: 700;
-            padding: 6px 12px;
-            border-radius: 20px;
-            display: inline-block;
+        .gaps-table td:nth-child(2) {
             text-align: center;
-            min-width: 70px;
+            width: 80px;
+        }
+
+        .confidence {
+            font-weight: 600;
+            padding: 1px 5px;
+            border-radius: 8px;
+            font-size: 9px;
+            white-space: nowrap;
         }
 
         .confidence.high {
-            background: linear-gradient(135deg, rgba(72, 187, 120, 0.2) 0%, rgba(72, 187, 120, 0.1) 100%);
+            background: rgba(72, 187, 120, 0.15);
             color: #276749;
             border: 1px solid rgba(72, 187, 120, 0.4);
         }
 
         .confidence.medium {
-            background: linear-gradient(135deg, rgba(237, 137, 54, 0.2) 0%, rgba(237, 137, 54, 0.1) 100%);
+            background: rgba(237, 137, 54, 0.15);
             color: #c05621;
             border: 1px solid rgba(237, 137, 54, 0.4);
         }
 
         .confidence.low {
-            background: linear-gradient(135deg, rgba(229, 62, 62, 0.2) 0%, rgba(229, 62, 62, 0.1) 100%);
+            background: rgba(229, 62, 62, 0.15);
             color: #c53030;
             border: 1px solid rgba(229, 62, 62, 0.4);
         }
