@@ -62,6 +62,26 @@ public class PdfReportsController(
 
             var totalCount = await baseQuery.CountAsync();
 
+            // Prima query per i report
+            var reportIds = await baseQuery
+                .OrderByDescending(r => r.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(r => r.Id)
+                .ToListAsync();
+
+            // Query separata per le certificazioni gap
+            var gapCertifications = await db.GapCertificationPdfs
+                .Where(c => reportIds.Contains(c.PdfReportId))
+                .Select(c => new
+                {
+                    c.PdfReportId,
+                    c.Status,
+                    c.PdfHash,
+                    HasPdf = c.PdfContent != null
+                })
+                .ToDictionaryAsync(c => c.PdfReportId);
+
             var reports = await baseQuery
                 .OrderByDescending(r => r.Id)
                 .Skip((page - 1) * pageSize)
@@ -87,27 +107,37 @@ public class PdfReportsController(
                 .ToListAsync();
 
             // Map directly to DTOs without heavy VehiclesData queries
-            var result = reports.Select(report => new PdfReportDTO
+            var result = reports.Select(report =>
             {
-                Id = report.Id,
-                ReportPeriodStart = report.ReportPeriodStart.ToString("o"),
-                ReportPeriodEnd = report.ReportPeriodEnd.ToString("o"),
-                GeneratedAt = report.GeneratedAt?.ToString("o"),
-                CompanyVatNumber = report.CompanyVatNumber ?? "",
-                CompanyName = report.CompanyName ?? "",
-                VehicleVin = report.VehicleVin ?? "",
-                VehicleModel = report.VehicleModel ?? "",
-                VehicleBrand = report.VehicleBrand ?? "",
-                Notes = report.Notes,
-                HasPdfFile = report.HasPdf,
-                HasHtmlFile = false,
-                DataRecordsCount = 0, // Removed: heavy query on VehiclesData
-                PdfFileSize = report.PdfSize,
-                HtmlFileSize = 0,
-                MonitoringDurationHours = 0, // Removed: heavy query on VehiclesData
-                ReportType = "Report",
-                Status = report.HasPdf ? "PDF-READY" : (!string.IsNullOrEmpty(report.Status) ? report.Status : "PROCESSING"),
-                PdfHash = report.PdfHash ?? ""
+                // Ottieni info certificazione gap se disponibile
+                gapCertifications.TryGetValue(report.Id, out var gapCert);
+
+                return new PdfReportDTO
+                {
+                    Id = report.Id,
+                    ReportPeriodStart = report.ReportPeriodStart.ToString("o"),
+                    ReportPeriodEnd = report.ReportPeriodEnd.ToString("o"),
+                    GeneratedAt = report.GeneratedAt?.ToString("o"),
+                    CompanyVatNumber = report.CompanyVatNumber ?? "",
+                    CompanyName = report.CompanyName ?? "",
+                    VehicleVin = report.VehicleVin ?? "",
+                    VehicleModel = report.VehicleModel ?? "",
+                    VehicleBrand = report.VehicleBrand ?? "",
+                    Notes = report.Notes,
+                    HasPdfFile = report.HasPdf,
+                    HasHtmlFile = false,
+                    DataRecordsCount = 0, // Removed: heavy query on VehiclesData
+                    PdfFileSize = report.PdfSize,
+                    HtmlFileSize = 0,
+                    MonitoringDurationHours = 0, // Removed: heavy query on VehiclesData
+                    ReportType = "Report",
+                    Status = report.HasPdf ? "PDF-READY" : (!string.IsNullOrEmpty(report.Status) ? report.Status : "PROCESSING"),
+                    PdfHash = report.PdfHash ?? "",
+                    // Gap Certification info
+                    GapCertificationStatus = gapCert?.Status,
+                    GapCertificationPdfHash = gapCert?.PdfHash,
+                    HasGapCertificationPdf = gapCert?.HasPdf ?? false
+                };
             }).ToList();
 
             await _logger.Info(source, "Mapping DTO completato",
@@ -426,6 +456,58 @@ public class PdfReportsController(
     #region Gap Certification Endpoints
 
     /// <summary>
+    /// Verifica se esiste una certificazione gap in corso (PROCESSING).
+    /// Utilizzato per bloccare nuove certificazioni mentre una è in elaborazione.
+    /// </summary>
+    [HttpGet("gap-certification-processing")]
+    public async Task<ActionResult<object>> GetGapCertificationProcessing()
+    {
+        const string source = "PdfReportsController.GetGapCertificationProcessing";
+
+        try
+        {
+            var processing = await db.GapCertificationPdfs
+                .Where(c => c.Status == "PROCESSING")
+                .Select(c => new
+                {
+                    c.PdfReportId,
+                    CompanyName = c.PdfReport != null && c.PdfReport.ClientCompany != null
+                        ? c.PdfReport.ClientCompany.Name : null,
+                    VehicleVin = c.PdfReport != null && c.PdfReport.ClientVehicle != null
+                        ? c.PdfReport.ClientVehicle.Vin : null
+                })
+                .FirstOrDefaultAsync();
+
+            if (processing != null)
+            {
+                await _logger.Info(source, "Certificazione gap in corso trovata",
+                    $"ReportId: {processing.PdfReportId}");
+
+                return Ok(new
+                {
+                    hasProcessing = true,
+                    reportId = processing.PdfReportId,
+                    companyName = processing.CompanyName,
+                    vehicleVin = processing.VehicleVin
+                });
+            }
+
+            return Ok(new
+            {
+                hasProcessing = false,
+                reportId = (int?)null,
+                companyName = (string?)null,
+                vehicleVin = (string?)null
+            });
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Errore verifica certificazione in corso", ex.ToString());
+            return StatusCode(500, new { hasProcessing = false, error = "Errore interno server" });
+        }
+    }
+
+    /// <summary>
     /// Verifica lo stato di certificazione gap per un report.
     /// Restituisce se ci sono gap non certificati e se è possibile generare una certificazione.
     /// </summary>
@@ -513,8 +595,8 @@ public class PdfReportsController(
             if (report == null)
                 return NotFound(new { error = "Report non trovato" });
 
-            // Esegui l'analisi senza salvare
-            var gaps = await _gapAnalysisService.AnalyzeGapsForReportAsync(id);
+            // Esegui l'analisi e ottieni il periodo effettivo
+            var (gaps, periodStart, periodEnd) = await _gapAnalysisService.AnalyzeGapsForReportWithPeriodAsync(id);
 
             if (gaps.Count == 0)
             {
@@ -523,11 +605,11 @@ public class PdfReportsController(
                     reportId = id,
                     vehicleVin = report.ClientVehicle?.Vin,
                     companyName = report.ClientCompany?.Name,
-                    periodStart = report.ReportPeriodStart,
-                    periodEnd = report.ReportPeriodEnd,
+                    periodStart,
+                    periodEnd,
                     totalGaps = 0,
                     gaps = Array.Empty<object>(),
-                    message = "Nessun gap identificato nel periodo del report"
+                    message = "Nessun gap identificato nel periodo analizzato"
                 });
             }
 
@@ -542,8 +624,8 @@ public class PdfReportsController(
                 reportId = id,
                 vehicleVin = report.ClientVehicle?.Vin,
                 companyName = report.ClientCompany?.Name,
-                periodStart = report.ReportPeriodStart,
-                periodEnd = report.ReportPeriodEnd,
+                periodStart,
+                periodEnd,
                 totalGaps = gaps.Count,
                 averageConfidence = Math.Round(avgConfidence, 1),
                 summary = new
@@ -570,7 +652,8 @@ public class PdfReportsController(
 
     /// <summary>
     /// Genera la certificazione probabilistica dei gap per un report.
-    /// Salva le certificazioni nel database e genera il PDF.
+    /// Crea un record PROCESSING e avvia la generazione in background.
+    /// Il PDF verrà salvato nella tabella GapCertificationPdfs.
     /// </summary>
     [HttpPost("{id}/certify-gaps")]
     public async Task<ActionResult<object>> CertifyGaps(int id)
@@ -581,6 +664,19 @@ public class PdfReportsController(
         {
             await _logger.Info(source, $"Richiesta certificazione gap per report {id}");
 
+            // 1. Verifica che non ci sia già una certificazione in corso globalmente
+            var existingProcessing = await db.GapCertificationPdfs
+                .AnyAsync(c => c.Status == "PROCESSING");
+
+            if (existingProcessing)
+            {
+                return Conflict(new
+                {
+                    error = "Una certificazione gap è già in corso. Attendere il completamento.",
+                    errorCode = "CERTIFICATION_IN_PROGRESS"
+                });
+            }
+
             var report = await db.PdfReports
                 .Include(r => r.ClientCompany)
                 .Include(r => r.ClientVehicle)
@@ -589,41 +685,78 @@ public class PdfReportsController(
             if (report == null)
                 return NotFound(new { error = "Report non trovato" });
 
-            // Verifica che il PDF del report sia disponibile
+            // 2. Verifica che il PDF del report sia disponibile
             if (string.IsNullOrWhiteSpace(report.PdfHash) || report.PdfContent == null || report.PdfContent.Length == 0)
             {
                 return BadRequest(new { error = "Il PDF del report deve essere disponibile prima di certificare i gap" });
             }
 
-            // Verifica che non ci sia già una certificazione con PDF
-            var existingCertification = await db.GapCertifications
-                .AnyAsync(gc => gc.PdfReportId == id && !string.IsNullOrEmpty(gc.CertificationHash));
+            // 3. Verifica che non esista già una certificazione COMPLETED per questo report
+            var existingCompleted = await db.GapCertificationPdfs
+                .AnyAsync(c => c.PdfReportId == id && c.Status == "COMPLETED");
 
-            if (existingCertification)
+            if (existingCompleted)
             {
-                return Conflict(new { error = "Una certificazione è già stata generata per questo report" });
+                return Conflict(new
+                {
+                    error = "Una certificazione è già stata generata per questo report",
+                    errorCode = "CERTIFICATION_ALREADY_EXISTS"
+                });
             }
 
-            // Genera la certificazione PDF
-            var result = await _gapCertificationPdfService.GenerateCertificationPdfAsync(id);
+            // 4. Rimuovi eventuali certificazioni precedenti in stato ERROR per questo report
+            var existingError = await db.GapCertificationPdfs
+                .Where(c => c.PdfReportId == id && c.Status == "ERROR")
+                .ToListAsync();
 
-            if (!result.Success)
+            if (existingError.Count > 0)
             {
-                await _logger.Error(source, $"Errore generazione certificazione per report {id}", result.ErrorMessage ?? "Unknown error");
-                return BadRequest(new { error = result.ErrorMessage });
+                db.GapCertificationPdfs.RemoveRange(existingError);
+                await db.SaveChangesAsync();
             }
 
-            await _logger.Info(source, $"Certificazione generata con successo per report {id}",
-                $"Gaps: {result.GapsCertified}, AvgConfidence: {result.AverageConfidence:F1}%");
-
-            return Ok(new
+            // 5. Crea il record GapCertificationPdf con status PROCESSING
+            var certPdf = new Data.Entities.GapCertificationPdf
             {
-                success = true,
+                PdfReportId = id,
+                Status = "PROCESSING",
+                CreatedAt = DateTime.Now
+            };
+
+            db.GapCertificationPdfs.Add(certPdf);
+            await db.SaveChangesAsync();
+
+            await _logger.Info(source, $"Record GapCertificationPdf creato con status PROCESSING",
+                $"ReportId: {id}, CertPdfId: {certPdf.Id}");
+
+            // 6. Avvia il task in background
+            var scopeFactory = HttpContext.RequestServices.GetRequiredService<IServiceScopeFactory>();
+
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    using var taskScope = scopeFactory.CreateScope();
+                    var service = taskScope.ServiceProvider.GetRequiredService<GapCertificationPdfService>();
+
+                    await _logger.Info(source, "BACKGROUND: Inizio generazione certificazione gap",
+                        $"ReportId: {id}");
+
+                    await service.GenerateAndSaveCertificationAsync(id);
+                }
+                catch (Exception bgEx)
+                {
+                    await _logger.Error(source, "BACKGROUND: Exception durante generazione certificazione",
+                        $"ReportId: {id}, Error: {bgEx.Message}");
+                }
+            });
+
+            // 7. Restituisci 202 Accepted
+            return Accepted(new
+            {
+                message = "Certificazione gap avviata in background",
                 reportId = id,
-                gapsCertified = result.GapsCertified,
-                averageConfidence = Math.Round(result.AverageConfidence, 1),
-                pdfHash = result.PdfHash,
-                message = $"Certificazione generata con successo per {result.GapsCertified} gap"
+                status = "PROCESSING"
             });
         }
         catch (Exception ex)
@@ -634,7 +767,8 @@ public class PdfReportsController(
     }
 
     /// <summary>
-    /// Download del PDF di certificazione gap.
+    /// Download del PDF di certificazione gap dal database.
+    /// Il PDF è immutabile e salvato nella tabella GapCertificationPdfs.
     /// </summary>
     [HttpGet("{id}/download-gap-certification")]
     public async Task<IActionResult> DownloadGapCertification(int id)
@@ -650,32 +784,31 @@ public class PdfReportsController(
             if (report == null)
                 return NotFound("Report non trovato");
 
-            // Verifica che esista una certificazione
-            var certification = await db.GapCertifications
-                .Where(gc => gc.PdfReportId == id && !string.IsNullOrEmpty(gc.CertificationHash))
-                .FirstOrDefaultAsync();
+            // Recupera la certificazione PDF dal database
+            var certPdf = await db.GapCertificationPdfs
+                .FirstOrDefaultAsync(c => c.PdfReportId == id && c.Status == "COMPLETED");
 
-            if (certification == null)
+            if (certPdf == null)
             {
                 return NotFound("Certificazione non trovata per questo report");
             }
 
-            // Rigenera il PDF (non viene salvato, solo generato on-demand)
-            var result = await _gapCertificationPdfService.GenerateCertificationPdfAsync(id);
-
-            if (!result.Success || result.PdfContent == null)
+            if (certPdf.PdfContent == null || certPdf.PdfContent.Length == 0)
             {
-                return StatusCode(500, "Errore durante la generazione del PDF di certificazione");
+                return NotFound("PDF di certificazione non disponibile");
             }
 
-            var fileName = $"PolarDrive_GapCertification_{id}_{report.ClientVehicle?.Vin}_{DateTime.Now:yyyyMMdd}.pdf";
+            var fileName = $"PolarDrive_GapCertification_{id}_{report.ClientVehicle?.Vin}_{certPdf.GeneratedAt:yyyyMMdd}.pdf";
 
             Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
             Response.Headers.Pragma = "no-cache";
-            if (!string.IsNullOrWhiteSpace(result.PdfHash))
-                Response.Headers.ETag = $"W/\"{result.PdfHash}\"";
+            if (!string.IsNullOrWhiteSpace(certPdf.PdfHash))
+                Response.Headers.ETag = $"W/\"{certPdf.PdfHash}\"";
 
-            return File(result.PdfContent, "application/pdf", fileName);
+            await _logger.Info(source, $"Download certificazione gap per report {id}",
+                $"Hash: {certPdf.PdfHash}, Size: {certPdf.PdfContent.Length} bytes");
+
+            return File(certPdf.PdfContent, "application/pdf", fileName);
         }
         catch (Exception ex)
         {

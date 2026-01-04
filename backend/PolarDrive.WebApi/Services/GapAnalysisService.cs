@@ -22,6 +22,16 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
     /// </summary>
     public async Task<List<GapAnalysisResult>> AnalyzeGapsForReportAsync(int pdfReportId)
     {
+        var (gaps, _, _) = await AnalyzeGapsForReportWithPeriodAsync(pdfReportId);
+        return gaps;
+    }
+
+    /// <summary>
+    /// Analizza tutti i gap per un report PDF specifico e restituisce anche il periodo effettivo usato.
+    /// Usa la stessa finestra temporale del PDF.
+    /// </summary>
+    public async Task<(List<GapAnalysisResult> gaps, DateTime periodStart, DateTime periodEnd)> AnalyzeGapsForReportWithPeriodAsync(int pdfReportId)
+    {
         const string source = "GapAnalysisService.AnalyzeGapsForReport";
 
         try
@@ -33,7 +43,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             if (report == null)
             {
                 await _logger.Warning(source, $"Report {pdfReportId} not found");
-                return [];
+                return ([], DateTime.Now, DateTime.Now);
             }
 
             // Calcola la finestra temporale esattamente come fa il PDF
@@ -51,7 +61,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             if (firstRecordTime == default)
             {
                 await _logger.Info(source, $"No data records found for vehicle {report.VehicleId}");
-                return [];
+                return ([], DateTime.Now, DateTime.Now);
             }
 
             // Usa la stessa logica del PDF per il periodo effettivo
@@ -68,12 +78,13 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             await _logger.Info(source, $"Analyzing gaps for report {pdfReportId}",
                 $"Period: {startTime:dd/MM/yyyy HH:mm} - {now:dd/MM/yyyy HH:mm} (aligned with PDF table)");
 
-            return await AnalyzeGapsAsync(report.VehicleId, startTime, now);
+            var gaps = await AnalyzeGapsAsync(report.VehicleId, startTime, now);
+            return (gaps, startTime, now);
         }
         catch (Exception ex)
         {
             await _logger.Error(source, $"Error analyzing gaps for report {pdfReportId}", ex.ToString());
-            return [];
+            return ([], DateTime.Now, DateTime.Now);
         }
     }
 

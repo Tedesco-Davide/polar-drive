@@ -21,6 +21,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
     public DbSet<ClientProfilePdf> ClientProfilePdfs => Set<ClientProfilePdf>();
     public DbSet<GapCertification> GapCertifications => Set<GapCertification>();
+    public DbSet<GapCertificationPdf> GapCertificationPdfs => Set<GapCertificationPdf>();
     public DbSet<FetchFailureLog> FetchFailureLogs => Set<FetchFailureLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -300,6 +301,35 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => new { e.VehicleId, e.AttemptedAt });
                 entity.HasIndex(e => e.FailureReason);
                 entity.HasIndex(e => e.AttemptedAt);
+            });
+
+            modelBuilder.Entity<GapCertificationPdf>(entity =>
+            {
+                entity.ToTable("GapCertificationPdfs");
+
+                entity.HasOne(e => e.PdfReport)
+                    .WithOne()
+                    .HasForeignKey<GapCertificationPdf>(e => e.PdfReportId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(e => e.PdfContent)
+                    .HasColumnType("VARBINARY(MAX)")
+                    .IsRequired(false);
+
+                entity.Property(e => e.PdfHash)
+                    .HasMaxLength(64)
+                    .IsRequired(false);
+
+                entity.Property(e => e.Status)
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+                entity.Property(e => e.AverageConfidence)
+                    .HasColumnType("FLOAT");
+
+                entity.HasIndex(e => e.PdfReportId).IsUnique();
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.PdfHash);
             });
         }
         catch (Exception ex)

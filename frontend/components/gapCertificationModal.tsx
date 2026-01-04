@@ -9,7 +9,7 @@ type Props = {
   reportId: number;
   isOpen: boolean;
   onClose: () => void;
-  onCertificationComplete: () => void;
+  onCertificationComplete: (reportId: number) => void;
   t: TFunction;
 };
 
@@ -30,9 +30,16 @@ export default function GapCertificationModal({
   useEffect(() => {
     if (isOpen) {
       document.body.classList.add("overflow-hidden");
+      // Reset stato quando si apre la modale
+      setAnalysisData(null);
+      setError(null);
+      setLoading(true);
       fetchGapAnalysis();
     } else {
       document.body.classList.remove("overflow-hidden");
+      // Reset stato quando si chiude la modale
+      setAnalysisData(null);
+      setError(null);
     }
     return () => document.body.classList.remove("overflow-hidden");
   }, [isOpen, reportId]);
@@ -41,7 +48,7 @@ export default function GapCertificationModal({
     setLoading(true);
     setError(null);
     try {
-      // Timeout allineato con backend (15 minuti)
+      // Timeout allineato con backend
       const TIMEOUT_MINUTES = 15;
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MINUTES * 60 * 1000);
@@ -88,10 +95,24 @@ export default function GapCertificationModal({
 
       const data = await res.json();
 
+      // 202 Accepted = certificazione avviata in background
+      if (res.status === 202) {
+        logFrontendEvent(
+          "GapCertificationModal",
+          "INFO",
+          "Gap certification started in background",
+          `ReportId: ${reportId}, Status: ${data.status}`
+        );
+        // Notifica il parent che chiuderà la modale e aggiornerà lo stato
+        onCertificationComplete(reportId);
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
 
+      // Fallback per risposta 200 (non dovrebbe più accadere)
       logFrontendEvent(
         "GapCertificationModal",
         "INFO",
@@ -99,15 +120,7 @@ export default function GapCertificationModal({
         `ReportId: ${reportId}, GapsCertified: ${data.gapsCertified}`
       );
 
-      alert(
-        t("admin.gapCertification.certificationSuccess", {
-          gapsCertified: data.gapsCertified,
-          averageConfidence: data.averageConfidence,
-        })
-      );
-
-      onCertificationComplete();
-      onClose();
+      onCertificationComplete(reportId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
@@ -335,12 +348,6 @@ export default function GapCertificationModal({
         </div>
 
         <div className="border-t border-gray-200 dark:border-gray-600 px-6 py-4 flex gap-4 bg-gray-50 dark:bg-gray-900">
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
-          >
-            {t("admin.cancelEditRow")}
-          </button>
           {analysisData && analysisData.totalGaps > 0 && (
             <button
               onClick={handleCertify}
@@ -357,6 +364,12 @@ export default function GapCertificationModal({
               )}
             </button>
           )}
+          <button
+            onClick={onClose}
+            className="px-6 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
+          >
+            {t("admin.cancelEditRow")}
+          </button>
         </div>
       </div>
     </div>

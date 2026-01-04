@@ -26,6 +26,11 @@ export interface PdfReport {
   isDownloadable: boolean;
   status: string;
   pdfHash?: string;
+
+  // Gap Certification info
+  gapCertificationStatus?: string | null;
+  gapCertificationPdfHash?: string | null;
+  hasGapCertificationPdf?: boolean;
 }
 
 // ✅ Interface per il controllo pre-download

@@ -2,7 +2,7 @@ import { TFunction } from "i18next";
 import { PdfReport } from "@/types/reportInterfaces";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
-import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download } from "lucide-react";
+import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download, FileLock } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
 import Chip from "@/components/chip";
 import AdminLoader from "@/components/adminLoader";
@@ -24,6 +24,14 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [selectedReportForCertification, setSelectedReportForCertification] =
     useState<number | null>(null);
   const [downloadingCertId, setDownloadingCertId] = useState<number | null>(null);
+
+  // Stato per certificazione gap in corso (globale)
+  const [gapCertProcessing, setGapCertProcessing] = useState<{
+    hasProcessing: boolean;
+    reportId: number | null;
+    companyName: string | null;
+    vehicleVin: string | null;
+  } | null>(null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -67,23 +75,45 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     }
   };
 
+  // Fetch stato certificazione gap in corso
+  const fetchGapCertStatus = async () => {
+    try {
+      const res = await fetch("/api/pdfreports/gap-certification-processing");
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      setGapCertProcessing(data);
+    } catch (err) {
+      logFrontendEvent(
+        "AdminPdfReports",
+        "ERROR",
+        "Failed to fetch gap cert status",
+        String(err)
+      );
+    }
+  };
+
   useEffect(() => {
     fetchReports(currentPage, query);
+    fetchGapCertStatus();
   }, [currentPage, query]);
 
   useEffect(() => {
     const processingReports = localReports.filter(
       (r) => r.status === "PROCESSING" || r.status === "REGENERATING"
     );
+    const hasGapCertInProgress = gapCertProcessing?.hasProcessing || false;
+
+    // Polling più frequente se c'è qualcosa in corso
     const interval = setInterval(
       () => {
         fetchReports(currentPage, query);
+        fetchGapCertStatus();
       },
-      processingReports.length > 0 ? 10000 : 60000
+      processingReports.length > 0 || hasGapCertInProgress ? 10000 : 60000
     );
 
     return () => clearInterval(interval);
-  }, [localReports, currentPage, query]);
+  }, [localReports, currentPage, query, gapCertProcessing?.hasProcessing]);
 
   const handleSearch = (searchValue: string) => {
     setQuery(searchValue);
@@ -378,9 +408,22 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     }
   };
 
-  // Gestione completamento certificazione - refresh della lista report
-  const handleCertificationComplete = async () => {
-    await fetchReports(currentPage, query);
+  // Gestione completamento certificazione - aggiorna stato immediatamente poi refresh
+  const handleCertificationComplete = (reportId: number) => {
+    // 1. Immediatamente aggiorna lo stato locale per disabilitare altri bottoni
+    setGapCertProcessing({
+      hasProcessing: true,
+      reportId: reportId,
+      companyName: null,
+      vehicleVin: null,
+    });
+
+    // 2. Chiudi la modale immediatamente
+    setSelectedReportForCertification(null);
+
+    // 3. Poi avvia il refresh in background (non bloccante)
+    fetchReports(currentPage, query);
+    fetchGapCertStatus();
   };
 
   return (
@@ -391,6 +434,11 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
           {t("admin.vehicleReports.tableHeader")} ➜ {totalCount}{" "}
           {t("admin.vehicleReports.tableHeaderTotals")}
+          {gapCertProcessing?.hasProcessing && (
+            <span className="ml-4 text-purple-600 dark:text-purple-400 animate-pulse">
+              ➜ {t("admin.gapCertification.processingInProgress", { id: gapCertProcessing.reportId })}
+            </span>
+          )}
         </h1>
       </div>
 
@@ -452,7 +500,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     {downloadingId === report.id ? (
                       <AdminLoader inline />
                     ) : (
-                      <FileBadge size={16} />
+                      <FileLock size={16} />
                     )}
                   </button>
 
@@ -469,24 +517,58 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     <NotebookPen size={16} />
                   </button>
 
+                  {/* Bottone Certificazione GAP - condizionale */}
                   {!isRegeneratable && report.pdfHash && report.hasPdfFile && (
-                    <button
-                      className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
-                      disabled={
-                        downloadingId === report.id ||
-                        report.status === "PROCESSING" ||
-                        report.status === "REGENERATING"
-                      }
-                      onClick={() => {
-                        const confirmMessage = t("admin.gapCertification.openModalConfirmation");
-                        if (confirm(confirmMessage)) {
-                          setSelectedReportForCertification(report.id);
-                        }
-                      }}
-                      title={t("admin.gapCertification.openCertificationModal")}
-                    >
-                      <ShieldCheck size={16} />
-                    </button>
+                    <>
+                      {/* Se ha certificazione COMPLETED → Download verde */}
+                      {report.hasGapCertificationPdf && report.gapCertificationStatus === "COMPLETED" ? (
+                        <button
+                          className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:opacity-50"
+                          disabled={downloadingCertId === report.id}
+                          onClick={() => handleDownloadCertification(report.id)}
+                          title={t("admin.gapCertification.downloadCertification")}
+                        >
+                          {downloadingCertId === report.id ? (
+                            <AdminLoader inline />
+                          ) : (
+                            <FileBadge size={16} />
+                          )}
+                        </button>
+                      ) : report.gapCertificationStatus === "PROCESSING" ? (
+                        /* Se in PROCESSING → Loader viola */
+                        <button
+                          className="p-2 bg-purple-500 text-softWhite rounded animate-pulse"
+                          disabled
+                          title={t("admin.gapCertification.certificationInProgress")}
+                        >
+                          <AdminLoader inline />
+                        </button>
+                      ) : (
+                        /* Altrimenti → Apri modale (disabilitato se altro in corso) */
+                        <button
+                          className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
+                          disabled={
+                            gapCertProcessing?.hasProcessing ||
+                            downloadingId === report.id ||
+                            report.status === "PROCESSING" ||
+                            report.status === "REGENERATING"
+                          }
+                          onClick={() => {
+                            const confirmMessage = t("admin.gapCertification.openModalConfirmation");
+                            if (confirm(confirmMessage)) {
+                              setSelectedReportForCertification(report.id);
+                            }
+                          }}
+                          title={
+                            gapCertProcessing?.hasProcessing
+                              ? t("admin.gapCertification.anotherInProgress", { id: gapCertProcessing.reportId })
+                              : t("admin.gapCertification.openCertificationModal")
+                          }
+                        >
+                          <ShieldCheck size={16} />
+                        </button>
+                      )}
+                    </>
                   )}
 
                   {isRegeneratable && (

@@ -61,13 +61,88 @@ public class GapCertificationPdfService(
             // 3. Genera l'HTML della certificazione
             var htmlContent = GenerateCertificationHtml(report, certifications);
 
-            // 4. Converti in PDF
-            var pdfBytes = await _pdfGenerationService.ConvertHtmlToPdfAsync(htmlContent, report);
+            // 4. Prepara le opzioni PDF con header/footer coerenti con gli stili di stampa PDF attuali
+            var fontStyles = GapCertificationTemplate.GetFontStyles();
+            var vehicleVin = report.ClientVehicle?.Vin ?? "N/A";
+            var pdfOptions = new PdfConversionOptions
+            {
+                HeaderTemplate = $@"
+                    <html>
+                    <head>
+                        <style>
+                            {fontStyles}
+                            body {{
+                                margin: 0;
+                                padding: 0;
+                                width: 100%;
+                                height: 100%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-family: 'Satoshi', 'Noto Color Emoji', sans-serif;
+                                letter-spacing: normal;
+                                word-spacing: normal;
+                            }}
+                            .header-content {{
+                                font-size: 10px;
+                                color: #ccc;
+                                text-align: center;
+                                border-bottom: 1px solid #ccc;
+                                padding-bottom: 5px;
+                                width: 100%;
+                                letter-spacing: normal;
+                                word-spacing: normal;
+                            }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class='header-content'>Gap Certification - {vehicleVin} - {DateTime.Now:yyyy-MM-dd HH:mm}</div>
+                    </body>
+                    </html>",
+                FooterTemplate = $@"
+                    <html>
+                    <head>
+                        <style>
+                            {fontStyles}
+                            body {{
+                                margin: 0;
+                                padding: 0;
+                                width: 100%;
+                                height: 100%;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                font-family: 'Satoshi', 'Noto Color Emoji', sans-serif;
+                                letter-spacing: normal;
+                                word-spacing: normal;
+                            }}
+                            .footer-content {{
+                                font-size: 10px;
+                                color: #ccc;
+                                text-align: center;
+                                border-top: 1px solid #ccc;
+                                padding-top: 5px;
+                                width: 100%;
+                                letter-spacing: normal;
+                                word-spacing: normal;
+                            }}
+                        </style>
+                    </head>
+                    <body>
+                        <div class='footer-content'>
+                            Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Gap Certification
+                        </div>
+                    </body>
+                    </html>"
+            };
 
-            // 5. Genera hash del PDF
+            // 5. Converti in PDF con header/footer personalizzati
+            var pdfBytes = await _pdfGenerationService.ConvertHtmlToPdfAsync(htmlContent, report, pdfOptions);
+
+            // 6. Genera hash del PDF
             var pdfHash = GenericHelpers.ComputeContentHash(pdfBytes);
 
-            // 6. Aggiorna le certificazioni con l'hash
+            // 7. Aggiorna le certificazioni con l'hash
             foreach (var cert in certifications)
             {
                 cert.CertificationHash = pdfHash;
@@ -94,6 +169,80 @@ public class GapCertificationPdfService(
                 Success = false,
                 ErrorMessage = $"Error while generating: {ex.Message}"
             };
+        }
+    }
+
+    /// <summary>
+    /// Genera e salva il PDF di certificazione nella tabella GapCertificationPdfs.
+    /// Questo metodo è pensato per essere eseguito in background.
+    /// Una volta completato, il PDF diventa immutabile.
+    /// </summary>
+    public async Task GenerateAndSaveCertificationAsync(int pdfReportId)
+    {
+        const string source = "GapCertificationPdfService.GenerateAndSaveCertification";
+
+        try
+        {
+            await _logger.Info(source, $"Starting gap certification generation for report {pdfReportId}");
+
+            // 1. Genera il PDF usando il metodo esistente
+            var result = await GenerateCertificationPdfAsync(pdfReportId);
+
+            // 2. Recupera il record GapCertificationPdf (già creato dal controller con status PROCESSING)
+            var certPdf = await _db.GapCertificationPdfs
+                .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId);
+
+            if (certPdf == null)
+            {
+                await _logger.Error(source, $"GapCertificationPdf record not found for report {pdfReportId}");
+                return;
+            }
+
+            if (result.Success && result.PdfContent != null)
+            {
+                // 3. Salva il PDF e aggiorna lo stato a COMPLETED
+                certPdf.PdfContent = result.PdfContent;
+                certPdf.PdfHash = result.PdfHash;
+                certPdf.Status = "COMPLETED";
+                certPdf.GeneratedAt = DateTime.Now;
+                certPdf.GapsCertified = result.GapsCertified;
+                certPdf.AverageConfidence = result.AverageConfidence;
+
+                await _db.SaveChangesAsync();
+
+                await _logger.Info(source, $"Gap certification COMPLETED for report {pdfReportId}",
+                    $"Gaps: {result.GapsCertified}, AvgConfidence: {result.AverageConfidence:F1}%, Hash: {result.PdfHash}");
+            }
+            else
+            {
+                // 4. In caso di errore, imposta lo stato ERROR
+                certPdf.Status = "ERROR";
+                await _db.SaveChangesAsync();
+
+                await _logger.Error(source, $"Gap certification FAILED for report {pdfReportId}",
+                    result.ErrorMessage ?? "Unknown error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Exception during gap certification for report {pdfReportId}", ex.ToString());
+
+            // Prova a impostare lo stato ERROR
+            try
+            {
+                var certPdf = await _db.GapCertificationPdfs
+                    .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId);
+
+                if (certPdf != null)
+                {
+                    certPdf.Status = "ERROR";
+                    await _db.SaveChangesAsync();
+                }
+            }
+            catch
+            {
+                // Ignora errori nel tentativo di salvare lo stato ERROR
+            }
         }
     }
 
@@ -165,7 +314,7 @@ public class GapCertificationPdfService(
         sb.AppendLine("<li>Durata del gap temporale (15%)</li>");
         sb.AppendLine("<li>Affidabilità storica complessiva (10%)</li>");
         sb.AppendLine("</ul>");
-        sb.AppendLine("<p class='important'>IMPORTANTE: Questa certificazione si basa su inferenze statistiche e NON costituisce prova diretta dell'utilizzo effettivo. I dati mancanti non sono stati ricostruiti, ma la loro assenza è stata analizzata nel contesto dei dati disponibili.</p>");
+        sb.AppendLine("<p class='important'>IMPORTANTE: Questa certificazione si basa su inferenze statistiche e non costituisce prova diretta dell'utilizzo effettivo. I dati mancanti non sono stati ricostruiti, ma la loro assenza è stata analizzata nel contesto dei dati disponibili.</p>");
         sb.AppendLine("</div>");
 
         // Tabella gap
@@ -219,7 +368,7 @@ public class GapCertificationPdfService(
         sb.AppendLine("<div class='signature-section'>");
         sb.AppendLine($"<p><strong>Hash documento (SHA-256):</strong></p>");
         sb.AppendLine($"<p class='hash'>{certHash}</p>");
-        sb.AppendLine($"<p><strong>Generato automaticamente da PolarDrive™</strong></p>");
+        sb.AppendLine($"<p><strong>Generato manualmente da PolarDrive™</strong></p>");
         sb.AppendLine($"<p>© {DateTime.Now.Year} DataPolar S.r.l. - Tutti i diritti riservati</p>");
         sb.AppendLine("</div>");
         sb.AppendLine("</div>");

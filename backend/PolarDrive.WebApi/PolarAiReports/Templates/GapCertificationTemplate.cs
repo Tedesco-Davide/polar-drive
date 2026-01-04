@@ -6,12 +6,54 @@ namespace PolarDrive.WebApi.PolarAiReports.Templates;
 public static class GapCertificationTemplate
 {
     /// <summary>
-    /// Restituisce il CSS per il documento di certificazione
+    /// Restituisce gli stili coerenti con gli stili di stampa PDF attuali
     /// </summary>
-    public static string GetCss() => @"
+    public static string GetFontStyles()
+    {
+        // Path assoluto nel container Docker
+        var basePath = "/app/wwwroot/fonts/satoshi";
+
+        var satoshiRegular = File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
+        var satoshiBold = File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
+        var satoshiBlack = File.ReadAllText(Path.Combine(basePath, "Satoshi-Black.b64"));
+
+        return $@"
+            @font-face {{
+                font-family: 'Satoshi';
+                src: url(data:font/woff2;base64,{satoshiRegular}) format('woff2');
+                font-weight: 400;
+                font-style: normal;
+                font-display: swap;
+            }}
+            @font-face {{
+                font-family: 'Satoshi';
+                src: url(data:font/woff2;base64,{satoshiBold}) format('woff2');
+                font-weight: 700;
+                font-style: normal;
+                font-display: swap;
+            }}
+            @font-face {{
+                font-family: 'Satoshi';
+                src: url(data:font/woff2;base64,{satoshiBlack}) format('woff2');
+                font-weight: 800;
+                font-style: normal;
+                font-display: swap;
+            }}
+        ";
+    }
+
+    /// <summary>
+    /// Restituisce il CSS per il documento di certificazione (include font Satoshi)
+    /// </summary>
+    public static string GetCss() => GetFontStyles() + BaseCss;
+
+    /// <summary>
+    /// CSS base per il documento di certificazione
+    /// </summary>
+    private const string BaseCss = @"
         html, body {
             font-size: 12px !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Satoshi', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
             margin: 0;
             padding: 0;
             line-height: 1.5;

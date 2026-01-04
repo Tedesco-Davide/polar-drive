@@ -21,4 +21,9 @@ public class PdfReportDTO
     public double MonitoringDurationHours { get; set; }
     public string ReportType { get; set; } = string.Empty;
     public string PdfHash { get; set; } = string.Empty;
+
+    // Gap Certification info
+    public string? GapCertificationStatus { get; set; }
+    public string? GapCertificationPdfHash { get; set; }
+    public bool HasGapCertificationPdf { get; set; }
 }
