@@ -147,6 +147,15 @@ export default function AdminClientVehicleEditForm({
 
       if (!response.ok) {
         const errorText = await response.text();
+        try {
+          const json = JSON.parse(errorText);
+          if (json.errorCode === "MOBILE_NUMBER_ALREADY_USED_BY_ANOTHER_COMPANY") {
+            alert(t("admin.mobileNumberAlreadyUsedByAnotherCompany"));
+            return;
+          }
+        } catch {
+          // Not JSON, continue with generic error
+        }
         throw new Error(errorText || `HTTP ${response.status}`);
       }
 

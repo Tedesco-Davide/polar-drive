@@ -36,7 +36,7 @@ public class ClientVehicle
 
     public string? ReferentName { get; set; }
 
-    public string? VehicleMobileNumber { get; set; }
+    public string VehicleMobileNumber { get; set; } = string.Empty;
 
     public string? ReferentEmail { get; set; }
 

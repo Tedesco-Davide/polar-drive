@@ -31,6 +31,7 @@
   "admin.openNotesModal": "Open notes management",
   "admin.vehicleAlreadyAssociatedToSameCompany": "This vehicle is already associated with this company",
   "admin.vehicleAlreadyAssociatedToAnotherCompany": "This vehicle is already associated to another company",
+  "admin.mobileNumberAlreadyUsedByAnotherCompany": "WARNING! This mobile number is already used by another company. Each number can only be associated with one company.",
   "admin.duplicatePdfHash": "WARNING! This consent ZIP file has already been uploaded previously. The same consent cannot be inserted multiple times.",
   "admin.fileUploadChanged": "WARNING! The selected file was modified or removed during upload. Please select the file again and retry.",
   "admin.genericError": "WARNING! An unexpected error occurred during submission: ",

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
@@ -154,6 +155,19 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
         }
 
+        // Mobile number uniqueness across companies
+        var normalizedMobile = NormalizePhoneNumber(dto.VehicleMobileNumber);
+        var existingMobileVehicle = await db.ClientVehicles
+            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == normalizedMobile && v.ClientCompanyId != dto.ClientCompanyId);
+
+        if (existingMobileVehicle != null)
+        {
+            await _logger.Warning("ClientVehiclesController.Post",
+                "Mobile number already used by another company.",
+                $"Mobile: {normalizedMobile}, ExistingCompanyId: {existingMobileVehicle.ClientCompanyId}");
+            return BadRequest(new { errorCode = ErrorCodes.MobileNumberAlreadyUsedByAnotherCompany });
+        }
+
         var entity = new ClientVehicle
         {
             ClientCompanyId = dto.ClientCompanyId,
@@ -271,6 +285,19 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             return NotFound("SERVER ERROR → NOT FOUND: Client Company not found!");
         }
 
+        // Mobile number uniqueness across companies (exclude current vehicle)
+        var normalizedMobile = NormalizePhoneNumber(dto.VehicleMobileNumber);
+        var existingMobileVehicle = await db.ClientVehicles
+            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == normalizedMobile && v.ClientCompanyId != dto.ClientCompanyId && v.Id != id);
+
+        if (existingMobileVehicle != null)
+        {
+            await _logger.Warning("ClientVehiclesController.Put",
+                "Mobile number already used by another company.",
+                $"Mobile: {normalizedMobile}, ExistingCompanyId: {existingMobileVehicle.ClientCompanyId}");
+            return BadRequest(new { errorCode = ErrorCodes.MobileNumberAlreadyUsedByAnotherCompany });
+        }
+
         vehicle.Vin = dto.Vin;
         vehicle.FuelType = dto.FuelType;
         vehicle.Brand = dto.Brand;
@@ -300,7 +327,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
     /// Normalizza il numero di telefono rimuovendo spazi e caratteri non numerici
     /// e sostituendo il prefisso internazionale 00 con +. Non aggiunge prefissi nazionali.
     /// </summary>
-    private static string? NormalizePhoneNumber(string? phoneNumber)
+    private static string NormalizePhoneNumber(string phoneNumber)
     {
         if (string.IsNullOrWhiteSpace(phoneNumber))
             return phoneNumber;
@@ -309,7 +336,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
 
         // Se inizia con 00, sostituisce con +
         if (trimmed.StartsWith("00"))
-            trimmed = "+" + trimmed.Substring(2);
+            trimmed = string.Concat("+", trimmed.AsSpan(2));
 
         // Rimuove spazi, trattini e parentesi
         trimmed = System.Text.RegularExpressions.Regex.Replace(trimmed, @"[\s\-\(\)]", "");

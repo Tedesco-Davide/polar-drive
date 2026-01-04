@@ -31,6 +31,7 @@
   "admin.openNotesModal": "Apri gestione note",
   "admin.vehicleAlreadyAssociatedToSameCompany": "Questo veicolo è già associato a questa azienda",
   "admin.vehicleAlreadyAssociatedToAnotherCompany": "Questo veicolo è già associato ad un'altra azienda",
+  "admin.mobileNumberAlreadyUsedByAnotherCompany": "ATTENZIONE! Questo numero di cellulare è già utilizzato da un'altra azienda. Ogni numero può essere associato ad una sola azienda.",
   "admin.duplicatePdfHash": "ATTENZIONE! Questo file ZIP di consenso è già stato caricato in precedenza. Non è possibile inserire lo stesso consenso più volte.",
   "admin.fileUploadChanged": "ATTENZIONE! Il file selezionato è stato modificato o rimosso durante il caricamento. Seleziona nuovamente il file e riprova.",
   "admin.genericError": "ATTENZIONE! Si è verificato un errore imprevisto durante l'inserimento: ",

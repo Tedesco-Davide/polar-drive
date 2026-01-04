@@ -64,6 +64,19 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext) : Co
                 return BadRequest(new { errorCode });
             }
 
+            // === Mobile number uniqueness across companies ===
+            var existingMobileVehicle = await _dbContext.ClientVehicles
+                .FirstOrDefaultAsync(v => v.VehicleMobileNumber == request.VehicleMobileNumber && v.ClientCompanyId != company.Id);
+
+            if (existingMobileVehicle != null)
+            {
+                await _logger.Warning("AdminFullClientInsertController.Post",
+                    "Mobile number already used by another company.",
+                    $"Mobile: {request.VehicleMobileNumber}, ExistingCompanyId: {existingMobileVehicle.ClientCompanyId}");
+                await transaction.RollbackAsync();
+                return BadRequest(new { errorCode = ErrorCodes.MobileNumberAlreadyUsedByAnotherCompany });
+            }
+
             // === Create Vehicle (inactive, awaiting OAuth) ===
             var vehicle = new ClientVehicle
             {

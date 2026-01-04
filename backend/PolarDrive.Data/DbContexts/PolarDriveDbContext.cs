@@ -39,6 +39,10 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
             {
                 entity.HasIndex(e => e.Vin).IsUnique();
 
+                entity.Property(e => e.VehicleMobileNumber)
+                    .IsRequired()
+                    .HasMaxLength(15);
+
                 entity.HasOne(e => e.ClientCompany)
                     .WithMany(cc => cc.ClientVehicles)
                     .HasForeignKey(e => e.ClientCompanyId)

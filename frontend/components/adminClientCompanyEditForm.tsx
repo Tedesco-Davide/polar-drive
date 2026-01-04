@@ -181,6 +181,16 @@ export default function AdminClientCompanyEditForm({
         );
 
         if (!updateResponse.ok) {
+          const errorText = await updateResponse.text();
+          try {
+            const json = JSON.parse(errorText);
+            if (json.errorCode === "MOBILE_NUMBER_ALREADY_USED_BY_ANOTHER_COMPANY") {
+              alert(t("admin.mobileNumberAlreadyUsedByAnotherCompany"));
+              return;
+            }
+          } catch {
+            // Not JSON, continue with generic error
+          }
           throw new Error(
             "Failed to update vehicle. Status: " + updateResponse.status
           );

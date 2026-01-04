@@ -247,7 +247,6 @@ export default function AdminMainWorkflowInputForm({
             }}
             dateFormat="dd/MM/yyyy"
             placeholderText="dd/MM/yyyy"
-            withPortal
           />
         </label>
         {/* Tipo Carburante */}

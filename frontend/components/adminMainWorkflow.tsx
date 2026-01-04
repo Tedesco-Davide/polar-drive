@@ -294,6 +294,9 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
           case "INVALID_ZIP_FORMAT":
             alert(t("admin.validation.invalidZipType"));
             return;
+          case "MOBILE_NUMBER_ALREADY_USED_BY_ANOTHER_COMPANY":
+            alert(t("admin.mobileNumberAlreadyUsedByAnotherCompany"));
+            return;
           default:
             alert(`${t("admin.genericError")} ${errorCode}`);
             return;

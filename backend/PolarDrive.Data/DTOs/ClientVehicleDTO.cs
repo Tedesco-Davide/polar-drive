@@ -15,6 +15,6 @@ public class ClientVehicleDTO
     public string? FirstActivationAt { get; set; }
     public string? LastDeactivationAt { get; set; }
     public string? ReferentName { get; set; }
-    public string? VehicleMobileNumber { get; set; }
+    public string VehicleMobileNumber { get; set; } = string.Empty;
     public string? ReferentEmail { get; set; }
 }
