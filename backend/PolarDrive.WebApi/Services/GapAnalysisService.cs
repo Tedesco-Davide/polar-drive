@@ -2,7 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
-using static PolarDrive.WebApi.Constants.CommonConstants;
+using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.Helpers;
 
 namespace PolarDrive.WebApi.Services;
@@ -49,7 +49,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             // Calcola la finestra temporale esattamente come fa il PDF
             // (vedi DataPolarCertification.GenerateDetailedLogTableAsync)
             var now = DateTime.Now;
-            var maxStartTime = now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+            var maxStartTime = now.AddHours(-AppConfig.MONTHLY_HOURS_THRESHOLD);
 
             // Trova il primo record effettivo del veicolo
             var firstRecordTime = await _db.VehiclesData
@@ -268,17 +268,17 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
 
             if (factors.IsTechnicalFailure)
             {
-                technicalBonus = GAP_ANALYSIS_WEIGHT_TECH_PROBLEM;
+                technicalBonus = AppConfig.GAP_ANALYSIS_WEIGHT_TECH_PROBLEM;
             }
         }
 
         // Calcola confidenza totale
         double confidence =
-            (continuityScore * GAP_ANALYSIS_WEIGHT_CONTINUITY * 100) +
-            (batteryScore * GAP_ANALYSIS_WEIGHT_BATTERY * 100) +
-            (patternScore * GAP_ANALYSIS_WEIGHT_PATTERN * 100) +
-            (gapLengthScore * GAP_ANALYSIS_WEIGHT_GAP_LENGTH * 100) +
-            (historicalScore * GAP_ANALYSIS_WEIGHT_HISTORICAL * 100) +
+            (continuityScore * AppConfig.GAP_ANALYSIS_WEIGHT_CONTINUITY * 100) +
+            (batteryScore * AppConfig.GAP_ANALYSIS_WEIGHT_BATTERY * 100) +
+            (patternScore * AppConfig.GAP_ANALYSIS_WEIGHT_PATTERN * 100) +
+            (gapLengthScore * AppConfig.GAP_ANALYSIS_WEIGHT_GAP_LENGTH * 100) +
+            (historicalScore * AppConfig.GAP_ANALYSIS_WEIGHT_HISTORICAL * 100) +
             technicalBonus +
             kmBonus;
 
@@ -363,10 +363,10 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
                 var kmDelta = nextOdometer.Value - prevOdometer.Value;
                 factors.OdometerDelta = kmDelta;
 
-                // Se il veicolo ha percorso almeno GAP_ANALYSIS_KM_THRESHOLD km, applica bonus
-                if (kmDelta >= GAP_ANALYSIS_KM_THRESHOLD)
+                // Se il veicolo ha percorso almeno AppConfig.GAP_ANALYSIS_KM_THRESHOLD km, applica bonus
+                if (kmDelta >= AppConfig.GAP_ANALYSIS_KM_THRESHOLD)
                 {
-                    kmBonus = GAP_ANALYSIS_KM_BONUS;
+                    kmBonus = AppConfig.GAP_ANALYSIS_KM_BONUS;
                 }
             }
 
@@ -541,7 +541,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
         try
         {
             // Analisi storica in base ad un periodo parametrizzato
-            var historicalDaysAgo = DateTime.Now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+            var historicalDaysAgo = DateTime.Now.AddHours(-AppConfig.MONTHLY_HOURS_THRESHOLD);
             var records = await _db.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= historicalDaysAgo)
                 .Select(vd => vd.Timestamp)
@@ -564,7 +564,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             pattern.TypicalHours = hourCounts;
 
             // Calcola affidabilità complessiva (quante ore su TOT ore, hanno dati)
-            var expectedHours = Math.Min(MONTHLY_HOURS_THRESHOLD, (DateTime.Now - records.Min()).TotalHours);
+            var expectedHours = Math.Min(AppConfig.MONTHLY_HOURS_THRESHOLD, (DateTime.Now - records.Min()).TotalHours);
             var actualHours = records.Select(r => new DateTime(r.Year, r.Month, r.Day, r.Hour, 0, 0)).Distinct().Count();
 
             pattern.OverallReliability = expectedHours > 0 ? Math.Min(1, actualHours / expectedHours) : 0.5;
@@ -611,7 +611,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             parts.Add("progressione batteria coerente con utilizzo normale");
 
         // Km percorsi
-        if (factors.OdometerDelta.HasValue && factors.OdometerDelta.Value >= GAP_ANALYSIS_KM_THRESHOLD)
+        if (factors.OdometerDelta.HasValue && factors.OdometerDelta.Value >= AppConfig.GAP_ANALYSIS_KM_THRESHOLD)
             parts.Add($"veicolo in movimento ({factors.OdometerDelta.Value:F1} km percorsi)");
 
         var justification = parts.Count > 0

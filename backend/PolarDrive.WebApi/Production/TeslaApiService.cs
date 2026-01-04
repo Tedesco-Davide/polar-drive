@@ -2,6 +2,7 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.Constants;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Production;
@@ -35,7 +36,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
 
         // ✅ CORREZIONE: Include veicoli in grace period (solo IsFetchingDataFlag)
         var fetchingVehicles = await _db.ClientVehicles
-            .Where(v => v.ClientOAuthAuthorized && v.IsFetchingDataFlag && v.Brand.ToLower() == VehicleBrand.TESLA)  // ← Rimosso IsActiveFlag
+            .Where(v => v.ClientOAuthAuthorized && v.IsFetchingDataFlag && v.Brand.ToLower() == VehicleConstants.VehicleBrand.TESLA)  // ← Rimosso IsActiveFlag
             .Include(v => v.ClientCompany)
             .ToListAsync();
 
@@ -106,7 +107,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
         // ✅ CORREZIONE: Cerca veicolo solo per VIN e brand, non per IsActiveFlag
         var vehicle = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .FirstOrDefaultAsync(v => v.Vin == vin && v.Brand.Equals(VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase));
+            .FirstOrDefaultAsync(v => v.Vin == vin && v.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase));
 
         if (vehicle == null)
         {
@@ -192,30 +193,30 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
         {
             // Statistiche separate per grace period
             var activeVehicles = await _db.ClientVehicles
-                .CountAsync(v => v.Brand.Equals(VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase) &&
+                .CountAsync(v => v.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase) &&
                                v.IsActiveFlag && v.IsFetchingDataFlag);
 
             var fetchingVehicles = await _db.ClientVehicles
-                .CountAsync(v => v.Brand.Equals(VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase) &&
+                .CountAsync(v => v.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase) &&
                                v.IsFetchingDataFlag);
 
             var gracePeriodVehicles = await _db.ClientVehicles
-                .CountAsync(v => v.Brand.Equals(VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase) &&
+                .CountAsync(v => v.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase) &&
                                !v.IsActiveFlag && v.IsFetchingDataFlag);
 
             var lastFetch = await _db.ClientVehicles
-                .Where(v => v.Brand.Equals(VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase) &&
+                .Where(v => v.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase) &&
                            v.IsFetchingDataFlag && v.LastDataUpdate.HasValue)
                 .MaxAsync(v => (DateTime?)v.LastDataUpdate) ?? DateTime.MinValue;
 
             var totalDataRecords = await _db.VehiclesData
                 .CountAsync(vd => _db.ClientVehicles.Any(cv => cv.Id == vd.VehicleId &&
-                    cv.Brand.Equals(VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase)));
+                    cv.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase)));
 
             var recentDataRecords = await _db.VehiclesData
                 .CountAsync(vd => vd.Timestamp >= DateTime.Now.AddHours(-24) &&
                                  _db.ClientVehicles.Any(cv => cv.Id == vd.VehicleId &&
-                                    cv.Brand.Equals(VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase)));
+                                    cv.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase)));
 
             var isHealthy = await IsServiceAvailableAsync();
 

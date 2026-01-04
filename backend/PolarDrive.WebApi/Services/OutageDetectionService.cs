@@ -22,29 +22,40 @@ public class OutageDetectionService(
     private readonly IConfiguration _cfg = cfg;
 
     private TimeSpan _vehicleInactivityThreshold => _env.IsDevelopment()
-        ? TimeSpan.FromMinutes(DEV_GRACE_PERIOD_INACTIVITY_TRESHOLD_MINUTES)
-        : TimeSpan.FromHours(PROD_GRACE_PERIOD_INACTIVITY_TRESHOLD_HOURS);
+        ? TimeSpan.FromMinutes(AppConfig.DEV_GRACE_PERIOD_INACTIVITY_TRESHOLD_MINUTES)
+        : TimeSpan.FromHours(AppConfig.PROD_GRACE_PERIOD_INACTIVITY_TRESHOLD_HOURS);
 
     private TimeSpan _gracePeriod => _env.IsDevelopment()
-        ? TimeSpan.FromMinutes(DEV_GRACE_PERIOD_MINUTES)
-        : TimeSpan.FromHours(PROD_GRACE_PERIOD_HOURS);
+        ? TimeSpan.FromMinutes(AppConfig.DEV_GRACE_PERIOD_MINUTES)
+        : TimeSpan.FromHours(AppConfig.PROD_GRACE_PERIOD_HOURS);
         
     private readonly TimeSpan _fleetApiTimeout = TimeSpan.FromSeconds(60);
 
     private readonly int _maxRetries = 3;
 
-    private string GetVehicleListEndpoint()
+    private string GetVehicleListEndpoint(string brand = VehicleConstants.VehicleBrand.TESLA)
     {
-        return _env.IsDevelopment()
-            ? GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])
-            : "https://fleet-api.tesla.com/api/1/vehicles";
+        if (_env.IsDevelopment())
+            return GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"]);
+
+        var brandConfig = VehicleConstants.BrandConfigs.GetValueOrDefault(brand);
+        if (brandConfig?.Api == null)
+            throw new ArgumentException($"No API config found for brand: {brand}");
+
+        return $"{brandConfig.Api.BaseUrl}{brandConfig.Api.VehicleListEndpoint}";
     }
 
-    private string GetVehicleDataEndpoint(string vehicleId)
-    {    
-        return _env.IsDevelopment()
-            ? $"{GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])}api/1/vehicles/{vehicleId}/vehicle_data"
-            : $"https://fleet-api.tesla.com/api/1/vehicles/{vehicleId}/vehicle_data";
+    private string GetVehicleDataEndpoint(string vehicleId, string brand = VehicleConstants.VehicleBrand.TESLA)
+    {
+        if (_env.IsDevelopment())
+            return $"{GenericHelpers.EnsureTrailingSlash(_cfg["WebAPI:BaseUrl"])}api/1/vehicles/{vehicleId}/vehicle_data";
+
+        var brandConfig = VehicleConstants.BrandConfigs.GetValueOrDefault(brand);
+        if (brandConfig?.Api == null)
+            throw new ArgumentException($"No API config found for brand: {brand}");
+
+        var endpoint = brandConfig.Api.VehicleDataEndpoint.Replace("{vehicleId}", vehicleId);
+        return $"{brandConfig.Api.BaseUrl}{endpoint}";
     }
 
     private async Task<string?> GetVehicleIdFromVin(string vin)
@@ -390,14 +401,14 @@ public class OutageDetectionService(
 
     private string GetFleetApiEndpoint(string brand)
     {
-        return brand.ToLower() switch
-        {
-            VehicleBrand.TESLA => _env.IsDevelopment()
-                ? "http://mock-api:9090/api/tesla/health"
-                : $"{GenericHelpers.EnsureTrailingSlash(_cfg["TeslaApi:BaseUrl"])}api/1/vehicles",
+        if (_env.IsDevelopment())
+            return "http://mock-api:9090/api/tesla/health";
 
-            _ => throw new ArgumentException($"Unknown brand: {brand}")
-        };
+        var brandConfig = VehicleConstants.BrandConfigs.GetValueOrDefault(brand.ToLower());
+        if (brandConfig?.Api == null)
+            throw new ArgumentException($"No API config found for brand: {brand}");
+
+        return $"{brandConfig.Api.BaseUrl}{brandConfig.Api.HealthEndpoint}";
     }
 
     private async Task HandleFleetApiOutageAsync(string brand)

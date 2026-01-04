@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
+using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Services;
 using static PolarDrive.WebApi.Constants.CommonConstants;
@@ -199,13 +200,10 @@ public class PdfReportsController(
     private static string DetermineReportType(int totalHistoricalRecords)
     {
         if (totalHistoricalRecords == 0) return "No_Data";
-        return totalHistoricalRecords switch
-        {
-            >= MONTHLY_HOURS_THRESHOLD => "Mensile",
-            >= WEEKLY_HOURS_THRESHOLD => "Settimanale",
-            >= DAILY_HOURS_THRESHOLD => "Giornaliero",
-            _ => "Giornaliero_Parziale"
-        };
+        if (totalHistoricalRecords >= AppConfig.MONTHLY_HOURS_THRESHOLD) return "Mensile";
+        if (totalHistoricalRecords >= AppConfig.WEEKLY_HOURS_THRESHOLD) return "Settimanale";
+        if (totalHistoricalRecords >= AppConfig.DAILY_HOURS_THRESHOLD) return "Giornaliero";
+        return "Giornaliero_Parziale";
     }
 
     [HttpPatch("{id}/notes")]

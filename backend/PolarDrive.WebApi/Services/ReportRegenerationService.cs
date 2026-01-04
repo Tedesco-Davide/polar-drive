@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.Constants;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Services
@@ -42,8 +43,8 @@ namespace PolarDrive.WebApi.Services
 
                 // Attesa tra un ciclo e l'altro
                 var delay = _env.IsDevelopment()
-                    ? TimeSpan.FromMinutes(DEV_RETRY_FAILED_PDF_REPEAT_MINUTES)
-                    : TimeSpan.FromHours(PROD_RETRY_FAILED_PDF_REPEAT_HOURS);
+                    ? TimeSpan.FromMinutes(AppConfig.DEV_RETRY_FAILED_PDF_REPEAT_MINUTES)
+                    : TimeSpan.FromHours(AppConfig.PROD_RETRY_FAILED_PDF_REPEAT_HOURS);
 
                 await _logger.Debug(source,
                     $"⏳ Next check in {delay.TotalMinutes} minutes");
@@ -157,7 +158,7 @@ namespace PolarDrive.WebApi.Services
                 {
                     var vehicleDelay = _env.IsDevelopment()
                         ? TimeSpan.FromSeconds(30)
-                        : TimeSpan.FromMinutes(VEHICLE_DELAY_MINUTES);
+                        : TimeSpan.FromMinutes(AppConfig.VEHICLE_DELAY_MINUTES);
 
                     await _logger.Debug(source,
                         $"⏳ Waiting {vehicleDelay.TotalSeconds}s before next report");

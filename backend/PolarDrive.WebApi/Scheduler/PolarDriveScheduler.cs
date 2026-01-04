@@ -1,6 +1,6 @@
 using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.Services;
-using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Scheduler
 {
@@ -19,7 +19,7 @@ namespace PolarDrive.WebApi.Scheduler
 
             if (_env.IsDevelopment())
             {
-                await Task.Delay(TimeSpan.FromMinutes(DEV_INITIAL_DELAY_MINUTES), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(AppConfig.DEV_INITIAL_DELAY_MINUTES), stoppingToken);
                 await RunDevelopmentLoop(stoppingToken);
             }
             else
@@ -30,7 +30,7 @@ namespace PolarDrive.WebApi.Scheduler
 
         private async Task RunDevelopmentLoop(CancellationToken stoppingToken)
         {
-            _ = _logger.Info("🔧 DEV Mode: running every {Minutes} minute(s)", DEV_REPEAT_DELAY_MINUTES.ToString());
+            _ = _logger.Info("🔧 DEV Mode: running every {Minutes} minute(s)", AppConfig.DEV_REPEAT_DELAY_MINUTES.ToString());
 
             while (!stoppingToken.IsCancellationRequested)
             {
@@ -54,7 +54,7 @@ namespace PolarDrive.WebApi.Scheduler
                     _ = _logger.Error(ex.ToString(), "❌ DEV Mode: error in scheduler loop");
                 }
 
-                await Task.Delay(TimeSpan.FromMinutes(DEV_REPEAT_DELAY_MINUTES), stoppingToken);
+                await Task.Delay(TimeSpan.FromMinutes(AppConfig.DEV_REPEAT_DELAY_MINUTES), stoppingToken);
             }
         }
 
@@ -75,10 +75,10 @@ namespace PolarDrive.WebApi.Scheduler
                     LogResults("MONTHLY", results);
                 },
                 GetInitialDelayForFirstOfMonth(new TimeSpan(
-                    PROD_MONTHLY_EXECUTION_HOUR,
-                    PROD_MONTHLY_EXECUTION_MINUTE,
-                    PROD_MONTHLY_EXECUTION_SECOND)),
-                TimeSpan.FromDays(PROD_MONTHLY_REPEAT_DAYS),
+                    AppConfig.PROD_MONTHLY_EXECUTION_HOUR,
+                    AppConfig.PROD_MONTHLY_EXECUTION_MINUTE,
+                    AppConfig.PROD_MONTHLY_EXECUTION_SECOND)),
+                TimeSpan.FromDays(AppConfig.PROD_MONTHLY_REPEAT_DAYS),
                 stoppingToken);
 
             var retryTask = ScheduleRecurring(
@@ -94,7 +94,7 @@ namespace PolarDrive.WebApi.Scheduler
                     }
                 },
                 TimeSpan.Zero,
-                TimeSpan.FromHours(PROD_RETRY_REPEAT_HOURS),
+                TimeSpan.FromHours(AppConfig.PROD_RETRY_REPEAT_HOURS),
                 stoppingToken);
 
             await Task.WhenAll(monthlyTask, retryTask);

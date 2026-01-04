@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
-using static PolarDrive.WebApi.Constants.CommonConstants;
+using PolarDrive.Data.Constants;
 
 namespace PolarDrive.WebApi.Services;
 
@@ -19,7 +19,7 @@ public class VehiclesDataArchiveService(IServiceScopeFactory scopeFactory, ILogg
                 logger.LogError(ex, "Errore durante archiviazione VehiclesData");
             }
             
-            await Task.Delay(TimeSpan.FromHours(DATA_ARCHIVE_FREQUENCY_HOURS), stoppingToken);
+            await Task.Delay(TimeSpan.FromHours(AppConfig.DATA_ARCHIVE_FREQUENCY_HOURS), stoppingToken);
         }
     }
 
@@ -32,10 +32,10 @@ public class VehiclesDataArchiveService(IServiceScopeFactory scopeFactory, ILogg
             INSERT INTO dbo.VehiclesDataArchive (IsSmsAdaptiveProfile, VehicleId, Timestamp, RawJsonAnonymized)
             SELECT IsSmsAdaptiveProfile, VehicleId, Timestamp, RawJsonAnonymized 
             FROM dbo.VehiclesData 
-            WHERE Timestamp < DATEADD(HOUR, -{MONTHLY_HOURS_THRESHOLD}, GETDATE());
+            WHERE Timestamp < DATEADD(HOUR, -{AppConfig.MONTHLY_HOURS_THRESHOLD}, GETDATE());
 
             DELETE FROM dbo.VehiclesData 
-            WHERE Timestamp < DATEADD(HOUR, -{MONTHLY_HOURS_THRESHOLD}, GETDATE());
+            WHERE Timestamp < DATEADD(HOUR, -{AppConfig.MONTHLY_HOURS_THRESHOLD}, GETDATE());
         ");
 
         if (rowsArchived > 0)

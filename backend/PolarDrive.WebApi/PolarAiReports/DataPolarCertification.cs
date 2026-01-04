@@ -2,12 +2,12 @@ using System.Text;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
-using static PolarDrive.WebApi.Constants.CommonConstants;
+using PolarDrive.Data.Constants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
 /// <summary>
-/// Servizio dedicato ESCLUSIVAMENTE alla certificazione DataPolar
+/// Servizio dedicato esclusivamente alla certificazione DataPolar
 /// Gestisce: certificazioni generali, statistiche mensili, tabelle dettagliate log
 /// </summary>
 public class DataPolarCertification(PolarDriveDbContext dbContext)
@@ -24,8 +24,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
         TimeSpan totalMonitoringPeriod, 
         DateTime firstRecord,
         DateTime lastRecord,
-        int totalRecords, 
-        PdfReport report)
+        int totalRecords)
     {
         try
         {
@@ -37,7 +36,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                 totalMonitoringPeriod);
 
             // Calcola first/last record mensili (ultimi 30 giorni)
-            var startTime = DateTime.Now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+            var startTime = DateTime.Now.AddHours(-AppConfig.MONTHLY_HOURS_THRESHOLD);
             
             var monthlyTimeRange = await _dbContext.VehiclesData
                 .Where(vd => vd.VehicleId == vehicleId && vd.Timestamp >= startTime)
@@ -60,13 +59,13 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
                 monthlyFirstRecord,
                 monthlyLastRecord,
                 vehicleId,
-                MONTHLY_HOURS_THRESHOLD
+                AppConfig.MONTHLY_HOURS_THRESHOLD
             );
             
-            var detailedTable = await GenerateDetailedLogTableAsync(vehicleId, MONTHLY_HOURS_THRESHOLD);
+            var detailedTable = await GenerateDetailedLogTableAsync(vehicleId, AppConfig.MONTHLY_HOURS_THRESHOLD);
 
             // Genera sezione ADAPTIVE_PROFILE con legenda e cards utilizzatori
-            var adaptiveProfileSection = await GenerateAdaptiveProfileLegendAndCardsAsync(vehicleId, MONTHLY_HOURS_THRESHOLD);
+            var adaptiveProfileSection = await GenerateAdaptiveProfileLegendAndCardsAsync(vehicleId, AppConfig.MONTHLY_HOURS_THRESHOLD);
 
             return $@"
                 <div class='certification-datapolar'>
@@ -137,7 +136,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
         int vehicleId,
         int dataHours)
     {
-        const int monthlyThreshold = MONTHLY_HOURS_THRESHOLD;
+        int monthlyThreshold = AppConfig.MONTHLY_HOURS_THRESHOLD;
         
         // Calcola le ore effettive dei dati mensili
         var actualMonthlyHours = Math.Max((lastRecord - firstRecord).TotalHours, 1);
@@ -171,10 +170,10 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
             <table class='statistics-table'>
                 <tr><td>Durata monitoraggio totale</td><td>{totalMonitoringPeriod.TotalDays:0} giorni</td></tr>
                 <tr><td>Campioni mensili analizzati</td><td>{monthlyRecords:N0}</td></tr>
-                <tr><td>Finestra unificata</td><td>{monthlyThreshold} ore ({PROD_MONTHLY_REPEAT_DAYS} giorni)</td></tr>
+                <tr><td>Finestra unificata</td><td>{monthlyThreshold} ore ({AppConfig.PROD_MONTHLY_REPEAT_DAYS} giorni)</td></tr>
                 <tr><td>Densità dati mensile</td><td>{monthlyRecords / actualMonthlyHours:0} campioni/ora</td></tr>
                 <tr><td>Frequenza campionamento</td><td>{(monthlyRecords > 0 ? (lastRecord - firstRecord).TotalMinutes / monthlyRecords : 0):F2} min/campione</td></tr>
-                <tr><td>Copertura dati</td><td>{Math.Min(100, (actualMonthlyHours / Math.Max(totalMonitoringPeriod.TotalHours, 1)) * 100):0}% del periodo totale</td></tr>
+                <tr><td>Copertura dati</td><td>{Math.Min(100, actualMonthlyHours / Math.Max(totalMonitoringPeriod.TotalHours, 1) * 100):0}% del periodo totale</td></tr>
                 <tr><td>Ore monitorate</td><td>{actualHoursToShow} ore ({actualHoursToShow / 24.0:0} giorni)</td></tr>
                 <tr><td>N. Record certificati</td><td>{certifiedRecords:N0} su {totalExpectedRecords}</td></tr>
                 <tr><td>Percentuale completezza</td><td>{completeness:0}%</td></tr>
@@ -429,9 +428,9 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
         
         // 10% - Maturità dataset
         var totalHours = monitoringPeriod.TotalHours;
-        if (totalHours >= MONTHLY_HOURS_THRESHOLD) score += 10;      // 30+ giorni
-        else if (totalHours >= WEEKLY_HOURS_THRESHOLD) score += 7;   // 7+ giorni  
-        else if (totalHours >= DAILY_HOURS_THRESHOLD) score += 3;    // 1+ giorno
+        if (totalHours >= AppConfig.MONTHLY_HOURS_THRESHOLD) score += 10;      // 30+ giorni
+        else if (totalHours >= AppConfig.WEEKLY_HOURS_THRESHOLD) score += 7;   // 7+ giorni  
+        else if (totalHours >= AppConfig.DAILY_HOURS_THRESHOLD) score += 3;    // 1+ giorno
         
         return Math.Max(0, Math.Min(100, score));
     }
@@ -444,11 +443,11 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
         var hours = monitoringPeriod.TotalHours;
         
         // Più ore continuative = maggiore stabilità
-        if (hours >= (MONTHLY_HOURS_THRESHOLD * 3)) return 1.0;   // 90+ giorni (3 mesi) = eccellente
-        if (hours >= MONTHLY_HOURS_THRESHOLD) return 0.95;        // 30+ giorni (1 mese) = ottimo
-        if (hours >= WEEKLY_HOURS_THRESHOLD) return 0.85;         // 7+ giorni (1 settimana) = buono
-        if (hours >= (DAILY_HOURS_THRESHOLD * 3)) return 0.75;    // 3+ giorni = discreto
-        if (hours >= DAILY_HOURS_THRESHOLD) return 0.60;          // 1+ giorno = sufficiente
+        if (hours >= (AppConfig.MONTHLY_HOURS_THRESHOLD * 3)) return 1.0;   // 90+ giorni (3 mesi) = eccellente
+        if (hours >= AppConfig.MONTHLY_HOURS_THRESHOLD) return 0.95;        // 30+ giorni (1 mese) = ottimo
+        if (hours >= AppConfig.WEEKLY_HOURS_THRESHOLD) return 0.85;         // 7+ giorni (1 settimana) = buono
+        if (hours >= (AppConfig.DAILY_HOURS_THRESHOLD * 3)) return 0.75;    // 3+ giorni = discreto
+        if (hours >= AppConfig.DAILY_HOURS_THRESHOLD) return 0.60;          // 1+ giorno = sufficiente
         
         return 0.50; // < 24 ore = base
     }

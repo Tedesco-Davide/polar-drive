@@ -2,7 +2,7 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
-using static PolarDrive.WebApi.Constants.CommonConstants;
+using PolarDrive.Data.Constants;
 using Microsoft.Extensions.Options;
 
 namespace PolarDrive.WebApi.PolarAiReports;
@@ -32,7 +32,7 @@ public class PolarAiReportGenerator
         var analysisLevel = GetAnalysisLevel(monitoringPeriod);
 
         // 720 ore (30 GIORNI) - Finestra dati unificata
-        const int dataHours = MONTHLY_HOURS_THRESHOLD;
+        int dataHours = AppConfig.MONTHLY_HOURS_THRESHOLD;
 
         await _logger.Info(source, $"Analisi {analysisLevel}",
             $"Finestra unificata: {dataHours}h ({dataHours / 24} giorni) - Periodo totale: {monitoringPeriod.TotalDays:F1} giorni");

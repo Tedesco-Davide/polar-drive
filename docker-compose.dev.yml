@@ -68,6 +68,7 @@ services:
     volumes:
       - ./LOGS_DEV:/app/Logs
       - ./vehicle-options.json:/app/config/vehicle-options.json:ro
+      - ./app-config.json:/app/config/app-config.json:ro
     ports:
       - "8080:8080"
     extra_hosts:

@@ -1,0 +1,69 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "version": "1.0.0",
+  "lastUpdated": "2025-01-04",
+  "description": "Configurazioni operative PolarDrive - modificabili senza riavvio applicazione",
+
+  "scheduler": {
+    "development": {
+      "initialDelayMinutes": 1,
+      "repeatDelayMinutes": 20,
+      "retryMinutes": 1,
+      "intervalMinutes": 5,
+      "gracePeriodMinutes": 5,
+      "gracePeriodInactivityThresholdMinutes": 10,
+      "retryOrphanPdfRepeatMinutes": 2,
+      "retryFailedPdfRepeatMinutes": 2
+    },
+    "production": {
+      "monthlyRepeatDays": 30,
+      "retryRepeatHours": 1,
+      "retryHours": 5,
+      "vehicleDelayMinutes": 2,
+      "gracePeriodHours": 2,
+      "gracePeriodInactivityThresholdHours": 6,
+      "retryOrphanPdfRepeatHours": 1,
+      "retryFailedPdfRepeatHours": 1,
+      "monthlyExecutionTime": {
+        "hour": 5,
+        "minute": 0,
+        "second": 0
+      }
+    }
+  },
+
+  "retry": {
+    "maxRetries": 5
+  },
+
+  "limits": {
+    "maxUploadSizeBytes": 100000000,
+    "httpLongRequestTimeoutMinutes": 15,
+    "dataArchiveFrequencyHours": 24
+  },
+
+  "sms": {
+    "adaptiveMobileNumber": "447441446357",
+    "adaptiveHoursThreshold": 24,
+    "gdprRequestIntervalMinutes": 35
+  },
+
+  "thresholds": {
+    "monthlyHours": 720,
+    "dailyHours": 24,
+    "weeklyHours": 168
+  },
+
+  "gapAnalysis": {
+    "weights": {
+      "continuity": 0.30,
+      "battery": 0.25,
+      "pattern": 0.20,
+      "gapLength": 0.15,
+      "historical": 0.10,
+      "techProblemBonus": 15,
+      "kmBonus": 5
+    },
+    "kmThreshold": 10
+  }
+}

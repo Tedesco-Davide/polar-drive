@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.Production;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
@@ -68,7 +69,7 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
             }
 
             // Verifica brand Tesla
-            if (!vehicle.Brand.Equals(VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase))
+            if (!vehicle.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase))
             {
                 await _logger.Warning(source, $"Received Tesla data for non-Tesla vehicle: {vin} (Brand: {vehicle.Brand})");
                 return BadRequest($"Vehicle {vin} is not a Tesla vehicle (Brand: {vehicle.Brand})");
@@ -372,7 +373,7 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
             var totalVehicles = await _db.ClientVehicles.CountAsync();
             var activeVehicles = await _db.ClientVehicles.CountAsync(v => v.IsActiveFlag);
             var fetchingVehicles = await _db.ClientVehicles.CountAsync(v => v.IsFetchingDataFlag);
-            var teslaVehicles = await _db.ClientVehicles.CountAsync(v => v.Brand.ToLower() == VehicleBrand.TESLA);
+            var teslaVehicles = await _db.ClientVehicles.CountAsync(v => v.Brand.ToLower() == VehicleConstants.VehicleBrand.TESLA);
 
             var totalDataRecords = await _db.VehiclesData.CountAsync();
             var recentDataRecords = await _db.VehiclesData

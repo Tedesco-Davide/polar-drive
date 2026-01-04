@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.PolarAiReports.Templates;
 using System.Net;
 using System.Text;
@@ -84,7 +85,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
 
         // Calcola il periodo effettivo da mostrare
         var now = DateTime.Now;
-        var maxStartTime = now.AddHours(-MONTHLY_HOURS_THRESHOLD); // 30 giorni fa massimo
+        var maxStartTime = now.AddHours(-AppConfig.MONTHLY_HOURS_THRESHOLD); // 30 giorni fa massimo
 
         // Usa il più recente tra il primo record e 30 giorni fa
         var effectiveStartTime = firstRecordTime > maxStartTime ? firstRecordTime : maxStartTime;
@@ -165,8 +166,7 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
                 totalMonitoringPeriod,
                 timeRange.FirstRecord,
                 timeRange.LastRecord,
-                timeRange.TotalCount,
-                report
+                timeRange.TotalCount
             );
         }
         catch (Exception ex)

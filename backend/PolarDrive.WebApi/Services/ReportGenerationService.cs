@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Scheduler;
 using static PolarDrive.WebApi.Constants.CommonConstants;
@@ -82,7 +83,7 @@ namespace PolarDrive.WebApi.Services
                         .FirstOrDefaultAsync(stoppingToken);
 
                     // 2) SEMPRE 720H - FINESTRA MENSILE UNIFICATA
-                    var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+                    var start = lastReportEnd ?? now.AddHours(-AppConfig.MONTHLY_HOURS_THRESHOLD);
                     var end = now;
 
                     _ = _logger.Debug(
@@ -107,7 +108,7 @@ namespace PolarDrive.WebApi.Services
                 }
 
                 if (!_env.IsDevelopment() && scheduleType != ScheduleType.Development)
-                    await Task.Delay(TimeSpan.FromMinutes(VEHICLE_DELAY_MINUTES), stoppingToken);
+                    await Task.Delay(TimeSpan.FromMinutes(AppConfig.VEHICLE_DELAY_MINUTES), stoppingToken);
             }
 
             return results;
@@ -118,11 +119,11 @@ namespace PolarDrive.WebApi.Services
             var results = new RetryResults();
             var now = DateTime.Now;
             var threshold = _env.IsDevelopment()
-                ? TimeSpan.FromMinutes(DEV_RETRY_MINUTES)
-                : TimeSpan.FromHours(PROD_RETRY_HOURS);
+                ? TimeSpan.FromMinutes(AppConfig.DEV_RETRY_MINUTES)
+                : TimeSpan.FromHours(AppConfig.PROD_RETRY_HOURS);
 
             var toRetry = _retryCount
-                .Where(kvp => kvp.Value > 0 && kvp.Value <= MAX_RETRIES)
+                .Where(kvp => kvp.Value > 0 && kvp.Value <= AppConfig.MAX_RETRIES)
                 .Where(kvp => now - _lastReportAttempts.GetValueOrDefault(kvp.Key, DateTime.MinValue) >= threshold)
                 .Select(kvp => kvp.Key)
                 .ToList();
@@ -143,7 +144,7 @@ namespace PolarDrive.WebApi.Services
 
                     _ = _logger.Info(
                         "ReportGenerationService.ProcessRetriesAsync",
-                        $"🔄 Retry {_retryCount[id]}/{MAX_RETRIES} for {veh.Vin}"
+                        $"🔄 Retry {_retryCount[id]}/{AppConfig.MAX_RETRIES} for {veh.Vin}"
                     );
 
                     var lastReportEnd = await db.PdfReports
@@ -152,7 +153,7 @@ namespace PolarDrive.WebApi.Services
                         .Select(r => (DateTime?)r.ReportPeriodEnd)
                         .FirstOrDefaultAsync(stoppingToken);
 
-                    var start = lastReportEnd ?? now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+                    var start = lastReportEnd ?? now.AddHours(-AppConfig.MONTHLY_HOURS_THRESHOLD);
                     var end = now;
                     var analysisType = GetAnalysisType(ScheduleType.Monthly);
 
@@ -168,7 +169,7 @@ namespace PolarDrive.WebApi.Services
                     results.ErrorCount++;
                     _retryCount[id]++;
                     _lastReportAttempts[id] = now;
-                    if (_retryCount[id] > MAX_RETRIES)
+                    if (_retryCount[id] > AppConfig.MAX_RETRIES)
                         _ = _logger.Warning("🚫 {VehicleId} exceeded max retries", id.ToString());
                 }
             }
@@ -696,7 +697,7 @@ namespace PolarDrive.WebApi.Services
             if (scheduleType == ScheduleType.Development)
             {
                 return !_lastReportAttempts.Any()
-                    || _lastReportAttempts.Values.All(t => now - t >= TimeSpan.FromMinutes(DEV_INTERVAL_MINUTES));
+                    || _lastReportAttempts.Values.All(t => now - t >= TimeSpan.FromMinutes(AppConfig.DEV_INTERVAL_MINUTES));
             }
             return true;
         }
@@ -713,7 +714,7 @@ namespace PolarDrive.WebApi.Services
             if (scheduleType == ScheduleType.Monthly)
             {
                 var now = DateTime.Now;
-                var start = now.AddHours(-MONTHLY_HOURS_THRESHOLD);
+                var start = now.AddHours(-AppConfig.MONTHLY_HOURS_THRESHOLD);
 
                 query = query.Where(v => db.VehiclesData
                     .Any(d => d.VehicleId == v.Id && d.Timestamp >= start && d.Timestamp <= now));
@@ -737,8 +738,8 @@ namespace PolarDrive.WebApi.Services
             const string source = "ReportGenerationService.RecoverOrphanProcessingReportsAsync";
 
             var cutoffTime = _env.IsDevelopment() 
-                ? DateTime.Now.AddMinutes(-DEV_RETRY_ORPHAN_PDF_REPEAT_MINUTES)
-                : DateTime.Now.AddHours(-PROD_RETRY_ORPHAN_PDF_REPEAT_HOURS);
+                ? DateTime.Now.AddMinutes(-AppConfig.DEV_RETRY_ORPHAN_PDF_REPEAT_MINUTES)
+                : DateTime.Now.AddHours(-AppConfig.PROD_RETRY_ORPHAN_PDF_REPEAT_HOURS);
 
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();

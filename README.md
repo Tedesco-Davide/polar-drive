@@ -30,10 +30,31 @@ Repository per il progetto **PolarDrive**.
 
 ### ⚙️ GENERICHE COMUNI
 
-- backend/PolarDrive.WebApi/Constants/CommonConstants.cs => CONTIENE CONFIG PRINCIPALI APPLICATIVO => ESEMPIO: MONTHLY_HOURS_THRESHOLD
-- DECOMMENTARE PER STAMPARE VELOCEMENTE => var insights = "TEST_INSIGHTS_NO_AI";
-- COMMENTARE PER NON INVIARE DATI A GOOGLE => await googleAds.SendAiInsightsToGoogleAds(insights, vehicleId, vehicle.Vin);
-- CONTIENE FORMATTING PER EVENTUALI SBAGLI STAMPA AI => private static string FormatInsightsForHtml(string insights)
+PER "RIAVVIARE" APPLICATIVO =>
+- docker compose -f docker-compose.dev.yml restart api (DEVELOPMENT)
+- docker compose -f docker-compose.prod.yml restart api (PRODUCTION)
+
+CONFIG PARAMETRI OPERATIVI PRINCIPALI APPLICATIVO (MODIFICABILE SENZA RIAVVIO) =>
+- ROOT PRINCIPALE POLARDRIVE => app-config.json
+- Per capire cosa fanno i paramentri dentro app-config.json, sono presenti i commenti qui =>
+- polar-drive\backend\PolarDrive.Data\Constants\AppConfig.cs ( implementazione a codice dei parametri )
+
+CONFIG PARAMETRI PER I DATI VEICOLI (MODIFICABILE CON RIAVVIO) =>
+- ROOT PRINCIPALE POLARDRIVE => vehicle-options.json
+- Per capire cosa fanno i paramentri dentro vehicle-options.json, sono presenti i commenti qui =>
+- polar-drive\backend\PolarDrive.Data\Constants\VehicleConstants.cs ( implementazione a codice dei parametri )
+
+CONFIG PARAMETRI COMPILE-TIME (MODIFICABILE CON RIAVVIO) =>
+- backend/PolarDrive.WebApi/Constants/CommonConstants.cs
+
+- DECOMMENTARE PER STAMPARE VELOCEMENTE => 
+var insights = "TEST_INSIGHTS_NO_AI";
+
+- COMMENTARE PER NON INVIARE DATI A GOOGLE => 
+await googleAds.SendAiInsightsToGoogleAds(insights, vehicleId, vehicle.Vin);
+
+- CONTIENE FORMATTING PER EVENTUALI SBAGLI STAMPA AI => 
+private static string FormatInsightsForHtml(string insights)
 
 ### 🐳 DOCKER DEV - PRINCIPALI
 
