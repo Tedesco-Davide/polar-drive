@@ -145,9 +145,9 @@ export default function AdminSmsGdprModal({
                     className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-10 text-sm text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer min-w-[150px]"
                   >
                     {loadingBrands ? (
-                      <option value="">Caricamento...</option>
+                      <option value="">{t("admin.smsManagement.loadingBrands")}</option>
                     ) : availableBrands.length === 0 ? (
-                      <option value="">Nessun brand disponibile</option>
+                      <option value="">{t("admin.smsManagement.noBrandsAvailable")}</option>
                     ) : (
                       availableBrands.map((brand) => (
                         <option key={brand} value={brand}>
@@ -186,14 +186,14 @@ export default function AdminSmsGdprModal({
             />
             <input
               type="text"
-              placeholder="Cerca per numero, brand o ID..."
+              placeholder={t("admin.smsManagement.searchGdprPlaceholder")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {filteredConsents.length} di {gdprConsents.length} risultati
+            {t("admin.smsManagement.resultsCount", { filtered: filteredConsents.length, total: gdprConsents.length })}
           </p>
         </div>
 
@@ -202,7 +202,7 @@ export default function AdminSmsGdprModal({
           {filteredConsents.length === 0 ? (
             <p className="text-gray-500 py-8 text-center">
               {searchFilter
-                ? "Nessun risultato trovato"
+                ? t("admin.smsManagement.noResultsFound")
                 : `${t("admin.smsManagement.noConsentsFound")} ${selectedBrand}`}
             </p>
           ) : (
@@ -214,23 +214,23 @@ export default function AdminSmsGdprModal({
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                     <div className="flex items-center gap-2">
-                      Numero
+                      {t("admin.smsManagement.numberHeader")}
                     </div>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Nome
+                    {t("admin.smsManagement.nameHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                     {t("admin.smsManagement.gdprConsentLabel")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Brand
+                    {t("admin.smsManagement.brandHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Richiesto
+                    {t("admin.smsManagement.requestedHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Accettato
+                    {t("admin.smsManagement.acceptedHeader")}
                   </th>
                 </tr>
               </thead>

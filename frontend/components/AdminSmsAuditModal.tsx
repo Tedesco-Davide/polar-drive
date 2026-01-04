@@ -131,7 +131,7 @@ export default function AdminSmsAuditModal({
               📊 {t("admin.smsManagement.titleAudit")}
             </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Visualizzazione del log completo di tutti gli SMS ricevuti ed il loro stato di elaborazione
+              {t("admin.smsManagement.auditDescription")}
             </p>
           </div>
         </div>
@@ -145,14 +145,14 @@ export default function AdminSmsAuditModal({
             />
             <input
               type="text"
-              placeholder="Cerca per numero, messaggio, stato, SID o ID..."
+              placeholder={t("admin.smsManagement.searchAuditGlobalPlaceholder")}
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {filteredLogs.length} di {auditLogs.length} risultati - Pagina {page} di {totalPages}
+            {t("admin.smsManagement.resultsCountWithPage", { filtered: filteredLogs.length, total: auditLogs.length, page, totalPages })}
           </p>
         </div>
 
@@ -161,8 +161,8 @@ export default function AdminSmsAuditModal({
           {filteredLogs.length === 0 ? (
             <p className="text-gray-500 py-8 text-center">
               {searchFilter
-                ? "Nessun risultato trovato"
-                : "Nessun log SMS trovato"}
+                ? t("admin.smsManagement.noResultsFound")
+                : t("admin.smsManagement.noSmsLogsFound")}
             </p>
           ) : (
             <table className="w-full">
@@ -178,28 +178,28 @@ export default function AdminSmsAuditModal({
                     </div>
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Da
+                    {t("admin.smsManagement.fromHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    A
+                    {t("admin.smsManagement.toHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Messaggio
+                    {t("admin.smsManagement.messageHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Stato
+                    {t("admin.smsManagement.statusHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Veicolo ID
+                    {t("admin.smsManagement.vehicleIdHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Ricevuto
+                    {t("admin.smsManagement.receivedHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Errore
+                    {t("admin.smsManagement.errorHeader")}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                    Risposta
+                    {t("admin.smsManagement.responseHeader")}
                   </th>
                 </tr>
               </thead>
@@ -266,17 +266,17 @@ export default function AdminSmsAuditModal({
               disabled={page === 1}
               className="px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ← Prec
+              ← {t("admin.smsManagement.prevButton")}
             </button>
             <span className="text-sm text-gray-600 dark:text-gray-300">
-              Pagina {page} di {totalPages}
+              {t("admin.smsManagement.pageInfo", { page, totalPages })}
             </span>
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page === totalPages}
               className="px-3 py-1 bg-gray-300 dark:bg-gray-600 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Succ →
+              {t("admin.smsManagement.nextButton")} →
             </button>
           </div>
         )}

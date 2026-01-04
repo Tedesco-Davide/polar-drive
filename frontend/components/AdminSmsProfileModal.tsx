@@ -297,14 +297,14 @@ export default function AdminSmsProfileModal({
                   />
                   <input
                     type="text"
-                    placeholder="Cerca per numero, nome, ID o comando..."
+                    placeholder={t("admin.smsManagement.searchProfilePlaceholder")}
                     value={profileSearchFilter}
                     onChange={(e) => setProfileSearchFilter(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {filteredProfileSessions.length} di {profileSessions.length} risultati
+                  {t("admin.smsManagement.resultsCount", { filtered: filteredProfileSessions.length, total: profileSessions.length })}
                 </p>
               </div>
 
@@ -313,7 +313,7 @@ export default function AdminSmsProfileModal({
                 {filteredProfileSessions.length === 0 ? (
                   <p className="text-gray-500 py-8 text-center">
                     {profileSearchFilter
-                      ? "Nessun risultato trovato"
+                      ? t("admin.smsManagement.noResultsFound")
                       : t("admin.smsManagement.noSessionsFound")}
                   </p>
                 ) : (
@@ -326,23 +326,23 @@ export default function AdminSmsProfileModal({
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                           <div className="flex items-center gap-2">
                             <User size={14} />
-                            Nome/Numero
+                            {t("admin.smsManagement.nameNumber")}
                           </div>
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                           {t("admin.smsManagement.profilingProcedureLabel")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Comando
+                          {t("admin.smsManagement.commandHeader")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                           {t("admin.smsManagement.gdprConsentLabel")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Ricevuto
+                          {t("admin.smsManagement.receivedHeader")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Scadenza
+                          {t("admin.smsManagement.expiryHeader")}
                         </th>
                       </tr>
                     </thead>
@@ -426,14 +426,14 @@ export default function AdminSmsProfileModal({
                   />
                   <input
                     type="text"
-                    placeholder="Cerca per numero, messaggio, stato o SID..."
+                    placeholder={t("admin.smsManagement.searchAuditPlaceholder")}
                     value={auditSearchFilter}
                     onChange={(e) => setAuditSearchFilter(e.target.value)}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-polarNight dark:text-softWhite focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {filteredAuditLogs.length} di {auditLogs.length} risultati
+                  {t("admin.smsManagement.resultsCount", { filtered: filteredAuditLogs.length, total: auditLogs.length })}
                 </p>
               </div>
 
@@ -442,7 +442,7 @@ export default function AdminSmsProfileModal({
                 {filteredAuditLogs.length === 0 ? (
                   <p className="text-gray-500 py-8 text-center">
                     {auditSearchFilter
-                      ? "Nessun risultato trovato"
+                      ? t("admin.smsManagement.noResultsFound")
                       : t("admin.smsManagement.noAuditLogsFound")}
                   </p>
                 ) : (
@@ -456,16 +456,16 @@ export default function AdminSmsProfileModal({
                           {t("admin.smsManagement.tabs.auditSmsElabStatus")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Da
+                          {t("admin.smsManagement.fromHeader")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          A
+                          {t("admin.smsManagement.toHeader")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Messaggio
+                          {t("admin.smsManagement.messageHeader")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
-                          Ricevuto
+                          {t("admin.smsManagement.receivedHeader")}
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 dark:text-gray-300 uppercase">
                           SID

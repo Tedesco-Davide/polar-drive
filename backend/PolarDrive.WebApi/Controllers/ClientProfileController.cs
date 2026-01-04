@@ -249,8 +249,6 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
 
                     // ✅ NUOVO: Statistiche SMS aggregate aziendali
                     TotalSmsEventsCompany = firstRow.TotalSmsEventsCompany,
-                    AdaptiveOnEventsCompany = firstRow.AdaptiveOnEventsCompany,
-                    AdaptiveOffEventsCompany = firstRow.AdaptiveOffEventsCompany,
                     ActiveSessionsCompany = firstRow.ActiveSessionsCompany,
                     LastSmsReceivedCompany = firstRow.LastSmsReceivedCompany,
                     LastActiveSessionExpiresCompany = firstRow.LastActiveSessionExpiresCompany,
@@ -513,7 +511,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
         </head>
             <body>
                 <div class='header'>
-                    <h1>📊 Profilo Cliente Completo</h1>
+                    <h1>📊 Profilo Cliente Certificato</h1>
                     <div class='subtitle'>{data.CompanyInfo.Name}</div>
                     <div style='margin-top: 10px; font-size: 0.9em; opacity: 0.8;'>
                         Generato il {generationDate}
@@ -541,9 +539,6 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
         <div class='stat-card'>
             <div class='stat-number'>{company.TotalSmsEventsCompany}</div>
             <div class='stat-label'>SMS Totali</div>
-            <div style='font-size: 11px; margin-top: 8px; color: #666;'>
-                ON: {company.AdaptiveOnEventsCompany} | OFF: {company.AdaptiveOffEventsCompany}
-            </div>
         </div>" : "";
 
         var activeSessions = company.ActiveSessionsCompany > 0 ? $@"
