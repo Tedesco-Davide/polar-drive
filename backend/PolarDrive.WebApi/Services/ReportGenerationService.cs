@@ -200,7 +200,7 @@ namespace PolarDrive.WebApi.Services
 
                 // 🔒 Verifica che non ci siano già report in PROCESSING o REGENERATING (escluso il report corrente se rigenerazione)
                 var hasProcessingQuery = db.PdfReports
-                    .Where(r => r.Status == "PROCESSING" || r.Status == "REGENERATING");
+                    .Where(r => r.Status == ReportStatus.PROCESSING || r.Status == ReportStatus.REGENERATING);
                 
                 if (existingReportId.HasValue)
                 {
@@ -248,7 +248,7 @@ namespace PolarDrive.WebApi.Services
                         "Reset report per rigenerazione",
                         $"ReportId: {existingReportId}");
 
-                    report.Status = "REGENERATING";
+                    report.Status = ReportStatus.REGENERATING;
                     report.PdfContent = null;
                     report.PdfHash = string.Empty;
                     report.GeneratedAt = null;
@@ -279,7 +279,7 @@ namespace PolarDrive.WebApi.Services
                         VehicleId = vehicleId,
                         ReportPeriodStart = periodStart,
                         ReportPeriodEnd = periodEnd,
-                        Status = "PROCESSING",
+                        Status = ReportStatus.PROCESSING,
                         GeneratedAt = null,
                         PdfHash = string.Empty
                     };
@@ -323,7 +323,7 @@ namespace PolarDrive.WebApi.Services
                         "Vehicle non trovato",
                         $"ReportId: {report.Id}, VehicleId: {vehicleId}");
 
-                    report.Status = "ERROR";
+                    report.Status = ReportStatus.ERROR;
                     await db.SaveChangesAsync();
                     return false;
                 }
@@ -358,7 +358,7 @@ namespace PolarDrive.WebApi.Services
                         "AI insights generation failed",
                         $"ReportId: {report.Id}, VehicleId: {vehicleId}");
 
-                    report.Status = "ERROR";
+                    report.Status = ReportStatus.ERROR;
                     report.Notes = "AI insights generation failed";
                     await db.SaveChangesAsync();
                     return false;
@@ -397,7 +397,7 @@ namespace PolarDrive.WebApi.Services
                         var failedReport = await db.PdfReports.FindAsync(existingReportId.Value);
                         if (failedReport != null)
                         {
-                            failedReport.Status = "ERROR";
+                            failedReport.Status = ReportStatus.ERROR;
                             failedReport.Notes = $"Error: {ex.Message}";
                             await db.SaveChangesAsync();
                         }
@@ -458,7 +458,7 @@ namespace PolarDrive.WebApi.Services
 
             // 🔒 Verifica che non ci siano già report in PROCESSING o REGENERATING
             var hasProcessing = await db.PdfReports
-                .AnyAsync(r => r.Status == "PROCESSING" || r.Status == "REGENERATING");
+                .AnyAsync(r => r.Status == ReportStatus.PROCESSING || r.Status == ReportStatus.REGENERATING);
 
             if (hasProcessing)
             {
@@ -476,7 +476,7 @@ namespace PolarDrive.WebApi.Services
                 ClientCompanyId = vehicle.ClientCompanyId,
                 ReportPeriodStart = period.Start,
                 ReportPeriodEnd = period.End,
-                Status = "PROCESSING",
+                Status = ReportStatus.PROCESSING,
                 GeneratedAt = null,
                 Notes = $"{period.AnalysisLevel}"
             };
@@ -524,7 +524,7 @@ namespace PolarDrive.WebApi.Services
             }
             catch (Exception ex)
             {
-                report.Status = "ERROR";
+                report.Status = ReportStatus.ERROR;
                 report.Notes += $" - ERROR: {ex.Message}";
                 await db.SaveChangesAsync();
 
@@ -686,7 +686,7 @@ namespace PolarDrive.WebApi.Services
 
             // ✅ Persisti il PDF finale + stato
             report.PdfContent = pdf2;
-            report.Status = "PDF-READY";
+            report.Status = ReportStatus.PDF_READY;
             report.GeneratedAt = DateTime.Now;
             await db.SaveChangesAsync();
         }
@@ -744,7 +744,7 @@ namespace PolarDrive.WebApi.Services
             var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
             var staleReports = await db.PdfReports
-                .Where(r => (r.Status == "PROCESSING" || r.Status == "REGENERATING")
+                .Where(r => (r.Status == ReportStatus.PROCESSING || r.Status == ReportStatus.REGENERATING)
                             && r.CreatedAt < cutoffTime)
                 .ToListAsync(stoppingToken);
 
@@ -757,8 +757,8 @@ namespace PolarDrive.WebApi.Services
             foreach (var report in staleReports)
             {
                 var previousStatus = report.Status; // Salva lo stato prima di modificarlo
-                
-                report.Status = "ERROR";
+
+                report.Status = ReportStatus.ERROR;
                 report.Notes = $"Auto-recovered from stale {previousStatus} state at {DateTime.Now:yyyy-MM-dd HH:mm}. Original notes: {report.Notes}";
 
                 _ = _logger.Warning(source,

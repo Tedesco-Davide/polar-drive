@@ -296,7 +296,7 @@ public class DataPolarCertification(PolarDriveDbContext dbContext)
         var adaptiveSessions = await _dbContext.SmsAdaptiveProfile
             .Where(p => p.VehicleId == vehicleId
                     && p.ReceivedAt >= maxStartTime
-                    && p.ParsedCommand == "ADAPTIVE_PROFILE_ON")
+                    && p.ParsedCommand == Constants.CommonConstants.SmsCommand.ADAPTIVE_PROFILE_ON)
             .OrderByDescending(p => p.ReceivedAt)
             .ToListAsync();
 

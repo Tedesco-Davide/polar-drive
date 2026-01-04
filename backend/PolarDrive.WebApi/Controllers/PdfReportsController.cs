@@ -131,7 +131,7 @@ public class PdfReportsController(
                     HtmlFileSize = 0,
                     MonitoringDurationHours = 0, // Removed: heavy query on VehiclesData
                     ReportType = "Report",
-                    Status = report.HasPdf ? "PDF-READY" : (!string.IsNullOrEmpty(report.Status) ? report.Status : "PROCESSING"),
+                    Status = report.HasPdf ? ReportStatus.PDF_READY : (!string.IsNullOrEmpty(report.Status) ? report.Status : ReportStatus.PROCESSING),
                     PdfHash = report.PdfHash ?? "",
                     // Gap Certification info
                     GapCertificationStatus = gapCert?.Status,
@@ -170,7 +170,7 @@ public class PdfReportsController(
         var hasPdf = report.PdfContent != null && report.PdfContent.Length > 0;
         var pdfSize = hasPdf ? report.PdfContent!.Length : 0;
 
-        var status = hasPdf ? "PDF-READY" : (!string.IsNullOrEmpty(report.Status) ? report.Status : "PROCESSING");
+        var status = hasPdf ? ReportStatus.PDF_READY : (!string.IsNullOrEmpty(report.Status) ? report.Status : ReportStatus.PROCESSING);
 
         return new PdfReportDTO
         {
@@ -279,7 +279,7 @@ public class PdfReportsController(
                 return Conflict(new { errorCode = "REPORT_ALREADY_COMPLETED" });
             }
 
-            var regenerableStatuses = new[] { "PROCESSING", "ERROR" };
+            var regenerableStatuses = new[] { ReportStatus.PROCESSING, ReportStatus.ERROR };
             if (!string.IsNullOrWhiteSpace(report.Status) &&
                 !regenerableStatuses.Contains(report.Status))
             {
@@ -293,7 +293,7 @@ public class PdfReportsController(
             var periodEnd = report.ReportPeriodEnd;
 
             // Reset stato
-            report.Status = "REGENERATING";
+            report.Status = ReportStatus.REGENERATING;
             report.GeneratedAt = null;
             await db.SaveChangesAsync();
 
@@ -345,7 +345,7 @@ public class PdfReportsController(
             {
                 message = "Rigenerazione avviata in background",
                 reportId = id,
-                status = "REGENERATING"
+                status = ReportStatus.REGENERATING
             });
         }
         catch (Exception ex)
@@ -375,7 +375,7 @@ public class PdfReportsController(
                 return NotFound(new { canRegenerate = false, reason = "Report non trovato" });
 
             var isImmutable = !string.IsNullOrWhiteSpace(report.PdfHash) && report.HasPdfContent;
-            var isInErrorState = new[] { "PROCESSING", "ERROR" }
+            var isInErrorState = new[] { ReportStatus.PROCESSING, ReportStatus.ERROR }
                 .Contains(report.Status ?? "");
 
             var canRegenerate = !isImmutable && isInErrorState;
@@ -414,7 +414,7 @@ public class PdfReportsController(
         {
             // Controlla sia PROCESSING che REGENERATING
             var processingReport = await db.PdfReports
-                .Where(r => r.Status == "PROCESSING" || r.Status == "REGENERATING")
+                .Where(r => r.Status == ReportStatus.PROCESSING || r.Status == ReportStatus.REGENERATING)
                 .Select(r => new
                 {
                     r.Id,
@@ -467,7 +467,7 @@ public class PdfReportsController(
         try
         {
             var processing = await db.GapCertificationPdfs
-                .Where(c => c.Status == "PROCESSING")
+                .Where(c => c.Status == ReportStatus.PROCESSING)
                 .Select(c => new
                 {
                     c.PdfReportId,
@@ -535,7 +535,7 @@ public class PdfReportsController(
             var isPdfAvailable = !string.IsNullOrWhiteSpace(report.PdfHash) && report.HasPdfContent;
 
             // Verifica se il report è in uno stato rigenerabile (in quel caso non mostrare certificazione)
-            var isRegenerable = new[] { "PROCESSING", "ERROR", "REGENERATING" }.Contains(report.Status ?? "");
+            var isRegenerable = new[] { ReportStatus.PROCESSING, ReportStatus.ERROR, ReportStatus.REGENERATING }.Contains(report.Status ?? "");
 
             if (!isPdfAvailable || isRegenerable)
             {
@@ -666,7 +666,7 @@ public class PdfReportsController(
 
             // 1. Verifica che non ci sia già una certificazione in corso globalmente
             var existingProcessing = await db.GapCertificationPdfs
-                .AnyAsync(c => c.Status == "PROCESSING");
+                .AnyAsync(c => c.Status == ReportStatus.PROCESSING);
 
             if (existingProcessing)
             {
@@ -693,7 +693,7 @@ public class PdfReportsController(
 
             // 3. Verifica che non esista già una certificazione COMPLETED per questo report
             var existingCompleted = await db.GapCertificationPdfs
-                .AnyAsync(c => c.PdfReportId == id && c.Status == "COMPLETED");
+                .AnyAsync(c => c.PdfReportId == id && c.Status == ReportStatus.COMPLETED);
 
             if (existingCompleted)
             {
@@ -706,7 +706,7 @@ public class PdfReportsController(
 
             // 4. Rimuovi eventuali certificazioni precedenti in stato ERROR per questo report
             var existingError = await db.GapCertificationPdfs
-                .Where(c => c.PdfReportId == id && c.Status == "ERROR")
+                .Where(c => c.PdfReportId == id && c.Status == ReportStatus.ERROR)
                 .ToListAsync();
 
             if (existingError.Count > 0)
@@ -719,7 +719,7 @@ public class PdfReportsController(
             var certPdf = new Data.Entities.GapCertificationPdf
             {
                 PdfReportId = id,
-                Status = "PROCESSING",
+                Status = ReportStatus.PROCESSING,
                 CreatedAt = DateTime.Now
             };
 
@@ -756,7 +756,7 @@ public class PdfReportsController(
             {
                 message = "Certificazione gap avviata in background",
                 reportId = id,
-                status = "PROCESSING"
+                status = ReportStatus.PROCESSING
             });
         }
         catch (Exception ex)
@@ -786,7 +786,7 @@ public class PdfReportsController(
 
             // Recupera la certificazione PDF dal database
             var certPdf = await db.GapCertificationPdfs
-                .FirstOrDefaultAsync(c => c.PdfReportId == id && c.Status == "COMPLETED");
+                .FirstOrDefaultAsync(c => c.PdfReportId == id && c.Status == ReportStatus.COMPLETED);
 
             if (certPdf == null)
             {

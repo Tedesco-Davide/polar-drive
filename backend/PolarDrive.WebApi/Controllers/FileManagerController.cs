@@ -6,6 +6,7 @@ using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
 using System.Text.Json;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -29,16 +30,16 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
             {
                 var trimmed = search.Trim();
                 
-                if (searchType == "id" && int.TryParse(trimmed, out int searchId))
+                if (searchType == SearchType.ID && int.TryParse(trimmed, out int searchId))
                 {
                     var searchIdStr = searchId.ToString();
                     query = query.Where(j => EF.Functions.Like(j.Id.ToString(), $"%{searchIdStr}%"));
                 }
-                else if (searchType == "status")
+                else if (searchType == SearchType.STATUS)
                 {
                     var pattern = $"%{trimmed}%";
-                    query = query.Where(j => 
-                        !string.IsNullOrEmpty(j.Status) && 
+                    query = query.Where(j =>
+                        !string.IsNullOrEmpty(j.Status) &&
                         EF.Functions.Like(j.Status, pattern));
                 }
             }
@@ -132,7 +133,7 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
             CompanyList = request.Companies ?? [],
             VinList = request.Vins ?? [],
             BrandList = request.Brands ?? [],
-            Status = "PENDING",
+            Status = ReportStatus.PENDING,
             RequestedBy = request.RequestedBy,
             Notes = null
         };
@@ -156,7 +157,7 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
         if (job == null)
             return NotFound();
 
-        if (job.Status != "COMPLETED" || !job.HasZipFile)
+        if (job.Status != ReportStatus.COMPLETED || !job.HasZipFile)
             return BadRequest("Il file ZIP non è ancora pronto per il download");
 
         var fileName = $"PDF_Reports_{job.PeriodStart:yyyyMMdd}_{job.PeriodEnd:yyyyMMdd}_{job.Id}.zip";
@@ -315,7 +316,7 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
             await scopedDb.AdminFileManager
                 .Where(j => j.Id == jobId)
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(j => j.Status, "PROCESSING")
+                    .SetProperty(j => j.Status, ReportStatus.PROCESSING)
                     .SetProperty(j => j.StartedAt, DateTime.Now));
 
             var adjustedPeriodEnd = job.PeriodEnd;
@@ -353,7 +354,7 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
 
             if (pdfReports.Count == 0)
             {
-                job.Status = "COMPLETED";
+                job.Status = ReportStatus.COMPLETED;
                 job.CompletedAt = DateTime.Now;
                 job.Notes = "Nessun PDF trovato per i criteri specificati";
                 job.IncludedPdfCount = 0;
@@ -408,7 +409,7 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
 
             // ✅ Poi salva il contenuto in una transazione separata
             job.ZipContent = zipBytes;
-            job.Status = "COMPLETED";
+            job.Status = ReportStatus.COMPLETED;
             job.CompletedAt = DateTime.Now;
 
             await scopedDb.SaveChangesAsync();

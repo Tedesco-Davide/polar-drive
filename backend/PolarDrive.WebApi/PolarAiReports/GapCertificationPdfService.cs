@@ -6,6 +6,7 @@ using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
 using PolarDrive.WebApi.PolarAiReports.Templates;
 using PolarDrive.WebApi.Services;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -203,7 +204,7 @@ public class GapCertificationPdfService(
                 // 3. Salva il PDF e aggiorna lo stato a COMPLETED
                 certPdf.PdfContent = result.PdfContent;
                 certPdf.PdfHash = result.PdfHash;
-                certPdf.Status = "COMPLETED";
+                certPdf.Status = ReportStatus.COMPLETED;
                 certPdf.GeneratedAt = DateTime.Now;
                 certPdf.GapsCertified = result.GapsCertified;
                 certPdf.AverageConfidence = result.AverageConfidence;
@@ -216,7 +217,7 @@ public class GapCertificationPdfService(
             else
             {
                 // 4. In caso di errore, imposta lo stato ERROR
-                certPdf.Status = "ERROR";
+                certPdf.Status = ReportStatus.ERROR;
                 await _db.SaveChangesAsync();
 
                 await _logger.Error(source, $"Gap certification FAILED for report {pdfReportId}",
@@ -235,7 +236,7 @@ public class GapCertificationPdfService(
 
                 if (certPdf != null)
                 {
-                    certPdf.Status = "ERROR";
+                    certPdf.Status = ReportStatus.ERROR;
                     await _db.SaveChangesAsync();
                 }
             }

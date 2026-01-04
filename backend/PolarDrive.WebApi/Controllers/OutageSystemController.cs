@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.WebApi.Services;
 
@@ -81,7 +82,7 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                     o.OutageType,
                     o.OutageBrand,
                     o.AutoDetected,
-                    Status = o.OutageEnd == null ? "OUTAGE-ONGOING" : "OUTAGE-RESOLVED",
+                    Status = o.OutageEnd == null ? OutageConstants.STATUS_ONGOING : OutageConstants.STATUS_RESOLVED,
                     CreatedAt = o.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
                     DurationMinutes = o.OutageEnd != null
                         ? (int)(o.OutageEnd.Value - o.OutageStart).TotalMinutes
@@ -96,8 +97,8 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                 ResolvedOutages = resolvedOutages.Count,
                 AutoDetectedCount = outages.Count(o => o.AutoDetected),
                 ManualCount = outages.Count(o => !o.AutoDetected),
-                VehicleOutages = outages.Count(o => o.OutageType == "Outage Vehicle"),
-                FleetApiOutages = outages.Count(o => o.OutageType == "Outage Fleet Api"),
+                VehicleOutages = outages.Count(o => o.OutageType == OutageConstants.OUTAGE_VEHICLE),
+                FleetApiOutages = outages.Count(o => o.OutageType == OutageConstants.OUTAGE_FLEET_API),
                 OutagesByBrand = brandStats,
                 RecentOutages = recentOutages,
                 AvgOutageDurationMinutes = Math.Round(avgDuration, 2),
@@ -154,8 +155,8 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                 {
                     Date = g.Key.ToString("yyyy-MM-dd"),
                     Count = g.Count(),
-                    VehicleOutages = g.Count(o => o.OutageType == "Outage Vehicle"),
-                    FleetApiOutages = g.Count(o => o.OutageType == "Outage Fleet Api")
+                    VehicleOutages = g.Count(o => o.OutageType == OutageConstants.OUTAGE_VEHICLE),
+                    FleetApiOutages = g.Count(o => o.OutageType == OutageConstants.OUTAGE_FLEET_API)
                 })
                 .OrderBy(x => x.Date)
                 .ToList();
@@ -179,8 +180,8 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                 {
                     Brand = g.Key,
                     Count = g.Count(),
-                    VehicleOutages = g.Count(o => o.OutageType == "Outage Vehicle"),
-                    FleetApiOutages = g.Count(o => o.OutageType == "Outage Fleet Api")
+                    VehicleOutages = g.Count(o => o.OutageType == OutageConstants.OUTAGE_VEHICLE),
+                    FleetApiOutages = g.Count(o => o.OutageType == OutageConstants.OUTAGE_FLEET_API)
                 })
                 .OrderByDescending(x => x.Count)
                 .ToList();

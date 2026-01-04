@@ -6,6 +6,7 @@ using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -18,7 +19,7 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext) : Co
 
     [HttpPost]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(100_000_000)] // ZIP up to 100MB
+    [RequestSizeLimit(MAX_UPLOAD_SIZE_BYTES)]
     public async Task<IActionResult> Post([FromForm] AdminFullClientInsertRequest request)
     {
         await _logger.Info("AdminFullClientInsertController.Post", "Started full client onboarding workflow.");

@@ -6,6 +6,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -39,12 +40,12 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
             {
                 var trimmed = search.Trim();
 
-                if (searchType == "id" && int.TryParse(trimmed, out int searchId))
+                if (searchType == SearchType.ID && int.TryParse(trimmed, out int searchId))
                 {
                     var searchIdStr = searchId.ToString();
                     query = query.Where(c => EF.Functions.Like(c.Id.ToString(), $"%{searchIdStr}%"));
                 }
-                else if (searchType == "status")
+                else if (searchType == SearchType.STATUS)
                 {
                     var pattern = $"%{trimmed}%";
                     query = query.Where(c =>
@@ -93,7 +94,7 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
 
     [HttpPost]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(100_000_000)] // ZIP up to 100MB
+    [RequestSizeLimit(MAX_UPLOAD_SIZE_BYTES)]
     public async Task<IActionResult> Post(
         [FromForm] int clientCompanyId,
         [FromForm] int vehicleId,

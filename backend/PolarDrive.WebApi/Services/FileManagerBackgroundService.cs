@@ -3,6 +3,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Services;
 
@@ -34,7 +35,7 @@ public class FileManagerBackgroundService(IServiceProvider serviceProvider, Pola
         var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
         var processingJob = await db.AdminFileManager
-            .FirstOrDefaultAsync(j => j.Status == "PROCESSING", stoppingToken);
+            .FirstOrDefaultAsync(j => j.Status == ReportStatus.PROCESSING, stoppingToken);
 
         if (processingJob != null)
         {
@@ -43,7 +44,7 @@ public class FileManagerBackgroundService(IServiceProvider serviceProvider, Pola
         }
 
         var nextJob = await db.AdminFileManager
-            .Where(j => j.Status == "PENDING")
+            .Where(j => j.Status == ReportStatus.PENDING)
             .OrderBy(j => j.RequestedAt)
             .FirstOrDefaultAsync(stoppingToken);
 
@@ -58,7 +59,7 @@ public class FileManagerBackgroundService(IServiceProvider serviceProvider, Pola
 
         try
         {
-            job.Status = "PROCESSING";
+            job.Status = ReportStatus.PROCESSING;
             job.StartedAt = DateTime.Now;
             await db.SaveChangesAsync(stoppingToken);
 
@@ -160,7 +161,7 @@ public class FileManagerBackgroundService(IServiceProvider serviceProvider, Pola
 
             if (pdfIds.Count == 0)
             {
-                job.Status = "COMPLETED";
+                job.Status = ReportStatus.COMPLETED;
                 job.CompletedAt = DateTime.Now;
                 job.Notes = "Nessun PDF trovato";
                 job.IncludedPdfCount = 0;
@@ -260,13 +261,13 @@ public class FileManagerBackgroundService(IServiceProvider serviceProvider, Pola
 
             // ✅ SALVA BLOB (NO RELOAD!)
             job.ZipContent = zipBytes;
-            job.Status = "COMPLETED";
+            job.Status = ReportStatus.COMPLETED;
             job.CompletedAt = DateTime.Now;
             await db.AdminFileManager
             .Where(j => j.Id == job.Id)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(j => j.ZipContent, zipBytes)
-                .SetProperty(j => j.Status, "COMPLETED")
+                .SetProperty(j => j.Status, ReportStatus.COMPLETED)
                 .SetProperty(j => j.CompletedAt, DateTime.Now)
                 .SetProperty(j => j.HasZipFile, true)
                 .SetProperty(j => j.ZipFileSizeMB, job.ZipFileSizeMB)

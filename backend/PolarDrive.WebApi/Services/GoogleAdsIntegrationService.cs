@@ -1,6 +1,7 @@
 using PolarDrive.Data.DbContexts;
 using PolarDrive.WebApi.Helpers;
 using PolarDrive.WebApi.PolarAiReports;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Services;
 
@@ -33,26 +34,26 @@ public class GoogleAdsIntegrationService
         },
             custom_variables = new object[]
             {
-                new { tag = "battery_health", number_value = metrics.BatteryHealthScore },
-                new { tag = "efficiency_score", number_value = metrics.EfficiencyScore },
-                new { tag = "usage_intensity", string_value = metrics.UsageIntensity },
-                new { tag = "ai_driver_profile", string_value = aiPayload.DriverProfile },
-                new { tag = "ai_driver_confidence", number_value = aiPayload.DriverProfileConfidence },
-                new { tag = "ai_optimization_priority", string_value = aiPayload.OptimizationPriority },
-                new { tag = "ai_optimization_score", number_value = aiPayload.OptimizationPriorityScore },
-                new { tag = "ai_usage_change_pred", number_value = aiPayload.PredictedMonthlyUsageChange },
-                new { tag = "ai_segment", string_value = aiPayload.Segment },
-                new { tag = "ai_segment_confidence", number_value = aiPayload.SegmentConfidence },
-                new { tag = "ai_charging_score", number_value = aiPayload.ChargingBehaviorScore },
-                new { tag = "ai_efficiency_potential", number_value = aiPayload.EfficiencyPotential },
-                new { tag = "ai_battery_trend", string_value = aiPayload.BatteryHealthTrend },
-                new { tag = "ai_engagement", string_value = aiPayload.EngagementLevel },
-                new { tag = "ai_conversion_likelihood", number_value = aiPayload.ConversionLikelihood },
-                new { tag = "ai_ltv_indicator", string_value = aiPayload.LifetimeValueIndicator },
-                new { tag = "ai_campaign_type", string_value = aiPayload.RecommendedCampaignType },
-                new { tag = "ai_motivator_1", string_value = aiPayload.KeyMotivators.ElementAtOrDefault(0) ?? "" },
-                new { tag = "ai_motivator_2", string_value = aiPayload.KeyMotivators.ElementAtOrDefault(1) ?? "" },
-                new { tag = "ai_motivator_3", string_value = aiPayload.KeyMotivators.ElementAtOrDefault(2) ?? "" }
+                new { tag = GoogleAdsTag.BATTERY_HEALTH, number_value = metrics.BatteryHealthScore },
+                new { tag = GoogleAdsTag.EFFICIENCY_SCORE, number_value = metrics.EfficiencyScore },
+                new { tag = GoogleAdsTag.USAGE_INTENSITY, string_value = metrics.UsageIntensity },
+                new { tag = GoogleAdsTag.AI_DRIVER_PROFILE, string_value = aiPayload.DriverProfile },
+                new { tag = GoogleAdsTag.AI_DRIVER_CONFIDENCE, number_value = aiPayload.DriverProfileConfidence },
+                new { tag = GoogleAdsTag.AI_OPTIMIZATION_PRIORITY, string_value = aiPayload.OptimizationPriority },
+                new { tag = GoogleAdsTag.AI_OPTIMIZATION_SCORE, number_value = aiPayload.OptimizationPriorityScore },
+                new { tag = GoogleAdsTag.AI_USAGE_CHANGE_PRED, number_value = aiPayload.PredictedMonthlyUsageChange },
+                new { tag = GoogleAdsTag.AI_SEGMENT, string_value = aiPayload.Segment },
+                new { tag = GoogleAdsTag.AI_SEGMENT_CONFIDENCE, number_value = aiPayload.SegmentConfidence },
+                new { tag = GoogleAdsTag.AI_CHARGING_SCORE, number_value = aiPayload.ChargingBehaviorScore },
+                new { tag = GoogleAdsTag.AI_EFFICIENCY_POTENTIAL, number_value = aiPayload.EfficiencyPotential },
+                new { tag = GoogleAdsTag.AI_BATTERY_TREND, string_value = aiPayload.BatteryHealthTrend },
+                new { tag = GoogleAdsTag.AI_ENGAGEMENT, string_value = aiPayload.EngagementLevel },
+                new { tag = GoogleAdsTag.AI_CONVERSION_LIKELIHOOD, number_value = aiPayload.ConversionLikelihood },
+                new { tag = GoogleAdsTag.AI_LTV_INDICATOR, string_value = aiPayload.LifetimeValueIndicator },
+                new { tag = GoogleAdsTag.AI_CAMPAIGN_TYPE, string_value = aiPayload.RecommendedCampaignType },
+                new { tag = GoogleAdsTag.AI_MOTIVATOR_1, string_value = aiPayload.KeyMotivators.ElementAtOrDefault(0) ?? "" },
+                new { tag = GoogleAdsTag.AI_MOTIVATOR_2, string_value = aiPayload.KeyMotivators.ElementAtOrDefault(1) ?? "" },
+                new { tag = GoogleAdsTag.AI_MOTIVATOR_3, string_value = aiPayload.KeyMotivators.ElementAtOrDefault(2) ?? "" }
             }
         };
 

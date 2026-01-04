@@ -67,7 +67,7 @@ namespace PolarDrive.WebApi.Services
             var failedReports = await db.PdfReports
                 .Include(r => r.ClientCompany)
                 .Include(r => r.ClientVehicle)
-                .Where(r => r.Status == "ERROR")
+                .Where(r => r.Status == ReportStatus.ERROR)
                 .OrderBy(r => r.CreatedAt) // Processa prima i più vecchi
                 .ToListAsync(stoppingToken);
 
@@ -94,7 +94,7 @@ namespace PolarDrive.WebApi.Services
 
                 // 🔒 Verifica che non ci siano già report in PROCESSING o REGENERATING
                 var hasProcessing = await db.PdfReports
-                    .AnyAsync(r => r.Status == "PROCESSING" || r.Status == "REGENERATING", stoppingToken);
+                    .AnyAsync(r => r.Status == ReportStatus.PROCESSING || r.Status == ReportStatus.REGENERATING, stoppingToken);
 
                 if (hasProcessing)
                 {

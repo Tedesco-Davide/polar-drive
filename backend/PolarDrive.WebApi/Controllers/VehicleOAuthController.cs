@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -40,7 +41,7 @@ public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment 
         {
             switch (brand)
             {
-            case "tesla":
+            case VehicleBrand.TESLA:
                 clientId = "ownerapi";
                 scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
                 
@@ -123,7 +124,7 @@ public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment 
         {
             var tokens = brand.ToLowerInvariant() switch
             {
-                "tesla" => await TeslaOAuthService.ExchangeCodeForTokens(code, _cfg, _env),
+                VehicleBrand.TESLA => await TeslaOAuthService.ExchangeCodeForTokens(code, _cfg, _env),
                 _ => throw new NotSupportedException($"Brand '{brand}' not supported")
             };
 

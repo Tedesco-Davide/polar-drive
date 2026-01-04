@@ -20,15 +20,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<FormOptions>(options =>
 {
     options.ValueLengthLimit = int.MaxValue;
-    options.MultipartBodyLengthLimit = 100_000_000; // 100MB
+    options.MultipartBodyLengthLimit = MAX_UPLOAD_SIZE_BYTES;
     options.MultipartHeadersLengthLimit = int.MaxValue;
     options.BufferBody = true;
-    options.BufferBodyLengthLimit = 100_000_000;
+    options.BufferBodyLengthLimit = MAX_UPLOAD_SIZE_BYTES;
 });
 
 builder.Services.Configure<KestrelServerOptions>(options =>
 {
-    options.Limits.MaxRequestBodySize = 100_000_000; // 100MB
+    options.Limits.MaxRequestBodySize = MAX_UPLOAD_SIZE_BYTES;
 });
 
 builder.WebHost.ConfigureKestrel(options =>

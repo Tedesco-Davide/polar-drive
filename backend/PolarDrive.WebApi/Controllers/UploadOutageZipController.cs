@@ -64,13 +64,13 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
             parsedEnd = tmpEnd;
         }
 
-        if (status == "OUTAGE-RESOLVED" && parsedEnd is null)
+        if (status == OutageConstants.STATUS_RESOLVED && parsedEnd is null)
         {
             await _logger.Warning("UploadOutageZipController", "Resolved outage without end date.");
             return BadRequest("SERVER ERROR → BAD REQUEST: OUTAGE-RESOLVED requires outageEnd!");
         }
 
-        if (outageType == "Outage Vehicle")
+        if (outageType == OutageConstants.OUTAGE_VEHICLE)
         {
             if (clientCompanyId is null || vehicleId is null)
                 return BadRequest("SERVER ERROR → BAD REQUEST: Missing vehicle or company ID!");

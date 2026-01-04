@@ -288,7 +288,7 @@ public class OutageDetectionService(
             {
                 bool shouldResolve = false;
 
-                if (outage.OutageType == "Outage Fleet Api")
+                if (outage.OutageType == OutageConstants.OUTAGE_FLEET_API)
                 {
                     // Controlla se l'API è tornata online
                     shouldResolve = !await IsFleetApiDownAsync(outage.OutageBrand);
@@ -298,7 +298,7 @@ public class OutageDetectionService(
                         await _logger.Info("OutageDetectionService", $"Fleet API {outage.OutageBrand} is back online");
                     }
                 }
-                else if (outage.OutageType == "Outage Vehicle" && outage.ClientVehicle != null)
+                else if (outage.OutageType == OutageConstants.OUTAGE_VEHICLE && outage.ClientVehicle != null)
                 {
                     // Rileggi sempre il veicolo con i dati più aggiornati
                     var freshVehicle = await _db.ClientVehicles
@@ -392,7 +392,7 @@ public class OutageDetectionService(
     {
         return brand.ToLower() switch
         {
-            "tesla" => _env.IsDevelopment()
+            VehicleBrand.TESLA => _env.IsDevelopment()
                 ? "http://mock-api:9090/api/tesla/health"
                 : $"{GenericHelpers.EnsureTrailingSlash(_cfg["TeslaApi:BaseUrl"])}api/1/vehicles",
 
@@ -405,7 +405,7 @@ public class OutageDetectionService(
         // Controlla se esiste già un outage ongoing per questo brand
         var existingOutage = await _db.OutagePeriods
             .FirstOrDefaultAsync(o =>
-                o.OutageType == "Outage Fleet Api" &&
+                o.OutageType == OutageConstants.OUTAGE_FLEET_API &&
                 o.OutageBrand == brand &&
                 o.OutageEnd == null);
 
@@ -415,7 +415,7 @@ public class OutageDetectionService(
             var newOutage = new OutagePeriod
             {
                 AutoDetected = true,
-                OutageType = "Outage Fleet Api",
+                OutageType = OutageConstants.OUTAGE_FLEET_API,
                 OutageBrand = brand,
                 CreatedAt = DateTime.Now,
                 OutageStart = DateTime.Now,
@@ -442,7 +442,7 @@ public class OutageDetectionService(
     {
         var ongoingOutage = await _db.OutagePeriods
             .FirstOrDefaultAsync(o =>
-                o.OutageType == "Outage Fleet Api" &&
+                o.OutageType == OutageConstants.OUTAGE_FLEET_API &&
                 o.OutageBrand == brand &&
                 o.OutageEnd == null);
 
@@ -597,7 +597,7 @@ public class OutageDetectionService(
     {
         var existingOutage = await _db.OutagePeriods
             .FirstOrDefaultAsync(o =>
-                o.OutageType == "Outage Vehicle" &&
+                o.OutageType == OutageConstants.OUTAGE_VEHICLE &&
                 o.VehicleId == vehicle.Id &&
                 o.OutageEnd == null);
 
@@ -606,7 +606,7 @@ public class OutageDetectionService(
             var newOutage = new OutagePeriod
             {
                 AutoDetected = true,
-                OutageType = "Outage Vehicle",
+                OutageType = OutageConstants.OUTAGE_VEHICLE,
                 OutageBrand = vehicle.Brand,
                 CreatedAt = DateTime.Now,
                 OutageStart = DateTime.Now,
@@ -633,7 +633,7 @@ public class OutageDetectionService(
     {
         var ongoingOutage = await _db.OutagePeriods
             .FirstOrDefaultAsync(o =>
-                o.OutageType == "Outage Vehicle" &&
+                o.OutageType == OutageConstants.OUTAGE_VEHICLE &&
                 o.VehicleId == vehicle.Id &&
                 o.OutageEnd == null);
 

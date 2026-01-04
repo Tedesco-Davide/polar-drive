@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -48,11 +49,11 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
                 var trimmed = search.Trim();
                 var pattern = $"%{trimmed}%";
 
-                if (searchType == "vat")
+                if (searchType == SearchType.VAT)
                 {
                     query = query.Where(c => EF.Functions.Like(c.VatNumber, pattern));
                 }
-                else if (searchType == "name")
+                else if (searchType == SearchType.NAME)
                 {
                     query = query.Where(c => EF.Functions.Like(c.Name, pattern));
                 }

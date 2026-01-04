@@ -5,6 +5,7 @@ using PolarDrive.Data.Entities;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Constants;
 using System.Text.Json;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
@@ -37,12 +38,12 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
             {
                 var trimmed = search.Trim();
 
-                if (searchType == "id" && int.TryParse(trimmed, out int searchId))
+                if (searchType == SearchType.ID && int.TryParse(trimmed, out int searchId))
                 {
                     var searchIdStr = searchId.ToString();
                     query = query.Where(o => EF.Functions.Like(o.Id.ToString(), $"%{searchIdStr}%"));
                 }
-                else if (searchType == "status")
+                else if (searchType == SearchType.STATUS)
                 {
                     var statusValue = trimmed.ToUpper();
 
@@ -55,7 +56,7 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
                         query = query.Where(o => o.OutageEnd != null);
                     }
                 }
-                else if (searchType == "outageType")
+                else if (searchType == SearchType.OUTAGE_TYPE)
                 {
                     query = query.Where(o => o.OutageType.Contains(trimmed));
                 }
@@ -79,7 +80,7 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
                     o.Notes,
                     o.VehicleId,
                     o.ClientCompanyId,
-                    Status = o.OutageEnd.HasValue ? "OUTAGE-RESOLVED" : "OUTAGE-ONGOING",
+                    Status = o.OutageEnd.HasValue ? OutageConstants.STATUS_RESOLVED : OutageConstants.STATUS_ONGOING,
                     Vin = o.ClientVehicle != null ? o.ClientVehicle.Vin : null,
                     CompanyVatNumber = o.ClientCompany != null ? o.ClientCompany.VatNumber : null,
                     DurationMinutes = o.OutageEnd.HasValue
@@ -135,7 +136,7 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
             ClientVehicle? vehicle = null;
             ClientCompany? company = null;
 
-            if (request.OutageType == "Outage Vehicle")
+            if (request.OutageType == OutageConstants.OUTAGE_VEHICLE)
             {
                 if (request.VehicleId == null || request.ClientCompanyId == null)
                     return BadRequest("Vehicle ID and Company ID are required for Outage Vehicle");
@@ -196,7 +197,7 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
                 outage.Notes,
                 outage.VehicleId,
                 outage.ClientCompanyId,
-                Status = outage.OutageEnd.HasValue ? "OUTAGE-RESOLVED" : "OUTAGE-ONGOING",
+                Status = outage.OutageEnd.HasValue ? OutageConstants.STATUS_RESOLVED : OutageConstants.STATUS_ONGOING,
                 Vin = vehicle?.Vin,
                 CompanyVatNumber = company?.VatNumber,
                 DurationMinutes = outage.OutageEnd.HasValue
@@ -281,7 +282,7 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
         var query = _db.OutagePeriods.AsQueryable()
             .Where(o => o.OutageType == outageType && o.OutageBrand == brand);
 
-        if (outageType == "Outage Vehicle" && vehicleId.HasValue)
+        if (outageType == OutageConstants.OUTAGE_VEHICLE && vehicleId.HasValue)
             query = query.Where(o => o.VehicleId == vehicleId);
 
         var overlapping = await query

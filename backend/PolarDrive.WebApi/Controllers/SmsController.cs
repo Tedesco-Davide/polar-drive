@@ -112,11 +112,11 @@ public class SmsController(
                 return await HandleAdaptiveProfileCommand(
                     new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, command, from);
 
-            if (command == "ACCETTO")
+            if (command == SmsCommand.ACCETTO)
                 return await HandleAccettoCommand(
                     new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, from);
 
-            if (command == "STOP")
+            if (command == SmsCommand.STOP)
                 return await HandleStopCommand(
                     new SmsWebhookDTO { From = from, To = to, Body = body, MessageSid = messageId }, auditLog, from);
 
@@ -212,7 +212,7 @@ public class SmsController(
             return OkSms(errorResponse);
         }
 
-        // Usa il brand normalizzato (case corretto da vehicle-options.json)
+        // Usa il brand normalizzato
         var brand = matchedBrand;
 
         // Formato fisso: ADAPTIVE_GDPR <brand> <cognome> <nome> <numero>
@@ -493,7 +493,7 @@ public class SmsController(
         foreach (var pe in profileEvents)
         {
             pe.ConsentAccepted = false;
-            pe.ParsedCommand = "ADAPTIVE_PROFILE_OFF";
+            pe.ParsedCommand = SmsCommand.ADAPTIVE_PROFILE_OFF;
         }
 
         await _db.SaveChangesAsync();
@@ -535,15 +535,15 @@ public class SmsController(
         }
 
         // ACCETTO
-        if (normalizedMessage == "ACCETTO")
+        if (normalizedMessage == SmsCommand.ACCETTO)
         {
-            return "ACCETTO";
+            return SmsCommand.ACCETTO;
         }
 
         // STOP
-        if (normalizedMessage == "STOP" || normalizedMessage == "OFF")
+        if (normalizedMessage == SmsCommand.STOP || normalizedMessage == SmsCommand.OFF)
         {
-            return "STOP";
+            return SmsCommand.STOP;
         }
 
         return "INVALID";
@@ -644,7 +644,7 @@ public class SmsController(
                 ReceivedAt = DateTime.Now,
                 ExpiresAt = DateTime.Now.AddHours(SMS_ADAPTIVE_HOURS_THRESHOLD),
                 MessageContent = dto.Body,
-                ParsedCommand = "ADAPTIVE_PROFILE_ON",
+                ParsedCommand = SmsCommand.ADAPTIVE_PROFILE_ON,
                 ConsentAccepted = true,
                 SmsAdaptiveGdprId = gdprConsent.Id
             };
@@ -658,7 +658,7 @@ public class SmsController(
             profileEvent.ReceivedAt = DateTime.Now;
             profileEvent.ExpiresAt = DateTime.Now.AddHours(SMS_ADAPTIVE_HOURS_THRESHOLD);
             profileEvent.MessageContent = dto.Body!;
-            profileEvent.ParsedCommand = "ADAPTIVE_PROFILE_ON";
+            profileEvent.ParsedCommand = SmsCommand.ADAPTIVE_PROFILE_ON;
             profileEvent.ConsentAccepted = true;
             profileEvent.SmsAdaptiveGdprId = gdprConsent.Id;
         }
@@ -847,7 +847,7 @@ public class SmsController(
             var activeSession = await _db.SmsAdaptiveProfile
                 .Where(p => p.VehicleId == vehicleId
                         && p.ConsentAccepted
-                        && p.ParsedCommand == "ADAPTIVE_PROFILE_ON"
+                        && p.ParsedCommand == SmsCommand.ADAPTIVE_PROFILE_ON
                         && p.ExpiresAt > DateTime.Now)
                 .OrderByDescending(p => p.ReceivedAt)
                 .FirstOrDefaultAsync();
@@ -1039,12 +1039,12 @@ public class SmsController(
         try
         {
             var sessions = await _db.SmsAdaptiveProfile
-                .Where(p => p.VehicleId == vehicleId && p.ParsedCommand == "ADAPTIVE_PROFILE_ON")
+                .Where(p => p.VehicleId == vehicleId && p.ParsedCommand == SmsCommand.ADAPTIVE_PROFILE_ON)
                 .ToListAsync();
 
             var totalSessions = sessions.Count;
             var activeSessions = sessions.Count(s => s.ConsentAccepted
-                                                && s.ParsedCommand == "ADAPTIVE_PROFILE_ON"
+                                                && s.ParsedCommand == SmsCommand.ADAPTIVE_PROFILE_ON
                                                 && s.ExpiresAt > DateTime.Now);
             var lastSession = sessions.MaxBy(s => s.ReceivedAt)?.ReceivedAt;
             var firstSession = sessions.MinBy(s => s.ReceivedAt)?.ReceivedAt;

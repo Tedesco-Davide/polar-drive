@@ -5,6 +5,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Diagnostics;
 using PolarDrive.WebApi.Helpers;
+using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -370,8 +371,8 @@ public class IntelligentDataAggregator(
                     .OrderByDescending(e => e.ReceivedAt)
                     .ToListAsync());
 
-            aggregation.AdaptiveSessionsCount = adaptiveSessions.Count(s => s.ParsedCommand == "ADAPTIVE_PROFILE_ON");
-            var offSessions = adaptiveSessions.Count(s => s.ParsedCommand == "ADAPTIVE_PROFILE_OFF");
+            aggregation.AdaptiveSessionsCount = adaptiveSessions.Count(s => s.ParsedCommand == SmsCommand.ADAPTIVE_PROFILE_ON);
+            var offSessions = adaptiveSessions.Count(s => s.ParsedCommand == SmsCommand.ADAPTIVE_PROFILE_OFF);
             aggregation.AdaptiveSessionsStoppedManually = offSessions;
             aggregation.AdaptiveSessionsStoppedAutomatically = Math.Max(0, aggregation.AdaptiveSessionsCount - offSessions);
 
@@ -381,7 +382,7 @@ public class IntelligentDataAggregator(
             {
                 // Analisi pattern orari
                 var sessionsByHour = adaptiveSessions
-                    .Where(s => s.ParsedCommand == "ADAPTIVE_PROFILE_ON")
+                    .Where(s => s.ParsedCommand == SmsCommand.ADAPTIVE_PROFILE_ON)
                     .GroupBy(s => s.ReceivedAt.Hour)
                     .OrderByDescending(g => g.Count())
                     .FirstOrDefault();
@@ -435,7 +436,7 @@ public class IntelligentDataAggregator(
         return await ExecuteWithRetry(() =>
             _dbContext.SmsAdaptiveProfile
                 .Where(e => e.VehicleId == vehicleId
-                        && e.ParsedCommand == "ADAPTIVE_PROFILE_ON"
+                        && e.ParsedCommand == SmsCommand.ADAPTIVE_PROFILE_ON
                         && e.ReceivedAt >= fourHoursAgo)
                 .OrderByDescending(e => e.ReceivedAt)
                 .FirstOrDefaultAsync());
