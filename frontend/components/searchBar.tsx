@@ -176,9 +176,15 @@ export default function SearchBar({
 
         {searchType === "id" ? (
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={localValue}
-            onChange={(e) => setLocalValue(e.target.value)}
+            onChange={(e) => {
+              // Accetta solo numeri
+              const value = e.target.value.replace(/[^0-9]/g, "");
+              setLocalValue(value);
+            }}
             onKeyDown={handleKeyDown}
             placeholder={t("admin.vehicleReports.searchPlaceholder")}
             className="flex-1 px-4 py-2 text-base border border-gray-300 dark:border-gray-600 rounded bg-gray-200 dark:bg-gray-800 text-polarNight dark:text-softWhite placeholder-gray-500 focus:outline-none dark:placeholder-gray-400 focus:ring-2 focus:ring-polarNight transition"
