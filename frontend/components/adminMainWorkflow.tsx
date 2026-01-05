@@ -68,7 +68,7 @@ export default function AdminMainWorkflow() {
 
   const [searchType, setSearchType] = useState<"id" | "status">("id");
 
-const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
+  const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
     try {
       setLoading(true);
       const params = new URLSearchParams({
@@ -272,12 +272,18 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       if (!response.ok) {
         let errorCode = "";
         const responseText = await response.text();
-        console.error(`[AdminMainWorkflow] HTTP ${response.status}: ${responseText}`);
+        console.error(
+          `[AdminMainWorkflow] HTTP ${response.status}: ${responseText}`
+        );
         try {
           const json = JSON.parse(responseText);
           errorCode = json.errorCode || "";
         } catch {
-          alert(`${t("admin.genericError")} HTTP ${response.status} - ${responseText || "Nessuna risposta dal server"}`);
+          alert(
+            `${t("admin.genericError")} HTTP ${response.status} - ${
+              responseText || "Nessuna risposta dal server"
+            }`
+          );
           return;
         }
 
@@ -330,9 +336,11 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
       const errorMessage = String(error);
 
       // Gestione specifica per errore file modificato durante upload
-      if (errorMessage.includes("ERR_UPLOAD_FILE_CHANGED") ||
-          errorMessage.includes("upload file changed") ||
-          errorMessage.includes("Failed to fetch")) {
+      if (
+        errorMessage.includes("ERR_UPLOAD_FILE_CHANGED") ||
+        errorMessage.includes("upload file changed") ||
+        errorMessage.includes("Failed to fetch")
+      ) {
         alert(t("admin.fileUploadChanged"));
       } else {
         alert(t("admin.mainWorkflow.insertError", { error: errorMessage }));
@@ -492,7 +500,9 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing || isStatusChanging || isSubmitting) && <AdminLoader local />}
+      {(loading || isRefreshing || isStatusChanging || isSubmitting) && (
+        <AdminLoader local />
+      )}
 
       {/* Header responsive */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-6 sm:mb-12">
@@ -579,13 +589,17 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
             {/* Dettagli Azienda */}
             <div className="p-3 text-sm border-t border-gray-200 dark:border-gray-600">
               <div className="flex justify-between items-center mb-1">
-                <span className="text-gray-500 dark:text-gray-400 text-xs">Azienda:</span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs">
+                  Azienda:
+                </span>
                 <span className="font-medium text-polarNight dark:text-softWhite text-right text-xs truncate max-w-[65%]">
                   {entry.companyName}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-500 dark:text-gray-400 text-xs">P.IVA:</span>
+                <span className="text-gray-500 dark:text-gray-400 text-xs">
+                  P.IVA:
+                </span>
                 <span className="font-mono text-polarNight dark:text-softWhite text-xs">
                   {entry.companyVatNumber}
                 </span>
@@ -594,7 +608,13 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
 
             {/* Toggle Status - Griglia fissa 2 colonne */}
             <div className="p-3 bg-gray-100 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "12px",
+                }}
+              >
                 <div className="flex flex-col items-center">
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 text-center">
                     Veicolo Attivo
@@ -658,9 +678,15 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
 
             {/* Bottoni Azioni - Grid 2x2 con style inline per garantire funzionamento */}
             <div className="p-3 border-t border-gray-200 dark:border-gray-600">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "8px",
+                }}
+              >
                 <button
-                  style={{ minHeight: '44px' }}
+                  style={{ minHeight: "44px" }}
                   className={`flex items-center justify-center gap-1 p-2 ${
                     !entry.clientOAuthAuthorized
                       ? "bg-cyan-500 active:bg-cyan-700"
@@ -671,17 +697,23 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                     if (entry.clientOAuthAuthorized || !entry.brand) return;
                     try {
                       const res = await fetch(
-                        `/api/VehicleOAuth/GenerateUrl?brand=${entry.brand.toLowerCase()}&vin=${entry.vehicleVIN}`
+                        `/api/VehicleOAuth/GenerateUrl?brand=${entry.brand.toLowerCase()}&vin=${
+                          entry.vehicleVIN
+                        }`
                       );
                       const data = await res.json();
                       if (data?.url) {
                         await navigator.clipboard.writeText(data.url);
-                        alert(t("admin.mainWorkflow.alerts.urlGenerationConfirm"));
+                        alert(
+                          t("admin.mainWorkflow.alerts.urlGenerationConfirm")
+                        );
                       } else {
                         alert(t("admin.mainWorkflow.alerts.urlGenerationFail"));
                       }
                     } catch {
-                      alert(t("admin.mainWorkflow.alerts.urlGenerationOAuthFail"));
+                      alert(
+                        t("admin.mainWorkflow.alerts.urlGenerationOAuthFail")
+                      );
                     }
                   }}
                 >
@@ -689,7 +721,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                   <span className="text-xs font-medium">OAuth</span>
                 </button>
                 <button
-                  style={{ minHeight: '44px' }}
+                  style={{ minHeight: "44px" }}
                   className={`flex items-center justify-center gap-1 p-2 ${
                     entry.isVehicleActive
                       ? "bg-green-500 active:bg-green-700"
@@ -713,7 +745,7 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                   <span className="text-xs font-medium">SMS</span>
                 </button>
                 <button
-                  style={{ minHeight: '44px' }}
+                  style={{ minHeight: "44px" }}
                   className="flex items-center justify-center gap-1 p-2 text-white rounded-lg bg-purple-500 active:bg-purple-700 disabled:bg-gray-400 disabled:opacity-40"
                   disabled={generatingProfileId === entry.companyId}
                   onClick={() =>
@@ -734,8 +766,8 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                   )}
                 </button>
                 <button
-                  style={{ minHeight: '44px' }}
-                  className="flex items-center justify-center gap-1 p-2 bg-yellow-500 active:bg-yellow-700 text-white rounded-lg"
+                  style={{ minHeight: "44px" }}
+                  className="flex items-center justify-center gap-1 p-2 bg-yellow-600 active:bg-yellow-700 text-white rounded-lg"
                   onClick={() =>
                     handleDownloadAllConsents(
                       entry.companyVatNumber,
@@ -871,6 +903,20 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                   <MessageSquare size={16} />
                 </button>
                 <button
+                  className="p-2 bg-yellow-500 hover:bg-yellow-600 text-softWhite rounded"
+                  title={t(
+                    "admin.mainWorkflow.alerts.clientZipConsentsTooltip"
+                  )}
+                  onClick={() =>
+                    handleDownloadAllConsents(
+                      entry.companyVatNumber,
+                      entry.companyName
+                    )
+                  }
+                >
+                  <FileArchive size={16} />
+                </button>
+                <button
                   className="p-2 text-softWhite rounded bg-purple-500 hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
                   disabled={generatingProfileId === entry.companyId}
                   title={t("admin.mainWorkflow.alerts.clientProfileTooltip")}
@@ -887,18 +933,6 @@ const fetchWorkflowData = async (page: number, searchQuery: string = "") => {
                   ) : (
                     <UserSearch size={16} />
                   )}
-                </button>
-                <button
-                  className="p-2 bg-yellow-500 hover:bg-yellow-600 text-softWhite rounded"
-                  title={t("admin.mainWorkflow.alerts.clientZipConsentsTooltip")}
-                  onClick={() =>
-                    handleDownloadAllConsents(
-                      entry.companyVatNumber,
-                      entry.companyName
-                    )
-                  }
-                >
-                  <FileArchive size={16} />
                 </button>
               </td>
               <td className="p-4">

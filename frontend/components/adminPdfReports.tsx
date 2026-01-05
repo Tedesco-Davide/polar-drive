@@ -2,7 +2,7 @@ import { TFunction } from "i18next";
 import { PdfReport } from "@/types/reportInterfaces";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
-import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download, FileLock } from "lucide-react";
+import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download, FileLock, FileText } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
 import Chip from "@/components/chip";
 import AdminLoader from "@/components/adminLoader";
@@ -500,7 +500,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     {downloadingId === report.id ? (
                       <AdminLoader inline />
                     ) : (
-                      <FileLock size={16} />
+                      <FileText size={16} />
                     )}
                   </button>
 
@@ -517,13 +517,11 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     <NotebookPen size={16} />
                   </button>
 
-                  {/* Bottone Certificazione GAP - condizionale */}
                   {!isRegeneratable && report.pdfHash && report.hasPdfFile && (
                     <>
-                      {/* Se ha certificazione COMPLETED → Download verde */}
                       {report.hasGapCertificationPdf && report.gapCertificationStatus === "COMPLETED" ? (
                         <button
-                          className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:opacity-50"
+                          className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:opacity-50"
                           disabled={downloadingCertId === report.id}
                           onClick={() => handleDownloadCertification(report.id)}
                           title={t("admin.gapCertification.downloadCertification")}
@@ -535,7 +533,6 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                           )}
                         </button>
                       ) : report.gapCertificationStatus === "PROCESSING" ? (
-                        /* Se in PROCESSING → Loader viola */
                         <button
                           className="p-2 bg-purple-500 text-softWhite rounded animate-pulse"
                           disabled
@@ -544,9 +541,8 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                           <AdminLoader inline />
                         </button>
                       ) : (
-                        /* Altrimenti → Apri modale (disabilitato se altro in corso) */
                         <button
-                          className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
+                          className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
                           disabled={
                             gapCertProcessing?.hasProcessing ||
                             downloadingId === report.id ||
