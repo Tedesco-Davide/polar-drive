@@ -27,7 +27,7 @@ export interface PdfReport {
   status: string;
   pdfHash?: string;
 
-  // Gap Certification info
+  // Gap Validation info
   gapCertificationStatus?: string | null;
   gapCertificationPdfHash?: string | null;
   hasGapCertificationPdf?: boolean;

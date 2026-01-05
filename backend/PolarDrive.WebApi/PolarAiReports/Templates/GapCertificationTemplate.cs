@@ -1,7 +1,7 @@
 namespace PolarDrive.WebApi.PolarAiReports.Templates;
 
 /// <summary>
-/// Template CSS per il PDF di certificazione probabilistica dei gap
+/// Template CSS per il PDF di validazione probabilistica dei gap
 /// </summary>
 public static class GapCertificationTemplate
 {
@@ -43,12 +43,12 @@ public static class GapCertificationTemplate
     }
 
     /// <summary>
-    /// Restituisce il CSS per il documento di certificazione (include font Satoshi)
+    /// Restituisce il CSS per il documento di validazione (include font Satoshi)
     /// </summary>
     public static string GetCss() => GetFontStyles() + BaseCss;
 
     /// <summary>
-    /// CSS base per il documento di certificazione
+    /// CSS base per il documento di validazione
     /// </summary>
     private const string BaseCss = @"
         html, body {
@@ -442,6 +442,139 @@ public static class GapCertificationTemplate
             .disclaimer, .summary-section {
                 page-break-before: auto;
             }
+        }
+
+        /* OUTAGE SUMMARY SECTION */
+        .outage-summary-section {
+            margin: 25px 30px;
+            padding: 25px;
+            background: linear-gradient(135deg, rgba(229, 62, 62, 0.08) 0%, rgba(229, 62, 62, 0.03) 100%);
+            border: 2px solid rgba(229, 62, 62, 0.3);
+            border-radius: 12px;
+            page-break-inside: avoid;
+        }
+
+        .outage-summary-section h3 {
+            margin: 0 0 20px 0;
+            font-size: 15px;
+            color: #c53030;
+            font-weight: 700;
+            text-transform: uppercase;
+            border-bottom: 2px solid rgba(229, 62, 62, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .outage-stats-grid {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .outage-stat-box {
+            flex: 1;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid rgba(229, 62, 62, 0.2);
+        }
+
+        .outage-stat-box .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #c53030;
+            margin-bottom: 5px;
+        }
+
+        .outage-stat-box .stat-label {
+            font-size: 11px;
+            color: #718096;
+            font-weight: 500;
+        }
+
+        .outage-details-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            font-size: 11px;
+        }
+
+        .outage-details-table thead {
+            background: linear-gradient(135deg, #c53030 0%, #9b2c2c 100%);
+        }
+
+        .outage-details-table th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 10px;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .outage-details-table td {
+            padding: 8px 12px;
+            color: #4a5568;
+            border-bottom: 1px solid rgba(229, 62, 62, 0.1);
+        }
+
+        .outage-type-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .outage-type-badge.fleet-api-outage {
+            background: rgba(229, 62, 62, 0.15);
+            color: #c53030;
+            border: 1px solid rgba(229, 62, 62, 0.4);
+        }
+
+        .outage-type-badge.vehicle-outage {
+            background: rgba(237, 137, 54, 0.15);
+            color: #c05621;
+            border: 1px solid rgba(237, 137, 54, 0.4);
+        }
+
+        /* GAPS TABLE - Outage Column */
+        .gaps-table .outage-cell {
+            text-align: center;
+            width: 100px;
+            vertical-align: middle;
+        }
+
+        .outage-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 600;
+        }
+
+        .outage-badge.fleet-api-badge {
+            background: rgba(229, 62, 62, 0.15);
+            color: #c53030;
+            border: 1px solid rgba(229, 62, 62, 0.4);
+        }
+
+        .outage-badge.vehicle-badge {
+            background: rgba(237, 137, 54, 0.15);
+            color: #c05621;
+            border: 1px solid rgba(237, 137, 54, 0.4);
+        }
+
+        .outage-brand {
+            display: block;
+            font-size: 8px;
+            color: #a0aec0;
+            margin-top: 2px;
+        }
+
+        .no-outage {
+            color: #cbd5e0;
+            font-size: 12px;
         }
 
         @page {

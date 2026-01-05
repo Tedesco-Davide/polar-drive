@@ -110,7 +110,7 @@ public class PdfReportsController(
             // Map directly to DTOs without heavy VehiclesData queries
             var result = reports.Select(report =>
             {
-                // Ottieni info certificazione gap se disponibile
+                // Ottieni info Validazione Probabilistica Gap se disponibile
                 gapCertifications.TryGetValue(report.Id, out var gapCert);
 
                 return new PdfReportDTO
@@ -454,7 +454,7 @@ public class PdfReportsController(
     #region Gap Certification Endpoints
 
     /// <summary>
-    /// Verifica se esiste una certificazione gap in corso (PROCESSING).
+    /// Verifica se esiste una Validazione Probabilistica Gap in corso (PROCESSING).
     /// Utilizzato per bloccare nuove certificazioni mentre una è in elaborazione.
     /// </summary>
     [HttpGet("gap-certification-processing")]
@@ -478,7 +478,7 @@ public class PdfReportsController(
 
             if (processing != null)
             {
-                await _logger.Info(source, "Certificazione gap in corso trovata",
+                await _logger.Info(source, "Validazione Probabilistica Gap in corso trovata",
                     $"ReportId: {processing.PdfReportId}");
 
                 return Ok(new
@@ -506,7 +506,7 @@ public class PdfReportsController(
     }
 
     /// <summary>
-    /// Verifica lo stato di certificazione gap per un report.
+    /// Verifica lo stato di Validazione Probabilistica Gap per un report.
     /// Restituisce se ci sono gap non certificati e se è possibile generare una certificazione.
     /// </summary>
     [HttpGet("{id}/gap-status")]
@@ -617,6 +617,17 @@ public class PdfReportsController(
             var mediumConfidence = gaps.Count(g => g.ConfidencePercentage >= 60 && g.ConfidencePercentage < 80);
             var lowConfidence = gaps.Count(g => g.ConfidencePercentage < 60);
 
+            // Statistiche outages
+            var gapsWithOutage = gaps.Count(g => g.Factors.OutageId.HasValue);
+            var uniqueOutages = gaps
+                .Where(g => g.Factors.OutageId.HasValue)
+                .Select(g => g.Factors.OutageId!.Value)
+                .Distinct()
+                .Count();
+            var avgConfWithOutage = gaps.Where(g => g.Factors.OutageId.HasValue).Any()
+                ? gaps.Where(g => g.Factors.OutageId.HasValue).Average(g => g.ConfidencePercentage) : 0;
+            var totalDowntimeHours = gapsWithOutage;
+
             return Ok(new
             {
                 reportId = id,
@@ -632,12 +643,27 @@ public class PdfReportsController(
                     mediumConfidence,
                     lowConfidence
                 },
+                outages = new
+                {
+                    total = uniqueOutages,
+                    gapsAffected = gapsWithOutage,
+                    gapsAffectedPercentage = Math.Round((gapsWithOutage / (double)gaps.Count) * 100, 1),
+                    totalDowntimeDays = totalDowntimeHours / 24,
+                    totalDowntimeHours,
+                    avgConfidenceWithOutage = Math.Round(avgConfWithOutage, 1)
+                },
                 gaps = gaps.Select(g => new
                 {
                     timestamp = g.GapTimestamp,
                     confidence = g.ConfidencePercentage,
                     justification = g.Justification,
-                    factors = g.Factors
+                    factors = g.Factors,
+                    outageInfo = g.Factors.OutageId.HasValue ? new
+                    {
+                        outageType = g.Factors.OutageType,
+                        outageBrand = g.Factors.OutageBrand,
+                        bonusApplied = g.Factors.OutageBonusApplied
+                    } : null
                 }).OrderBy(g => g.timestamp)
             });
         }
@@ -660,7 +686,7 @@ public class PdfReportsController(
 
         try
         {
-            await _logger.Info(source, $"Richiesta certificazione gap per report {id}");
+            await _logger.Info(source, $"Richiesta Validazione Probabilistica Gap per report {id}");
 
             // 1. Verifica che non ci sia già una certificazione in corso globalmente
             var existingProcessing = await db.GapCertificationPdfs
@@ -670,7 +696,7 @@ public class PdfReportsController(
             {
                 return Conflict(new
                 {
-                    error = "Una certificazione gap è già in corso. Attendere il completamento.",
+                    error = "Una Validazione Probabilistica Gap è già in corso. Attendere il completamento.",
                     errorCode = "CERTIFICATION_IN_PROGRESS"
                 });
             }
@@ -737,7 +763,7 @@ public class PdfReportsController(
                     using var taskScope = scopeFactory.CreateScope();
                     var service = taskScope.ServiceProvider.GetRequiredService<GapCertificationPdfService>();
 
-                    await _logger.Info(source, "BACKGROUND: Inizio generazione certificazione gap",
+                    await _logger.Info(source, "BACKGROUND: Inizio generazione Validazione Probabilistica Gap",
                         $"ReportId: {id}");
 
                     await service.GenerateAndSaveCertificationAsync(id);
@@ -752,7 +778,7 @@ public class PdfReportsController(
             // 7. Restituisci 202 Accepted
             return Accepted(new
             {
-                message = "Certificazione gap avviata in background",
+                message = "Validazione Probabilistica Gap avviata in background",
                 reportId = id,
                 status = ReportStatus.PROCESSING
             });
@@ -765,7 +791,7 @@ public class PdfReportsController(
     }
 
     /// <summary>
-    /// Download del PDF di certificazione gap dal database.
+    /// Download del PDF di Validazione Probabilistica Gap dal database.
     /// Il PDF è immutabile e salvato nella tabella GapCertificationPdfs.
     /// </summary>
     [HttpGet("{id}/download-gap-certification")]
@@ -803,7 +829,7 @@ public class PdfReportsController(
             if (!string.IsNullOrWhiteSpace(certPdf.PdfHash))
                 Response.Headers.ETag = $"W/\"{certPdf.PdfHash}\"";
 
-            await _logger.Info(source, $"Download certificazione gap per report {id}",
+            await _logger.Info(source, $"Download Validazione Probabilistica Gap per report {id}",
                 $"Hash: {certPdf.PdfHash}, Size: {certPdf.PdfContent.Length} bytes");
 
             return File(certPdf.PdfContent, "application/pdf", fileName);

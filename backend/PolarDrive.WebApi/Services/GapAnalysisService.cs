@@ -8,7 +8,7 @@ using PolarDrive.WebApi.Helpers;
 namespace PolarDrive.WebApi.Services;
 
 /// <summary>
-/// Servizio per l'analisi e la certificazione probabilistica dei gap temporali
+/// Servizio per l'analisi e la validazione probabilistica dei gap temporali
 /// Calcola la confidenza che il veicolo fosse operativo durante i periodi senza dati
 /// </summary>
 public class GapAnalysisService(PolarDriveDbContext dbContext)
@@ -192,6 +192,9 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             // Calcola pattern storici del veicolo
             var historicalPattern = await CalculateHistoricalPatternAsync(vehicleId);
 
+            // Carica outages rilevanti per il veicolo nel periodo
+            var outageLookup = await LoadRelevantOutagesAsync(vehicleId, startTime, endTime);
+
             // PASSO 5: Analizza ogni gap
             foreach (var gapTime in gapTimestamps)
             {
@@ -200,14 +203,16 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
                     recordsWithJson,
                     hoursWithData,
                     failureLookup,
-                    historicalPattern
+                    historicalPattern,
+                    outageLookup
                 );
 
                 results.Add(gapResult);
             }
 
+            var gapsWithOutage = results.Count(r => r.Factors.OutageId.HasValue);
             await _logger.Info(source, $"Found {results.Count} gaps for vehicle {vehicleId} in period {startTime:dd/MM/yyyy} - {endTime:dd/MM/yyyy}",
-                $"Loaded JSON for {recordsWithJson.Count} records (optimized from {existingTimestamps.Count} total)");
+                $"Loaded JSON for {recordsWithJson.Count} records (optimized from {existingTimestamps.Count} total). Outages applied: {gapsWithOutage}");
 
             return results;
         }
@@ -228,7 +233,8 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
         Dictionary<DateTime, VehicleDataRecord> recordsWithJson,
         HashSet<DateTime> hoursWithData,
         Dictionary<DateTime, FetchFailureLog> failureLookup,
-        HistoricalUsagePattern historicalPattern)
+        HistoricalUsagePattern historicalPattern,
+        Dictionary<DateTime, OutagePeriod> outageLookup)
     {
         var factors = new GapAnalysisFactors();
 
@@ -272,6 +278,27 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             }
         }
 
+        // 7. Bonus outage se il gap coincide con un'interruzione documentata
+        double outageBonus = 0;
+        if (outageLookup.TryGetValue(gapTimestamp, out var outage))
+        {
+            factors.OutageId = outage.Id;
+            factors.OutageType = outage.OutageType;
+            factors.OutageBrand = outage.OutageBrand;
+
+            // Determina bonus in base al tipo
+            if (outage.OutageType == OutageConstants.OUTAGE_FLEET_API)
+            {
+                outageBonus = AppConfig.GAP_ANALYSIS_FLEET_OUTAGE_BONUS;
+            }
+            else if (outage.OutageType == OutageConstants.OUTAGE_VEHICLE)
+            {
+                outageBonus = AppConfig.GAP_ANALYSIS_VEHICLE_OUTAGE_BONUS;
+            }
+
+            factors.OutageBonusApplied = outageBonus;
+        }
+
         // Calcola confidenza totale
         double confidence =
             (continuityScore * AppConfig.GAP_ANALYSIS_WEIGHT_CONTINUITY * 100) +
@@ -280,7 +307,8 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             (gapLengthScore * AppConfig.GAP_ANALYSIS_WEIGHT_GAP_LENGTH * 100) +
             (historicalScore * AppConfig.GAP_ANALYSIS_WEIGHT_HISTORICAL * 100) +
             technicalBonus +
-            kmBonus;
+            kmBonus +
+            outageBonus;
 
         // Limita tra 0 e 100
         confidence = Math.Max(0, Math.Min(100, confidence));
@@ -578,11 +606,101 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
+    /// Carica tutti gli outages rilevanti per il veicolo nel periodo analizzato.
+    /// OTTIMIZZAZIONE: 1 query invece di N query (una per gap).
+    /// Crea un dizionario hourly-lookup per determinare quale outage (se presente) copre ogni ora.
+    /// </summary>
+    private async Task<Dictionary<DateTime, OutagePeriod>> LoadRelevantOutagesAsync(
+        int vehicleId,
+        DateTime startTime,
+        DateTime endTime)
+    {
+        const string source = "GapAnalysisService.LoadRelevantOutages";
+        var outageLookup = new Dictionary<DateTime, OutagePeriod>();
+
+        try
+        {
+            // Recupera brand del veicolo
+            var vehicle = await _db.ClientVehicles
+                .Where(v => v.Id == vehicleId)
+                .Select(v => new { v.Brand })
+                .FirstOrDefaultAsync();
+
+            if (vehicle == null)
+            {
+                await _logger.Info(source, $"Vehicle {vehicleId} not found");
+                return outageLookup;
+            }
+
+            // Carica TUTTI gli outages che si sovrappongono al periodo
+            var relevantOutages = await _db.OutagePeriods
+                .Where(o =>
+                    // Outage sovrapposto al periodo
+                    o.OutageStart <= endTime &&
+                    (o.OutageEnd == null || o.OutageEnd >= startTime) &&
+                    (
+                        // Fleet API outage per questo brand
+                        (o.OutageType == OutageConstants.OUTAGE_FLEET_API &&
+                         o.OutageBrand == vehicle.Brand) ||
+                        // Vehicle outage per questo veicolo
+                        (o.OutageType == OutageConstants.OUTAGE_VEHICLE &&
+                         o.VehicleId == vehicleId)
+                    )
+                )
+                .OrderBy(o => o.OutageType == OutageConstants.OUTAGE_FLEET_API ? 0 : 1) // Fleet API priority
+                .ToListAsync();
+
+            await _logger.Info(source,
+                $"Loaded {relevantOutages.Count} outages for vehicle {vehicleId} (brand: {vehicle.Brand})");
+
+            // Crea lookup: per ogni ora, determina outage attivo
+            var currentHour = new DateTime(startTime.Year, startTime.Month, startTime.Day, startTime.Hour, 0, 0);
+            var endHour = new DateTime(endTime.Year, endTime.Month, endTime.Day, endTime.Hour, 0, 0);
+
+            while (currentHour <= endHour)
+            {
+                // Trova outage che copre questa ora (priorità Fleet API grazie all'ordinamento)
+                var coveringOutage = relevantOutages.FirstOrDefault(o =>
+                    o.OutageStart <= currentHour &&
+                    (o.OutageEnd == null || o.OutageEnd >= currentHour)
+                );
+
+                if (coveringOutage != null)
+                {
+                    outageLookup[currentHour] = coveringOutage;
+                }
+
+                currentHour = currentHour.AddHours(1);
+            }
+
+            await _logger.Info(source,
+                $"Created lookup with {outageLookup.Count} hours covered by outages");
+
+            return outageLookup;
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error loading outages for vehicle {vehicleId}", ex.ToString());
+            return outageLookup;
+        }
+    }
+
+    /// <summary>
     /// Genera una giustificazione testuale per il gap
     /// </summary>
     private static string GenerateJustification(GapAnalysisFactors factors)
     {
         var parts = new List<string>();
+
+        // PRIORITÀ MASSIMA: Outage documentato
+        if (factors.OutageId.HasValue && !string.IsNullOrEmpty(factors.OutageType))
+        {
+            var outageDesc = factors.OutageType == OutageConstants.OUTAGE_FLEET_API
+                ? $"interruzione Fleet API documentata ({factors.OutageBrand})"
+                : "interruzione del veicolo documentata";
+
+            parts.Add($"⚠️ {outageDesc} - confidenza aumentata di {factors.OutageBonusApplied}%");
+        }
 
         // Continuità
         if (factors.HasPreviousRecord && factors.HasNextRecord)
@@ -751,7 +869,7 @@ public class HistoricalUsagePattern
 public record VehicleDataRecord(DateTime Timestamp, string RawJsonAnonymized);
 
 /// <summary>
-/// Status della certificazione gap per un report
+/// Status della Validazione Probabilistica Gap per un report
 /// </summary>
 public class GapCertificationStatus
 {

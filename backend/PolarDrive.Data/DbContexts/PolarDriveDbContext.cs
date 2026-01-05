@@ -121,6 +121,10 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .IsUnique();
 
                 entity.HasIndex(e => e.ZipHash);
+
+                entity.HasIndex(e => new { e.VehicleId, e.OutageStart, e.OutageEnd })
+                    .HasDatabaseName("IX_OutagePeriods_GapLookup")
+                    .IncludeProperties(e => new { e.OutageType, e.OutageBrand });
             });
 
             modelBuilder.Entity<ClientToken>(entity =>

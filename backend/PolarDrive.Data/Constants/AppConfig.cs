@@ -159,9 +159,15 @@ public class GapAnalysisWeights
 
     // Bonus confidenza in percentuale, nel caso si tratti di un problema tecnico documentato
     public double TechProblemBonus { get; set; }
-    
+
     // Bonus confidenza per km percorsi (se odometro aumenta tra record adiacenti)
     public double KmBonus { get; set; }
+
+    // Bonus confidenza per gap durante Fleet API outage
+    public double FleetApiOutageBonus { get; set; }
+
+    // Bonus confidenza per gap durante Vehicle outage
+    public double VehicleOutageBonus { get; set; }
 }
 
 #endregion
@@ -359,9 +365,9 @@ public static class AppConfig
     public static int DAILY_HOURS_THRESHOLD => Config.Thresholds.DailyHours;
     public static int WEEKLY_HOURS_THRESHOLD => Config.Thresholds.WeeklyHours;
 
-    // === Gap Analysis ===
+    // === Validazione Probabilistica Gap ===
     // Parametri per GapAnalysisService.cs:
-    // Stampa PDF contenente analisi certificazione gap temporali sul fetch dati.
+    // Stampa PDF contenente analisi Validazione Probabilistica Gap temporali sul fetch dati.
     // Pesi per il calcolo della confidenza
 
     // Record esistono prima e dopo?
@@ -387,6 +393,12 @@ public static class AppConfig
 
     // Soglia minima km per considerare il veicolo "in movimento"
     public static double GAP_ANALYSIS_KM_THRESHOLD => Config.GapAnalysis.KmThreshold;
+
+    // Bonus confidenza per gap durante Fleet API outage
+    public static double GAP_ANALYSIS_FLEET_OUTAGE_BONUS => Config.GapAnalysis.Weights.FleetApiOutageBonus;
+
+    // Bonus confidenza per gap durante Vehicle outage
+    public static double GAP_ANALYSIS_VEHICLE_OUTAGE_BONUS => Config.GapAnalysis.Weights.VehicleOutageBonus;
 
     #endregion
 }

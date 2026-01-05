@@ -17,6 +17,14 @@ export type GapAnalysisResponse = {
     mediumConfidence: number;
     lowConfidence: number;
   };
+  outages: {
+    total: number;
+    gapsAffected: number;
+    gapsAffectedPercentage: number;
+    totalDowntimeDays: number;
+    totalDowntimeHours: number;
+    avgConfidenceWithOutage: number;
+  };
   gaps: GapAnalysis[];
   message?: string;
 };
@@ -32,6 +40,15 @@ export type GapAnalysis = {
     isWithinTypicalUsageHours: boolean;
     isTechnicalFailure: boolean;
     failureReason?: string;
+    outageId?: number;
+    outageType?: string;
+    outageBrand?: string;
+    outageBonusApplied?: number;
+  };
+  outageInfo?: {
+    outageType: string;
+    outageBrand?: string;
+    bonusApplied: number;
   };
 };
 

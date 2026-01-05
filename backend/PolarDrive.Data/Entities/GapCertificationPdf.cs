@@ -1,7 +1,7 @@
 namespace PolarDrive.Data.Entities;
 
 /// <summary>
-/// PDF di certificazione gap per un report.
+/// PDF di Validazione Probabilistica Gap per un report.
 /// Relazione 1:1 con PdfReport - contiene il PDF generato e i metadati.
 /// Una volta generato, è immutabile.
 /// </summary>

@@ -398,7 +398,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
                 case "offline":
                     await _logger.Info(source, $"Vehicle {vehicle.Vin} ({contractStatus}) is offline, OUTAGE PERIOD detected");
                     await SaveStatusRecord(vehicle.Vin, "OFFLINE", "Vehicle is offline, certified OUTAGE PERIOD");
-                    // Log per certificazione gap - veicolo offline è un problema tecnico documentato
+                    // Log per Validazione Probabilistica Gap - veicolo offline è un problema tecnico documentato
                     await LogFetchFailureAsync(vehicle.Id, FetchFailureReason.TESLA_VEHICLE_OFFLINE, "Vehicle is offline - no connectivity to Tesla servers");
                     return VehicleFetchResult.Success;
 
@@ -409,7 +409,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
                     {
                         await _logger.Warning(source, $"Failed to wake up vehicle {vehicle.Vin} ({contractStatus}), vehicle in sleep mode");
                         await SaveStatusRecord(vehicle.Vin, "ASLEEP", "Vehicle in sleep mode");
-                        // Log per certificazione gap - veicolo in sleep è un problema tecnico documentato
+                        // Log per Validazione Probabilistica Gap - veicolo in sleep è un problema tecnico documentato
                         await LogFetchFailureAsync(vehicle.Id, FetchFailureReason.TESLA_VEHICLE_ASLEEP, "Vehicle in sleep mode and could not be woken up");
                         return VehicleFetchResult.Success;
                     }
@@ -441,7 +441,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
             await _logger.Error(source, $"HTTP error fetching data for vehicle {vehicle.Vin} ({contractStatus})", $"Status: {httpEx.Message}");
             await SaveStatusRecord(vehicle.Vin, "ERROR_HTTP", $"HTTP error: {httpEx.Message}");
 
-            // Log per certificazione gap
+            // Log per Validazione Probabilistica Gap
             var failureReason = httpEx.StatusCode switch
             {
                 System.Net.HttpStatusCode.TooManyRequests => FetchFailureReason.TESLA_API_RATE_LIMIT,

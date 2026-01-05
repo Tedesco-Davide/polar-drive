@@ -62,7 +62,9 @@
       "gapLength": 0.15,
       "historical": 0.10,
       "techProblemBonus": 15,
-      "kmBonus": 5
+      "kmBonus": 5,
+      "fleetApiOutageBonus": 40,
+      "vehicleOutageBonus": 25
     },
     "kmThreshold": 10
   }

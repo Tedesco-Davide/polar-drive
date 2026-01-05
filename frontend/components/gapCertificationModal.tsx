@@ -257,6 +257,44 @@ export default function GapCertificationModal({
                     </div>
                   </div>
 
+                  {/* Sezione Statistiche Outages */}
+                  {analysisData.outages.total > 0 && (
+                    <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg p-4 mb-6">
+                      <h4 className="font-semibold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2">
+                        <span className="text-xl">⚠️</span>
+                        Interruzioni di Servizio Rilevate
+                      </h4>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="bg-white dark:bg-gray-800 rounded p-3 text-center border border-red-200">
+                          <div className="text-2xl font-bold text-red-600">{analysisData.outages.total}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Interruzioni totali</div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded p-3 text-center border border-red-200">
+                          <div className="text-2xl font-bold text-red-600">{analysisData.outages.gapsAffected}</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">
+                            Gap giustificati ({analysisData.outages.gapsAffectedPercentage}%)
+                          </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded p-3 text-center border border-red-200">
+                          <div className="text-2xl font-bold text-red-600">
+                            {analysisData.outages.totalDowntimeDays}g {analysisData.outages.totalDowntimeHours % 24}h
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Downtime totale</div>
+                        </div>
+
+                        <div className="bg-white dark:bg-gray-800 rounded p-3 text-center border border-red-200">
+                          <div className="text-2xl font-bold text-red-600">
+                            {analysisData.outages.avgConfidenceWithOutage.toFixed(1)}%
+                          </div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">Confidenza media (con outage)</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg p-4 mb-6">
                     <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">
                       {t("admin.gapCertification.disclaimerTitle")}
@@ -307,6 +345,26 @@ export default function GapCertificationModal({
                                     style={{ width: `${gap.confidence}%` }}
                                   ></div>
                                 </div>
+                                {/* Badge outage inline */}
+                                {gap.outageInfo && (
+                                  <div className="mt-1">
+                                    {gap.outageInfo.outageType === "Outage Fleet Api" ? (
+                                      <span
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 border border-red-400 rounded-full text-xs font-semibold"
+                                        title={`Fleet API Outage - ${gap.outageInfo.outageBrand} - Bonus: +${gap.outageInfo.bonusApplied}%`}
+                                      >
+                                        🔴 Fleet API
+                                      </span>
+                                    ) : (
+                                      <span
+                                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-400 rounded-full text-xs font-semibold"
+                                        title={`Vehicle Outage - Bonus: +${gap.outageInfo.bonusApplied}%`}
+                                      >
+                                        ⚠️ Vehicle
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </td>
                             <td className="p-3 text-xs text-gray-600 dark:text-gray-400">

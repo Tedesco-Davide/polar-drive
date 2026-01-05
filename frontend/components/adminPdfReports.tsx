@@ -20,12 +20,12 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Stato Gap Certification
+  // Stato Validazione Probabilistica Gap
   const [selectedReportForCertification, setSelectedReportForCertification] =
     useState<number | null>(null);
   const [downloadingCertId, setDownloadingCertId] = useState<number | null>(null);
 
-  // Stato per certificazione gap in corso (globale)
+  // Stato per Validazione Probabilistica Gap in corso (globale)
   const [gapCertProcessing, setGapCertProcessing] = useState<{
     hasProcessing: boolean;
     reportId: number | null;
@@ -75,7 +75,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     }
   };
 
-  // Fetch stato certificazione gap in corso
+  // Fetch stato Validazione Probabilistica Gap in corso
   const fetchGapCertStatus = async () => {
     try {
       const res = await fetch("/api/pdfreports/gap-certification-processing");
@@ -365,10 +365,10 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     return report.status === "ERROR";
   };
 
-  // Nota: Il check per gap viene fatto SOLO quando si apre la modale di certificazione
+  // Nota: Il check per gap viene fatto SOLO quando si apre la modale di validazione
   // Non facciamo più fetch preventivo per evitare overhead al caricamento
 
-  // Download Gap Certification in PDF
+  // Download Gap Validation in PDF
   const handleDownloadCertification = async (reportId: number) => {
     setDownloadingCertId(reportId);
     try {

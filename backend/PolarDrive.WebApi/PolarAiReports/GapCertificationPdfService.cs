@@ -1,6 +1,8 @@
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
@@ -11,7 +13,7 @@ using static PolarDrive.WebApi.Constants.CommonConstants;
 namespace PolarDrive.WebApi.PolarAiReports;
 
 /// <summary>
-/// Servizio per la generazione di PDF di certificazione probabilistica dei gap
+/// Servizio per la generazione di PDF di validazione probabilistica dei gap
 /// </summary>
 public class GapCertificationPdfService(
     PolarDriveDbContext dbContext,
@@ -24,7 +26,7 @@ public class GapCertificationPdfService(
     private readonly PolarDriveLogger _logger = new();
 
     /// <summary>
-    /// Genera il PDF di certificazione per un report
+    /// Genera il PDF di validazione per un report
     /// </summary>
     public async Task<GapCertificationPdfResult> GenerateCertificationPdfAsync(int pdfReportId)
     {
@@ -60,7 +62,7 @@ public class GapCertificationPdfService(
             }
 
             // 3. Genera l'HTML della certificazione
-            var htmlContent = GenerateCertificationHtml(report, certifications);
+            var htmlContent = await GenerateCertificationHtml(report, certifications, _db);
 
             // 4. Prepara le opzioni PDF con header/footer coerenti con gli stili di stampa PDF attuali
             var fontStyles = GapCertificationTemplate.GetFontStyles();
@@ -97,7 +99,7 @@ public class GapCertificationPdfService(
                         </style>
                     </head>
                     <body>
-                        <div class='header-content'>Gap Certification - {vehicleVin} - {DateTime.Now:yyyy-MM-dd HH:mm}</div>
+                        <div class='header-content'>Gap Validation - {vehicleVin} - {DateTime.Now:yyyy-MM-dd HH:mm}</div>
                     </body>
                     </html>",
                 FooterTemplate = $@"
@@ -131,7 +133,7 @@ public class GapCertificationPdfService(
                     </head>
                     <body>
                         <div class='footer-content'>
-                            Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Gap Certification
+                            Pagina <span class='pageNumber'></span> di <span class='totalPages'></span> | DataPolar Gap Validation
                         </div>
                     </body>
                     </html>"
@@ -174,7 +176,7 @@ public class GapCertificationPdfService(
     }
 
     /// <summary>
-    /// Genera e salva il PDF di certificazione nella tabella GapCertificationPdfs.
+    /// Genera e salva il PDF di validazione nella tabella GapCertificationPdfs.
     /// Questo metodo è pensato per essere eseguito in background.
     /// Una volta completato, il PDF diventa immutabile.
     /// </summary>
@@ -248,9 +250,12 @@ public class GapCertificationPdfService(
     }
 
     /// <summary>
-    /// Genera l'HTML della certificazione
+    /// Genera l'HTML della validazione
     /// </summary>
-    private static string GenerateCertificationHtml(PdfReport report, List<GapCertification> certifications)
+    private static async Task<string> GenerateCertificationHtml(
+        PdfReport report,
+        List<GapCertification> certifications,
+        PolarDriveDbContext db)
     {
         var company = report.ClientCompany;
         var vehicle = report.ClientVehicle;
@@ -263,7 +268,7 @@ public class GapCertificationPdfService(
         sb.AppendLine("<head>");
         sb.AppendLine("<meta charset='UTF-8'>");
         sb.AppendLine("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
-        sb.AppendLine("<title>Certificazione Probabilistica Gap - DataPolar</title>");
+        sb.AppendLine("<title>Validazione Probabilistica Gap - DataPolar</title>");
         sb.AppendLine($"<style>{GapCertificationTemplate.GetCss()}</style>");
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
@@ -272,7 +277,7 @@ public class GapCertificationPdfService(
         sb.AppendLine("<div class='header'>");
         sb.AppendLine("<div class='logo-section'>");
         sb.AppendLine("<h1>DataPolar</h1>");
-        sb.AppendLine("<p class='subtitle'>Certificazione Probabilistica Record da Validare</p>");
+        sb.AppendLine("<p class='subtitle'>Validazione Probabilistica Record da Validare</p>");
         sb.AppendLine("</div>");
         sb.AppendLine($"<div class='doc-info'>");
         sb.AppendLine($"<p><strong>Data generazione:</strong> {DateTime.Now:dd/MM/yyyy HH:mm}</p>");
@@ -302,10 +307,52 @@ public class GapCertificationPdfService(
         sb.AppendLine($"<p><strong>Confidenza media:</strong> {certifications.Average(c => c.ConfidencePercentage):F1}%</p>");
         sb.AppendLine("</div>");
 
+        // Sezione Outages (se presenti)
+        var outageStats = await CalculateOutageStatisticsAsync(certifications, db);
+        if (outageStats.TotalOutages > 0)
+        {
+            sb.AppendLine("<div class='outage-summary-section'>");
+            sb.AppendLine("<h3>Riepilogo Interruzioni di Servizio (Outages)</h3>");
+
+            sb.AppendLine("<div class='outage-stats-grid'>");
+            sb.AppendLine($"<div class='outage-stat-box'><div class='stat-value'>{outageStats.TotalOutages}</div><div class='stat-label'>Interruzioni rilevate</div></div>");
+            sb.AppendLine($"<div class='outage-stat-box'><div class='stat-value'>{outageStats.TotalDowntimeDays}g {outageStats.TotalDowntimeHours % 24}h</div><div class='stat-label'>Downtime totale</div></div>");
+            sb.AppendLine($"<div class='outage-stat-box'><div class='stat-value'>{outageStats.GapsAffectedCount}</div><div class='stat-label'>Gap giustificati ({outageStats.GapsAffectedPercentage:F1}%)</div></div>");
+            sb.AppendLine($"<div class='outage-stat-box'><div class='stat-value'>{outageStats.AvgConfidenceWithOutage:F1}%</div><div class='stat-label'>Confidenza media (con outage)</div></div>");
+            sb.AppendLine("</div>");
+
+            // Mini-tabella dettaglio outages
+            if (outageStats.OutageDetails.Count > 0)
+            {
+                sb.AppendLine("<table class='outage-details-table'><thead><tr>");
+                sb.AppendLine("<th>Tipo</th><th>Brand/Veicolo</th><th>Inizio</th><th>Fine</th><th>Durata</th><th>Gap</th>");
+                sb.AppendLine("</tr></thead><tbody>");
+
+                foreach (var detail in outageStats.OutageDetails)
+                {
+                    var typeClass = detail.IsFleetApi ? "fleet-api-outage" : "vehicle-outage";
+                    var typeLabel = detail.IsFleetApi ? "🔴 Fleet API" : "⚠️ Veicolo";
+
+                    sb.AppendLine("<tr>");
+                    sb.AppendLine($"<td><span class='outage-type-badge {typeClass}'>{typeLabel}</span></td>");
+                    sb.AppendLine($"<td>{detail.BrandOrVehicle}</td>");
+                    sb.AppendLine($"<td>{detail.OutageStart:dd/MM/yyyy HH:mm}</td>");
+                    sb.AppendLine($"<td>{(detail.OutageEnd?.ToString("dd/MM/yyyy HH:mm") ?? "In corso")}</td>");
+                    sb.AppendLine($"<td>{detail.DurationHours}h</td>");
+                    sb.AppendLine($"<td>{detail.GapsImpacted}</td>");
+                    sb.AppendLine("</tr>");
+                }
+
+                sb.AppendLine("</tbody></table>");
+            }
+
+            sb.AppendLine("</div>");
+        }
+
         // Disclaimer
         sb.AppendLine("<div class='disclaimer'>");
-        sb.AppendLine("<h3>DICHIARAZIONE DI CERTIFICAZIONE PROBABILISTICA</h3>");
-        sb.AppendLine("<p>DataPolar S.r.l. certifica che, sulla base dell'analisi statistica dei dati telemetrici raccolti dal laboratorio mobile identificato in questo documento, per i periodi indicati nella tabella sottostante sussiste un'alta probabilità (espressa in percentuale) che il veicolo fosse operativo per le finalità contrattuali di raccolta dati.</p>");
+        sb.AppendLine("<h3>DICHIARAZIONE DI VALIDAZIONE PROBABILISTICA</h3>");
+        sb.AppendLine("<p>DataPolar S.r.l. attesta che, sulla base dell'analisi statistica dei dati telemetrici raccolti dal laboratorio mobile identificato in questo documento, per i periodi indicati nella tabella sottostante sussiste una probabilità (espressa in percentuale) che il veicolo fosse operativo per le finalità contrattuali di raccolta dati.</p>");
         sb.AppendLine("<h4>NOTA METODOLOGICA</h4>");
         sb.AppendLine("<p>I valori di confidenza sono calcolati analizzando:</p>");
         sb.AppendLine("<ul>");
@@ -315,17 +362,18 @@ public class GapCertificationPdfService(
         sb.AppendLine("<li>Durata del gap temporale (15%)</li>");
         sb.AppendLine("<li>Affidabilità storica complessiva (10%)</li>");
         sb.AppendLine("</ul>");
-        sb.AppendLine("<p class='important'>IMPORTANTE ➜ Questa certificazione si basa su inferenze statistiche e non costituisce prova diretta dell'utilizzo effettivo. I dati mancanti non sono stati ricostruiti, ma la loro assenza è stata analizzata nel contesto dei dati disponibili.</p>");
+        sb.AppendLine("<p class='important'>IMPORTANTE ➜ Questa validazione si basa su inferenze statistiche e non costituisce prova diretta dell'utilizzo effettivo. I dati mancanti non sono stati ricostruiti, ma la loro assenza è stata analizzata nel contesto dei dati disponibili.</p>");
         sb.AppendLine("</div>");
 
         // Tabella gap
         sb.AppendLine("<div class='gaps-section'>");
-        sb.AppendLine("<h3>Dettaglio Record da Validare Certificati</h3>");
+        sb.AppendLine("<h3>Dettaglio Record da Validare Validati</h3>");
         sb.AppendLine("<table class='gaps-table'>");
         sb.AppendLine("<thead>");
         sb.AppendLine("<tr>");
         sb.AppendLine("<th>Timestamp</th>");
         sb.AppendLine("<th>Confidenza</th>");
+        sb.AppendLine("<th>Outage</th>");
         sb.AppendLine("<th>Giustificazione</th>");
         sb.AppendLine("</tr>");
         sb.AppendLine("</thead>");
@@ -336,9 +384,38 @@ public class GapCertificationPdfService(
             var confidenceClass = cert.ConfidencePercentage >= 80 ? "high" :
                                   cert.ConfidencePercentage >= 60 ? "medium" : "low";
 
+            GapAnalysisFactors? factors = null;
+            try
+            {
+                factors = JsonSerializer.Deserialize<GapAnalysisFactors>(cert.AnalysisFactorsJson);
+            }
+            catch { }
+
             sb.AppendLine("<tr>");
             sb.AppendLine($"<td>{cert.GapTimestamp:dd/MM/yyyy HH:mm}</td>");
             sb.AppendLine($"<td><span class='confidence {confidenceClass}'>{cert.ConfidencePercentage:F1}%</span></td>");
+
+            // Colonna Outage
+            sb.AppendLine("<td class='outage-cell'>");
+            if (factors?.OutageId.HasValue == true)
+            {
+                var typeClass = factors.OutageType == OutageConstants.OUTAGE_FLEET_API
+                    ? "fleet-api-badge" : "vehicle-badge";
+                var icon = factors.OutageType == OutageConstants.OUTAGE_FLEET_API ? "🔴" : "⚠️";
+                var label = factors.OutageType == OutageConstants.OUTAGE_FLEET_API ? "Fleet API" : "Vehicle";
+
+                sb.AppendLine($"<span class='outage-badge {typeClass}'>{icon} {label}</span>");
+                if (!string.IsNullOrEmpty(factors.OutageBrand))
+                {
+                    sb.AppendLine($"<br/><span class='outage-brand'>{factors.OutageBrand}</span>");
+                }
+            }
+            else
+            {
+                sb.AppendLine("<span class='no-outage'>-</span>");
+            }
+            sb.AppendLine("</td>");
+
             sb.AppendLine($"<td class='justification'>{cert.JustificationText}</td>");
             sb.AppendLine("</tr>");
         }
@@ -381,7 +458,7 @@ public class GapCertificationPdfService(
     }
 
     /// <summary>
-    /// Genera hash del documento di certificazione
+    /// Genera hash del documento di validazione
     /// </summary>
     private static string GenerateCertificationDocumentHash(List<GapCertification> certifications)
     {
@@ -392,10 +469,130 @@ public class GapCertificationPdfService(
         var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(data));
         return Convert.ToHexString(hashBytes).ToLower();
     }
+
+    /// <summary>
+    /// Calcola statistiche sugli outages che hanno impattato i gap certificati
+    /// </summary>
+    private static async Task<OutageStatistics> CalculateOutageStatisticsAsync(
+        List<GapCertification> certifications,
+        PolarDriveDbContext db)
+    {
+        var stats = new OutageStatistics();
+
+        // Estrai outageIds unici dalle certificazioni
+        var outageIds = certifications
+            .Select(c =>
+            {
+                try
+                {
+                    var factors = JsonSerializer.Deserialize<GapAnalysisFactors>(c.AnalysisFactorsJson);
+                    return factors?.OutageId;
+                }
+                catch { return null; }
+            })
+            .Where(id => id.HasValue)
+            .Select(id => id!.Value)
+            .Distinct()
+            .ToList();
+
+        if (outageIds.Count == 0)
+            return stats;
+
+        // Query outages completi
+        var outages = await db.OutagePeriods
+            .Where(o => outageIds.Contains(o.Id))
+            .ToListAsync();
+
+        stats.TotalOutages = outages.Count;
+
+        // Calcola downtime totale
+        var totalDowntime = TimeSpan.Zero;
+        foreach (var outage in outages)
+        {
+            var end = outage.OutageEnd ?? DateTime.Now;
+            totalDowntime += (end - outage.OutageStart);
+        }
+        stats.TotalDowntimeHours = (int)totalDowntime.TotalHours;
+        stats.TotalDowntimeDays = (int)totalDowntime.TotalDays;
+
+        // Gap affetti da outages
+        var gapsWithOutage = certifications
+            .Where(c =>
+            {
+                try
+                {
+                    var factors = JsonSerializer.Deserialize<GapAnalysisFactors>(c.AnalysisFactorsJson);
+                    return factors?.OutageId.HasValue ?? false;
+                }
+                catch { return false; }
+            })
+            .ToList();
+
+        stats.GapsAffectedCount = gapsWithOutage.Count;
+        stats.GapsAffectedPercentage = certifications.Count > 0
+            ? (gapsWithOutage.Count / (double)certifications.Count) * 100
+            : 0;
+        stats.AvgConfidenceWithOutage = gapsWithOutage.Any()
+            ? gapsWithOutage.Average(c => c.ConfidencePercentage) : 0;
+
+        // Dettagli outages: conta quanti gap impattati per ogni outage
+        var outageGapCounts = certifications
+            .Select(c =>
+            {
+                try
+                {
+                    var factors = JsonSerializer.Deserialize<GapAnalysisFactors>(c.AnalysisFactorsJson);
+                    return factors?.OutageId;
+                }
+                catch { return null; }
+            })
+            .Where(id => id.HasValue)
+            .GroupBy(id => id!.Value)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        stats.OutageDetails = outages
+            .Select(o => new OutageDetail
+            {
+                IsFleetApi = o.OutageType == OutageConstants.OUTAGE_FLEET_API,
+                BrandOrVehicle = o.OutageBrand ?? $"VIN {o.VehicleId}",
+                OutageStart = o.OutageStart,
+                OutageEnd = o.OutageEnd,
+                DurationHours = (int)(o.OutageEnd.HasValue
+                    ? (o.OutageEnd.Value - o.OutageStart).TotalHours
+                    : (DateTime.Now - o.OutageStart).TotalHours),
+                GapsImpacted = outageGapCounts.GetValueOrDefault(o.Id, 0)
+            })
+            .OrderByDescending(o => o.GapsImpacted)
+            .Take(5)
+            .ToList();
+
+        return stats;
+    }
+
+    private class OutageStatistics
+    {
+        public int TotalOutages { get; set; }
+        public int TotalDowntimeDays { get; set; }
+        public int TotalDowntimeHours { get; set; }
+        public int GapsAffectedCount { get; set; }
+        public double GapsAffectedPercentage { get; set; }
+        public double AvgConfidenceWithOutage { get; set; }
+        public List<OutageDetail> OutageDetails { get; set; } = [];
+    }
+
+    private class OutageDetail
+    {
+        public bool IsFleetApi { get; set; }
+        public string BrandOrVehicle { get; set; } = "";
+        public DateTime OutageStart { get; set; }
+        public DateTime? OutageEnd { get; set; }
+        public int DurationHours { get; set; }
+        public int GapsImpacted { get; set; }
+    }
 }
 
 /// <summary>
-/// Risultato della generazione del PDF di certificazione
+/// Risultato della generazione del PDF di validazione
 /// </summary>
 public class GapCertificationPdfResult
 {

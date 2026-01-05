@@ -53,7 +53,7 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
                 return NotFound($"Vehicle with VIN {vin} not found");
             }
 
-            // Log fallimento per testing certificazione gap (solo se veicolo esiste ma ha problemi)
+            // Log fallimento per testing Validazione Probabilistica Gap (solo se veicolo esiste ma ha problemi)
             async Task LogMockFetchFailure(string reason, string details)
             {
                 var failureLog = new FetchFailureLog
@@ -116,7 +116,7 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
             if (recentDataCount >= 50) // Max 50 record ogni 5 minuti in dev
             {
                 await _logger.Warning(source, "Rate limit exceeded for vehicle " + vin + ": " + recentDataCount + " records in last 5 minutes");
-                // Log per certificazione gap - rate limit simulato
+                // Log per Validazione Probabilistica Gap - rate limit simulato
                 await LogMockFetchFailure(FetchFailureReason.TESLA_API_RATE_LIMIT, $"Rate limit exceeded: {recentDataCount} records in last 5 minutes");
                 return StatusCode(429, new
                 {
@@ -411,7 +411,7 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
     }
 
     /// <summary>
-    /// Simula un fallimento di fetch per testing della certificazione gap
+    /// Simula un fallimento di fetch per testing della Validazione Probabilistica Gap
     /// Uso: POST /api/TeslaFakeDataReceiver/SimulateFailure/{vin}?reason=TESLA_VEHICLE_OFFLINE
     /// </summary>
     [HttpPost("SimulateFailure/{vin}")]

@@ -1,8 +1,8 @@
 namespace PolarDrive.Data.Entities;
 
 /// <summary>
-/// Certificazione probabilistica per i "Record da validare" (gap temporali)
-/// Quando un record orario manca nel database, questa entità traccia la certificazione
+/// Validazione probabilistica per i "Record da validare" (gap temporali)
+/// Quando un record orario manca nel database, questa entità traccia la validazione
 /// basata sull'analisi statistica dei dati circostanti
 /// </summary>
 public class GapCertification
@@ -12,7 +12,7 @@ public class GapCertification
     public int VehicleId { get; set; }
 
     /// <summary>
-    /// Report PDF originale che contiene i gap certificati
+    /// Report PDF originale che contiene i gap validati
     /// </summary>
     public int? PdfReportId { get; set; }
 
@@ -37,12 +37,12 @@ public class GapCertification
     public string AnalysisFactorsJson { get; set; } = string.Empty;
 
     /// <summary>
-    /// Data/ora in cui è stata generata la certificazione
+    /// Data/ora in cui è stata generata la validazione
     /// </summary>
     public DateTime CertifiedAt { get; set; }
 
     /// <summary>
-    /// Hash SHA-256 della certificazione per integrità
+    /// Hash SHA-256 della validazione per integrità
     /// </summary>
     public string CertificationHash { get; set; } = string.Empty;
 
@@ -111,4 +111,24 @@ public class GapAnalysisFactors
     /// Variazione km tra record adiacenti (se disponibile)
     /// </summary>
     public double? OdometerDelta { get; set; }
+
+    /// <summary>
+    /// ID dell'outage period che coincide con questo gap (se presente)
+    /// </summary>
+    public int? OutageId { get; set; }
+
+    /// <summary>
+    /// Tipo di outage: "Outage Fleet Api" o "Outage Vehicle"
+    /// </summary>
+    public string? OutageType { get; set; }
+
+    /// <summary>
+    /// Brand dell'outage (per Fleet API) o del veicolo
+    /// </summary>
+    public string? OutageBrand { get; set; }
+
+    /// <summary>
+    /// Bonus di confidenza applicato (0, 25, o 40)
+    /// </summary>
+    public double OutageBonusApplied { get; set; }
 }
