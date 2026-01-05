@@ -500,7 +500,7 @@ export default function AdminMainWorkflow() {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing || isStatusChanging || isSubmitting) && (
+      {(loading || isRefreshing || isStatusChanging || isSubmitting || generatingProfileId !== null) && (
         <AdminLoader local />
       )}
 
