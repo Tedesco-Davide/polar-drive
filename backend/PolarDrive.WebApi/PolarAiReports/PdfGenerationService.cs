@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 
@@ -15,6 +16,14 @@ public class PdfGenerationService()
     private readonly PolarDriveLogger _logger = new();
 
     /// <summary>
+    /// Semaforo per limitare le generazioni PDF contemporanee.
+    /// Il limite è configurato in app-config.json (limits.pdfMaxConcurrentGenerations).
+    /// Evita saturazione memoria/CPU e timeout a cascata.
+    /// </summary>
+    private static readonly SemaphoreSlim _pdfGenerationSemaphore =
+        new(AppConfig.PDF_MAX_CONCURRENT_GENERATIONS, AppConfig.PDF_MAX_CONCURRENT_GENERATIONS);
+
+    /// <summary>
     /// Converte HTML in PDF usando Puppeteer/Node.js
     /// </summary>
     public async Task<byte[]> ConvertHtmlToPdfAsync(string htmlContent, PdfReport report, PdfConversionOptions? options = null)
@@ -22,6 +31,8 @@ public class PdfGenerationService()
         var source = "PdfGenerationService.ConvertHtmlToPdf";
         options ??= new PdfConversionOptions();
 
+        await _pdfGenerationSemaphore.WaitAsync();
+        
         try
         {
             await _logger.Info(source, "Inizio conversione HTML -> PDF",
@@ -65,11 +76,9 @@ public class PdfGenerationService()
         }
         finally
         {
-            // ✅ FORZA GARBAGE COLLECTION
-            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
-            GC.WaitForPendingFinalizers();
-            GC.Collect(2, GCCollectionMode.Forced, blocking: true);
-            await _logger.Debug("PdfGenerationService", "Garbage Collection forzato post-conversione");
+            // Rilascia il semaforo per permettere altre generazioni
+            _pdfGenerationSemaphore.Release();
+            await _logger.Debug("PdfGenerationService", "Semaforo rilasciato, slot disponibile per nuova generazione");
         }
     }
 

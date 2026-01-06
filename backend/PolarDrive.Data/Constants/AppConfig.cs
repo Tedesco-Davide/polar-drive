@@ -97,6 +97,12 @@ public class RetryConfig
 
 public class LimitsConfig
 {
+    /// <summary>
+    /// Numero massimo di generazioni PDF contemporanee.
+    /// Evita saturazione memoria/CPU e timeout a cascata.
+    /// </summary>
+    public int PdfMaxConcurrentGenerations { get; set; } = 2;
+
     // Limite massimo dimensione file upload
     public long MaxUploadSizeBytes { get; set; }
 
@@ -334,6 +340,12 @@ public static class AppConfig
     public static int MAX_RETRIES => Config.Retry.MaxRetries;
 
     // === Limits ===
+
+    /// <summary>
+    /// Numero massimo di generazioni PDF contemporanee.
+    /// Evita saturazione memoria/CPU e timeout a cascata.
+    /// </summary>
+    public static int PDF_MAX_CONCURRENT_GENERATIONS => Config.Limits.PdfMaxConcurrentGenerations;
 
     // Limite massimo dimensione file upload
     public static long MAX_UPLOAD_SIZE_BYTES => Config.Limits.MaxUploadSizeBytes;

@@ -64,15 +64,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     try {
       const bodyBuffer = await buffer(req);
-
+      const contentType = req.headers['content-type'];
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minuti
 
       const response = await fetch(`${apiUrl}/api/ClientConsents`, {
         method: 'POST',
-        body: new Uint8Array(bodyBuffer),
+        body: bodyBuffer as unknown as BodyInit,
         headers: {
-          'Content-Type': req.headers['content-type'] || 'multipart/form-data',
+          'Content-Type': contentType || 'multipart/form-data',
           'Content-Length': bodyBuffer.length.toString(),
         },
         signal: controller.signal,

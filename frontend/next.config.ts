@@ -13,17 +13,31 @@ const nextConfig: NextConfig = {
     proxyClientMaxBodySize: '100mb',
   },
   
-  // ✅ Proxy: legge variabili al RUNTIME (non al build-time)
+  // Proxy: legge variabili a runtime (non a build-time)
   async rewrites() {
-    // Legge da variabile d'ambiente al runtime
+
     const apiUrl = process.env.API_BACKEND_URL || 'http://host.docker.internal:8080';
 
     console.log('🔧 [next.config] Proxy API →', apiUrl);
 
     return {
-      // afterFiles: applicati DOPO aver controllato pages/api routes
-      // Quindi uploadoutagezip e uploadconsentzip (in pages/api) hanno priorita'
+      // Queste routes vengono gestite prima dei file in pages/api
       afterFiles: [
+        // Escludi routes che hanno handler custom in pages/api
+        {
+          source: '/api/:path*',
+          has: [
+            {
+              type: 'header',
+              key: 'x-use-proxy',
+              value: 'true',
+            },
+          ],
+          destination: `${apiUrl}/api/:path*`,
+        },
+      ],
+      // fallback: applicati solo se nessun file pages/api corrisponde
+      fallback: [
         {
           source: '/api/:path*',
           destination: `${apiUrl}/api/:path*`,
@@ -32,7 +46,7 @@ const nextConfig: NextConfig = {
     };
   },
 
-  // ✅ Timeout per upload grandi (es. ZIP files)
+  // Timeout per upload grandi
   serverExternalPackages: [],
 
   async headers() {

@@ -37,6 +37,7 @@
   },
 
   "limits": {
+    "pdfMaxConcurrentGenerations": 2,
     "maxUploadSizeBytes": 100000000,
     "httpLongRequestTimeoutMinutes": 15,
     "dataArchiveFrequencyHours": 24

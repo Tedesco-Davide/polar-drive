@@ -16,6 +16,15 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
     private readonly PolarDriveLogger _logger = new();
     private readonly PdfGenerationService _pdfService = pdfService;
 
+    // Cache statica per i font - evita di rileggere i file ad ogni richiesta
+    private static readonly string FontBasePath = "/app/wwwroot/fonts/satoshi";
+    private static readonly Lazy<string> _satoshiRegularCache = new(() =>
+        System.IO.File.ReadAllText(Path.Combine(FontBasePath, "Satoshi-Regular.b64")));
+    private static readonly Lazy<string> _satoshiBoldCache = new(() =>
+        System.IO.File.ReadAllText(Path.Combine(FontBasePath, "Satoshi-Bold.b64")));
+    private static readonly Lazy<string> _satoshiBlackCache = new(() =>
+        System.IO.File.ReadAllText(Path.Combine(FontBasePath, "Satoshi-Black.b64")));
+
     /// <summary>
     /// Ottiene i dati del profilo cliente senza generare il PDF (per preview o debug)
     /// </summary>
@@ -69,9 +78,9 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
                 return NotFound(new { errorCode = "PROFILE_DATA_NOT_FOUND" });
             }
 
-            var basePath = "/app/wwwroot/fonts/satoshi";
-            var satoshiRegular = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
-            var satoshiBold = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
+            // Usa la cache statica per i font
+            var satoshiRegular = _satoshiRegularCache.Value;
+            var satoshiBold = _satoshiBoldCache.Value;
 
             var fontStyles = $@"
                 @font-face {{
@@ -198,122 +207,113 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
     }
 
     /// <summary>
-    /// ✅ CORRETTO: Ottiene i dati aggregati del profilo cliente dalla view vw_ClientFullProfile
+    /// Ottiene i dati aggregati del profilo cliente dalla view vw_ClientFullProfile
+    /// NOTA: Usa il timeout configurato in Program.cs (CommandTimeout nella connection string)
+    /// per evitare race condition tra richieste concurrent
     /// </summary>
     private async Task<ClientProfileData?> GetClientProfileDataAsync(int companyId)
     {
-        var previousTimeout = _db.Database.GetCommandTimeout();
-        _db.Database.SetCommandTimeout(120); // 2 minuti
+        // NOTA: Non modifichiamo il timeout dinamicamente per evitare race condition
+        // Il timeout è configurato a livello di connection string in Program.cs
 
-        try
-        {
-            // ✅ USA LA VIEW CORRETTA con tutti i campi inclusi quelli SMS
-            var sql = @"
-                SELECT * 
-                FROM vw_ClientFullProfile 
-                WHERE ClientCompanyId = @companyId 
-                ORDER BY Brand, Model, Vin";
+        // Query principale per ottenere i dati del profilo
+        var sql = @"
+            SELECT *
+            FROM vw_ClientFullProfile
+            WHERE ClientCompanyId = @companyId
+            ORDER BY Brand, Model, Vin";
 
-            var companyParam = new SqlParameter("@companyId", SqlDbType.Int) { Value = companyId };
-            var rawData = await _db.Database.SqlQueryRaw<ClientFullProfileViewDto>(sql, companyParam)
-                .ToListAsync();
+        var companyParam = new SqlParameter("@companyId", SqlDbType.Int) { Value = companyId };
+        var rawData = await _db.Database.SqlQueryRaw<ClientFullProfileViewDto>(sql, companyParam)
+            .ToListAsync();
 
-            if (rawData.Count == 0)
-                return null;
+        if (rawData.Count == 0)
+            return null;
 
-            var firstRow = rawData.First();
+        var firstRow = rawData.First();
 
-            // ✅ NUOVO: Recupera dati ADAPTIVE_GDPR, ADAPTIVE_PROFILE e OUTAGES
-            var vehicles = rawData
-                .Where(r => r.VehicleId.HasValue)
-                .Select(r => new VehicleProfileInfo
-                {
-                    Id = r.VehicleId!.Value,
-                    Vin = r.Vin ?? "",
-                    Brand = r.Brand ?? "",
-                    Model = r.Model ?? "",
-                    FuelType = r.FuelType ?? "",
-                    IsActive = r.VehicleIsActive,
-                    IsFetching = r.VehicleIsFetching,
-                    IsAuthorized = r.VehicleIsAuthorized,
-                    VehicleCreatedAt = r.VehicleCreatedAt,
-                    FirstActivationAt = r.VehicleFirstActivation,
-                    LastDeactivationAt = r.VehicleLastDeactivation,
-                    TotalConsents = r.VehicleConsents ?? 0,
-                    TotalOutages = r.VehicleOutages ?? 0,
-                    TotalReports = r.VehicleReports ?? 0,
-                    TotalSmsEvents = r.VehicleSmsEvents ?? 0,
-                    AdaptiveOnEvents = r.VehicleAdaptiveOn ?? 0,
-                    AdaptiveOffEvents = r.VehicleAdaptiveOff ?? 0,
-                    ActiveSessions = r.VehicleActiveSessions ?? 0,
-                    LastSmsReceived = r.VehicleLastSms,
-                    ActiveSessionExpires = r.VehicleActiveSessionExpires,
-                    LastConsentDate = r.VehicleLastConsent,
-                    LastOutageStart = r.VehicleLastOutage,
-                    LastReportGenerated = r.VehicleLastReport,
-                    DaysSinceFirstActivation = r.DaysSinceFirstActivation,
-                    VehicleOutageDays = r.VehicleOutageDays ?? 0,
-                    ReferentName = r.ReferentName,
-                    VehicleMobileNumber = r.VehicleMobileNumber,
-                    ReferentEmail = r.ReferentEmail
-                })
-                .ToList();
-
-            var vehicleIds = vehicles.Select(v => v.Id).ToList();
-
-            var adaptiveGdprConsents = await GetAdaptiveGdprConsentsAsync(companyId);
-            var adaptiveProfileUsers = await GetAdaptiveProfileUsersAsync(companyId);
-            var vehicleAdaptiveProfiles = await GetVehicleAdaptiveProfilesAsync(vehicleIds);
-            var (outagesSummary, outages) = await GetOutagesForCompanyAsync(companyId);
-
-            return new ClientProfileData
+        // Recupera dati ADAPTIVE_GDPR, ADAPTIVE_PROFILE e OUTAGES
+        var vehicles = rawData
+            .Where(r => r.VehicleId.HasValue)
+            .Select(r => new VehicleProfileInfo
             {
-                CompanyInfo = new CompanyProfileInfo
-                {
-                    Id = firstRow.ClientCompanyId,
-                    VatNumber = firstRow.VatNumber,
-                    Name = firstRow.Name,
-                    Address = firstRow.Address,
-                    Email = firstRow.Email,
-                    PecAddress = firstRow.PecAddress,
-                    LandlineNumber = firstRow.LandlineNumber,
-                    CompanyCreatedAt = firstRow.CompanyCreatedAt,
-                    DaysRegistered = firstRow.DaysRegistered,
-                    TotalVehicles = firstRow.TotalVehicles,
-                    ActiveVehicles = firstRow.ActiveVehicles,
-                    FetchingVehicles = firstRow.FetchingVehicles,
-                    AuthorizedVehicles = firstRow.AuthorizedVehicles,
-                    UniqueBrands = firstRow.UniqueBrands,
+                Id = r.VehicleId!.Value,
+                Vin = r.Vin ?? "",
+                Brand = r.Brand ?? "",
+                Model = r.Model ?? "",
+                FuelType = r.FuelType ?? "",
+                IsActive = r.VehicleIsActive,
+                IsFetching = r.VehicleIsFetching,
+                IsAuthorized = r.VehicleIsAuthorized,
+                VehicleCreatedAt = r.VehicleCreatedAt,
+                FirstActivationAt = r.VehicleFirstActivation,
+                LastDeactivationAt = r.VehicleLastDeactivation,
+                TotalConsents = r.VehicleConsents ?? 0,
+                TotalOutages = r.VehicleOutages ?? 0,
+                TotalReports = r.VehicleReports ?? 0,
+                TotalSmsEvents = r.VehicleSmsEvents ?? 0,
+                AdaptiveOnEvents = r.VehicleAdaptiveOn ?? 0,
+                AdaptiveOffEvents = r.VehicleAdaptiveOff ?? 0,
+                ActiveSessions = r.VehicleActiveSessions ?? 0,
+                LastSmsReceived = r.VehicleLastSms,
+                ActiveSessionExpires = r.VehicleActiveSessionExpires,
+                LastConsentDate = r.VehicleLastConsent,
+                LastOutageStart = r.VehicleLastOutage,
+                LastReportGenerated = r.VehicleLastReport,
+                DaysSinceFirstActivation = r.DaysSinceFirstActivation,
+                VehicleOutageDays = r.VehicleOutageDays ?? 0,
+                ReferentName = r.ReferentName,
+                VehicleMobileNumber = r.VehicleMobileNumber,
+                ReferentEmail = r.ReferentEmail
+            })
+            .ToList();
 
-                    // ✅ CORRETTO: Mappa i dati aggregati reali dalla view
-                    TotalConsentsCompany = firstRow.TotalConsentsCompany,
-                    TotalOutagesCompany = firstRow.TotalOutagesCompany,
-                    TotalReportsCompany = firstRow.TotalReportsCompany,
+        var vehicleIds = vehicles.Select(v => v.Id).ToList();
 
-                    // ✅ NUOVO: Statistiche SMS aggregate aziendali
-                    TotalSmsEventsCompany = firstRow.TotalSmsEventsCompany,
-                    ActiveSessionsCompany = firstRow.ActiveSessionsCompany,
-                    LastSmsReceivedCompany = firstRow.LastSmsReceivedCompany,
-                    LastActiveSessionExpiresCompany = firstRow.LastActiveSessionExpiresCompany,
+        var adaptiveGdprConsents = await GetAdaptiveGdprConsentsAsync(companyId);
+        var adaptiveProfileUsers = await GetAdaptiveProfileUsersAsync(companyId);
+        var vehicleAdaptiveProfiles = await GetVehicleAdaptiveProfilesAsync(vehicleIds);
+        var (outagesSummary, outages) = await GetOutagesForCompanyAsync(companyId);
 
-                    FirstVehicleActivation = firstRow.FirstVehicleActivation,
-                    LastReportGeneratedCompany = firstRow.LastReportGeneratedCompany,
-                },
-                Vehicles = vehicles,
-
-                // ✅ NUOVO: Dati ADAPTIVE_GDPR, ADAPTIVE_PROFILE e OUTAGES
-                AdaptiveGdprConsents = adaptiveGdprConsents,
-                AdaptiveProfileUsers = adaptiveProfileUsers,
-                VehicleAdaptiveProfiles = vehicleAdaptiveProfiles,
-                OutagesSummary = outagesSummary,
-                Outages = outages
-            };
-        }
-        finally
+        return new ClientProfileData
         {
-            // Ripristina il timeout originale
-            _db.Database.SetCommandTimeout(previousTimeout);
-        }
+            CompanyInfo = new CompanyProfileInfo
+            {
+                Id = firstRow.ClientCompanyId,
+                VatNumber = firstRow.VatNumber,
+                Name = firstRow.Name,
+                Address = firstRow.Address,
+                Email = firstRow.Email,
+                PecAddress = firstRow.PecAddress,
+                LandlineNumber = firstRow.LandlineNumber,
+                CompanyCreatedAt = firstRow.CompanyCreatedAt,
+                DaysRegistered = firstRow.DaysRegistered,
+                TotalVehicles = firstRow.TotalVehicles,
+                ActiveVehicles = firstRow.ActiveVehicles,
+                FetchingVehicles = firstRow.FetchingVehicles,
+                AuthorizedVehicles = firstRow.AuthorizedVehicles,
+                UniqueBrands = firstRow.UniqueBrands,
+
+                TotalConsentsCompany = firstRow.TotalConsentsCompany,
+                TotalOutagesCompany = firstRow.TotalOutagesCompany,
+                TotalReportsCompany = firstRow.TotalReportsCompany,
+
+                TotalSmsEventsCompany = firstRow.TotalSmsEventsCompany,
+                ActiveSessionsCompany = firstRow.ActiveSessionsCompany,
+                LastSmsReceivedCompany = firstRow.LastSmsReceivedCompany,
+                LastActiveSessionExpiresCompany = firstRow.LastActiveSessionExpiresCompany,
+
+                FirstVehicleActivation = firstRow.FirstVehicleActivation,
+                LastReportGeneratedCompany = firstRow.LastReportGeneratedCompany,
+            },
+            Vehicles = vehicles,
+
+            AdaptiveGdprConsents = adaptiveGdprConsents,
+            AdaptiveProfileUsers = adaptiveProfileUsers,
+            VehicleAdaptiveProfiles = vehicleAdaptiveProfiles,
+            OutagesSummary = outagesSummary,
+            Outages = outages
+        };
     }
 
     /// <summary>
@@ -586,12 +586,10 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
     {
         var generationDate = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
 
-        // ✅ Path assoluto nel container Docker
-        var basePath = "/app/wwwroot/fonts/satoshi";
-
-        var satoshiRegular = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Regular.b64"));
-        var satoshiBold = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Bold.b64"));
-        var satoshiBlack = System.IO.File.ReadAllText(Path.Combine(basePath, "Satoshi-Black.b64"));
+        // Usa la cache statica per i font
+        var satoshiRegular = _satoshiRegularCache.Value;
+        var satoshiBold = _satoshiBoldCache.Value;
+        var satoshiBlack = _satoshiBlackCache.Value;
 
         return $@"
     <!DOCTYPE html>
@@ -1679,7 +1677,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
         var brandOutagesTable = brandOutages.Count > 0 ? $@"
             <h4 style='margin-top: 30px; color: #667eea; page-break-before: avoid;'>🌐 Outages a Livello Brand (Fleet API)</h4>
             <p style='font-size: 0.9em; color: #6c757d; margin-bottom: 15px;'>
-                Interruzioni delle API del costruttore che hanno impattato tutti i veicoli del brand.
+                Interruzioni delle API del costruttore che hanno impattato tutti i veicoli del brand
             </p>
             {GenerateBrandOutagesTable(brandOutages)}" : "";
 
@@ -1687,7 +1685,7 @@ public class ClientProfileController(PolarDriveDbContext db, PdfGenerationServic
             <div style='page-break-before: always;'>
                 <h4 style='margin-top: 30px; color: #667eea;'>🚗 Outages Specifici per Veicolo</h4>
                 <p style='font-size: 0.9em; color: #6c757d; margin-bottom: 15px;'>
-                    Interruzioni specifiche per singoli veicoli della flotta.
+                    Interruzioni specifiche per singoli veicoli della flotta
                 </p>
                 {GenerateVehicleOutagesTable(vehicleOutages)}
             </div>" : "";
