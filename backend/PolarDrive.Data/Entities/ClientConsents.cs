@@ -13,6 +13,8 @@ public class ClientConsent
 
     public byte[]? ZipContent { get; set; }
 
+    public long ZipSize { get; set; } = 0;
+
     public string ConsentHash { get; set; } = string.Empty;
 
     [Required]

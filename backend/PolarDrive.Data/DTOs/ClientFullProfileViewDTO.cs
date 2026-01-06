@@ -57,16 +57,16 @@ public class ClientFullProfileViewDto
     public DateTime? VehicleLastDeactivation { get; set; }
     public DateTime? VehicleCreatedAt { get; set; }
     
-    // Statistiche veicolo
-    public int VehicleConsents { get; set; }
-    public int VehicleOutages { get; set; }
-    public int VehicleReports { get; set; }
-    
-    // ✅ Statistiche SMS dettagliate veicolo
-    public int VehicleSmsEvents { get; set; }
-    public int VehicleAdaptiveOn { get; set; }
-    public int VehicleAdaptiveOff { get; set; }
-    public int VehicleActiveSessions { get; set; }
+    // Statistiche veicolo (nullable perché NULL se azienda senza veicoli)
+    public int? VehicleConsents { get; set; }
+    public int? VehicleOutages { get; set; }
+    public int? VehicleReports { get; set; }
+
+    // ✅ Statistiche SMS dettagliate veicolo (nullable)
+    public int? VehicleSmsEvents { get; set; }
+    public int? VehicleAdaptiveOn { get; set; }
+    public int? VehicleAdaptiveOff { get; set; }
+    public int? VehicleActiveSessions { get; set; }
     public DateTime? VehicleLastSms { get; set; }
     public DateTime? VehicleActiveSessionExpires { get; set; }
     
@@ -74,5 +74,5 @@ public class ClientFullProfileViewDto
     public DateTime? VehicleLastOutage { get; set; }
     public DateTime? VehicleLastReport { get; set; }
     public int? DaysSinceFirstActivation { get; set; }
-    public int VehicleOutageDays { get; set; }
+    public int? VehicleOutageDays { get; set; }
 }

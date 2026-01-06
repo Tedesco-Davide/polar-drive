@@ -2,6 +2,7 @@ import { TFunction } from "i18next";
 import { PdfReport } from "@/types/reportInterfaces";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
+import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download, FileLock, FileText } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
 import Chip from "@/components/chip";
@@ -32,6 +33,14 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     companyName: string | null;
     vehicleVin: string | null;
   } | null>(null);
+
+  // Previene refresh pagina durante download/rigenerazione
+  usePreventUnload(
+    downloadingId !== null ||
+    regeneratingId !== null ||
+    downloadingCertId !== null ||
+    (gapCertProcessing?.hasProcessing ?? false)
+  );
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);

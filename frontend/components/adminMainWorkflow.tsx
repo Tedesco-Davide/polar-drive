@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "next-i18next";
 import { FileArchive, UserSearch, Link, MessageSquare } from "lucide-react";
+import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { FuelType } from "@/types/fuelTypes";
 import {
   adminWorkflowTypesInputForm,
@@ -157,6 +158,9 @@ export default function AdminMainWorkflow() {
   useEffect(() => {
     fetchWorkflowData(currentPage, query);
   }, [currentPage, query]);
+
+  // Avviso prima di lasciare la pagina durante operazioni lunghe
+  usePreventUnload(generatingProfileId !== null || isSubmitting);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);

@@ -92,6 +92,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 
         byte[]? zipContent = null;
         string zipHash = "";
+        long zipSize = 0;
         if (zipFile != null && zipFile.Length > 0)
         {
             using var ms = new MemoryStream();
@@ -103,14 +104,15 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
 
             // Hash & dup check
             ms.Position = 0;
-            string hash = GenericHelpers.ComputeContentHash(ms);
+            zipHash = GenericHelpers.ComputeContentHash(ms);
 
-            var duplicate = await db.OutagePeriods.FirstOrDefaultAsync(o => o.ZipHash == hash);
+            var duplicate = await db.OutagePeriods.FirstOrDefaultAsync(o => o.ZipHash == zipHash);
             if (duplicate != null)
                 return BadRequest($"SERVER ERROR → File already exists for outage ID {duplicate.Id}!");
 
             ms.Position = 0;
             zipContent = ms.ToArray();
+            zipSize = zipContent.Length;
         }
 
         var allOutages = await db.OutagePeriods.ToListAsync();
@@ -142,6 +144,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
                 if (zipContent != null)
                 {
                     existingOutage.ZipContent = zipContent;
+                    existingOutage.ZipSize = zipSize;
                     existingOutage.ZipHash = zipHash;
                     await db.SaveChangesAsync();
 
@@ -186,6 +189,7 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
                 ClientCompanyId = clientCompanyId,
                 VehicleId = vehicleId,
                 ZipContent = zipContent,
+                ZipSize = zipSize,
                 ZipHash = zipHash,
                 Notes = ""
             };
@@ -242,7 +246,9 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
             return Conflict($"SERVER ERROR → File already exists for outage ID {duplicate.Id}!");
 
         ms.Position = 0;
-        outage.ZipContent = ms.ToArray();
+        var zipBytes = ms.ToArray();
+        outage.ZipContent = zipBytes;
+        outage.ZipSize = zipBytes.Length;
         outage.ZipHash = hash;
         await db.SaveChangesAsync();
 

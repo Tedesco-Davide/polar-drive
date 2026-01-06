@@ -3,6 +3,7 @@ import { ClientConsent } from "@/types/clientConsentInterfaces";
 import { Download, NotebookPen } from "lucide-react";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
+import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { logFrontendEvent } from "@/utils/logger";
 import NotesModal from "@/components/notesModal";
 import PaginationControls from "@/components/paginationControls";
@@ -33,6 +34,10 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
   const [showForm, setShowForm] = useState(false);
   const [selectedConsentForNotes, setSelectedConsentForNotes] =
     useState<ClientConsent | null>(null);
+  const [downloadingZipId, setDownloadingZipId] = useState<number | null>(null);
+
+  // Previene refresh pagina durante download
+  usePreventUnload(downloadingZipId !== null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -90,6 +95,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
   };
 
   const handleZipDownload = async (consentId: number) => {
+    setDownloadingZipId(consentId);
     try {
       const response = await fetch(`/api/clientconsents/${consentId}/download`);
       const contentType = response.headers.get("content-type");
@@ -124,6 +130,8 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       const errorMessage =
         error instanceof Error ? error.message : "Download failed";
       alert(`${t("admin.downloadError")}: ${errorMessage}`);
+    } finally {
+      setDownloadingZipId(null);
     }
   };
 
@@ -151,7 +159,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing) && <AdminLoader local />}
+      {(loading || isRefreshing || downloadingZipId !== null) && <AdminLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -215,8 +223,9 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
                   {consent.hasZipFile && (
                     <button
                       onClick={() => handleZipDownload(consent.id)}
-                      className="p-2 bg-green-500 hover:bg-green-600 text-white rounded"
+                      className="p-2 bg-green-500 hover:bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
                       title={t("admin.downloadZip")}
+                      disabled={downloadingZipId === consent.id}
                     >
                       <Download size={16} />
                     </button>

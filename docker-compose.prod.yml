@@ -60,6 +60,8 @@ services:
       - TZ=Europe/Rome
       - NODE_ENV=production
       - API_BACKEND_URL=http://host.docker.internal:8081
+    volumes:
+      - ./app-config.json:/app/config/app-config.json:ro
     ports:
       - "3001:3000"
     networks:

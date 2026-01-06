@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { TFunction } from "i18next";
+import { usePreventUnload } from "@/hooks/usePreventUnload";
 import {
   NotebookPen,
-  Clock,
   Upload,
   Download,
   ShieldCheck,
@@ -49,7 +49,11 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
   const [selectedOutageForNotes, setSelectedOutageForNotes] =
     useState<OutagePeriod | null>(null);
   const [uploadingZip, setUploadingZip] = useState<Set<number>>(new Set());
+  const [downloadingZipId, setDownloadingZipId] = useState<number | null>(null);
   const fileInputRefs = useRef<Map<number, HTMLInputElement | null>>(new Map());
+
+  // Previene refresh pagina durante upload/download
+  usePreventUnload(uploadingZip.size > 0 || downloadingZipId !== null);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -168,8 +172,45 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
     }
   };
 
-  const handleZipDownload = (outageId: number) => {
-    window.open(`/api/outageperiods/${outageId}/download-zip`, "_blank");
+  const handleZipDownload = async (outageId: number) => {
+    setDownloadingZipId(outageId);
+    try {
+      const response = await fetch(`/api/outageperiods/${outageId}/download-zip`);
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        const result = await response.json();
+        alert(result.message || t("admin.noFileAvailable"));
+        return;
+      }
+
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      const contentDisposition = response.headers.get("content-disposition");
+      let filename = `outage_${outageId}.zip`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(
+          /filename[^;=\n]*=["']?([^"';]*)["']?/
+        );
+        if (filenameMatch && filenameMatch[1]) filename = filenameMatch[1];
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : "Download failed";
+      alert(`${t("admin.downloadError")}: ${errorMessage}`);
+    } finally {
+      setDownloadingZipId(null);
+    }
   };
 
   const handleResolveOutage = async (outageId: number) => {
@@ -212,7 +253,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing) && <AdminLoader local />}
+      {(loading || isRefreshing || uploadingZip.size > 0 || downloadingZipId !== null) && <AdminLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -297,18 +338,15 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
                         }}
                         disabled={uploadingZip.has(outage.id)}
                       />
-                      {uploadingZip.has(outage.id) ? (
-                        <Clock size={16} className="animate-spin" />
-                      ) : (
-                        <Upload size={16} />
-                      )}
+                      <Upload size={16} />
                     </label>
                   )}
                   {outage.hasZipFile && (
                     <button
                       onClick={() => handleZipDownload(outage.id)}
-                      className="p-2 bg-green-500 hover:bg-green-600 text-white rounded"
+                      className="p-2 bg-green-500 hover:bg-green-600 text-white rounded disabled:opacity-50 disabled:cursor-not-allowed"
                       title={t("admin.downloadZip")}
+                      disabled={downloadingZipId === outage.id}
                     >
                       <Download size={16} />
                     </button>

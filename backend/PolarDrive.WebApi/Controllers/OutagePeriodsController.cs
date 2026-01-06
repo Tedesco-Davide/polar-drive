@@ -28,9 +28,9 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
             await _logger.Info("OutagePeriodsController.Get", "Requested filtered list of outage periods",
                 $"Page: {page}, PageSize: {pageSize}");
 
+            // AsNoTracking + no Include (Select con proiezione genera i JOIN automaticamente)
             var query = _db.OutagePeriods
-                .Include(o => o.ClientCompany)
-                .Include(o => o.ClientVehicle)
+                .AsNoTracking()
                 .AsQueryable();
 
             // Filtro ricerca
@@ -86,7 +86,7 @@ public class OutagePeriodsController(PolarDriveDbContext db) : ControllerBase
                     DurationMinutes = o.OutageEnd.HasValue
                         ? (int)(o.OutageEnd.Value - o.OutageStart).TotalMinutes
                         : (int)(DateTime.Now - o.OutageStart).TotalMinutes,
-                    HasZipFile = o.ZipContent != null && o.ZipContent.Length > 0,
+                    HasZipFile = o.ZipSize > 0,
                     ZipHash = string.IsNullOrEmpty(o.ZipHash) ? null : o.ZipHash
                 })
                 .ToListAsync();

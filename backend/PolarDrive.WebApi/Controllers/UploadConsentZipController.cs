@@ -109,12 +109,14 @@ public class UploadConsentZipController(PolarDriveDbContext db) : ControllerBase
 
         // Save to DB (BLOB)
         ms.Position = 0;
+        var zipBytes = ms.ToArray();
         var consent = new ClientConsent
         {
             ClientCompanyId = clientCompanyId,
             VehicleId = vehicleId,
             UploadDate = DateTime.Now,
-            ZipContent = ms.ToArray(),
+            ZipContent = zipBytes,
+            ZipSize = zipBytes.Length,
             ConsentHash = hash,
             ConsentType = consentType,
             Notes = ""
@@ -202,7 +204,9 @@ public class UploadConsentZipController(PolarDriveDbContext db) : ControllerBase
 
         // Aggiorna il BLOB
         ms.Position = 0;
-        consent.ZipContent = ms.ToArray();
+        var zipBytes = ms.ToArray();
+        consent.ZipContent = zipBytes;
+        consent.ZipSize = zipBytes.Length;
         consent.ConsentHash = hash;
         await _db.SaveChangesAsync();
 

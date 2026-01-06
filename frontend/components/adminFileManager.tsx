@@ -2,6 +2,7 @@ import { FileManager } from "@/types/adminFileManagerTypes";
 import { TFunction } from "i18next";
 import { formatDateToDisplay } from "@/utils/date";
 import { useEffect, useState } from "react";
+import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { FileArchive, NotebookPen, Download, Trash2 } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
 import PaginationControls from "@/components/paginationControls";
@@ -78,6 +79,10 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
     useState<FileManager | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [downloadingJobId, setDownloadingJobId] = useState<number | null>(null);
+
+  // Previene refresh pagina durante download
+  usePreventUnload(downloadingJobId !== null);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -288,11 +293,7 @@ export default function AdminFileManagerTable({ t }: { t: TFunction }) {
                       onClick={() => handleDownloadZip(job)}
                       disabled={downloadingJobId === job.id}
                     >
-                      {downloadingJobId === job.id ? (
-                        <AdminLoader inline />
-                      ) : (
-                        <FileArchive size={16} />
-                      )}
+                      <FileArchive size={16} />
                     </button>
                   ) : (
                     <button

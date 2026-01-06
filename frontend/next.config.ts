@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+    proxyClientMaxBodySize: '100mb',
   },
   
   // ✅ Proxy: legge variabili al RUNTIME (non al build-time)
@@ -19,12 +20,16 @@ const nextConfig: NextConfig = {
 
     console.log('🔧 [next.config] Proxy API →', apiUrl);
 
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${apiUrl}/api/:path*`,
-      },
-    ];
+    return {
+      // afterFiles: applicati DOPO aver controllato pages/api routes
+      // Quindi uploadoutagezip e uploadconsentzip (in pages/api) hanno priorita'
+      afterFiles: [
+        {
+          source: '/api/:path*',
+          destination: `${apiUrl}/api/:path*`,
+        },
+      ],
+    };
   },
 
   // ✅ Timeout per upload grandi (es. ZIP files)

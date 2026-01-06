@@ -30,9 +30,9 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
             await _logger.Info("ClientConsentsController.Get", "Requested filtered list of client consents",
                 $"Page: {page}, PageSize: {pageSize}");
 
+            // AsNoTracking + no Include (Select con proiezione genera i JOIN automaticamente)
             var query = _db.ClientConsents
-                .Include(c => c.ClientCompany)
-                .Include(c => c.ClientVehicle)
+                .AsNoTracking()
                 .AsQueryable();
 
             // Filtro ricerca
@@ -68,8 +68,8 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
                     VehicleId = c.VehicleId,
                     VehicleVIN = c.ClientVehicle!.Vin,
                     UploadDate = c.UploadDate.ToString("o"),
-                    ZipFileSize = c.ZipContent != null ? c.ZipContent.Length : 0,
-                    HasZipFile = c.ZipContent != null && c.ZipContent.Length > 0,
+                    ZipFileSize = c.ZipSize,
+                    HasZipFile = c.ZipSize > 0,
                     ConsentHash = c.ConsentHash,
                     ConsentType = c.ConsentType,
                     Notes = c.Notes
