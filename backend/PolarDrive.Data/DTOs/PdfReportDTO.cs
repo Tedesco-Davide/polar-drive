@@ -23,7 +23,7 @@ public class PdfReportDTO
     public string PdfHash { get; set; } = string.Empty;
 
     // Gap Validation info
-    public string? GapCertificationStatus { get; set; }
-    public string? GapCertificationPdfHash { get; set; }
-    public bool HasGapCertificationPdf { get; set; }
+    public string? GapValidationStatus { get; set; }
+    public string? GapValidationPdfHash { get; set; }
+    public bool HasGapValidationPdf { get; set; }
 }

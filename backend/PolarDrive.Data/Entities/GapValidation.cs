@@ -5,7 +5,7 @@ namespace PolarDrive.Data.Entities;
 /// Quando un record orario manca nel database, questa entità traccia la validazione
 /// basata sull'analisi statistica dei dati circostanti
 /// </summary>
-public class GapCertification
+public class GapValidation
 {
     public int Id { get; set; }
 
@@ -39,12 +39,12 @@ public class GapCertification
     /// <summary>
     /// Data/ora in cui è stata generata la validazione
     /// </summary>
-    public DateTime CertifiedAt { get; set; }
+    public DateTime ValidatedAt { get; set; }
 
     /// <summary>
     /// Hash SHA-256 della validazione per integrità
     /// </summary>
-    public string CertificationHash { get; set; } = string.Empty;
+    public string ValidationHash { get; set; } = string.Empty;
 
     public ClientVehicle? ClientVehicle { get; set; }
 

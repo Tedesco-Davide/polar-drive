@@ -28,9 +28,9 @@ export interface PdfReport {
   pdfHash?: string;
 
   // Gap Validation info
-  gapCertificationStatus?: string | null;
-  gapCertificationPdfHash?: string | null;
-  hasGapCertificationPdf?: boolean;
+  gapValidationStatus?: string | null;
+  gapValidationPdfHash?: string | null;
+  hasGapValidationPdf?: boolean;
 }
 
 // ✅ Interface per il controllo pre-download

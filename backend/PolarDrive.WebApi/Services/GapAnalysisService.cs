@@ -743,7 +743,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
     /// Verifica se un report ha gap non certificati.
     /// Usa la stessa finestra temporale del PDF.
     /// </summary>
-    public async Task<GapCertificationStatus> GetGapStatusForReportAsync(int pdfReportId)
+    public async Task<GapValidationStatus> GetGapStatusForReportAsync(int pdfReportId)
     {
         const string source = "GapAnalysisService.GetGapStatusForReport";
 
@@ -752,14 +752,14 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             var report = await _db.PdfReports.FirstOrDefaultAsync(r => r.Id == pdfReportId);
             if (report == null)
             {
-                return new GapCertificationStatus { HasUncertifiedGaps = false };
+                return new GapValidationStatus { HasUncertifiedGaps = false };
             }
 
             // Usa AnalyzeGapsForReportAsync che calcola la finestra corretta
             var gaps = await AnalyzeGapsForReportAsync(pdfReportId);
 
             // Controlla quanti sono già certificati
-            var certifiedGaps = await _db.GapCertifications
+            var certifiedGaps = await _db.GapValidations
                 .Where(gc => gc.PdfReportId == pdfReportId)
                 .Select(gc => gc.GapTimestamp)
                 .ToListAsync();
@@ -767,10 +767,10 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             var uncertifiedCount = gaps.Count(g => !certifiedGaps.Contains(g.GapTimestamp));
 
             // Controlla se esiste già un PDF di certificazione
-            var hasCertificationPdf = await _db.GapCertifications
-                .AnyAsync(gc => gc.PdfReportId == pdfReportId && !string.IsNullOrEmpty(gc.CertificationHash));
+            var hasCertificationPdf = await _db.GapValidations
+                .AnyAsync(gc => gc.PdfReportId == pdfReportId && !string.IsNullOrEmpty(gc.ValidationHash));
 
-            return new GapCertificationStatus
+            return new GapValidationStatus
             {
                 HasUncertifiedGaps = uncertifiedCount > 0,
                 TotalGaps = gaps.Count,
@@ -782,7 +782,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
         catch (Exception ex)
         {
             await _logger.Error(source, $"Error getting gap status for report {pdfReportId}", ex.ToString());
-            return new GapCertificationStatus { HasUncertifiedGaps = false };
+            return new GapValidationStatus { HasUncertifiedGaps = false };
         }
     }
 
@@ -790,10 +790,10 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
     /// Certifica i gap per un report e li salva nel database.
     /// Usa la stessa finestra temporale del PDF.
     /// </summary>
-    public async Task<List<GapCertification>> CertifyGapsForReportAsync(int pdfReportId)
+    public async Task<List<GapValidation>> CertifyGapsForReportAsync(int pdfReportId)
     {
         const string source = "GapAnalysisService.CertifyGapsForReport";
-        var certifications = new List<GapCertification>();
+        var certifications = new List<GapValidation>();
 
         try
         {
@@ -808,13 +808,13 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             var gaps = await AnalyzeGapsForReportAsync(pdfReportId);
 
             // Rimuovi certificazioni esistenti per questo report (ricertificazione)
-            var existingCerts = await _db.GapCertifications
+            var existingCerts = await _db.GapValidations
                 .Where(gc => gc.PdfReportId == pdfReportId)
                 .ToListAsync();
 
             if (existingCerts.Count != 0)
             {
-                _db.GapCertifications.RemoveRange(existingCerts);
+                _db.GapValidations.RemoveRange(existingCerts);
                 await _db.SaveChangesAsync();
             }
 
@@ -824,7 +824,7 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
                 var certifiedAt = DateTime.Now;
                 var hashData = $"{gap.GapTimestamp:O}|{gap.ConfidencePercentage}|{gap.Justification}|{certifiedAt:O}";
 
-                var certification = new GapCertification
+                var certification = new GapValidation
                 {
                     VehicleId = report.VehicleId,
                     PdfReportId = pdfReportId,
@@ -832,12 +832,12 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
                     ConfidencePercentage = gap.ConfidencePercentage,
                     JustificationText = gap.Justification,
                     AnalysisFactorsJson = JsonSerializer.Serialize(gap.Factors),
-                    CertifiedAt = certifiedAt,
-                    CertificationHash = GenericHelpers.ComputeContentHash(hashData)
+                    ValidatedAt = certifiedAt,
+                    ValidationHash = GenericHelpers.ComputeContentHash(hashData)
                 };
 
                 certifications.Add(certification);
-                _db.GapCertifications.Add(certification);
+                _db.GapValidations.Add(certification);
             }
 
             await _db.SaveChangesAsync();
@@ -871,7 +871,7 @@ public record VehicleDataRecord(DateTime Timestamp, string RawJsonAnonymized);
 /// <summary>
 /// Status della Validazione Probabilistica Gap per un report
 /// </summary>
-public class GapCertificationStatus
+public class GapValidationStatus
 {
     public bool HasUncertifiedGaps { get; set; }
     public int TotalGaps { get; set; }

@@ -5,7 +5,7 @@ namespace PolarDrive.Data.Entities;
 /// Relazione 1:1 con PdfReport - contiene il PDF generato e i metadati.
 /// Una volta generato, è immutabile.
 /// </summary>
-public class GapCertificationPdf
+public class GapValidationPdf
 {
     public int Id { get; set; }
 

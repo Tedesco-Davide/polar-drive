@@ -3,7 +3,7 @@ namespace PolarDrive.WebApi.PolarAiReports.Templates;
 /// <summary>
 /// Template CSS per il PDF di validazione probabilistica dei gap
 /// </summary>
-public static class GapCertificationTemplate
+public static class GapValidationTemplate
 {
     /// <summary>
     /// Restituisce gli stili coerenti con gli stili di stampa PDF attuali

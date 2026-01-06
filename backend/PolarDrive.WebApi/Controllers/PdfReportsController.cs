@@ -16,13 +16,13 @@ public class PdfReportsController(
     PolarDriveDbContext context,
     IReportGenerationService reportGenerationService,
     GapAnalysisService gapAnalysisService,
-    GapCertificationPdfService gapCertificationPdfService) : ControllerBase
+    GapValidationPdfService gapValidationPdfService) : ControllerBase
 {
     private readonly PolarDriveDbContext db = context;
     private readonly PolarDriveLogger _logger = new();
     private readonly IReportGenerationService _reportGenerationService = reportGenerationService;
     private readonly GapAnalysisService _gapAnalysisService = gapAnalysisService;
-    private readonly GapCertificationPdfService _gapCertificationPdfService = gapCertificationPdfService;
+    private readonly GapValidationPdfService _gapValidationPdfService = gapValidationPdfService;
 
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<PdfReportDTO>>> Get(
@@ -71,8 +71,8 @@ public class PdfReportsController(
                 .Select(r => r.Id)
                 .ToListAsync();
 
-            // Query separata per le certificazioni gap
-            var gapCertifications = await db.GapCertificationPdfs
+            // Query separata per le validazioni gap
+            var gapValidations = await db.GapValidationPdfs
                 .Where(c => reportIds.Contains(c.PdfReportId))
                 .Select(c => new
                 {
@@ -111,7 +111,7 @@ public class PdfReportsController(
             var result = reports.Select(report =>
             {
                 // Ottieni info Validazione Probabilistica Gap se disponibile
-                gapCertifications.TryGetValue(report.Id, out var gapCert);
+                gapValidations.TryGetValue(report.Id, out var gapCert);
 
                 return new PdfReportDTO
                 {
@@ -134,10 +134,10 @@ public class PdfReportsController(
                     ReportType = "Report",
                     Status = report.HasPdf ? ReportStatus.PDF_READY : (!string.IsNullOrEmpty(report.Status) ? report.Status : ReportStatus.PROCESSING),
                     PdfHash = report.PdfHash ?? "",
-                    // Gap Certification info
-                    GapCertificationStatus = gapCert?.Status,
-                    GapCertificationPdfHash = gapCert?.PdfHash,
-                    HasGapCertificationPdf = gapCert?.HasPdf ?? false
+                    // Gap Validation info
+                    GapValidationStatus = gapCert?.Status,
+                    GapValidationPdfHash = gapCert?.PdfHash,
+                    HasGapValidationPdf = gapCert?.HasPdf ?? false
                 };
             }).ToList();
 
@@ -457,14 +457,14 @@ public class PdfReportsController(
     /// Verifica se esiste una Validazione Probabilistica Gap in corso (PROCESSING).
     /// Utilizzato per bloccare nuove certificazioni mentre una è in elaborazione.
     /// </summary>
-    [HttpGet("gap-certification-processing")]
-    public async Task<ActionResult<object>> GetGapCertificationProcessing()
+    [HttpGet("gap-validation-processing")]
+    public async Task<ActionResult<object>> GetGapValidationProcessing()
     {
-        const string source = "PdfReportsController.GetGapCertificationProcessing";
+        const string source = "PdfReportsController.GetGapValidationProcessing";
 
         try
         {
-            var processing = await db.GapCertificationPdfs
+            var processing = await db.GapValidationPdfs
                 .Where(c => c.Status == ReportStatus.PROCESSING)
                 .Select(c => new
                 {
@@ -677,10 +677,10 @@ public class PdfReportsController(
     /// <summary>
     /// Genera la certificazione probabilistica dei gap per un report.
     /// Crea un record PROCESSING e avvia la generazione in background.
-    /// Il PDF verrà salvato nella tabella GapCertificationPdfs.
+    /// Il PDF verrà salvato nella tabella GapValidationPdfs.
     /// </summary>
-    [HttpPost("{id}/certify-gaps")]
-    public async Task<ActionResult<object>> CertifyGaps(int id)
+    [HttpPost("{id}/validate-gaps")]
+    public async Task<ActionResult<object>> ValidateGaps(int id)
     {
         const string source = "PdfReportsController.CertifyGaps";
 
@@ -689,7 +689,7 @@ public class PdfReportsController(
             await _logger.Info(source, $"Richiesta Validazione Probabilistica Gap per report {id}");
 
             // 1. Verifica che non ci sia già una certificazione in corso globalmente
-            var existingProcessing = await db.GapCertificationPdfs
+            var existingProcessing = await db.GapValidationPdfs
                 .AnyAsync(c => c.Status == ReportStatus.PROCESSING);
 
             if (existingProcessing)
@@ -716,7 +716,7 @@ public class PdfReportsController(
             }
 
             // 3. Verifica che non esista già una certificazione COMPLETED per questo report
-            var existingCompleted = await db.GapCertificationPdfs
+            var existingCompleted = await db.GapValidationPdfs
                 .AnyAsync(c => c.PdfReportId == id && c.Status == ReportStatus.COMPLETED);
 
             if (existingCompleted)
@@ -729,28 +729,28 @@ public class PdfReportsController(
             }
 
             // 4. Rimuovi eventuali certificazioni precedenti in stato ERROR per questo report
-            var existingError = await db.GapCertificationPdfs
+            var existingError = await db.GapValidationPdfs
                 .Where(c => c.PdfReportId == id && c.Status == ReportStatus.ERROR)
                 .ToListAsync();
 
             if (existingError.Count > 0)
             {
-                db.GapCertificationPdfs.RemoveRange(existingError);
+                db.GapValidationPdfs.RemoveRange(existingError);
                 await db.SaveChangesAsync();
             }
 
-            // 5. Crea il record GapCertificationPdf con status PROCESSING
-            var certPdf = new Data.Entities.GapCertificationPdf
+            // 5. Crea il record GapValidationPdf con status PROCESSING
+            var certPdf = new Data.Entities.GapValidationPdf
             {
                 PdfReportId = id,
                 Status = ReportStatus.PROCESSING,
                 CreatedAt = DateTime.Now
             };
 
-            db.GapCertificationPdfs.Add(certPdf);
+            db.GapValidationPdfs.Add(certPdf);
             await db.SaveChangesAsync();
 
-            await _logger.Info(source, $"Record GapCertificationPdf creato con status PROCESSING",
+            await _logger.Info(source, $"Record GapValidationPdf creato con status PROCESSING",
                 $"ReportId: {id}, CertPdfId: {certPdf.Id}");
 
             // 6. Avvia il task in background
@@ -761,7 +761,7 @@ public class PdfReportsController(
                 try
                 {
                     using var taskScope = scopeFactory.CreateScope();
-                    var service = taskScope.ServiceProvider.GetRequiredService<GapCertificationPdfService>();
+                    var service = taskScope.ServiceProvider.GetRequiredService<GapValidationPdfService>();
 
                     await _logger.Info(source, "BACKGROUND: Inizio generazione Validazione Probabilistica Gap",
                         $"ReportId: {id}");
@@ -792,12 +792,12 @@ public class PdfReportsController(
 
     /// <summary>
     /// Download del PDF di Validazione Probabilistica Gap dal database.
-    /// Il PDF è immutabile e salvato nella tabella GapCertificationPdfs.
+    /// Il PDF è immutabile e salvato nella tabella GapValidationPdfs.
     /// </summary>
-    [HttpGet("{id}/download-gap-certification")]
-    public async Task<IActionResult> DownloadGapCertification(int id)
+    [HttpGet("{id}/download-gap-validation")]
+    public async Task<IActionResult> DownloadGapValidation(int id)
     {
-        const string source = "PdfReportsController.DownloadGapCertification";
+        const string source = "PdfReportsController.DownloadGapValidation";
 
         try
         {
@@ -809,7 +809,7 @@ public class PdfReportsController(
                 return NotFound("Report non trovato");
 
             // Recupera la certificazione PDF dal database
-            var certPdf = await db.GapCertificationPdfs
+            var certPdf = await db.GapValidationPdfs
                 .FirstOrDefaultAsync(c => c.PdfReportId == id && c.Status == ReportStatus.COMPLETED);
 
             if (certPdf == null)
@@ -822,7 +822,7 @@ public class PdfReportsController(
                 return NotFound("PDF di certificazione non disponibile");
             }
 
-            var fileName = $"PolarDrive_GapCertification_{id}_{report.ClientVehicle?.Vin}_{certPdf.GeneratedAt:yyyyMMdd}.pdf";
+            var fileName = $"PolarDrive_GapValidation_{id}_{report.ClientVehicle?.Vin}_{certPdf.GeneratedAt:yyyyMMdd}.pdf";
 
             Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
             Response.Headers.Pragma = "no-cache";

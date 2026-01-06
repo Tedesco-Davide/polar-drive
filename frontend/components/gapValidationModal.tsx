@@ -9,15 +9,15 @@ type Props = {
   reportId: number;
   isOpen: boolean;
   onClose: () => void;
-  onCertificationComplete: (reportId: number) => void;
+  onValidationComplete: (reportId: number) => void;
   t: TFunction;
 };
 
-export default function GapCertificationModal({
+export default function GapValidationModal({
   reportId,
   isOpen,
   onClose,
-  onCertificationComplete,
+  onValidationComplete,
   t,
 }: Props) {
   const [loading, setLoading] = useState(true);
@@ -66,7 +66,7 @@ export default function GapCertificationModal({
       const data: GapAnalysisResponse = await res.json();
       setAnalysisData(data);
       logFrontendEvent(
-        "GapCertificationModal",
+        "GapValidationModal",
         "INFO",
         "Gap analysis loaded",
         `ReportId: ${reportId}, TotalGaps: ${data.totalGaps}`
@@ -75,7 +75,7 @@ export default function GapCertificationModal({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "GapCertificationModal",
+        "GapValidationModal",
         "ERROR",
         "Failed to load gap analysis",
         errorMessage
@@ -88,7 +88,7 @@ export default function GapCertificationModal({
   const handleCertify = async () => {
     setCertifying(true);
     try {
-      const res = await fetch(`/api/pdfreports/${reportId}/certify-gaps`, {
+      const res = await fetch(`/api/pdfreports/${reportId}/validate-gaps`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
@@ -98,13 +98,13 @@ export default function GapCertificationModal({
       // 202 Accepted = certificazione avviata in background
       if (res.status === 202) {
         logFrontendEvent(
-          "GapCertificationModal",
+          "GapValidationModal",
           "INFO",
           "Gap certification started in background",
           `ReportId: ${reportId}, Status: ${data.status}`
         );
         // Notifica il parent che chiuderà la modale e aggiornerà lo stato
-        onCertificationComplete(reportId);
+        onValidationComplete(reportId);
         return;
       }
 
@@ -114,23 +114,23 @@ export default function GapCertificationModal({
 
       // Fallback per risposta 200 (non dovrebbe più accadere)
       logFrontendEvent(
-        "GapCertificationModal",
+        "GapValidationModal",
         "INFO",
         "Gap certification completed",
         `ReportId: ${reportId}, GapsCertified: ${data.gapsCertified}`
       );
 
-      onCertificationComplete(reportId);
+      onValidationComplete(reportId);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "GapCertificationModal",
+        "GapValidationModal",
         "ERROR",
         "Certification failed",
         errorMessage
       );
-      alert(t("admin.gapCertification.certificationError", { error: errorMessage }));
+      alert(t("admin.gapValidation.certificationError", { error: errorMessage }));
     } finally {
       setCertifying(false);
     }
@@ -158,7 +158,7 @@ export default function GapCertificationModal({
         <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold">
-              {t("admin.gapCertification.modalTitle")}
+              {t("admin.gapValidation.modalTitle")}
             </h2>
             <p className="text-sm opacity-90">
               Report #{reportId}
@@ -173,7 +173,7 @@ export default function GapCertificationModal({
             </div>
           ) : error ? (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-              <strong>{t("admin.gapCertification.error")}</strong> {error}
+              <strong>{t("admin.gapValidation.error")}</strong> {error}
             </div>
           ) : analysisData ? (
             <>
@@ -182,7 +182,7 @@ export default function GapCertificationModal({
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500 dark:text-gray-400">
-                      {t("admin.gapCertification.company")}
+                      {t("admin.gapValidation.company")}
                     </span>
                     <p className="font-semibold text-polarNight dark:text-softWhite">
                       {analysisData.companyName || "N/A"}
@@ -190,7 +190,7 @@ export default function GapCertificationModal({
                   </div>
                   <div>
                     <span className="text-gray-500 dark:text-gray-400">
-                      {t("admin.gapCertification.vehicle")}
+                      {t("admin.gapValidation.vehicle")}
                     </span>
                     <p className="font-semibold text-polarNight dark:text-softWhite">
                       {analysisData.vehicleVin || "N/A"}
@@ -198,7 +198,7 @@ export default function GapCertificationModal({
                   </div>
                   <div>
                     <span className="text-gray-500 dark:text-gray-400">
-                      {t("admin.gapCertification.period")}
+                      {t("admin.gapValidation.period")}
                     </span>
                     <p className="font-semibold text-polarNight dark:text-softWhite">
                       {formatDateToDisplay(analysisData.periodStart)} -{" "}
@@ -207,7 +207,7 @@ export default function GapCertificationModal({
                   </div>
                   <div>
                     <span className="text-gray-500 dark:text-gray-400">
-                      {t("admin.gapCertification.totalGaps")}
+                      {t("admin.gapValidation.totalGaps")}
                     </span>
                     <p className="font-semibold text-polarNight dark:text-softWhite">
                       {analysisData.totalGaps}
@@ -218,7 +218,7 @@ export default function GapCertificationModal({
 
               {analysisData.totalGaps === 0 ? (
                 <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded text-center">
-                  {analysisData.message || t("admin.gapCertification.noGaps")}
+                  {analysisData.message || t("admin.gapValidation.noGaps")}
                 </div>
               ) : (
                 <>
@@ -228,7 +228,7 @@ export default function GapCertificationModal({
                         {analysisData.averageConfidence}%
                       </div>
                       <div className="text-sm opacity-90">
-                        {t("admin.gapCertification.avgConfidence")}
+                        {t("admin.gapValidation.avgConfidence")}
                       </div>
                     </div>
                     <div className="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-lg p-4 text-center">
@@ -236,7 +236,7 @@ export default function GapCertificationModal({
                         {analysisData.summary.highConfidence}
                       </div>
                       <div className="text-sm opacity-90">
-                        {t("admin.gapCertification.highConfidence")}
+                        {t("admin.gapValidation.highConfidence")}
                       </div>
                     </div>
                     <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white rounded-lg p-4 text-center">
@@ -244,7 +244,7 @@ export default function GapCertificationModal({
                         {analysisData.summary.mediumConfidence}
                       </div>
                       <div className="text-sm opacity-90">
-                        {t("admin.gapCertification.mediumConfidence")}
+                        {t("admin.gapValidation.mediumConfidence")}
                       </div>
                     </div>
                     <div className="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-lg p-4 text-center">
@@ -252,7 +252,7 @@ export default function GapCertificationModal({
                         {analysisData.summary.lowConfidence}
                       </div>
                       <div className="text-sm opacity-90">
-                        {t("admin.gapCertification.lowConfidence")}
+                        {t("admin.gapValidation.lowConfidence")}
                       </div>
                     </div>
                   </div>
@@ -297,10 +297,10 @@ export default function GapCertificationModal({
 
                   <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-700 rounded-lg p-4 mb-6">
                     <h4 className="font-semibold text-amber-800 dark:text-amber-300 mb-2">
-                      {t("admin.gapCertification.disclaimerTitle")}
+                      {t("admin.gapValidation.disclaimerTitle")}
                     </h4>
                     <p className="text-sm text-amber-700 dark:text-amber-400">
-                      {t("admin.gapCertification.disclaimerText")}
+                      {t("admin.gapValidation.disclaimerText")}
                     </p>
                   </div>
 
@@ -309,13 +309,13 @@ export default function GapCertificationModal({
                       <thead>
                         <tr className="bg-gray-200 dark:bg-gray-700">
                           <th className="p-3 text-left">
-                            {t("admin.gapCertification.timestamp")}
+                            {t("admin.gapValidation.timestamp")}
                           </th>
                           <th className="p-3 text-center">
-                            {t("admin.gapCertification.confidence")}
+                            {t("admin.gapValidation.confidence")}
                           </th>
                           <th className="p-3 text-left">
-                            {t("admin.gapCertification.justification")}
+                            {t("admin.gapValidation.justification")}
                           </th>
                         </tr>
                       </thead>
@@ -371,7 +371,7 @@ export default function GapCertificationModal({
                               {gap.justification}
                               {gap.factors.isTechnicalFailure && (
                                 <span className="ml-2 bg-blue-100 text-blue-700 px-2 py-0.5 rounded text-xs">
-                                   {t("admin.gapCertification.technicalFailure")}
+                                   {t("admin.gapValidation.technicalFailure")}
                                 </span>
                               )}
                             </td>
@@ -396,10 +396,10 @@ export default function GapCertificationModal({
               {certifying ? (
                 <>
                   <AdminLoader inline />
-                  {t("admin.gapCertification.certifying")}
+                  {t("admin.gapValidation.certifying")}
                 </>
               ) : (
-                t("admin.gapCertification.confirmCertify")
+                t("admin.gapValidation.confirmCertify")
               )}
             </button>
           )}

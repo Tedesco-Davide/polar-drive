@@ -20,8 +20,8 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<AdminFileManager> AdminFileManager => Set<AdminFileManager>();
     public DbSet<PhoneVehicleMapping> PhoneVehicleMappings { get; set; }
     public DbSet<ClientProfilePdf> ClientProfilePdfs => Set<ClientProfilePdf>();
-    public DbSet<GapCertification> GapCertifications => Set<GapCertification>();
-    public DbSet<GapCertificationPdf> GapCertificationPdfs => Set<GapCertificationPdf>();
+    public DbSet<GapValidation> GapValidations => Set<GapValidation>();
+    public DbSet<GapValidationPdf> GapValidationPdfs => Set<GapValidationPdf>();
     public DbSet<FetchFailureLog> FetchFailureLogs => Set<FetchFailureLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -271,9 +271,9 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.GeneratedAt);
             });
 
-            modelBuilder.Entity<GapCertification>(entity =>
+            modelBuilder.Entity<GapValidation>(entity =>
             {
-                entity.ToTable("GapCertifications");
+                entity.ToTable("GapValidations");
 
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
@@ -286,11 +286,11 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .OnDelete(DeleteBehavior.SetNull);
 
                 entity.Property(e => e.JustificationText).HasMaxLength(2000);
-                entity.Property(e => e.CertificationHash).HasMaxLength(64);
+                entity.Property(e => e.ValidationHash).HasMaxLength(64);
 
                 entity.HasIndex(e => new { e.VehicleId, e.PdfReportId });
                 entity.HasIndex(e => e.GapTimestamp);
-                entity.HasIndex(e => e.CertifiedAt);
+                entity.HasIndex(e => e.ValidatedAt);
             });
 
             modelBuilder.Entity<FetchFailureLog>(entity =>
@@ -311,13 +311,13 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.AttemptedAt);
             });
 
-            modelBuilder.Entity<GapCertificationPdf>(entity =>
+            modelBuilder.Entity<GapValidationPdf>(entity =>
             {
-                entity.ToTable("GapCertificationPdfs");
+                entity.ToTable("GapValidationPdfs");
 
                 entity.HasOne(e => e.PdfReport)
                     .WithOne()
-                    .HasForeignKey<GapCertificationPdf>(e => e.PdfReportId)
+                    .HasForeignKey<GapValidationPdf>(e => e.PdfReportId)
                     .OnDelete(DeleteBehavior.Cascade);
 
                 entity.Property(e => e.PdfContent)

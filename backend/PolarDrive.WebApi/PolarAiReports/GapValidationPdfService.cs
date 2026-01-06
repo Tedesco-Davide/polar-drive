@@ -15,7 +15,7 @@ namespace PolarDrive.WebApi.PolarAiReports;
 /// <summary>
 /// Servizio per la generazione di PDF di validazione probabilistica dei gap
 /// </summary>
-public class GapCertificationPdfService(
+public class GapValidationPdfService(
     PolarDriveDbContext dbContext,
     GapAnalysisService gapAnalysisService,
     PdfGenerationService pdfGenerationService)
@@ -28,9 +28,9 @@ public class GapCertificationPdfService(
     /// <summary>
     /// Genera il PDF di validazione per un report
     /// </summary>
-    public async Task<GapCertificationPdfResult> GenerateCertificationPdfAsync(int pdfReportId)
+    public async Task<GapValidationPdfResult> GenerateCertificationPdfAsync(int pdfReportId)
     {
-        const string source = "GapCertificationPdfService.GenerateCertificationPdf";
+        const string source = "GapValidationPdfService.GenerateCertificationPdf";
 
         try
         {
@@ -42,7 +42,7 @@ public class GapCertificationPdfService(
 
             if (report == null)
             {
-                return new GapCertificationPdfResult
+                return new GapValidationPdfResult
                 {
                     Success = false,
                     ErrorMessage = "Report not found"
@@ -54,7 +54,7 @@ public class GapCertificationPdfService(
 
             if (certifications.Count == 0)
             {
-                return new GapCertificationPdfResult
+                return new GapValidationPdfResult
                 {
                     Success = false,
                     ErrorMessage = "No gaps to certify found in the reporting period"
@@ -65,7 +65,7 @@ public class GapCertificationPdfService(
             var htmlContent = await GenerateCertificationHtml(report, certifications, _db);
 
             // 4. Prepara le opzioni PDF con header/footer coerenti con gli stili di stampa PDF attuali
-            var fontStyles = GapCertificationTemplate.GetFontStyles();
+            var fontStyles = GapValidationTemplate.GetFontStyles();
             var vehicleVin = report.ClientVehicle?.Vin ?? "N/A";
             var pdfOptions = new PdfConversionOptions
             {
@@ -148,14 +148,14 @@ public class GapCertificationPdfService(
             // 7. Aggiorna le certificazioni con l'hash
             foreach (var cert in certifications)
             {
-                cert.CertificationHash = pdfHash;
+                cert.ValidationHash = pdfHash;
             }
             await _db.SaveChangesAsync();
 
             await _logger.Info(source, $"Generated certification PDF for report {pdfReportId}",
                 $"Gaps: {certifications.Count}, PDF size: {pdfBytes.Length} bytes");
 
-            return new GapCertificationPdfResult
+            return new GapValidationPdfResult
             {
                 Success = true,
                 PdfContent = pdfBytes,
@@ -167,7 +167,7 @@ public class GapCertificationPdfService(
         catch (Exception ex)
         {
             await _logger.Error(source, $"Error generating certification PDF for report {pdfReportId}", ex.ToString());
-            return new GapCertificationPdfResult
+            return new GapValidationPdfResult
             {
                 Success = false,
                 ErrorMessage = $"Error while generating: {ex.Message}"
@@ -176,13 +176,13 @@ public class GapCertificationPdfService(
     }
 
     /// <summary>
-    /// Genera e salva il PDF di validazione nella tabella GapCertificationPdfs.
+    /// Genera e salva il PDF di validazione nella tabella GapValidationPdfs.
     /// Questo metodo è pensato per essere eseguito in background.
     /// Una volta completato, il PDF diventa immutabile.
     /// </summary>
     public async Task GenerateAndSaveCertificationAsync(int pdfReportId)
     {
-        const string source = "GapCertificationPdfService.GenerateAndSaveCertification";
+        const string source = "GapValidationPdfService.GenerateAndSaveCertification";
 
         try
         {
@@ -191,13 +191,13 @@ public class GapCertificationPdfService(
             // 1. Genera il PDF usando il metodo esistente
             var result = await GenerateCertificationPdfAsync(pdfReportId);
 
-            // 2. Recupera il record GapCertificationPdf (già creato dal controller con status PROCESSING)
-            var certPdf = await _db.GapCertificationPdfs
+            // 2. Recupera il record GapValidationPdf (già creato dal controller con status PROCESSING)
+            var certPdf = await _db.GapValidationPdfs
                 .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId);
 
             if (certPdf == null)
             {
-                await _logger.Error(source, $"GapCertificationPdf record not found for report {pdfReportId}");
+                await _logger.Error(source, $"GapValidationPdf record not found for report {pdfReportId}");
                 return;
             }
 
@@ -233,7 +233,7 @@ public class GapCertificationPdfService(
             // Prova a impostare lo stato ERROR
             try
             {
-                var certPdf = await _db.GapCertificationPdfs
+                var certPdf = await _db.GapValidationPdfs
                     .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId);
 
                 if (certPdf != null)
@@ -254,7 +254,7 @@ public class GapCertificationPdfService(
     /// </summary>
     private static async Task<string> GenerateCertificationHtml(
         PdfReport report,
-        List<GapCertification> certifications,
+        List<GapValidation> certifications,
         PolarDriveDbContext db)
     {
         var company = report.ClientCompany;
@@ -269,7 +269,7 @@ public class GapCertificationPdfService(
         sb.AppendLine("<meta charset='UTF-8'>");
         sb.AppendLine("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
         sb.AppendLine("<title>Validazione Probabilistica Gap - DataPolar</title>");
-        sb.AppendLine($"<style>{GapCertificationTemplate.GetCss()}</style>");
+        sb.AppendLine($"<style>{GapValidationTemplate.GetCss()}</style>");
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
 
@@ -460,7 +460,7 @@ public class GapCertificationPdfService(
     /// <summary>
     /// Genera hash del documento di validazione
     /// </summary>
-    private static string GenerateCertificationDocumentHash(List<GapCertification> certifications)
+    private static string GenerateCertificationDocumentHash(List<GapValidation> certifications)
     {
         var data = string.Join("|", certifications.Select(c =>
             $"{c.GapTimestamp:O}:{c.ConfidencePercentage}"));
@@ -474,7 +474,7 @@ public class GapCertificationPdfService(
     /// Calcola statistiche sugli outages che hanno impattato i gap certificati
     /// </summary>
     private static async Task<OutageStatistics> CalculateOutageStatisticsAsync(
-        List<GapCertification> certifications,
+        List<GapValidation> certifications,
         PolarDriveDbContext db)
     {
         var stats = new OutageStatistics();
@@ -594,7 +594,7 @@ public class GapCertificationPdfService(
 /// <summary>
 /// Risultato della generazione del PDF di validazione
 /// </summary>
-public class GapCertificationPdfResult
+public class GapValidationPdfResult
 {
     public bool Success { get; set; }
     public string? ErrorMessage { get; set; }

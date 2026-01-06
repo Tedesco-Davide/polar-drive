@@ -117,9 +117,9 @@ builder.Services.AddScoped<VehicleDataService>();
 builder.Services.AddScoped<PdfGenerationService>();
 builder.Services.AddScoped<IReportGenerationService, ReportGenerationService>();
 
-// SERVIZI GAP CERTIFICATION
+// SERVIZI GAP VALIDATION
 builder.Services.AddScoped<GapAnalysisService>();
-builder.Services.AddScoped<GapCertificationPdfService>();
+builder.Services.AddScoped<GapValidationPdfService>();
 
 // SCHEDULER
 builder.Services.AddHostedService<PolarDriveScheduler>();
