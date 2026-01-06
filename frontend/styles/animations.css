@@ -5,6 +5,13 @@
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+/* Exclude scrollbar from transitions to allow native drag behavior */
+::-webkit-scrollbar,
+::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-track {
+  transition: none !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

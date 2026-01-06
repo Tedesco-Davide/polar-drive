@@ -51,7 +51,7 @@ export default function AdminDashboard() {
             {mounted && (
               <div
                 className={classNames(
-                  "absolute inset-0 z-0 bg-background bg-[length:40px_40px]",
+                  "absolute inset-0 z-0 bg-background bg-[length:40px_40px] pointer-events-none",
                   {
                     "bg-products-grid-light": theme === "light",
                     "dark:bg-products-grid": theme === "dark",
