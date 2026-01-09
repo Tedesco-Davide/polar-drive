@@ -87,7 +87,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
   // Fetch stato Validazione Probabilistica Gap in corso
   const fetchGapCertStatus = async () => {
     try {
-      const res = await fetch("/api/pdfreports/gap-validation-processing");
+      const res = await fetch("/api/gapanalysis/processing");
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
       setGapCertProcessing(data);
@@ -382,7 +382,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     setDownloadingCertId(reportId);
     try {
       const response = await fetch(
-        `/api/pdfreports/${reportId}/download-gap-validation`
+        `/api/gapanalysis/${reportId}/download`
       );
       if (!response.ok) throw new Error("HTTP " + response.status);
 

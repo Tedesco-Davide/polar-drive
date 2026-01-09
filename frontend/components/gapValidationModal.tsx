@@ -53,17 +53,35 @@ export default function GapValidationModal({
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MINUTES * 60 * 1000);
 
-      const res = await fetch(`/api/pdfreports/${reportId}/gap-analysis`, {
+      const res = await fetch(`/api/gapanalysis/${reportId}/analysis`, {
         signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
 
+      // Leggi la risposta come testo per gestire sia JSON che errori plain text
+      const responseText = await res.text();
+
       if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.error || `HTTP ${res.status}`);
+        let errorMessage = `HTTP ${res.status}`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          // Se non è JSON, usa il testo direttamente (es. "Internal Server Error")
+          if (responseText) {
+            errorMessage = responseText.substring(0, 200);
+          }
+        }
+        throw new Error(errorMessage);
       }
-      const data: GapAnalysisResponse = await res.json();
+
+      let data: GapAnalysisResponse;
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        throw new Error('Risposta non valida dal server');
+      }
       setAnalysisData(data);
       logFrontendEvent(
         "GapValidationModal",
@@ -88,12 +106,23 @@ export default function GapValidationModal({
   const handleCertify = async () => {
     setCertifying(true);
     try {
-      const res = await fetch(`/api/pdfreports/${reportId}/validate-gaps`, {
+      const res = await fetch(`/api/gapanalysis/${reportId}/validate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
 
-      const data = await res.json();
+      // Leggi la risposta come testo per gestire sia JSON che errori plain text
+      const responseText = await res.text();
+      let data: { status?: string; gapsCertified?: number; error?: string } = {};
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        // Se non è JSON valido, crea un oggetto errore
+        if (!res.ok) {
+          throw new Error(responseText.substring(0, 200) || `HTTP ${res.status}`);
+        }
+      }
 
       // 202 Accepted = certificazione avviata in background
       if (res.status === 202) {

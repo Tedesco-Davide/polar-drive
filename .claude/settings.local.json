@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(docker logs:*)"
+      "Bash(docker logs:*)",
+      "Bash(docker ps:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

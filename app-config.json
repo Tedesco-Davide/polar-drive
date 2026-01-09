@@ -67,6 +67,12 @@
       "fleetApiOutageBonus": 40,
       "vehicleOutageBonus": 25
     },
-    "kmThreshold": 10
+    "kmThreshold": 10,
+    "apiTimeouts": {
+      "analysisMinutes": 15,
+      "validateMinutes": 5,
+      "statusMinutes": 2,
+      "downloadMinutes": 5
+    }
   }
 }
