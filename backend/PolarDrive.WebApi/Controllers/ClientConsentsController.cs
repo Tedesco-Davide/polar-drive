@@ -6,16 +6,18 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
+using PolarDrive.WebApi.Services.Gdpr;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironment env) : ControllerBase
+public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironment env, IGdprEncryptionService gdprService) : ControllerBase
 {
     private readonly PolarDriveDbContext _db = db;
     private readonly IWebHostEnvironment _env = env;
+    private readonly IGdprEncryptionService _gdprService = gdprService;
     private readonly PolarDriveLogger _logger = new();
 
     [HttpGet]
@@ -212,7 +214,9 @@ public class ClientConsentsController(PolarDriveDbContext db, IWebHostEnvironmen
         var company = await _db.ClientCompanies.FirstOrDefaultAsync(c => c.VatNumber == vatNumber);
         if (company == null) return NotFound("Company not found");
 
-        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+        // Ricerca VIN tramite hash (match esatto GDPR-compliant)
+        var vinHash = _gdprService.ComputeLookupHash(vin);
+        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.VinHash == vinHash);
         if (vehicle == null) return NotFound("Vehicle not found");
 
         if (vehicle.ClientCompanyId != company.Id)

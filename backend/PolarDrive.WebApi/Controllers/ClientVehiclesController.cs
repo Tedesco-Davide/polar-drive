@@ -4,13 +4,14 @@ using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
+using PolarDrive.WebApi.Services.Gdpr;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
+public class ClientVehiclesController(PolarDriveDbContext db, IGdprEncryptionService gdprService) : ControllerBase
 {
     private readonly PolarDriveLogger _logger = new();
 
@@ -34,14 +35,16 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var trimmed = search.Trim();
-                var pattern = $"%{trimmed}%";
 
                 if (searchType == SearchType.VIN)
                 {
-                    query = query.Where(v => EF.Functions.Like(v.Vin, pattern));
+                    // Ricerca VIN tramite hash (match esatto GDPR-compliant)
+                    var vinHash = gdprService.ComputeLookupHash(trimmed);
+                    query = query.Where(v => v.VinHash == vinHash);
                 }
                 else if (searchType == SearchType.COMPANY)
                 {
+                    var pattern = $"%{trimmed}%";
                     query = query.Where(v => EF.Functions.Like(v.ClientCompany!.Name, pattern));
                 }
             }
@@ -49,7 +52,7 @@ public class ClientVehiclesController(PolarDriveDbContext db) : ControllerBase
             var totalCount = await query.CountAsync();
 
             var rawItems = await query
-                .OrderBy(v => v.Vin)
+                .OrderByDescending(v => v.CreatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync();

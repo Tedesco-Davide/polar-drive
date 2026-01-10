@@ -6,6 +6,7 @@ using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Constants;
 using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Services;
+using PolarDrive.WebApi.Services.Gdpr;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.Controllers;
@@ -16,13 +17,15 @@ public class PdfReportsController(
     PolarDriveDbContext context,
     IReportGenerationService reportGenerationService,
     GapAnalysisService gapAnalysisService,
-    GapValidationPdfService gapValidationPdfService) : ControllerBase
+    GapValidationPdfService gapValidationPdfService,
+    IGdprEncryptionService gdprService) : ControllerBase
 {
     private readonly PolarDriveDbContext db = context;
     private readonly PolarDriveLogger _logger = new();
     private readonly IReportGenerationService _reportGenerationService = reportGenerationService;
     private readonly GapAnalysisService _gapAnalysisService = gapAnalysisService;
     private readonly GapValidationPdfService _gapValidationPdfService = gapValidationPdfService;
+    private readonly IGdprEncryptionService _gdprService = gdprService;
 
     [HttpGet]
     public async Task<ActionResult<PaginatedResponse<PdfReportDTO>>> Get(
@@ -48,11 +51,11 @@ public class PdfReportsController(
                 }
                 else if (trimmedSearch.StartsWith("VIN:", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Ricerca per VIN
+                    // Ricerca per VIN tramite hash (match esatto GDPR-compliant)
                     var vinSearch = trimmedSearch[4..].Trim();
-                    var vinPattern = $"%{vinSearch}%";
-                    baseQuery = baseQuery.Where(r => r.ClientVehicle != null && 
-                        EF.Functions.Like(r.ClientVehicle.Vin, vinPattern));
+                    var vinHash = _gdprService.ComputeLookupHash(vinSearch);
+                    baseQuery = baseQuery.Where(r => r.ClientVehicle != null &&
+                        r.ClientVehicle.VinHash == vinHash);
                 }
                 else
                 {
