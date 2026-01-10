@@ -87,6 +87,13 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .IsRequired(false);
 
                 entity.Property(e => e.PdfContent).HasColumnType("VARBINARY(MAX)").IsRequired(false);
+
+                entity.Property(e => e.TsaTimestamp).HasColumnType("VARBINARY(MAX)").IsRequired(false);
+                entity.Property(e => e.TsaServerUrl).HasMaxLength(500).IsRequired(false);
+                entity.Property(e => e.TsaTimestampDate).IsRequired(false);
+                entity.Property(e => e.TsaMessageImprint).HasMaxLength(128).IsRequired(false);
+                entity.Property(e => e.TsaVerified).HasDefaultValue(false);
+                entity.Property(e => e.TsaError).HasMaxLength(2000).IsRequired(false);
             });
 
             modelBuilder.Entity<VehicleData>(entity =>
@@ -338,6 +345,14 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasIndex(e => e.PdfReportId).IsUnique();
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.PdfHash);
+
+                // ===== TSA (Timestamp Authority) Fields =====
+                entity.Property(e => e.TsaTimestamp).HasColumnType("VARBINARY(MAX)").IsRequired(false);
+                entity.Property(e => e.TsaServerUrl).HasMaxLength(500).IsRequired(false);
+                entity.Property(e => e.TsaTimestampDate).IsRequired(false);
+                entity.Property(e => e.TsaMessageImprint).HasMaxLength(128).IsRequired(false);
+                entity.Property(e => e.TsaVerified).HasDefaultValue(false);
+                entity.Property(e => e.TsaError).HasMaxLength(2000).IsRequired(false);
             });
         }
         catch (Exception ex)

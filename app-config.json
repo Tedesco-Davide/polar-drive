@@ -74,5 +74,11 @@
       "statusMinutes": 2,
       "downloadMinutes": 5
     }
+  },
+
+  "tsa": {
+    "enabled": true,
+    "timeoutSeconds": 30,
+    "retryCount": 3
   }
 }

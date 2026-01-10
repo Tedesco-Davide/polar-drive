@@ -65,6 +65,10 @@ services:
       - Ollama__TopK=${OLLAMA_TOP_K}
       - Ollama__MaxRetries=${OLLAMA_MAX_RETRIES}
       - Ollama__RetryDelaySeconds=${OLLAMA_RETRY_DELAY_SECONDS}
+      - TSA_SERVER_URL=${TSA_SERVER_URL}
+      - TSA_ARUBA_USERNAME=${TSA_ARUBA_USERNAME}
+      - TSA_ARUBA_PASSWORD=${TSA_ARUBA_PASSWORD}
+      - TSA_ARUBA_POLICY_OID=${TSA_ARUBA_POLICY_OID}
     volumes:
       - ./LOGS_DEV:/app/Logs
       - ./vehicle-options.json:/app/config/vehicle-options.json:ro

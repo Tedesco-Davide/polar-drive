@@ -7,6 +7,7 @@ using PolarDrive.WebApi.Scheduler;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 using Microsoft.Extensions.Options;
 using PolarDrive.WebApi.Helpers;
+using PolarDrive.WebApi.Services.Tsa;
 
 namespace PolarDrive.WebApi.Services
 {
@@ -18,11 +19,12 @@ namespace PolarDrive.WebApi.Services
         Task<int> RecoverOrphanProcessingReportsAsync(CancellationToken stoppingToken = default);
     }
 
-    public class ReportGenerationService(IServiceProvider serviceProvider, PolarDriveLogger logger, IWebHostEnvironment env) : IReportGenerationService
+    public class ReportGenerationService(IServiceProvider serviceProvider, PolarDriveLogger logger, IWebHostEnvironment env, ITsaService tsaService) : IReportGenerationService
     {
         private readonly IServiceProvider _serviceProvider = serviceProvider;
         private readonly PolarDriveLogger _logger = logger;
         private readonly IWebHostEnvironment _env = env;
+        private readonly ITsaService _tsaService = tsaService;
         private readonly Dictionary<int, DateTime> _lastReportAttempts = [];
         private readonly Dictionary<int, int> _retryCount = [];
 
@@ -663,6 +665,38 @@ namespace PolarDrive.WebApi.Services
 
             // Calcola l'hash DAL FILE (univoco)
             var fileHash = GenericHelpers.ComputeContentHash(pdf1);
+
+            // ===== TSA (Timestamp Authority) - Marca Temporale =====
+            if (AppConfig.TSA_ENABLED)
+            {
+                try
+                {
+                    var tsaResult = await _tsaService.RequestTimestampAsync(pdf1, fileHash);
+                    if (tsaResult.Success)
+                    {
+                        report.TsaTimestamp = tsaResult.TimestampToken;
+                        report.TsaServerUrl = tsaResult.ServerUrl;
+                        report.TsaTimestampDate = tsaResult.TimestampDate;
+                        report.TsaMessageImprint = tsaResult.MessageImprint;
+                        report.TsaVerified = true;
+                        _ = _logger.Info("ReportGenerationService.GenerateReportFiles",
+                            $"TSA_SUCCESS: Marca temporale ottenuta da {_tsaService.ProviderName} per report {report.Id}");
+                    }
+                    else
+                    {
+                        report.TsaError = tsaResult.ErrorMessage;
+                        _ = _logger.Warning("ReportGenerationService.GenerateReportFiles",
+                            $"TSA_FAILED: Errore TSA per report {report.Id}: {tsaResult.ErrorMessage}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    report.TsaError = ex.Message;
+                    _ = _logger.Error("ReportGenerationService.GenerateReportFiles",
+                        $"TSA_EXCEPTION: Eccezione TSA per report {report.Id}: {ex.Message}");
+                }
+            }
+            // ===== FINE TSA =====
 
             // Aggiorna entità con hash e GeneratedAt
             report.PdfHash = fileHash;

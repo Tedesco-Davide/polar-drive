@@ -12,6 +12,7 @@ public class AppConfigRoot
     public SmsConfig Sms { get; set; } = new();
     public ThresholdsConfig Thresholds { get; set; } = new();
     public GapAnalysisConfig GapAnalysis { get; set; } = new();
+    public TsaConfig Tsa { get; set; } = new();
 }
 
 public class SchedulerConfig
@@ -144,6 +145,23 @@ public class GapAnalysisConfig
 
     // Soglia minima km per considerare il veicolo "in movimento"
     public double KmThreshold { get; set; }
+}
+
+/// <summary>
+/// Configurazione TSA (Timestamp Authority) per marca temporale RFC 3161.
+/// DEV: FreeTSA (gratuito, non qualificato)
+/// PROD: Aruba TSA (a pagamento, qualificato eIDAS)
+/// </summary>
+public class TsaConfig
+{
+    // Abilita/disabilita la richiesta di marca temporale sui PDF
+    public bool Enabled { get; set; } = true;
+
+    // Timeout per la richiesta al server TSA (in secondi)
+    public int TimeoutSeconds { get; set; } = 30;
+
+    // Numero di tentativi in caso di errore
+    public int RetryCount { get; set; } = 3;
 }
 
 public class GapAnalysisWeights
@@ -411,6 +429,57 @@ public static class AppConfig
 
     // Bonus confidenza per gap durante Vehicle outage
     public static double GAP_ANALYSIS_VEHICLE_OUTAGE_BONUS => Config.GapAnalysis.Weights.VehicleOutageBonus;
+
+    // ===== TSA (Timestamp Authority) Configuration =====
+    // Marca temporale RFC 3161 per "verifica probatoria ex post" (interpello AdE)
+    // DEV: FreeTSA (gratuito, non qualificato) - PROD: Aruba TSA (qualificato eIDAS)
+
+    /// <summary>
+    /// Abilita/disabilita la richiesta di marca temporale sui PDF.
+    /// Se disabilitato, i PDF verranno generati senza TSA.
+    /// </summary>
+    public static bool TSA_ENABLED => Config.Tsa.Enabled;
+
+    /// <summary>
+    /// Timeout per la richiesta al server TSA (in secondi).
+    /// Default: 30 secondi.
+    /// </summary>
+    public static int TSA_TIMEOUT_SECONDS => Config.Tsa.TimeoutSeconds;
+
+    /// <summary>
+    /// Numero di tentativi in caso di errore TSA.
+    /// Default: 3 tentativi.
+    /// </summary>
+    public static int TSA_RETRY_COUNT => Config.Tsa.RetryCount;
+
+    /// <summary>
+    /// URL server TSA (letto da variabile ambiente).
+    /// DEV: FreeTSA (https://freetsa.org/tsr)
+    /// PROD: Aruba TSA (configurare in .env.prod)
+    /// </summary>
+    public static string TSA_SERVER_URL =>
+        Environment.GetEnvironmentVariable("TSA_SERVER_URL") ?? "https://freetsa.org/tsr";
+
+    /// <summary>
+    /// Username Aruba TSA (solo PROD).
+    /// Lasciare vuoto per DEV con FreeTSA.
+    /// </summary>
+    public static string TSA_ARUBA_USERNAME =>
+        Environment.GetEnvironmentVariable("TSA_ARUBA_USERNAME") ?? "";
+
+    /// <summary>
+    /// Password Aruba TSA (solo PROD).
+    /// Lasciare vuoto per DEV con FreeTSA.
+    /// </summary>
+    public static string TSA_ARUBA_PASSWORD =>
+        Environment.GetEnvironmentVariable("TSA_ARUBA_PASSWORD") ?? "";
+
+    /// <summary>
+    /// OID Policy per Aruba TSA (solo PROD).
+    /// Aruba policy OID: 1.3.6.1.4.1.29741.1.1.1
+    /// </summary>
+    public static string TSA_ARUBA_POLICY_OID =>
+        Environment.GetEnvironmentVariable("TSA_ARUBA_POLICY_OID") ?? "";
 
     #endregion
 }

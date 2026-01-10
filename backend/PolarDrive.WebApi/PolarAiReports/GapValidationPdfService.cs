@@ -8,6 +8,7 @@ using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.Helpers;
 using PolarDrive.WebApi.PolarAiReports.Templates;
 using PolarDrive.WebApi.Services;
+using PolarDrive.WebApi.Services.Tsa;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
@@ -18,11 +19,13 @@ namespace PolarDrive.WebApi.PolarAiReports;
 public class GapValidationPdfService(
     PolarDriveDbContext dbContext,
     GapAnalysisService gapAnalysisService,
-    PdfGenerationService pdfGenerationService)
+    PdfGenerationService pdfGenerationService,
+    ITsaService tsaService)
 {
     private readonly PolarDriveDbContext _db = dbContext;
     private readonly GapAnalysisService _gapAnalysisService = gapAnalysisService;
     private readonly PdfGenerationService _pdfGenerationService = pdfGenerationService;
+    private readonly ITsaService _tsaService = tsaService;
     private readonly PolarDriveLogger _logger = new();
 
     /// <summary>
@@ -210,6 +213,37 @@ public class GapValidationPdfService(
                 certPdf.GeneratedAt = DateTime.Now;
                 certPdf.GapsCertified = result.GapsCertified;
                 certPdf.AverageConfidence = result.AverageConfidence;
+
+                // ===== TSA (Timestamp Authority) - Marca Temporale =====
+                if (AppConfig.TSA_ENABLED && result.PdfContent != null && result.PdfHash != null)
+                {
+                    try
+                    {
+                        var tsaResult = await _tsaService.RequestTimestampAsync(result.PdfContent, result.PdfHash);
+                        if (tsaResult.Success)
+                        {
+                            certPdf.TsaTimestamp = tsaResult.TimestampToken;
+                            certPdf.TsaServerUrl = tsaResult.ServerUrl;
+                            certPdf.TsaTimestampDate = tsaResult.TimestampDate;
+                            certPdf.TsaMessageImprint = tsaResult.MessageImprint;
+                            certPdf.TsaVerified = true;
+                            await _logger.Info(source,
+                                $"TSA_SUCCESS: Marca temporale ottenuta da {_tsaService.ProviderName} per gap validation PDF {certPdf.Id}");
+                        }
+                        else
+                        {
+                            certPdf.TsaError = tsaResult.ErrorMessage;
+                            await _logger.Warning(source,
+                                $"TSA_FAILED: Errore TSA per gap validation PDF {certPdf.Id}: {tsaResult.ErrorMessage}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        certPdf.TsaError = ex.Message;
+                        await _logger.Error(source,
+                            $"TSA_EXCEPTION: Eccezione TSA per gap validation PDF {certPdf.Id}: {ex.Message}");
+                    }
+                }
 
                 await _db.SaveChangesAsync();
 

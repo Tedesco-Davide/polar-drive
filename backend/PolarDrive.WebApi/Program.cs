@@ -14,6 +14,7 @@ using PolarDrive.WebApi.PolarAiReports;
 using Microsoft.Data.SqlClient;
 using PolarDrive.Data.Constants;
 using static PolarDrive.WebApi.Constants.CommonConstants;
+using PolarDrive.WebApi.Services.Tsa;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -135,6 +136,18 @@ builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 // SERVIZI SMS
 builder.Services.AddScoped<ISmsConfigurationService, SmsService>();
 builder.Services.AddScoped<SmsController>();
+
+// SERVIZIO TSA (Timestamp Authority)
+// DEV: FreeTSA (gratuito, non qualificato eIDAS)
+// PROD: Aruba TSA (qualificato eIDAS)
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddScoped<ITsaService, TsaFreeTsaService>();
+}
+else
+{
+    builder.Services.AddScoped<ITsaService, TsaArubaService>();
+}
 
 // SERVIZIO ARCHIVIAZIONE DATI VEICOLI
 builder.Services.AddHostedService<VehiclesDataArchiveService>();
