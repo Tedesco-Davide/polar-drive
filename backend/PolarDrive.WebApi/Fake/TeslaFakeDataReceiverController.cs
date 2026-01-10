@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.Data.Constants;
+using PolarDrive.Data.Helpers;
 using PolarDrive.WebApi.Production;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
@@ -42,10 +43,11 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
                 return BadRequest("Invalid VIN format. VIN must be 17 characters long.");
             }
 
-            // Verifica che il VIN esista nel database
+            // Verifica che il VIN esista nel database (ricerca tramite hash per GDPR compliance)
+            var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
             var vehicle = await _db.ClientVehicles
                 .Include(v => v.ClientCompany)
-                .FirstOrDefaultAsync(v => v.Vin == vin);
+                .FirstOrDefaultAsync(v => v.VinHash == vinHash);
 
             if (vehicle == null)
             {
@@ -194,9 +196,10 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
     {
         try
         {
+            var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
             var vehicle = await _db.ClientVehicles
                 .Include(v => v.ClientCompany)
-                .FirstOrDefaultAsync(v => v.Vin == vin);
+                .FirstOrDefaultAsync(v => v.VinHash == vinHash);
 
             if (vehicle == null)
             {
@@ -262,9 +265,10 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
     {
         try
         {
+            var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
             var vehicle = await _db.ClientVehicles
                 .Include(v => v.ClientCompany)
-                .FirstOrDefaultAsync(v => v.Vin == vin);
+                .FirstOrDefaultAsync(v => v.VinHash == vinHash);
 
             if (vehicle == null)
             {
@@ -426,7 +430,8 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
 
         try
         {
-            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+            var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
+            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.VinHash == vinHash);
             if (vehicle == null)
             {
                 return NotFound($"Vehicle with VIN {vin} not found");
@@ -496,7 +501,8 @@ public class TeslaFakeDataReceiverController(PolarDriveDbContext db, IWebHostEnv
 
         try
         {
-            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+            var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
+            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.VinHash == vinHash);
             if (vehicle == null)
             {
                 return NotFound($"Vehicle with VIN {vin} not found");
