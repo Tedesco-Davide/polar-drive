@@ -19,6 +19,9 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
     private readonly HttpClient _httpClient = httpClient;
     private readonly IConfiguration _cfg = cfg;
 
+    // Tesla Fleet API V2 base URL - letto da configurazione (TESLA_API_BASE_URL in .env.prod)
+    private readonly string _teslaApiBaseUrl = cfg["TeslaApi:BaseUrl"] ?? "https://fleet-api.prd.eu.vn.cloud.tesla.com";
+
     /// <summary>
     /// Metodo principale - raccoglie dati per tutti i veicoli in fetching (include grace period)
     /// </summary>
@@ -159,7 +162,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
             {
                 try
                 {
-                    var response = await testClient.GetAsync("https://owner-api.teslamotors.com/api/1/status");
+                    var response = await testClient.GetAsync($"{_teslaApiBaseUrl}/api/1/");
                     var isAvailable = response.IsSuccessStatusCode;
 
                     await _logger.Debug(source, $"Tesla API availability check (attempt {attempt}): {isAvailable}");
@@ -450,7 +453,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
                 System.Net.HttpStatusCode.GatewayTimeout => FetchFailureReason.TIMEOUT,
                 _ => FetchFailureReason.NETWORK_ERROR
             };
-            await LogFetchFailureAsync(vehicle.Id, failureReason, httpEx.Message, (int?)httpEx.StatusCode, "https://owner-api.teslamotors.com");
+            await LogFetchFailureAsync(vehicle.Id, failureReason, httpEx.Message, (int?)httpEx.StatusCode, _teslaApiBaseUrl);
 
             return VehicleFetchResult.Success;
         }
@@ -547,7 +550,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
         _httpClient.DefaultRequestHeaders.Clear();
         _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-        var response = await _httpClient.GetAsync("https://owner-api.teslamotors.com/api/1/vehicles");
+        var response = await _httpClient.GetAsync($"{_teslaApiBaseUrl}/api/1/vehicles");
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();
@@ -565,7 +568,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
             _httpClient.DefaultRequestHeaders.Clear();
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-            var wakeUpResponse = await _httpClient.PostAsync($"https://owner-api.teslamotors.com/api/1/vehicles/{vehicleId}/wake_up", null);
+            var wakeUpResponse = await _httpClient.PostAsync($"{_teslaApiBaseUrl}/api/1/vehicles/{vehicleId}/wake_up", null);
 
             if (wakeUpResponse.IsSuccessStatusCode)
             {
@@ -607,7 +610,7 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
         _httpClient.DefaultRequestHeaders.Clear();
         _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", accessToken);
 
-        var response = await _httpClient.GetAsync($"https://owner-api.teslamotors.com/api/1/vehicles/{vehicleId}/vehicle_data");
+        var response = await _httpClient.GetAsync($"{_teslaApiBaseUrl}/api/1/vehicles/{vehicleId}/vehicle_data");
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync();

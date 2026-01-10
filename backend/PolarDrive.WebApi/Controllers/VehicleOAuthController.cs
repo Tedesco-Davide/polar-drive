@@ -43,14 +43,16 @@ public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment 
             switch (brand)
             {
             case VehicleConstants.VehicleBrand.TESLA:
-                clientId = "ownerapi";
-                scopes = "openid offline_access vehicle_read vehicle_telemetry vehicle_charging_cmds";
-                
+                // Fleet API V2: ClientId e Scopes da configurazione (PROD) o default (DEV mock)
+                clientId = _cfg["TeslaApi:ClientId"] ?? throw new InvalidOperationException("TeslaApi:ClientId not configured");
+                scopes = _cfg["TeslaApi:Scopes"] ?? "openid offline_access vehicle_device_data vehicle_location vehicle_cmds vehicle_charging_cmds";
+
                 // In dev usa il mock-api pubblico (porta 9090), altrimenti Tesla reale
                 var teslaPublicBase = _cfg["TeslaApi:PublicBaseUrl"];
+                var authBase = _cfg["TeslaApi:AuthBaseUrl"];
                 authBaseUrl = _env.IsDevelopment() && !string.IsNullOrWhiteSpace(teslaPublicBase)
                     ? $"{teslaPublicBase.TrimEnd('/')}/oauth2/v3/authorize"
-                    : "https://auth.tesla.com/oauth2/v3/authorize";
+                    : $"{(authBase ?? "https://auth.tesla.com").TrimEnd('/')}/oauth2/v3/authorize";
                 break;
 
                 default:
@@ -64,13 +66,13 @@ public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment 
 
             var state = vin;
 
+            // Fleet API V2: rimosso audience=ownerapi (non usato)
             var url = $"{authBaseUrl}?" +
                       $"client_id={clientId}" +
                       $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
                       $"&response_type=code" +
                       $"&scope={Uri.EscapeDataString(scopes)}" +
                       $"&state={state}" +
-                      $"&audience=ownerapi" +
                       $"&brand={brand}";
 
             await _logger.Info(
@@ -194,10 +196,11 @@ public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment 
                 ["code"] = code
             };
 
-            // 🔹 Se siamo in produzione (Tesla reale)
+            // 🔹 Se siamo in produzione (Tesla Fleet API V2)
             if (!env.IsDevelopment())
             {
-                parameters["client_id"] = "ownerapi";
+                parameters["client_id"] = configuration["TeslaApi:ClientId"] ?? throw new InvalidOperationException("TeslaApi:ClientId not configured");
+                parameters["client_secret"] = configuration["TeslaApi:ClientSecret"] ?? throw new InvalidOperationException("TeslaApi:ClientSecret not configured");
                 parameters["redirect_uri"] =
                 configuration["PublicBaseUrl"]?.TrimEnd('/') + "/api/VehicleOAuth/OAuthCallback";
             }
@@ -243,13 +246,15 @@ public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment 
             }
             else
             {
-                // ✅ CASO REALE → Tesla
-                tokenUrl = "https://auth.tesla.com/oauth2/v3/token";
+                // ✅ CASO REALE → Tesla Fleet API V2
+                var authBase = configuration["TeslaApi:AuthBaseUrl"] ?? "https://auth.tesla.com";
+                tokenUrl = $"{authBase.TrimEnd('/')}/oauth2/v3/token";
                 content = new FormUrlEncodedContent(new Dictionary<string, string>
                 {
-                    ["grant_type"]   = "refresh_token",
-                    ["client_id"]    = "ownerapi",
-                    ["refresh_token"]= refreshToken
+                    ["grant_type"]    = "refresh_token",
+                    ["client_id"]     = configuration["TeslaApi:ClientId"] ?? throw new InvalidOperationException("TeslaApi:ClientId not configured"),
+                    ["client_secret"] = configuration["TeslaApi:ClientSecret"] ?? throw new InvalidOperationException("TeslaApi:ClientSecret not configured"),
+                    ["refresh_token"] = refreshToken
                 });
             }
 
@@ -282,8 +287,9 @@ public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment 
                 }
                 else
                 {
-                    // ✅ CASO REALE → Tesla
-                    apiUrl = "https://owner-api.teslamotors.com/api/1/vehicles";
+                    // ✅ CASO REALE → Tesla Fleet API V2
+                    var teslaApiBase = configuration["TeslaApi:BaseUrl"] ?? "https://fleet-api.prd.eu.vn.cloud.tesla.com";
+                    apiUrl = $"{teslaApiBase.TrimEnd('/')}/api/1/vehicles";
                 }
 
                 var response = await client.GetAsync(apiUrl);

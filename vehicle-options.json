@@ -6,7 +6,8 @@
     "Tesla": {
       "brandKey": "tesla",
       "api": {
-        "baseUrl": "https://fleet-api.tesla.com",
+        "baseUrl": "https://fleet-api.prd.eu.vn.cloud.tesla.com",
+        "region": "eu",
         "vehicleListEndpoint": "/api/1/vehicles",
         "vehicleDataEndpoint": "/api/1/vehicles/{vehicleId}/vehicle_data",
         "healthEndpoint": "/api/1/vehicles",
