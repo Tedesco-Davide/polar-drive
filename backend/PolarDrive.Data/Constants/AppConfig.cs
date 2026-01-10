@@ -481,5 +481,18 @@ public static class AppConfig
     public static string TSA_ARUBA_POLICY_OID =>
         Environment.GetEnvironmentVariable("TSA_ARUBA_POLICY_OID") ?? "";
 
+    // ===== GDPR Encryption (Crittografia PII) =====
+    // Chiave AES-256 per cifratura dati PII in conformita GDPR.
+    // Letta da variabile ambiente Gdpr__EncryptionKey.
+    // ATTENZIONE: La perdita della chiave rende IRRECUPERABILI tutti i dati PII!
+
+    /// <summary>
+    /// Chiave di crittografia GDPR (AES-256, 32 bytes = 64 caratteri hex).
+    /// DEV: Chiave fissa condivisibile tra sviluppatori.
+    /// PROD: Chiave privata.
+    /// </summary>
+    public static string GDPR_ENCRYPTION_KEY =>
+        Environment.GetEnvironmentVariable("Gdpr__EncryptionKey") ?? "";
+
     #endregion
 }

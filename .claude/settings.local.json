@@ -3,7 +3,8 @@
     "allow": [
       "Bash(docker logs:*)",
       "Bash(docker ps:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(dotnet build:*)"
     ]
   }
 }

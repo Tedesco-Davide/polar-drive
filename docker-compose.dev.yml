@@ -69,6 +69,7 @@ services:
       - TSA_ARUBA_USERNAME=${TSA_ARUBA_USERNAME}
       - TSA_ARUBA_PASSWORD=${TSA_ARUBA_PASSWORD}
       - TSA_ARUBA_POLICY_OID=${TSA_ARUBA_POLICY_OID}
+      - Gdpr__EncryptionKey=${GDPR_ENCRYPTION_KEY}
     volumes:
       - ./LOGS_DEV:/app/Logs
       - ./vehicle-options.json:/app/config/vehicle-options.json:ro

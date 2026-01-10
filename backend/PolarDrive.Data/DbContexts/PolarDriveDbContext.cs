@@ -1,6 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.DbContexts.Gdpr;
 
 namespace PolarDrive.Data.DbContexts;
 
@@ -30,6 +31,19 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
         {
             base.OnModelCreating(modelBuilder);
 
+            // ===== GDPR Value Converter per crittografia automatica PII =====
+            // Cifra in scrittura, decifra in lettura - trasparente per l'applicazione
+            GdprValueConverter? gdprConverter = null;
+            GdprNullableValueConverter? gdprNullableConverter = null;
+            GdprEncryptedStringComparer? gdprComparer = null;
+
+            if (GdprValueConverterFactory.IsInitialized)
+            {
+                gdprConverter = GdprValueConverterFactory.Create();
+                gdprNullableConverter = GdprValueConverterFactory.CreateNullable();
+                gdprComparer = new GdprEncryptedStringComparer();
+            }
+
             modelBuilder.Entity<ClientCompany>(entity =>
             {
                 entity.HasIndex(e => e.VatNumber).IsUnique();
@@ -37,16 +51,45 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
             modelBuilder.Entity<ClientVehicle>(entity =>
             {
-                entity.HasIndex(e => e.Vin).IsUnique();
-
-                entity.Property(e => e.VehicleMobileNumber)
-                    .IsRequired()
-                    .HasMaxLength(15);
-
                 entity.HasOne(e => e.ClientCompany)
                     .WithMany(cc => cc.ClientVehicles)
                     .HasForeignKey(e => e.ClientCompanyId)
                     .OnDelete(DeleteBehavior.Cascade);
+
+                // ===== GDPR Encryption per campi PII =====
+                if (gdprConverter != null && gdprNullableConverter != null && gdprComparer != null)
+                {
+                    // Non-nullable fields
+                    entity.Property(e => e.Vin)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.VehicleMobileNumber)
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    // Nullable fields
+                    entity.Property(e => e.ReferentName)
+                        .HasConversion(gdprNullableConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.ReferentEmail)
+                        .HasConversion(gdprNullableConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+                }
+                else
+                {
+                    entity.Property(e => e.VehicleMobileNumber)
+                        .IsRequired()
+                        .HasMaxLength(100);
+                }
+
+                // Indici su campi hash per lookup esatto (invece di campi cifrati)
+                entity.HasIndex(e => e.VinHash).IsUnique();
+                entity.HasIndex(e => e.VehicleMobileNumberHash);
+                entity.HasIndex(e => e.ReferentEmailHash);
             });
 
             modelBuilder.Entity<ClientConsent>(entity =>
@@ -208,12 +251,34 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasForeignKey(e => e.ClientCompanyId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                // Indice univoco su AdaptiveNumber + AdaptiveSurnameName + Brand
-                entity.HasIndex(e => new { e.AdaptiveNumber, e.AdaptiveSurnameName, e.Brand })
+                // ===== GDPR Encryption per campi PII =====
+                if (gdprConverter != null && gdprNullableConverter != null && gdprComparer != null)
+                {
+                    // Non-nullable fields
+                    entity.Property(e => e.AdaptiveNumber)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.AdaptiveSurnameName)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    // Nullable fields
+                    entity.Property(e => e.IpAddress)
+                        .HasConversion(gdprNullableConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.UserAgent)
+                        .HasConversion(gdprNullableConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+                }
+
+                // Indice univoco su HASH invece di campi cifrati
+                entity.HasIndex(e => new { e.AdaptiveNumberHash, e.AdaptiveSurnameNameHash, e.Brand })
                     .IsUnique();
-                
+
                 entity.HasIndex(e => e.ConsentToken).IsUnique();
-                entity.HasIndex(e => new { e.AdaptiveNumber, e.RequestedAt });
+                entity.HasIndex(e => new { e.AdaptiveNumberHash, e.RequestedAt });
                 entity.HasIndex(e => e.ConsentAccepted);
             });
 
@@ -230,7 +295,24 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasForeignKey(e => e.SmsAdaptiveGdprId)
                     .OnDelete(DeleteBehavior.Restrict);
 
-                entity.HasIndex(e => new { e.AdaptiveNumber, e.AdaptiveSurnameName });
+                // ===== GDPR Encryption per campi PII =====
+                if (gdprConverter != null && gdprComparer != null)
+                {
+                    entity.Property(e => e.AdaptiveNumber)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.AdaptiveSurnameName)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.MessageContent)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+                }
+
+                // Indice su hash invece di campi cifrati
+                entity.HasIndex(e => new { e.AdaptiveNumberHash, e.AdaptiveSurnameNameHash });
             });
 
             modelBuilder.Entity<PhoneVehicleMapping>(entity =>
@@ -238,15 +320,27 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
 
-                entity.Property(e => e.PhoneNumber)
-                    .IsRequired();
+                // ===== GDPR Encryption per campo PII =====
+                if (gdprConverter != null && gdprComparer != null)
+                {
+                    entity.Property(e => e.PhoneNumber)
+                        .IsRequired()
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+                }
+                else
+                {
+                    entity.Property(e => e.PhoneNumber)
+                        .IsRequired();
+                }
 
                 entity.HasOne(e => e.ClientVehicle)
                     .WithMany()
                     .HasForeignKey(e => e.VehicleId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasIndex(e => new { e.PhoneNumber, e.VehicleId }).IsUnique();
+                // Indice univoco su hash invece di campo cifrato
+                entity.HasIndex(e => new { e.PhoneNumberHash, e.VehicleId }).IsUnique();
                 entity.HasIndex(e => e.IsActive);
             });
 
@@ -257,8 +351,25 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasForeignKey(e => e.VehicleIdResolved)
                     .OnDelete(DeleteBehavior.SetNull);
 
+                // ===== GDPR Encryption per campi PII =====
+                if (gdprConverter != null && gdprComparer != null)
+                {
+                    entity.Property(e => e.FromPhoneNumber)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.ToPhoneNumber)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.MessageBody)
+                        .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+                }
+
                 entity.HasIndex(e => e.MessageSid).IsUnique();
-                entity.HasIndex(e => e.FromPhoneNumber);
+                // Indice su hash invece di campo cifrato
+                entity.HasIndex(e => e.FromPhoneNumberHash);
                 entity.HasIndex(e => e.ReceivedAt);
                 entity.HasIndex(e => e.ProcessingStatus);
             });

@@ -8,12 +8,13 @@ public class SmsAdaptiveProfile
 
     public int VehicleId { get; set; }
 
+    // Campi PII cifrati (AES-256-GCM) - dimensione aumentata per Base64
     [Required]
-    [StringLength(20)]
+    [StringLength(100)]
     public string AdaptiveNumber { get; set; } = string.Empty;
 
     [Required]
-    [StringLength(200)]
+    [StringLength(350)]
     public string AdaptiveSurnameName { get; set; } = string.Empty;
 
     public DateTime ReceivedAt { get; set; }
@@ -36,4 +37,13 @@ public class SmsAdaptiveProfile
     // Navigation properties
     public ClientVehicle? ClientVehicle { get; set; }
     public SmsAdaptiveGdpr? SmsAdaptiveGdpr { get; set; }
+
+    // ===== GDPR Hash Fields for Exact Lookup =====
+    // Questi campi permettono query WHERE esatte sui dati PII cifrati
+
+    [StringLength(64)]
+    public string? AdaptiveNumberHash { get; set; }
+
+    [StringLength(64)]
+    public string? AdaptiveSurnameNameHash { get; set; }
 }

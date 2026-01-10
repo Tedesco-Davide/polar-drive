@@ -15,6 +15,8 @@ using Microsoft.Data.SqlClient;
 using PolarDrive.Data.Constants;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 using PolarDrive.WebApi.Services.Tsa;
+using PolarDrive.WebApi.Services.Gdpr;
+using PolarDrive.Data.DbContexts.Gdpr;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -97,6 +99,11 @@ builder.Services.AddDbContext<PolarDriveDbContext>(options =>
         sqlOptions.CommandTimeout(300);
     });
 });
+
+// SERVIZIO GDPR ENCRYPTION
+var gdprService = new GdprEncryptionService();
+GdprValueConverterFactory.Initialize(gdprService.GetEncryptionKey());
+builder.Services.AddSingleton<IGdprEncryptionService>(gdprService);
 
 // Hangfire
 builder.Services.AddHangfire(config => config.UseMemoryStorage());

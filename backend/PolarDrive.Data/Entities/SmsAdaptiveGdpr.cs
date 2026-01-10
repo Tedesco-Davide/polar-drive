@@ -7,12 +7,13 @@ namespace PolarDrive.Data.Entities
     {
         public int Id { get; set; }
 
+        // Campi PII cifrati (AES-256-GCM) - dimensione aumentata per Base64
         [Required]
-        [StringLength(20)]
+        [StringLength(100)]
         public string AdaptiveNumber { get; set; } = string.Empty;
 
         [Required]
-        [StringLength(200)]
+        [StringLength(350)]
         public string AdaptiveSurnameName { get; set; } = string.Empty;
 
         [Required]
@@ -34,13 +35,26 @@ namespace PolarDrive.Data.Entities
         [Required]
         public bool ConsentAccepted { get; set; } = false;
 
-        [StringLength(45)]
+        // Campi PII cifrati - dimensione aumentata per Base64
+        [StringLength(100)]
         public string? IpAddress { get; set; }
 
-        [StringLength(500)]
+        [StringLength(750)]
         public string? UserAgent { get; set; }
 
         public int AttemptCount { get; set; } = 0;
+
+        // ===== GDPR Hash Fields for Exact Lookup =====
+        // Questi campi permettono query WHERE esatte sui dati PII cifrati
+
+        [StringLength(64)]
+        public string? AdaptiveNumberHash { get; set; }
+
+        [StringLength(64)]
+        public string? AdaptiveSurnameNameHash { get; set; }
+
+        [StringLength(64)]
+        public string? IpAddressHash { get; set; }
 
         // Navigation property
         public ClientCompany? ClientCompany { get; set; }

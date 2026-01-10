@@ -10,7 +10,9 @@ public class PhoneVehicleMapping
     [Key]
     public int Id { get; set; }
 
+    // Campo PII cifrato (AES-256-GCM) - dimensione aumentata per Base64
     [Required, Phone]
+    [StringLength(100)]
     public string PhoneNumber { get; set; } = string.Empty;
 
     public int VehicleId { get; set; }
@@ -21,6 +23,10 @@ public class PhoneVehicleMapping
     public bool IsActive { get; set; } = true;
 
     public string? Notes { get; set; }
+
+    // ===== GDPR Hash Field for Exact Lookup =====
+    [StringLength(64)]
+    public string? PhoneNumberHash { get; set; }
 
     // Navigation property
     public ClientVehicle? ClientVehicle { get; set; }
@@ -36,10 +42,13 @@ public class SmsAuditLog
     [Required]
     public string MessageSid { get; set; } = string.Empty;
 
+    // Campi PII cifrati (AES-256-GCM) - dimensione aumentata per Base64
     [Required]
+    [StringLength(100)]
     public string FromPhoneNumber { get; set; } = string.Empty;
 
     [Required]
+    [StringLength(100)]
     public string ToPhoneNumber { get; set; } = string.Empty;
 
     [Required]
@@ -54,6 +63,13 @@ public class SmsAuditLog
     public int? VehicleIdResolved { get; set; }
 
     public string? ResponseSent { get; set; }
+
+    // ===== GDPR Hash Fields for Exact Lookup =====
+    [StringLength(64)]
+    public string? FromPhoneNumberHash { get; set; }
+
+    [StringLength(64)]
+    public string? ToPhoneNumberHash { get; set; }
 
     public ClientVehicle? ResolvedVehicle { get; set; }
 }
