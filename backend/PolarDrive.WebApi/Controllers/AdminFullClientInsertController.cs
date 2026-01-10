@@ -4,6 +4,7 @@ using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.Helpers;
 using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
 using static PolarDrive.WebApi.Constants.CommonConstants;
@@ -46,8 +47,9 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext) : Co
             }
 
             // === Vehicle uniqueness ===
+            var vinHash = GdprHelpers.GdprComputeLookupHash(request.VehicleVIN);
             var existingVehicle = await _dbContext.ClientVehicles
-                .FirstOrDefaultAsync(v => v.Vin == request.VehicleVIN);
+                .FirstOrDefaultAsync(v => v.VinHash == vinHash);
 
             if (existingVehicle != null)
             {
@@ -65,8 +67,9 @@ public class AdminFullClientInsertController(PolarDriveDbContext dbContext) : Co
             }
 
             // === Mobile number uniqueness across companies ===
+            var mobileHash = GdprHelpers.GdprComputeLookupHash(request.VehicleMobileNumber);
             var existingMobileVehicle = await _dbContext.ClientVehicles
-                .FirstOrDefaultAsync(v => v.VehicleMobileNumber == request.VehicleMobileNumber && v.ClientCompanyId != company.Id);
+                .FirstOrDefaultAsync(v => v.VehicleMobileNumberHash == mobileHash && v.ClientCompanyId != company.Id);
 
             if (existingMobileVehicle != null)
             {

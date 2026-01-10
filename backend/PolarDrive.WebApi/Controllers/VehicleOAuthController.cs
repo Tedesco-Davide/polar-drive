@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.Data.Constants;
+using PolarDrive.Data.Helpers;
 using PolarDrive.WebApi.Helpers;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
@@ -105,7 +106,8 @@ public class VehicleOAuthController(PolarDriveDbContext db, IWebHostEnvironment 
             return BadRequest("Missing parameters");
         }
 
-        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == state);
+        var stateHash = GdprHelpers.GdprComputeLookupHash(state);
+        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.VinHash == stateHash);
         if (vehicle == null)
         {
             await _logger.Warning(source, "Vehicle not found for OAuth callback", $"State (VIN): {state}");

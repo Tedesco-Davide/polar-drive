@@ -4,6 +4,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Constants;
+using PolarDrive.Data.Helpers;
 using PolarDrive.WebApi.Services;
 using System.Text.RegularExpressions;
 using static PolarDrive.WebApi.Constants.CommonConstants;
@@ -307,9 +308,11 @@ public class SmsController(
         }        
 
         // Crea richiesta GDPR con tutti i campi obbligatori
+        var phoneHash = GdprHelpers.GdprComputeLookupHash(targetPhone);
+        var nameHash = GdprHelpers.GdprComputeLookupHash(fullName);
         var gdprRequest = await _db.SmsAdaptiveGdpr
-                    .FirstOrDefaultAsync(g => g.AdaptiveNumber == targetPhone
-                                        && g.AdaptiveSurnameName == fullName
+                    .FirstOrDefaultAsync(g => g.AdaptiveNumberHash == phoneHash
+                                        && g.AdaptiveSurnameNameHash == nameHash
                                         && g.Brand == brand);
 
         if (gdprRequest != null && gdprRequest.ConsentAccepted)
@@ -573,9 +576,10 @@ public class SmsController(
         var targetPhone = NormalizePhoneNumber(parts[4]);
 
         // Cerca veicolo per VIN specificato nel comando
+        var vinHash = GdprHelpers.GdprComputeLookupHash(targetVin);
         var vehicle = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .FirstOrDefaultAsync(v => v.Vin == targetVin && v.IsActiveFlag);
+            .FirstOrDefaultAsync(v => v.VinHash == vinHash && v.IsActiveFlag);
 
         if (vehicle == null)
         {
@@ -601,9 +605,11 @@ public class SmsController(
         }
 
         // ⚠️ VERIFICA CHE ESISTA CONSENSO GDPR ATTIVO
+        var phoneHashConsent = GdprHelpers.GdprComputeLookupHash(targetPhone);
+        var nameHashConsent = GdprHelpers.GdprComputeLookupHash(fullName);
         var gdprConsent = await _db.SmsAdaptiveGdpr
-            .Where(g => g.AdaptiveNumber == targetPhone
-                    && g.AdaptiveSurnameName == fullName // Impedisce di usare il consenso GDPR di una persona per creare il profilo di un'altra
+            .Where(g => g.AdaptiveNumberHash == phoneHashConsent
+                    && g.AdaptiveSurnameNameHash == nameHashConsent // Impedisce di usare il consenso GDPR di una persona per creare il profilo di un'altra
                     && g.Brand == vehicle.Brand
                     && g.ConsentAccepted)
             .OrderByDescending(g => g.ConsentGivenAt)
@@ -626,10 +632,12 @@ public class SmsController(
         }
 
         // Trova o crea riga ADAPTIVE_PROFILE
+        var phoneHashProfile = GdprHelpers.GdprComputeLookupHash(targetPhone);
+        var nameHashProfile = GdprHelpers.GdprComputeLookupHash(fullName);
         var profileEvent = await _db.SmsAdaptiveProfile
             .Where(p => p.VehicleId == vehicle.Id
-                    && p.AdaptiveNumber == targetPhone
-                    && p.AdaptiveSurnameName == fullName)
+                    && p.AdaptiveNumberHash == phoneHashProfile
+                    && p.AdaptiveSurnameNameHash == nameHashProfile)
             .OrderByDescending(p => p.ReceivedAt)
             .FirstOrDefaultAsync();
 

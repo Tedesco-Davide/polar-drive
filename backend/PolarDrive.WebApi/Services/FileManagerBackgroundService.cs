@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.Helpers;
 using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
 using static PolarDrive.WebApi.Constants.CommonConstants;
@@ -109,7 +110,8 @@ public class FileManagerBackgroundService(IServiceProvider serviceProvider, Pola
             // ✅ FILTRO VIN
             if (job.VinList.Any())
             {
-                pdfQuery = pdfQuery.Where(p => job.VinList.Contains(p.ClientVehicle!.Vin));
+                var vinHashList = job.VinList.Select(v => GdprHelpers.GdprComputeLookupHash(v)).ToList();
+                pdfQuery = pdfQuery.Where(p => vinHashList.Contains(p.ClientVehicle!.VinHash));
 
                 var countAfterVin = await pdfQuery.CountAsync(stoppingToken);
                 _ = _logger.Info("FileManagerBackgroundService",

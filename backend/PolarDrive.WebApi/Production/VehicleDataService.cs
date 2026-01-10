@@ -1,4 +1,5 @@
 using PolarDrive.Data.DbContexts;
+using PolarDrive.Data.Helpers;
 using Microsoft.EntityFrameworkCore;
 
 namespace PolarDrive.WebApi.Production;
@@ -128,8 +129,9 @@ public class VehicleDataService(IServiceProvider serviceProvider, PolarDriveLogg
             using var scope = _serviceProvider.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<PolarDriveDbContext>();
 
+            var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
             var vehicle = await db.ClientVehicles
-                .FirstOrDefaultAsync(v => v.Vin == vin);
+                .FirstOrDefaultAsync(v => v.VinHash == vinHash);
 
             if (vehicle == null)
             {

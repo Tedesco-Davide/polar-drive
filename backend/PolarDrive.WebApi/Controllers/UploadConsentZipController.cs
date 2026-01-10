@@ -5,6 +5,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Globalization;
 using System.Security.Cryptography;
+using PolarDrive.Data.Helpers;
 using PolarDrive.WebApi.Helpers;
 
 namespace PolarDrive.WebApi.Controllers;
@@ -67,7 +68,8 @@ public class UploadConsentZipController(PolarDriveDbContext db) : ControllerBase
             return NotFound("SERVER ERROR → NOT FOUND: Company not found or invalid VAT number!");
         }
 
-        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicleId && v.Vin == vehicleVIN && v.ClientCompanyId == clientCompanyId);
+        var vinHash = GdprHelpers.GdprComputeLookupHash(vehicleVIN);
+        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicleId && v.VinHash == vinHash && v.ClientCompanyId == clientCompanyId);
         if (vehicle == null)
         {
             await _logger.Warning("UploadConsentZipController", "Vehicle not found or mismatch.", $"VehicleId: {vehicleId}, VIN: {vehicleVIN}");

@@ -5,6 +5,7 @@ using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using System.Globalization;
 using PolarDrive.Data.Constants;
+using PolarDrive.Data.Helpers;
 using System.IO.Compression;
 using PolarDrive.WebApi.Helpers;
 
@@ -82,7 +83,8 @@ public class UploadOutageZipController(PolarDriveDbContext db) : ControllerBase
                 return NotFound("SERVER ERROR → NOT FOUND: Company not found or VAT mismatch!");
             }
 
-            var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicleId && v.Vin == vin && v.ClientCompanyId == clientCompanyId);
+            var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
+            var vehicle = await db.ClientVehicles.FirstOrDefaultAsync(v => v.Id == vehicleId && v.VinHash == vinHash && v.ClientCompanyId == clientCompanyId);
             if (vehicle == null)
             {
                 await _logger.Warning("UploadOutageZipController", "Vehicle not found or mismatched.", $"VehicleId: {vehicleId}, VIN: {vin}");

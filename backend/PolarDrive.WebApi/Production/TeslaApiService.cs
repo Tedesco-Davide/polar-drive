@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.Entities;
 using PolarDrive.Data.Constants;
-using static PolarDrive.WebApi.Constants.CommonConstants;
+using PolarDrive.Data.Helpers;
 
 namespace PolarDrive.WebApi.Production;
 
@@ -107,10 +107,10 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
     {
         const string source = "TeslaApiService.FetchDataForVehicle";
 
-        // ✅ CORREZIONE: Cerca veicolo solo per VIN e brand, non per IsActiveFlag
+        var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
         var vehicle = await _db.ClientVehicles
             .Include(v => v.ClientCompany)
-            .FirstOrDefaultAsync(v => v.Vin == vin && v.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase));
+            .FirstOrDefaultAsync(v => v.VinHash == vinHash && v.Brand.Equals(VehicleConstants.VehicleBrand.TESLA, StringComparison.CurrentCultureIgnoreCase));
 
         if (vehicle == null)
         {
@@ -475,7 +475,8 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
 
     private async Task SaveStatusRecord(string vin, string status, string reason)
     {
-        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+        var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
+        var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.VinHash == vinHash);
         if (vehicle != null)
         {
             var statusJson = JsonSerializer.Serialize(new {
@@ -623,7 +624,8 @@ public class TeslaApiService(PolarDriveDbContext db, IWebHostEnvironment env, Ht
 
         try
         {
-            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.Vin == vin);
+            var vinHash = GdprHelpers.GdprComputeLookupHash(vin);
+            var vehicle = await _db.ClientVehicles.FirstOrDefaultAsync(v => v.VinHash == vinHash);
             if (vehicle == null)
             {
                 await _logger.Warning(source, $"Vehicle with VIN {vin} not found for data saving");

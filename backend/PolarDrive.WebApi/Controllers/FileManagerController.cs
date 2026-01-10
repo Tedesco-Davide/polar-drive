@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.Helpers;
 using PolarDrive.WebApi.Helpers;
 using System.IO.Compression;
 using System.Text.Json;
@@ -341,7 +342,8 @@ public class FileManagerController(PolarDriveDbContext db, PolarDriveLogger logg
 
             if (job.VinList.Any())
             {
-                pdfQuery = pdfQuery.Where(p => job.VinList.Contains(p.ClientVehicle!.Vin));
+                var vinHashList = job.VinList.Select(v => GdprHelpers.GdprComputeLookupHash(v)).ToList();
+                pdfQuery = pdfQuery.Where(p => vinHashList.Contains(p.ClientVehicle!.VinHash));
             }
 
             if (job.BrandList.Any())

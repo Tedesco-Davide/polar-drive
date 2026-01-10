@@ -4,6 +4,7 @@ using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Entities;
+using PolarDrive.Data.Helpers;
 using PolarDrive.WebApi.Services.Gdpr;
 using static PolarDrive.WebApi.Constants.CommonConstants;
 
@@ -160,8 +161,9 @@ public class ClientVehiclesController(PolarDriveDbContext db, IGdprEncryptionSer
 
         // Mobile number uniqueness across companies
         var normalizedMobile = NormalizePhoneNumber(dto.VehicleMobileNumber);
+        var mobileHash = GdprHelpers.GdprComputeLookupHash(normalizedMobile);
         var existingMobileVehicle = await db.ClientVehicles
-            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == normalizedMobile && v.ClientCompanyId != dto.ClientCompanyId);
+            .FirstOrDefaultAsync(v => v.VehicleMobileNumberHash == mobileHash && v.ClientCompanyId != dto.ClientCompanyId);
 
         if (existingMobileVehicle != null)
         {
@@ -290,8 +292,9 @@ public class ClientVehiclesController(PolarDriveDbContext db, IGdprEncryptionSer
 
         // Mobile number uniqueness across companies (exclude current vehicle)
         var normalizedMobile = NormalizePhoneNumber(dto.VehicleMobileNumber);
+        var mobileHash = GdprHelpers.GdprComputeLookupHash(normalizedMobile);
         var existingMobileVehicle = await db.ClientVehicles
-            .FirstOrDefaultAsync(v => v.VehicleMobileNumber == normalizedMobile && v.ClientCompanyId != dto.ClientCompanyId && v.Id != id);
+            .FirstOrDefaultAsync(v => v.VehicleMobileNumberHash == mobileHash && v.ClientCompanyId != dto.ClientCompanyId && v.Id != id);
 
         if (existingMobileVehicle != null)
         {
