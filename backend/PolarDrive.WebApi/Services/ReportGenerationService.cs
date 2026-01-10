@@ -497,6 +497,8 @@ namespace PolarDrive.WebApi.Services
                     "ReportGenerationService.GenerateReportForVehicle",
                     $"⚠️ Report {report.Id} created and file generated for {vehicle.Vin} - No data available for period"
                 );
+
+                return;
             }
 
             // Se ci sono dati, procedi con la generazione normale
