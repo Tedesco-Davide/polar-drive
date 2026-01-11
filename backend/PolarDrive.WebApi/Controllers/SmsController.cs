@@ -266,14 +266,12 @@ public class SmsController(
         }
 
         var targetDigits = DigitsOnly(targetPhone);
+        var targetNumberHash = GdprHelpers.GdprComputeLookupHash(targetDigits);
 
-        var pendingRequests = await _db.SmsAdaptiveGdpr
-            .Where(g => !g.ConsentAccepted 
-                        && g.RequestedAt >= DateTime.Now.AddMinutes(-AppConfig.SMS_ADAPTIVE_GDPR_REQUEST_INTERVAL_MINUTES))
-            .ToListAsync();
-
-        var hasPendingRequest = pendingRequests.Any(g => 
-            DigitsOnly(NormalizePhoneNumber(g.AdaptiveNumber)) == targetDigits);
+        var hasPendingRequest = await _db.SmsAdaptiveGdpr
+            .AnyAsync(g => !g.ConsentAccepted
+                        && g.RequestedAt >= DateTime.Now.AddMinutes(-AppConfig.SMS_ADAPTIVE_GDPR_REQUEST_INTERVAL_MINUTES)
+                        && g.AdaptiveNumberHash == targetNumberHash);
 
         if (hasPendingRequest)
         {
@@ -289,12 +287,12 @@ public class SmsController(
         // Controlla se esiste già un consenso accettato per lo stesso numero ma con nome diverso
         var existingAcceptedForNumber = await _db.SmsAdaptiveGdpr
             .Where(g => g.ConsentAccepted
-                        && g.Brand == brand)
+                        && g.Brand == brand
+                        && g.AdaptiveNumberHash == targetNumberHash)
             .ToListAsync();
 
         var conflictingConsent = existingAcceptedForNumber
-            .FirstOrDefault(g => DigitsOnly(NormalizePhoneNumber(g.AdaptiveNumber)) == targetDigits
-                            && g.AdaptiveSurnameName != fullName);
+            .FirstOrDefault(g => g.AdaptiveSurnameName != fullName);
 
         if (conflictingConsent != null)
         {
@@ -399,15 +397,13 @@ public class SmsController(
     private async Task<ActionResult> HandleAccettoCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string from)
     {
         var fromDigits = DigitsOnly(NormalizePhoneNumber(from));
+        var fromNumberHash = GdprHelpers.GdprComputeLookupHash(fromDigits);
 
-        var gdprCandidates = await _db.SmsAdaptiveGdpr
+        var gdprRequest = await _db.SmsAdaptiveGdpr
             .Include(g => g.ClientCompany)
-            .Where(g => !g.ConsentAccepted)
+            .Where(g => !g.ConsentAccepted && g.AdaptiveNumberHash == fromNumberHash)
             .OrderByDescending(g => g.RequestedAt)
-            .ToListAsync();
-
-        var gdprRequest = gdprCandidates
-            .FirstOrDefault(g => DigitsOnly(NormalizePhoneNumber(g.AdaptiveNumber)) == fromDigits);
+            .FirstOrDefaultAsync();
 
         if (gdprRequest == null)
         {
@@ -426,12 +422,9 @@ public class SmsController(
         gdprRequest.UserAgent = Request.Headers["User-Agent"].ToString();
 
         // Aggiorna tutte le righe ADAPTIVE_PROFILE legate a questo numero
-        var profileCandidates = await _db.SmsAdaptiveProfile
+        var profileEvents = await _db.SmsAdaptiveProfile
+            .Where(p => p.AdaptiveNumberHash == fromNumberHash)
             .ToListAsync();
-
-        var profileEvents = profileCandidates
-            .Where(p => DigitsOnly(NormalizePhoneNumber(p.AdaptiveNumber)) == fromDigits)
-            .ToList();
 
         foreach (var pe in profileEvents)
         {
@@ -456,13 +449,12 @@ public class SmsController(
     private async Task<ActionResult> HandleStopCommand(SmsWebhookDTO dto, SmsAuditLog auditLog, string from)
     {
         var fromDigits = DigitsOnly(NormalizePhoneNumber(from));
+        var fromNumberHash = GdprHelpers.GdprComputeLookupHash(fromDigits);
 
-        var gdprCandidates = await _db.SmsAdaptiveGdpr
+        var gdprRequest = await _db.SmsAdaptiveGdpr
+            .Where(g => g.AdaptiveNumberHash == fromNumberHash)
             .OrderByDescending(g => g.ConsentGivenAt ?? g.RequestedAt)
-            .ToListAsync();
-
-        var gdprRequest = gdprCandidates
-            .FirstOrDefault(g => DigitsOnly(NormalizePhoneNumber(g.AdaptiveNumber)) == fromDigits);
+            .FirstOrDefaultAsync();
 
         if (gdprRequest == null)
         {
@@ -486,12 +478,9 @@ public class SmsController(
         }
 
         // Disattiva tutte le righe ADAPTIVE_PROFILE
-        var profileCandidates = await _db.SmsAdaptiveProfile
+        var profileEvents = await _db.SmsAdaptiveProfile
+            .Where(p => p.AdaptiveNumberHash == fromNumberHash)
             .ToListAsync();
-
-        var profileEvents = profileCandidates
-            .Where(p => DigitsOnly(NormalizePhoneNumber(p.AdaptiveNumber)) == fromDigits)
-            .ToList();
 
         foreach (var pe in profileEvents)
         {

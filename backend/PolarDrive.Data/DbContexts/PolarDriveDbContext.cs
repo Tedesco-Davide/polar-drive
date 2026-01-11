@@ -352,7 +352,7 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .OnDelete(DeleteBehavior.SetNull);
 
                 // ===== GDPR Encryption per campi PII =====
-                if (gdprConverter != null && gdprComparer != null)
+                if (gdprConverter != null && gdprNullableConverter != null && gdprComparer != null)
                 {
                     entity.Property(e => e.FromPhoneNumber)
                         .HasConversion(gdprConverter)
@@ -364,6 +364,14 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
 
                     entity.Property(e => e.MessageBody)
                         .HasConversion(gdprConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.ErrorMessage)
+                        .HasConversion(gdprNullableConverter)
+                        .Metadata.SetValueComparer(gdprComparer);
+
+                    entity.Property(e => e.ResponseSent)
+                        .HasConversion(gdprNullableConverter)
                         .Metadata.SetValueComparer(gdprComparer);
                 }
 
