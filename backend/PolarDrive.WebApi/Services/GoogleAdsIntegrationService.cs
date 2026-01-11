@@ -1,3 +1,4 @@
+using System.Text.Json;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.WebApi.Helpers;
 using PolarDrive.WebApi.PolarAiReports;
@@ -14,64 +15,133 @@ public class GoogleAdsIntegrationService
     {
         var source = "GoogleAdsIntegrationService.SendAiInsightsToGoogleAds";
 
+        // Check if Google Ads is enabled
+        var isEnabled = Environment.GetEnvironmentVariable("GOOGLE_ADS_ENABLED")?.ToLower() == "true";
+        if (!isEnabled)
+        {
+            await _logger.Info(source, $"⏭️ Google Ads integration disabled, skipping for {vin}");
+            return;
+        }
+
         await _logger.Info(source, $"📤 Invio insights a Google Ads per {vin}");
 
         var customerId = Environment.GetEnvironmentVariable("GOOGLE_ADS_CUSTOMER_ID") ?? "YOUR_CUSTOMER_ID";
         var conversionAction = Environment.GetEnvironmentVariable("GOOGLE_ADS_CONVERSION_ACTION") ?? "YOUR_CONVERSION_ACTION";
+        var developerToken = Environment.GetEnvironmentVariable("GOOGLE_ADS_DEVELOPER_TOKEN");
 
         // Estrai metriche chiave dagli insights AI
         var metrics = ExtractMetricsFromAiAndAggregation(aiPayload, aggregation);
 
+        // Format conversion action as resource name
+        var conversionActionResourceName = $"customers/{customerId}/conversionActions/{conversionAction}";
+
+        // Format datetime as required by Google Ads API (yyyy-MM-dd HH:mm:sszzz)
+        var conversionDateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:sszzz");
+
         var conversion = new
         {
-            conversion_action = conversionAction,
-            conversion_date_time = DateTime.Now,
-            conversion_value = metrics.ConversionValue,
-            currency_code = "EUR",
-            user_identifiers = new[]
-        {
-        new { hashed_email = GenericHelpers.ComputeContentHash($"vehicle_{vehicleId}@datapolar.com") }
-        },
-            custom_variables = new object[]
-            {
-                new { tag = GoogleAdsTag.BATTERY_HEALTH, number_value = metrics.BatteryHealthScore },
-                new { tag = GoogleAdsTag.EFFICIENCY_SCORE, number_value = metrics.EfficiencyScore },
-                new { tag = GoogleAdsTag.USAGE_INTENSITY, string_value = metrics.UsageIntensity },
-                new { tag = GoogleAdsTag.AI_DRIVER_PROFILE, string_value = aiPayload.DriverProfile },
-                new { tag = GoogleAdsTag.AI_DRIVER_CONFIDENCE, number_value = aiPayload.DriverProfileConfidence },
-                new { tag = GoogleAdsTag.AI_OPTIMIZATION_PRIORITY, string_value = aiPayload.OptimizationPriority },
-                new { tag = GoogleAdsTag.AI_OPTIMIZATION_SCORE, number_value = aiPayload.OptimizationPriorityScore },
-                new { tag = GoogleAdsTag.AI_USAGE_CHANGE_PRED, number_value = aiPayload.PredictedMonthlyUsageChange },
-                new { tag = GoogleAdsTag.AI_SEGMENT, string_value = aiPayload.Segment },
-                new { tag = GoogleAdsTag.AI_SEGMENT_CONFIDENCE, number_value = aiPayload.SegmentConfidence },
-                new { tag = GoogleAdsTag.AI_CHARGING_SCORE, number_value = aiPayload.ChargingBehaviorScore },
-                new { tag = GoogleAdsTag.AI_EFFICIENCY_POTENTIAL, number_value = aiPayload.EfficiencyPotential },
-                new { tag = GoogleAdsTag.AI_BATTERY_TREND, string_value = aiPayload.BatteryHealthTrend },
-                new { tag = GoogleAdsTag.AI_ENGAGEMENT, string_value = aiPayload.EngagementLevel },
-                new { tag = GoogleAdsTag.AI_CONVERSION_LIKELIHOOD, number_value = aiPayload.ConversionLikelihood },
-                new { tag = GoogleAdsTag.AI_LTV_INDICATOR, string_value = aiPayload.LifetimeValueIndicator },
-                new { tag = GoogleAdsTag.AI_CAMPAIGN_TYPE, string_value = aiPayload.RecommendedCampaignType },
-                new { tag = GoogleAdsTag.AI_MOTIVATOR_1, string_value = aiPayload.KeyMotivators.ElementAtOrDefault(0) ?? "" },
-                new { tag = GoogleAdsTag.AI_MOTIVATOR_2, string_value = aiPayload.KeyMotivators.ElementAtOrDefault(1) ?? "" },
-                new { tag = GoogleAdsTag.AI_MOTIVATOR_3, string_value = aiPayload.KeyMotivators.ElementAtOrDefault(2) ?? "" }
-            }
+            conversionAction = conversionActionResourceName,
+            conversionDateTime = conversionDateTime,
+            conversionValue = metrics.ConversionValue,
+            currencyCode = "EUR",
+            // Use orderId as unique identifier for this conversion (required for deduplication)
+            orderId = $"polardrive_{vehicleId}_{DateTime.Now:yyyyMMddHHmmss}"
         };
 
         try
         {
-            var response = await _httpClient.PostAsJsonAsync(
-                $"https://googleads.googleapis.com/v15/customers/{customerId}:uploadConversions",
-                new { conversions = new[] { conversion } }
-            );
+            // Get OAuth2 access token
+            var accessToken = await GetAccessTokenAsync();
+            if (string.IsNullOrEmpty(accessToken))
+            {
+                await _logger.Error(source, "Failed to obtain Google Ads access token", "Check OAuth2 credentials");
+                return;
+            }
+
+            // Build authenticated request - using uploadClickConversions endpoint
+            var request = new HttpRequestMessage(HttpMethod.Post,
+                $"https://googleads.googleapis.com/v18/customers/{customerId}:uploadClickConversions");
+
+            request.Headers.Add("Authorization", $"Bearer {accessToken}");
+            request.Headers.Add("developer-token", developerToken);
+            request.Headers.Add("login-customer-id", customerId);
+
+            // Payload format for uploadClickConversions
+            var payload = new
+            {
+                customerId = customerId,
+                conversions = new[] { conversion },
+                partialFailure = true
+            };
+            request.Content = JsonContent.Create(payload);
+
+            var response = await _httpClient.SendAsync(request);
+            var responseContent = await response.Content.ReadAsStringAsync();
 
             if (response.IsSuccessStatusCode)
+            {
                 await _logger.Info(source, $"✅ Insights inviati a Google Ads per {vin}");
+                await _logger.Info(source, $"📊 Response: {responseContent}");
+            }
             else
+            {
                 await _logger.Warning(source, $"⚠️ Google Ads response: {response.StatusCode}");
+                await _logger.Warning(source, $"📄 Response body: {responseContent}");
+            }
         }
         catch (Exception ex)
         {
             await _logger.Error(source, "Errore invio Google Ads", ex.Message);
+        }
+    }
+
+    private async Task<string?> GetAccessTokenAsync()
+    {
+        var source = "GoogleAdsIntegrationService.GetAccessTokenAsync";
+
+        try
+        {
+            var clientId = Environment.GetEnvironmentVariable("GOOGLE_ADS_CLIENT_ID");
+            var clientSecret = Environment.GetEnvironmentVariable("GOOGLE_ADS_CLIENT_SECRET");
+            var refreshToken = Environment.GetEnvironmentVariable("GOOGLE_ADS_REFRESH_TOKEN");
+
+            if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret) || string.IsNullOrEmpty(refreshToken))
+            {
+                await _logger.Error(source, "Missing OAuth2 credentials",
+                    "Ensure GOOGLE_ADS_CLIENT_ID, GOOGLE_ADS_CLIENT_SECRET, and GOOGLE_ADS_REFRESH_TOKEN are set");
+                return null;
+            }
+
+            var tokenRequest = new Dictionary<string, string>
+            {
+                ["client_id"] = clientId,
+                ["client_secret"] = clientSecret,
+                ["refresh_token"] = refreshToken,
+                ["grant_type"] = "refresh_token"
+            };
+
+            var response = await _httpClient.PostAsync(
+                "https://oauth2.googleapis.com/token",
+                new FormUrlEncodedContent(tokenRequest));
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                await _logger.Error(source, $"Token refresh failed: {response.StatusCode}", responseContent);
+                return null;
+            }
+
+            var json = JsonDocument.Parse(responseContent);
+            var accessToken = json.RootElement.GetProperty("access_token").GetString();
+
+            await _logger.Info(source, "🔑 Access token obtained successfully");
+            return accessToken;
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, "Exception during token refresh", ex.Message);
+            return null;
         }
     }
 
