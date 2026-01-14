@@ -301,7 +301,15 @@ public class HtmlReportService(PolarDriveDbContext dbContext)
             var trimmed = raw.Trim();
             if (string.IsNullOrEmpty(trimmed)) continue;
 
-            // Headers
+            // Headers (ordine importante: dal più specifico al meno)
+            if (trimmed.StartsWith("#### "))
+            {
+                var t = trimmed.Substring(5).Trim();
+                if (t.Length == 0) continue;
+                if (inList) { formatted.Add("</ul>"); inList = false; }
+                formatted.Add($"<h5 class='insight-h5'>{t}</h5>");
+                continue;
+            }
             if (trimmed.StartsWith("### "))
             {
                 var t = trimmed.Substring(4).Trim();
