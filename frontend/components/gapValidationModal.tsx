@@ -9,8 +9,9 @@ type Props = {
   reportId: number;
   isOpen: boolean;
   onClose: () => void;
-  onValidationComplete: (reportId: number) => void;
+  onValidationComplete: (reportId: number, action?: "certify" | "escalate" | "breach") => void;
   t: TFunction;
+  gapValidationStatus?: string | null; // null = nessun PDF, ESCALATED = già escalato
 };
 
 export default function GapValidationModal({
@@ -19,9 +20,13 @@ export default function GapValidationModal({
   onClose,
   onValidationComplete,
   t,
+  gapValidationStatus,
 }: Props) {
   const [loading, setLoading] = useState(true);
   const [certifying, setCertifying] = useState(false);
+  const [escalating, setEscalating] = useState(false);
+  const [breaching, setBreaching] = useState(false);
+  const [notes, setNotes] = useState("");
   const [analysisData, setAnalysisData] = useState<GapAnalysisResponse | null>(
     null
   );
@@ -80,7 +85,7 @@ export default function GapValidationModal({
       try {
         data = JSON.parse(responseText);
       } catch {
-        throw new Error('Risposta non valida dal server');
+        throw new Error(t("admin.gapValidation.invalidServerResponse"));
       }
       setAnalysisData(data);
       logFrontendEvent(
@@ -133,7 +138,7 @@ export default function GapValidationModal({
           `ReportId: ${reportId}, Status: ${data.status}`
         );
         // Notifica il parent che chiuderà la modale e aggiornerà lo stato
-        onValidationComplete(reportId);
+        onValidationComplete(reportId, "certify");
         return;
       }
 
@@ -149,7 +154,7 @@ export default function GapValidationModal({
         `ReportId: ${reportId}, GapsCertified: ${data.gapsCertified}`
       );
 
-      onValidationComplete(reportId);
+      onValidationComplete(reportId, "certify");
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
@@ -164,6 +169,108 @@ export default function GapValidationModal({
       setCertifying(false);
     }
   };
+
+  const handleEscalate = async () => {
+    setEscalating(true);
+    try {
+      const res = await fetch(`/api/gapanalysis/${reportId}/escalate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
+
+      const responseText = await res.text();
+      let data: { status?: string; error?: string } = {};
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        if (!res.ok) {
+          throw new Error(responseText.substring(0, 200) || `HTTP ${res.status}`);
+        }
+      }
+
+      if (res.status === 202 || res.ok) {
+        logFrontendEvent(
+          "GapValidationModal",
+          "INFO",
+          "Gap escalation started",
+          `ReportId: ${reportId}, Status: ${data.status}`
+        );
+        onValidationComplete(reportId, "escalate");
+        return;
+      }
+
+      throw new Error(data.error || `HTTP ${res.status}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage);
+      logFrontendEvent(
+        "GapValidationModal",
+        "ERROR",
+        "Escalation failed",
+        errorMessage
+      );
+      alert(t("admin.gapValidation.escalationError") || `Errore: ${errorMessage}`);
+    } finally {
+      setEscalating(false);
+    }
+  };
+
+  const handleBreach = async () => {
+    if (!confirm(t("admin.gapValidation.confirmBreach") || "Confermi Contract Breach? Questa azione e' irreversibile.")) {
+      return;
+    }
+
+    setBreaching(true);
+    try {
+      const res = await fetch(`/api/gapanalysis/${reportId}/breach`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ notes }),
+      });
+
+      const responseText = await res.text();
+      let data: { status?: string; error?: string } = {};
+
+      try {
+        data = JSON.parse(responseText);
+      } catch {
+        if (!res.ok) {
+          throw new Error(responseText.substring(0, 200) || `HTTP ${res.status}`);
+        }
+      }
+
+      if (res.status === 202 || res.ok) {
+        logFrontendEvent(
+          "GapValidationModal",
+          "INFO",
+          "Contract breach recorded",
+          `ReportId: ${reportId}, Status: ${data.status}`
+        );
+        onValidationComplete(reportId, "breach");
+        return;
+      }
+
+      throw new Error(data.error || `HTTP ${res.status}`);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(errorMessage);
+      logFrontendEvent(
+        "GapValidationModal",
+        "ERROR",
+        "Contract breach failed",
+        errorMessage
+      );
+      alert(t("admin.gapValidation.breachError") || `Errore: ${errorMessage}`);
+    } finally {
+      setBreaching(false);
+    }
+  };
+
+  // Verifica se mostrare il bottone Escalate (solo se non già escalato)
+  const showEscalateButton = !gapValidationStatus || gapValidationStatus === "PROCESSING";
+  const isProcessing = certifying || escalating || breaching;
 
   const getConfidenceColor = (confidence: number): string => {
     if (confidence >= 80)
@@ -291,19 +398,19 @@ export default function GapValidationModal({
                     <div className="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-lg p-4 mb-6">
                       <h4 className="font-semibold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2">
                         <span className="text-xl">⚠️</span>
-                        Interruzioni di Servizio Rilevate
+                        {t("admin.gapValidation.outagesDetectedTitle")}
                       </h4>
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="bg-white dark:bg-gray-800 rounded p-3 text-center border border-red-200">
                           <div className="text-2xl font-bold text-red-600">{analysisData.outages.total}</div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">Interruzioni totali</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">{t("admin.gapValidation.outagesTotal")}</div>
                         </div>
 
                         <div className="bg-white dark:bg-gray-800 rounded p-3 text-center border border-red-200">
                           <div className="text-2xl font-bold text-red-600">{analysisData.outages.gapsAffected}</div>
                           <div className="text-xs text-gray-600 dark:text-gray-400">
-                            Gap giustificati ({analysisData.outages.gapsAffectedPercentage}%)
+                            {t("admin.gapValidation.gapsJustified", { percentage: analysisData.outages.gapsAffectedPercentage })}
                           </div>
                         </div>
 
@@ -311,14 +418,14 @@ export default function GapValidationModal({
                           <div className="text-2xl font-bold text-red-600">
                             {analysisData.outages.totalDowntimeDays}g {analysisData.outages.totalDowntimeHours % 24}h
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">Downtime totale</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">{t("admin.gapValidation.totalDowntime")}</div>
                         </div>
 
                         <div className="bg-white dark:bg-gray-800 rounded p-3 text-center border border-red-200">
                           <div className="text-2xl font-bold text-red-600">
                             {analysisData.outages.avgConfidenceWithOutage.toFixed(1)}%
                           </div>
-                          <div className="text-xs text-gray-600 dark:text-gray-400">Confidenza media (con outage)</div>
+                          <div className="text-xs text-gray-600 dark:text-gray-400">{t("admin.gapValidation.avgConfidenceWithOutage")}</div>
                         </div>
                       </div>
                     </div>
@@ -382,14 +489,14 @@ export default function GapValidationModal({
                                         className="inline-flex items-center gap-1 px-2 py-0.5 bg-red-100 text-red-700 border border-red-400 rounded-full text-xs font-semibold"
                                         title={`Fleet API Outage - ${gap.outageInfo.outageBrand} - Bonus: +${gap.outageInfo.bonusApplied}%`}
                                       >
-                                        🔴 Fleet API
+                                        🔴 {t("admin.gapValidation.outageFleetApi")}
                                       </span>
                                     ) : (
                                       <span
                                         className="inline-flex items-center gap-1 px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-400 rounded-full text-xs font-semibold"
                                         title={`Vehicle Outage - Bonus: +${gap.outageInfo.bonusApplied}%`}
                                       >
-                                        ⚠️ Vehicle
+                                        ⚠️ {t("admin.gapValidation.outageVehicle")}
                                       </span>
                                     )}
                                   </div>
@@ -415,29 +522,87 @@ export default function GapValidationModal({
           ) : null}
         </div>
 
-        <div className="border-t border-gray-200 dark:border-gray-600 px-6 py-4 flex gap-4 bg-gray-50 dark:bg-gray-900">
+        <div className="border-t border-gray-200 dark:border-gray-600 px-6 py-4 bg-gray-50 dark:bg-gray-900">
+          {/* Notes input for Escalate/Breach */}
           {analysisData && analysisData.totalGaps > 0 && (
-            <button
-              onClick={handleCertify}
-              disabled={certifying}
-              className="px-6 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded hover:from-purple-700 hover:to-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              {certifying ? (
-                <>
-                  <AdminLoader inline />
-                  {t("admin.gapValidation.certifying")}
-                </>
-              ) : (
-                t("admin.gapValidation.confirmCertify")
-              )}
-            </button>
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t("admin.gapValidation.notesLabel")}
+              </label>
+              <textarea
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder={t("admin.gapValidation.notesPlaceholder")}
+                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-sm"
+                rows={2}
+              />
+            </div>
           )}
-          <button
-            onClick={onClose}
-            className="px-6 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors"
-          >
-            {t("admin.cancelEditRow")}
-          </button>
+
+          <div className="flex flex-wrap gap-3">
+            {/* Certifica (verde) - sempre visibile se ci sono gap */}
+            {analysisData && analysisData.totalGaps > 0 && (
+              <button
+                onClick={handleCertify}
+                disabled={isProcessing}
+                className="px-6 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded hover:from-green-700 hover:to-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {certifying ? (
+                  <>
+                    <AdminLoader inline />
+                    {t("admin.gapValidation.certifying")}
+                  </>
+                ) : (
+                  <>{t("admin.gapValidation.certifyBtn")}</>
+                )}
+              </button>
+            )}
+
+            {/* Escalate (arancione) - nascosto se già escalato */}
+            {analysisData && analysisData.totalGaps > 0 && showEscalateButton && (
+              <button
+                onClick={handleEscalate}
+                disabled={isProcessing}
+                className="px-6 py-2 bg-gradient-to-r from-orange-500 to-amber-500 text-white rounded hover:from-orange-600 hover:to-amber-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {escalating ? (
+                  <>
+                    <AdminLoader inline />
+                    {t("admin.gapValidation.escalatingBtn")}
+                  </>
+                ) : (
+                  <>{t("admin.gapValidation.escalateBtn")}</>
+                )}
+              </button>
+            )}
+
+            {/* Contract Breach (rosso) - sempre visibile se ci sono gap */}
+            {analysisData && analysisData.totalGaps > 0 && (
+              <button
+                onClick={handleBreach}
+                disabled={isProcessing}
+                className="px-6 py-2 bg-gradient-to-r from-red-600 to-rose-600 text-white rounded hover:from-red-700 hover:to-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {breaching ? (
+                  <>
+                    <AdminLoader inline />
+                    {t("admin.gapValidation.processingBtn")}
+                  </>
+                ) : (
+                  <>{t("admin.gapValidation.breachBtn")}</>
+                )}
+              </button>
+            )}
+
+            {/* Annulla */}
+            <button
+              onClick={onClose}
+              disabled={isProcessing}
+              className="px-6 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 transition-colors disabled:opacity-50"
+            >
+              {t("admin.cancelEditRow")}
+            </button>
+          </div>
         </div>
       </div>
     </div>

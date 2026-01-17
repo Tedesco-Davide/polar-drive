@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
@@ -9,7 +8,6 @@ using PolarDrive.WebApi.Helpers;
 using PolarDrive.WebApi.PolarAiReports.Templates;
 using PolarDrive.WebApi.Services;
 using PolarDrive.WebApi.Services.Tsa;
-using static PolarDrive.WebApi.Constants.CommonConstants;
 
 namespace PolarDrive.WebApi.PolarAiReports;
 
@@ -29,9 +27,106 @@ public class GapValidationPdfService(
     private readonly PolarDriveLogger _logger = new();
 
     /// <summary>
+    /// Avvia la generazione di un PDF di validazione gap.
+    /// Crea il record GapValidationPdf con status PROCESSING e avvia la generazione in background.
+    /// </summary>
+    /// <param name="pdfReportId">ID del report PDF di riferimento</param>
+    /// <param name="documentType">Tipo documento: CERTIFICATION, ESCALATION, CONTRACT_BREACH</param>
+    /// <param name="gapAlertId">ID dell'alert correlato (opzionale)</param>
+    /// <returns>True se avviato con successo</returns>
+    public async Task<bool> StartGapValidationPdfAsync(int pdfReportId, string documentType, int? gapAlertId = null)
+    {
+        const string source = "GapValidationPdfService.StartGapValidationPdf";
+
+        try
+        {
+            await _logger.Info(source, $"Starting {documentType} PDF generation for report {pdfReportId}");
+
+            // Verifica che il documento type sia valido
+            if (documentType != GapValidationDocumentTypes.CERTIFICATION &&
+                documentType != GapValidationDocumentTypes.ESCALATION &&
+                documentType != GapValidationDocumentTypes.CONTRACT_BREACH)
+            {
+                await _logger.Error(source, $"Invalid document type: {documentType}");
+                return false;
+            }
+
+            // Verifica che non esista già un PDF dello stesso tipo per questo report
+            var existingPdf = await _db.GapValidationPdfs
+                .FirstOrDefaultAsync(p => p.PdfReportId == pdfReportId && p.DocumentType == documentType);
+
+            if (existingPdf != null)
+            {
+                await _logger.Warning(source,
+                    $"A {documentType} PDF already exists for report {pdfReportId} (ID: {existingPdf.Id})");
+                return false;
+            }
+
+            // Crea il record con status PROCESSING
+            var gapValidationPdf = new GapValidationPdf
+            {
+                PdfReportId = pdfReportId,
+                Status = GapAlertStatus.PROCESSING,
+                DocumentType = documentType,
+                GapAlertId = gapAlertId,
+                CreatedAt = DateTime.Now
+            };
+
+            _db.GapValidationPdfs.Add(gapValidationPdf);
+            await _db.SaveChangesAsync();
+
+            // Avvia la generazione in background
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await GenerateAndSaveAsync(pdfReportId, documentType);
+                }
+                catch (Exception ex)
+                {
+                    await _logger.Error(source, $"Background generation failed for {documentType} PDF", ex.ToString());
+                }
+            });
+
+            await _logger.Info(source, $"Started {documentType} PDF generation for report {pdfReportId}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error starting {documentType} PDF generation for report {pdfReportId}", ex.ToString());
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Genera e salva il PDF in base al tipo documento.
+    /// </summary>
+    private async Task GenerateAndSaveAsync(int pdfReportId, string documentType)
+    {
+        switch (documentType)
+        {
+            case GapValidationDocumentTypes.CERTIFICATION:
+                await GenerateAndSaveCertificationAsync(pdfReportId);
+                break;
+            case GapValidationDocumentTypes.ESCALATION:
+                await GenerateAndSaveEscalationAsync(pdfReportId);
+                break;
+            case GapValidationDocumentTypes.CONTRACT_BREACH:
+                await GenerateAndSaveContractBreachAsync(pdfReportId);
+                break;
+        }
+    }
+
+    /// <summary>
     /// Genera il PDF di validazione per un report
     /// </summary>
-    public async Task<GapValidationPdfResult> GenerateCertificationPdfAsync(int pdfReportId)
+    /// <param name="pdfReportId">ID del report PDF</param>
+    /// <param name="documentType">Tipo documento per il template corretto</param>
+    /// <param name="notes">Note operatore (opzionale, per ESCALATION e CONTRACT_BREACH)</param>
+    public async Task<GapValidationPdfResult> GenerateCertificationPdfAsync(
+        int pdfReportId,
+        string documentType = GapValidationDocumentTypes.CERTIFICATION,
+        string? notes = null)
     {
         const string source = "GapValidationPdfService.GenerateCertificationPdf";
 
@@ -64,8 +159,8 @@ public class GapValidationPdfService(
                 };
             }
 
-            // 3. Genera l'HTML della certificazione
-            var htmlContent = await GenerateCertificationHtml(report, certifications, _db);
+            // 3. Genera l'HTML con template specifico per il tipo documento
+            var htmlContent = await GenerateCertificationHtml(report, certifications, _db, documentType, notes);
 
             // 4. Prepara le opzioni PDF con header/footer coerenti con gli stili di stampa PDF attuali
             var fontStyles = GapValidationTemplate.GetFontStyles();
@@ -191,16 +286,17 @@ public class GapValidationPdfService(
         {
             await _logger.Info(source, $"Starting gap certification generation for report {pdfReportId}");
 
-            // 1. Genera il PDF usando il metodo esistente
-            var result = await GenerateCertificationPdfAsync(pdfReportId);
+            // 1. Genera il PDF usando il metodo esistente (con template CERTIFICATION)
+            var result = await GenerateCertificationPdfAsync(pdfReportId, GapValidationDocumentTypes.CERTIFICATION);
 
-            // 2. Recupera il record GapValidationPdf (già creato dal controller con status PROCESSING)
+            // 2. Recupera il record GapValidationPdf CERTIFICATION (già creato con status PROCESSING)
             var certPdf = await _db.GapValidationPdfs
-                .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId);
+                .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId &&
+                                          c.DocumentType == GapValidationDocumentTypes.CERTIFICATION);
 
             if (certPdf == null)
             {
-                await _logger.Error(source, $"GapValidationPdf record not found for report {pdfReportId}");
+                await _logger.Error(source, $"GapValidationPdf CERTIFICATION record not found for report {pdfReportId}");
                 return;
             }
 
@@ -209,7 +305,7 @@ public class GapValidationPdfService(
                 // 3. Salva il PDF e aggiorna lo stato a COMPLETED
                 certPdf.PdfContent = result.PdfContent;
                 certPdf.PdfHash = result.PdfHash;
-                certPdf.Status = ReportStatus.COMPLETED;
+                certPdf.Status = GapAlertStatus.COMPLETED;
                 certPdf.GeneratedAt = DateTime.Now;
                 certPdf.GapsCertified = result.GapsCertified;
                 certPdf.AverageConfidence = result.AverageConfidence;
@@ -253,7 +349,7 @@ public class GapValidationPdfService(
             else
             {
                 // 4. In caso di errore, imposta lo stato ERROR
-                certPdf.Status = ReportStatus.ERROR;
+                certPdf.Status = GapAlertStatus.ERROR;
                 await _db.SaveChangesAsync();
 
                 await _logger.Error(source, $"Gap certification FAILED for report {pdfReportId}",
@@ -268,11 +364,12 @@ public class GapValidationPdfService(
             try
             {
                 var certPdf = await _db.GapValidationPdfs
-                    .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId);
+                    .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId &&
+                                              c.DocumentType == GapValidationDocumentTypes.CERTIFICATION);
 
                 if (certPdf != null)
                 {
-                    certPdf.Status = ReportStatus.ERROR;
+                    certPdf.Status = GapAlertStatus.ERROR;
                     await _db.SaveChangesAsync();
                 }
             }
@@ -284,17 +381,226 @@ public class GapValidationPdfService(
     }
 
     /// <summary>
-    /// Genera l'HTML della validazione
+    /// Genera e salva il PDF di ESCALATION.
+    /// Simile alla certificazione ma con titolo e disclaimer diversi.
+    /// </summary>
+    private async Task GenerateAndSaveEscalationAsync(int pdfReportId)
+    {
+        const string source = "GapValidationPdfService.GenerateAndSaveEscalation";
+
+        try
+        {
+            await _logger.Info(source, $"Starting gap ESCALATION generation for report {pdfReportId}");
+
+            // 1. Genera il PDF con template ESCALATION (arancione)
+            var result = await GenerateCertificationPdfAsync(pdfReportId, GapValidationDocumentTypes.ESCALATION);
+
+            // 2. Recupera il record GapValidationPdf ESCALATION
+            var escalationPdf = await _db.GapValidationPdfs
+                .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId &&
+                                          c.DocumentType == GapValidationDocumentTypes.ESCALATION);
+
+            if (escalationPdf == null)
+            {
+                await _logger.Error(source, $"GapValidationPdf ESCALATION record not found for report {pdfReportId}");
+                return;
+            }
+
+            if (result.Success && result.PdfContent != null)
+            {
+                // 3. Salva il PDF - per ESCALATION status rimane ESCALATED (non COMPLETED)
+                escalationPdf.PdfContent = result.PdfContent;
+                escalationPdf.PdfHash = result.PdfHash;
+                escalationPdf.Status = GapAlertStatus.ESCALATED;
+                escalationPdf.GeneratedAt = DateTime.Now;
+                escalationPdf.GapsCertified = result.GapsCertified;
+                escalationPdf.AverageConfidence = result.AverageConfidence;
+
+                // TSA Marca Temporale
+                if (AppConfig.TSA_ENABLED && result.PdfContent != null && result.PdfHash != null)
+                {
+                    await ApplyTsaTimestampAsync(escalationPdf, result.PdfContent, result.PdfHash, source);
+                }
+
+                await _db.SaveChangesAsync();
+
+                await _logger.Info(source, $"Gap ESCALATION COMPLETED for report {pdfReportId}",
+                    $"Gaps: {result.GapsCertified}, AvgConfidence: {result.AverageConfidence:F1}%");
+            }
+            else
+            {
+                escalationPdf.Status = GapAlertStatus.ERROR;
+                await _db.SaveChangesAsync();
+                await _logger.Error(source, $"Gap ESCALATION FAILED for report {pdfReportId}",
+                    result.ErrorMessage ?? "Unknown error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Exception during gap ESCALATION for report {pdfReportId}", ex.ToString());
+            await SetPdfStatusToErrorAsync(pdfReportId, GapValidationDocumentTypes.ESCALATION);
+        }
+    }
+
+    /// <summary>
+    /// Genera e salva il PDF di CONTRACT_BREACH.
+    /// </summary>
+    private async Task GenerateAndSaveContractBreachAsync(int pdfReportId)
+    {
+        const string source = "GapValidationPdfService.GenerateAndSaveContractBreach";
+
+        try
+        {
+            await _logger.Info(source, $"Starting gap CONTRACT_BREACH generation for report {pdfReportId}");
+
+            // 1. Genera il PDF con template CONTRACT_BREACH (rosso)
+            var result = await GenerateCertificationPdfAsync(pdfReportId, GapValidationDocumentTypes.CONTRACT_BREACH);
+
+            // 2. Recupera il record GapValidationPdf CONTRACT_BREACH
+            var breachPdf = await _db.GapValidationPdfs
+                .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId &&
+                                          c.DocumentType == GapValidationDocumentTypes.CONTRACT_BREACH);
+
+            if (breachPdf == null)
+            {
+                await _logger.Error(source, $"GapValidationPdf CONTRACT_BREACH record not found for report {pdfReportId}");
+                return;
+            }
+
+            if (result.Success && result.PdfContent != null)
+            {
+                // 3. Salva il PDF - per CONTRACT_BREACH status è CONTRACT_BREACH (finale)
+                breachPdf.PdfContent = result.PdfContent;
+                breachPdf.PdfHash = result.PdfHash;
+                breachPdf.Status = GapAlertStatus.CONTRACT_BREACH;
+                breachPdf.GeneratedAt = DateTime.Now;
+                breachPdf.GapsCertified = result.GapsCertified;
+                breachPdf.AverageConfidence = result.AverageConfidence;
+
+                // TSA Marca Temporale
+                if (AppConfig.TSA_ENABLED && result.PdfContent != null && result.PdfHash != null)
+                {
+                    await ApplyTsaTimestampAsync(breachPdf, result.PdfContent, result.PdfHash, source);
+                }
+
+                await _db.SaveChangesAsync();
+
+                await _logger.Info(source, $"Gap CONTRACT_BREACH COMPLETED for report {pdfReportId}",
+                    $"Gaps: {result.GapsCertified}, AvgConfidence: {result.AverageConfidence:F1}%");
+            }
+            else
+            {
+                breachPdf.Status = GapAlertStatus.ERROR;
+                await _db.SaveChangesAsync();
+                await _logger.Error(source, $"Gap CONTRACT_BREACH FAILED for report {pdfReportId}",
+                    result.ErrorMessage ?? "Unknown error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Exception during gap CONTRACT_BREACH for report {pdfReportId}", ex.ToString());
+            await SetPdfStatusToErrorAsync(pdfReportId, GapValidationDocumentTypes.CONTRACT_BREACH);
+        }
+    }
+
+    /// <summary>
+    /// Applica marca temporale TSA al PDF
+    /// </summary>
+    private async Task ApplyTsaTimestampAsync(GapValidationPdf pdf, byte[] pdfContent, string pdfHash, string source)
+    {
+        try
+        {
+            var tsaResult = await _tsaService.RequestTimestampAsync(pdfContent, pdfHash);
+            if (tsaResult.Success)
+            {
+                pdf.TsaTimestamp = tsaResult.TimestampToken;
+                pdf.TsaServerUrl = tsaResult.ServerUrl;
+                pdf.TsaTimestampDate = tsaResult.TimestampDate;
+                pdf.TsaMessageImprint = tsaResult.MessageImprint;
+                pdf.TsaVerified = true;
+                await _logger.Info(source,
+                    $"TSA_SUCCESS: Marca temporale ottenuta da {_tsaService.ProviderName} per PDF {pdf.Id}");
+            }
+            else
+            {
+                pdf.TsaError = tsaResult.ErrorMessage;
+                await _logger.Warning(source,
+                    $"TSA_FAILED: Errore TSA per PDF {pdf.Id}: {tsaResult.ErrorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            pdf.TsaError = ex.Message;
+            await _logger.Error(source,
+                $"TSA_EXCEPTION: Eccezione TSA per PDF {pdf.Id}: {ex.Message}");
+        }
+    }
+
+    /// <summary>
+    /// Imposta lo status ERROR per un PDF in caso di eccezione
+    /// </summary>
+    private async Task SetPdfStatusToErrorAsync(int pdfReportId, string documentType)
+    {
+        try
+        {
+            var pdf = await _db.GapValidationPdfs
+                .FirstOrDefaultAsync(c => c.PdfReportId == pdfReportId && c.DocumentType == documentType);
+
+            if (pdf != null)
+            {
+                pdf.Status = GapAlertStatus.ERROR;
+                await _db.SaveChangesAsync();
+            }
+        }
+        catch
+        {
+            // Ignora errori nel tentativo di salvare lo stato ERROR
+        }
+    }
+
+    /// <summary>
+    /// Genera l'HTML della validazione con template specifico per tipo documento
     /// </summary>
     private static async Task<string> GenerateCertificationHtml(
         PdfReport report,
         List<GapValidation> certifications,
-        PolarDriveDbContext db)
+        PolarDriveDbContext db,
+        string documentType = GapValidationDocumentTypes.CERTIFICATION,
+        string? notes = null)
     {
         var company = report.ClientCompany;
         var vehicle = report.ClientVehicle;
 
         var sb = new StringBuilder();
+
+        // Seleziona CSS e contenuti in base al tipo documento
+        var (css, title, subtitle, badgeClass, badgeText, footerText) = documentType switch
+        {
+            GapValidationDocumentTypes.ESCALATION => (
+                GapValidationTemplate.GetEscalationCss(),
+                "SEGNALAZIONE ESCALATION GAP",
+                "Documento di Attenzione - In Attesa Decisione",
+                "escalation-badge",
+                "⚠️ ESCALATO",
+                "Documento in attesa di decisione finale"
+            ),
+            GapValidationDocumentTypes.CONTRACT_BREACH => (
+                GapValidationTemplate.GetContractBreachCss(),
+                "DICHIARAZIONE VIOLAZIONE CONTRATTUALE",
+                "Contract Breach - Documento Ufficiale",
+                "breach-badge",
+                "⛔ CONTRACT BREACH",
+                "Documento legale - Violazione contrattuale dichiarata"
+            ),
+            _ => (
+                GapValidationTemplate.GetCertificationCss(),
+                "CERTIFICAZIONE VALIDAZIONE GAP",
+                "Documento di Conformità Operativa",
+                "certification-badge",
+                "✓ CERTIFICATO",
+                "Documento certificato - Validità fiscale confermata"
+            )
+        };
 
         // Header HTML
         sb.AppendLine("<!DOCTYPE html>");
@@ -302,8 +608,8 @@ public class GapValidationPdfService(
         sb.AppendLine("<head>");
         sb.AppendLine("<meta charset='UTF-8'>");
         sb.AppendLine("<meta name='viewport' content='width=device-width, initial-scale=1.0'>");
-        sb.AppendLine("<title>Validazione Probabilistica Gap - DataPolar</title>");
-        sb.AppendLine($"<style>{GapValidationTemplate.GetCss()}</style>");
+        sb.AppendLine($"<title>{title} - DataPolar</title>");
+        sb.AppendLine($"<style>{css}</style>");
         sb.AppendLine("</head>");
         sb.AppendLine("<body>");
 
@@ -311,11 +617,13 @@ public class GapValidationPdfService(
         sb.AppendLine("<div class='header'>");
         sb.AppendLine("<div class='logo-section'>");
         sb.AppendLine("<h1>DataPolar</h1>");
-        sb.AppendLine("<p class='subtitle'>Validazione Probabilistica Record da Validare</p>");
+        sb.AppendLine($"<p class='subtitle'>{subtitle}</p>");
+        sb.AppendLine($"<span class='{badgeClass}'>{badgeText}</span>");
         sb.AppendLine("</div>");
         sb.AppendLine($"<div class='doc-info'>");
         sb.AppendLine($"<p><strong>Data generazione:</strong> {DateTime.Now:dd/MM/yyyy HH:mm}</p>");
         sb.AppendLine($"<p><strong>Report di riferimento:</strong> #{report.Id}</p>");
+        sb.AppendLine($"<p><strong>Tipo documento:</strong> {documentType}</p>");
         sb.AppendLine("</div>");
         sb.AppendLine("</div>");
 
@@ -383,21 +691,65 @@ public class GapValidationPdfService(
             sb.AppendLine("</div>");
         }
 
-        // Disclaimer
+        // Disclaimer diversificato per tipo documento
         sb.AppendLine("<div class='disclaimer'>");
-        sb.AppendLine("<h3>DICHIARAZIONE DI VALIDAZIONE PROBABILISTICA</h3>");
-        sb.AppendLine("<p>DataPolar S.r.l. attesta che, sulla base dell'analisi statistica dei dati telemetrici raccolti dal laboratorio mobile identificato in questo documento, per i periodi indicati nella tabella sottostante sussiste una probabilità (espressa in percentuale) che il veicolo fosse operativo per le finalità contrattuali di raccolta dati.</p>");
-        sb.AppendLine("<h4>NOTA METODOLOGICA</h4>");
-        sb.AppendLine("<p>I valori di confidenza sono calcolati analizzando:</p>");
-        sb.AppendLine("<ul>");
-        sb.AppendLine("<li>Continuità temporale dei record adiacenti (30%)</li>");
-        sb.AppendLine("<li>Progressione dei parametri operativi - batteria, stato veicolo (25%)</li>");
-        sb.AppendLine("<li>Pattern storici di utilizzo del veicolo (20%)</li>");
-        sb.AppendLine("<li>Durata del gap temporale (15%)</li>");
-        sb.AppendLine("<li>Affidabilità storica complessiva (10%)</li>");
-        sb.AppendLine("</ul>");
-        sb.AppendLine("<p class='important'>IMPORTANTE ➜ Questa validazione si basa su inferenze statistiche e non costituisce prova diretta dell'utilizzo effettivo. I dati mancanti non sono stati ricostruiti, ma la loro assenza è stata analizzata nel contesto dei dati disponibili.</p>");
+
+        switch (documentType)
+        {
+            case GapValidationDocumentTypes.ESCALATION:
+                sb.AppendLine("<h3>⚠️ SEGNALAZIONE ESCALATION</h3>");
+                sb.AppendLine("<p>Questo documento rappresenta una <strong>segnalazione di attenzione</strong> per anomalie rilevate nei gap del periodo analizzato. L'escalation è stata avviata per consentire una revisione approfondita prima della decisione finale.</p>");
+                sb.AppendLine("<h4>STATO ATTUALE</h4>");
+                sb.AppendLine("<p>Il caso è <strong>IN ATTESA DI DECISIONE</strong>. È necessario valutare se:</p>");
+                sb.AppendLine("<ul>");
+                sb.AppendLine("<li>Certificare il periodo analizzato (validazione positiva)</li>");
+                sb.AppendLine("<li>Dichiarare una violazione contrattuale (contract breach)</li>");
+                sb.AppendLine("</ul>");
+                sb.AppendLine("<p class='important'>ATTENZIONE ➜ Questo documento non ha valore legale definitivo. Rappresenta uno stato intermedio in attesa di risoluzione.</p>");
+                break;
+
+            case GapValidationDocumentTypes.CONTRACT_BREACH:
+                sb.AppendLine("<h3>⛔ DICHIARAZIONE DI VIOLAZIONE CONTRATTUALE</h3>");
+                sb.AppendLine("<p>Con il presente documento DataPolar S.r.l. <strong>dichiara formalmente</strong> che il laboratorio mobile identificato non ha rispettato gli obblighi contrattuali relativi alla raccolta dati per il periodo indicato.</p>");
+                sb.AppendLine("<h4>CONSEGUENZE CONTRATTUALI</h4>");
+                sb.AppendLine("<p>La violazione contrattuale comporta:</p>");
+                sb.AppendLine("<ul>");
+                sb.AppendLine("<li>Impossibilità di validare i dati per il periodo indicato</li>");
+                sb.AppendLine("<li>Potenziale applicazione di penali contrattuali</li>");
+                sb.AppendLine("<li>Revisione degli accordi di servizio</li>");
+                sb.AppendLine("<li>Registrazione della violazione nel sistema di monitoraggio</li>");
+                sb.AppendLine("</ul>");
+                sb.AppendLine("<p class='important'>AVVISO LEGALE ➜ Questo documento ha valore legale e può essere utilizzato come prova in sede contrattuale o giudiziaria.</p>");
+                break;
+
+            default: // CERTIFICATION
+                sb.AppendLine("<h3>DICHIARAZIONE DI VALIDAZIONE PROBABILISTICA</h3>");
+                sb.AppendLine("<p>DataPolar S.r.l. attesta che, sulla base dell'analisi statistica dei dati telemetrici raccolti dal laboratorio mobile identificato in questo documento, per i periodi indicati nella tabella sottostante sussiste una probabilità (espressa in percentuale) che il veicolo fosse operativo per le finalità contrattuali di raccolta dati.</p>");
+                sb.AppendLine("<h4>NOTA METODOLOGICA</h4>");
+                sb.AppendLine("<p>I valori di confidenza sono calcolati analizzando:</p>");
+                sb.AppendLine("<ul>");
+                sb.AppendLine("<li>Continuità temporale dei record adiacenti (30%)</li>");
+                sb.AppendLine("<li>Progressione dei parametri operativi - batteria, stato veicolo (25%)</li>");
+                sb.AppendLine("<li>Pattern storici di utilizzo del veicolo (20%)</li>");
+                sb.AppendLine("<li>Durata del gap temporale (15%)</li>");
+                sb.AppendLine("<li>Affidabilità storica complessiva (10%)</li>");
+                sb.AppendLine("</ul>");
+                sb.AppendLine("<p class='important'>CERTIFICAZIONE CONFERMATA ➜ I gap analizzati sono stati validati con esito positivo. Il laboratorio mobile risulta conforme agli obblighi contrattuali per il periodo indicato.</p>");
+                break;
+        }
+
         sb.AppendLine("</div>");
+
+        // Sezione Note Operatore (solo per ESCALATION e CONTRACT_BREACH)
+        if (!string.IsNullOrWhiteSpace(notes) &&
+            (documentType == GapValidationDocumentTypes.ESCALATION ||
+             documentType == GapValidationDocumentTypes.CONTRACT_BREACH))
+        {
+            sb.AppendLine("<div class='notes-section'>");
+            sb.AppendLine("<h3>📝 Note Operatore</h3>");
+            sb.AppendLine($"<div class='notes-content'>{System.Web.HttpUtility.HtmlEncode(notes)}</div>");
+            sb.AppendLine("</div>");
+        }
 
         // Tabella gap
         sb.AppendLine("<div class='gaps-section'>");
@@ -480,6 +832,7 @@ public class GapValidationPdfService(
         sb.AppendLine("<div class='signature-section'>");
         sb.AppendLine($"<p><strong>Hash documento (SHA-256):</strong></p>");
         sb.AppendLine($"<p class='hash'>{certHash}</p>");
+        sb.AppendLine($"<p class='footer-type'>{footerText}</p>");
         sb.AppendLine($"<p><strong>Generato dalla piattaforma PolarDrive™</strong></p>");
         sb.AppendLine($"<p>© {DateTime.Now.Year} DataPolar S.r.l. - Tutti i diritti riservati</p>");
         sb.AppendLine("</div>");
@@ -500,8 +853,7 @@ public class GapValidationPdfService(
             $"{c.GapTimestamp:O}:{c.ConfidencePercentage}"));
         data += $"|{DateTime.Now:O}";
 
-        var hashBytes = SHA256.HashData(Encoding.UTF8.GetBytes(data));
-        return Convert.ToHexString(hashBytes).ToLower();
+        return GenericHelpers.ComputeContentHash(data);
     }
 
     /// <summary>

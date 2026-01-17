@@ -151,6 +151,109 @@ public class GapAnalysisConfig
 
     // Soglia minima km per considerare il veicolo "in movimento"
     public double KmThreshold { get; set; }
+
+    // Timeout API per gap analysis
+    public GapAnalysisApiTimeouts ApiTimeouts { get; set; } = new();
+
+    // Soglie di intervento per alert automatici
+    public GapAnalysisThresholds Thresholds { get; set; } = new();
+
+    // Impatto ADAPTIVE_PROFILE sulla confidenza
+    public GapAnalysisAdaptiveProfile AdaptiveProfile { get; set; } = new();
+
+    // Configurazione background monitoring service
+    public GapAnalysisMonitoring Monitoring { get; set; } = new();
+}
+
+/// <summary>
+/// Timeout API per gap analysis (in minuti).
+/// </summary>
+public class GapAnalysisApiTimeouts
+{
+    public int AnalysisMinutes { get; set; } = 15;
+    public int ValidateMinutes { get; set; } = 5;
+    public int StatusMinutes { get; set; } = 2;
+    public int DownloadMinutes { get; set; } = 5;
+}
+
+/// <summary>
+/// Soglie di intervento per generazione alert automatici.
+/// Quando una metrica supera la soglia, viene generato un GapAlert.
+/// </summary>
+public class GapAnalysisThresholds
+{
+    /// <summary>
+    /// Confidenza minima accettabile (0-100).
+    /// Gap con confidenza inferiore generano alert LOW_CONFIDENCE.
+    /// </summary>
+    public double MinConfidencePercent { get; set; } = 70;
+
+    /// <summary>
+    /// Percentuale massima di gap sul periodo totale.
+    /// Esempio: 15% = se su 720 ore mensili ci sono >108 ore di gap → alert.
+    /// </summary>
+    public double MaxGapPercentOfPeriod { get; set; } = 15;
+
+    /// <summary>
+    /// Ore consecutive massime di gap prima di escalation.
+    /// Gap consecutivi oltre questa soglia generano alert CONSECUTIVE_GAPS.
+    /// </summary>
+    public int MaxConsecutiveGapHours { get; set; } = 4;
+
+    /// <summary>
+    /// Percentuale downtime mensile massima.
+    /// Superata questa soglia → alert CONTRACT_BREACH (procedura risoluzione).
+    /// </summary>
+    public double MaxMonthlyDowntimePercent { get; set; } = 20;
+
+    /// <summary>
+    /// Confidenza minima richiesta per gap durante periodo ADAPTIVE_PROFILE attivo.
+    /// Se durante un periodo profilato la confidenza è sotto questa soglia → anomalia grave.
+    /// </summary>
+    public double ProfiledPeriodMinConfidencePercent { get; set; } = 85;
+}
+
+/// <summary>
+/// Configurazione impatto ADAPTIVE_PROFILE sul calcolo confidenza.
+/// </summary>
+public class GapAnalysisAdaptiveProfile
+{
+    /// <summary>
+    /// Bonus confidenza (%) se gap durante periodo NON profilato.
+    /// Logica: se nessuno doveva usare il veicolo, il gap è più "giustificabile".
+    /// </summary>
+    public double NotProfiledBonusPercent { get; set; } = 15;
+
+    /// <summary>
+    /// Malus confidenza (%) se gap durante periodo profilato.
+    /// Logica: se qualcuno stava usando il veicolo ma non ci sono dati → anomalia grave.
+    /// Valore negativo (es. -30).
+    /// </summary>
+    public double ProfiledMalusPercent { get; set; } = -30;
+}
+
+/// <summary>
+/// Configurazione del GapMonitoringBackgroundService.
+/// </summary>
+public class GapAnalysisMonitoring
+{
+    /// <summary>
+    /// Intervallo tra cicli di monitoraggio (minuti).
+    /// Default: 60 minuti (1 ora).
+    /// Usato sia da BackgroundService che da Dashboard auto-refresh.
+    /// </summary>
+    public int CheckIntervalMinutes { get; set; } = 60;
+
+    /// <summary>
+    /// Delay iniziale prima del primo ciclo (minuti).
+    /// Permette agli altri servizi di avviarsi.
+    /// </summary>
+    public int InitialDelayMinutes { get; set; } = 5;
+
+    /// <summary>
+    /// Giorni indietro da analizzare per ogni ciclo.
+    /// </summary>
+    public int LookbackDays { get; set; } = 7;
 }
 
 /// <summary>
@@ -441,6 +544,65 @@ public static class AppConfig
 
     // Bonus confidenza per gap durante Vehicle outage
     public static double GAP_ANALYSIS_VEHICLE_OUTAGE_BONUS => Config.GapAnalysis.Weights.VehicleOutageBonus;
+
+    // === Gap Analysis Thresholds (Soglie per Alert) ===
+
+    /// <summary>
+    /// Confidenza minima accettabile (0-100).
+    /// Gap con confidenza inferiore generano alert LOW_CONFIDENCE.
+    /// </summary>
+    public static double GAP_THRESHOLD_MIN_CONFIDENCE => Config.GapAnalysis.Thresholds.MinConfidencePercent;
+
+    /// <summary>
+    /// Percentuale massima di gap sul periodo totale.
+    /// </summary>
+    public static double GAP_THRESHOLD_MAX_GAP_PERCENT => Config.GapAnalysis.Thresholds.MaxGapPercentOfPeriod;
+
+    /// <summary>
+    /// Ore consecutive massime di gap prima di escalation.
+    /// </summary>
+    public static int GAP_THRESHOLD_MAX_CONSECUTIVE_HOURS => Config.GapAnalysis.Thresholds.MaxConsecutiveGapHours;
+
+    /// <summary>
+    /// Percentuale downtime mensile massima.
+    /// </summary>
+    public static double GAP_THRESHOLD_MAX_MONTHLY_DOWNTIME => Config.GapAnalysis.Thresholds.MaxMonthlyDowntimePercent;
+
+    /// <summary>
+    /// Confidenza minima richiesta per gap durante periodo ADAPTIVE_PROFILE attivo.
+    /// </summary>
+    public static double GAP_THRESHOLD_PROFILED_MIN_CONFIDENCE => Config.GapAnalysis.Thresholds.ProfiledPeriodMinConfidencePercent;
+
+    // === Gap Analysis Adaptive Profile (Bonus/Malus) ===
+
+    /// <summary>
+    /// Bonus confidenza (%) se gap durante periodo NON profilato.
+    /// </summary>
+    public static double GAP_ADAPTIVE_NOT_PROFILED_BONUS => Config.GapAnalysis.AdaptiveProfile.NotProfiledBonusPercent;
+
+    /// <summary>
+    /// Malus confidenza (%) se gap durante periodo profilato.
+    /// Valore negativo (es. -30).
+    /// </summary>
+    public static double GAP_ADAPTIVE_PROFILED_MALUS => Config.GapAnalysis.AdaptiveProfile.ProfiledMalusPercent;
+
+    // === Gap Monitoring BackgroundService ===
+
+    /// <summary>
+    /// Intervallo tra cicli di monitoraggio (minuti).
+    /// Usato sia da BackgroundService che da Dashboard auto-refresh.
+    /// </summary>
+    public static int GAP_MONITORING_CHECK_INTERVAL_MINUTES => Config.GapAnalysis.Monitoring.CheckIntervalMinutes;
+
+    /// <summary>
+    /// Delay iniziale prima del primo ciclo (minuti).
+    /// </summary>
+    public static int GAP_MONITORING_INITIAL_DELAY_MINUTES => Config.GapAnalysis.Monitoring.InitialDelayMinutes;
+
+    /// <summary>
+    /// Giorni indietro da analizzare per ogni ciclo.
+    /// </summary>
+    public static int GAP_MONITORING_LOOKBACK_DAYS => Config.GapAnalysis.Monitoring.LookbackDays;
 
     // ===== TSA (Timestamp Authority) Configuration =====
     // Marca temporale RFC 3161 per "verifica probatoria ex post" (interpello AdE)

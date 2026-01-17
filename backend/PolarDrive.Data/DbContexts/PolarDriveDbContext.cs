@@ -23,6 +23,8 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
     public DbSet<ClientProfilePdf> ClientProfilePdfs => Set<ClientProfilePdf>();
     public DbSet<GapValidation> GapValidations => Set<GapValidation>();
     public DbSet<GapValidationPdf> GapValidationPdfs => Set<GapValidationPdf>();
+    public DbSet<GapAlert> GapAlerts => Set<GapAlert>();
+    public DbSet<GapAuditLog> GapAuditLogs => Set<GapAuditLog>();
     public DbSet<FetchFailureLog> FetchFailureLogs => Set<FetchFailureLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -446,6 +448,11 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasForeignKey<GapValidationPdf>(e => e.PdfReportId)
                     .OnDelete(DeleteBehavior.Cascade);
 
+                entity.HasOne(e => e.GapAlert)
+                    .WithMany()
+                    .HasForeignKey(e => e.GapAlertId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
                 entity.Property(e => e.PdfContent)
                     .HasColumnType("VARBINARY(MAX)")
                     .IsRequired(false);
@@ -458,12 +465,17 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                     .HasMaxLength(50)
                     .IsRequired();
 
+                entity.Property(e => e.DocumentType)
+                    .HasMaxLength(50)
+                    .HasDefaultValue("CERTIFICATION");
+
                 entity.Property(e => e.AverageConfidence)
                     .HasColumnType("FLOAT");
 
                 entity.HasIndex(e => e.PdfReportId).IsUnique();
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.PdfHash);
+                entity.HasIndex(e => e.DocumentType);
 
                 // ===== TSA (Timestamp Authority) Fields =====
                 entity.Property(e => e.TsaTimestamp).HasColumnType("VARBINARY(MAX)").IsRequired(false);
@@ -472,6 +484,88 @@ public class PolarDriveDbContext(DbContextOptions<PolarDriveDbContext> options) 
                 entity.Property(e => e.TsaMessageImprint).HasMaxLength(128).IsRequired(false);
                 entity.Property(e => e.TsaVerified).HasDefaultValue(false);
                 entity.Property(e => e.TsaError).HasMaxLength(2000).IsRequired(false);
+            });
+
+            // ===== GapAlert Configuration =====
+            modelBuilder.Entity<GapAlert>(entity =>
+            {
+                entity.ToTable("GapAlerts");
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.PdfReport)
+                    .WithMany()
+                    .HasForeignKey(e => e.PdfReportId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.Property(e => e.AlertType)
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+                entity.Property(e => e.Severity)
+                    .HasMaxLength(20)
+                    .HasDefaultValue("WARNING");
+
+                entity.Property(e => e.Description)
+                    .HasMaxLength(2000);
+
+                entity.Property(e => e.Status)
+                    .HasMaxLength(50)
+                    .HasDefaultValue("OPEN");
+
+                entity.Property(e => e.ResolutionNotes)
+                    .HasMaxLength(4000);
+
+                // Indice composito per evitare duplicati e query performanti
+                entity.HasIndex(e => new { e.VehicleId, e.AlertType, e.Status })
+                    .HasDatabaseName("IX_GapAlerts_VehicleId_AlertType_Status");
+
+                entity.HasIndex(e => e.Status);
+                entity.HasIndex(e => e.DetectedAt);
+                entity.HasIndex(e => e.Severity);
+            });
+
+            // ===== GapAuditLog Configuration =====
+            modelBuilder.Entity<GapAuditLog>(entity =>
+            {
+                entity.ToTable("GapAuditLogs");
+
+                entity.HasOne(e => e.GapAlert)
+                    .WithMany()
+                    .HasForeignKey(e => e.GapAlertId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.GapValidation)
+                    .WithMany()
+                    .HasForeignKey(e => e.GapValidationId)
+                    .OnDelete(DeleteBehavior.SetNull);
+
+                entity.HasOne(e => e.ClientVehicle)
+                    .WithMany()
+                    .HasForeignKey(e => e.VehicleId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(e => e.ActionType)
+                    .HasMaxLength(50)
+                    .IsRequired();
+
+                entity.Property(e => e.ActionBy)
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.VerificationOutcome)
+                    .HasMaxLength(50);
+
+                entity.Property(e => e.FinalDecision)
+                    .HasMaxLength(50);
+
+                entity.HasIndex(e => new { e.VehicleId, e.ActionAt })
+                    .HasDatabaseName("IX_GapAuditLogs_VehicleId_ActionAt");
+
+                entity.HasIndex(e => e.ActionAt);
+                entity.HasIndex(e => e.ActionType);
             });
         }
         catch (Exception ex)

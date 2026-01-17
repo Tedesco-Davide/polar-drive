@@ -70,6 +70,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       backendPath: `/api/pdfreports/${id}/validate-gaps`,
       timeoutMinutes: timeouts.validate,
     },
+    escalate: {
+      method: 'POST',
+      backendPath: `/api/gapalerts/${id}/escalate`,
+      timeoutMinutes: timeouts.validate,
+    },
+    breach: {
+      method: 'POST',
+      backendPath: `/api/gapalerts/${id}/breach`,
+      timeoutMinutes: timeouts.validate,
+    },
     status: {
       method: 'GET',
       backendPath: `/api/pdfreports/${id}/gap-status`,

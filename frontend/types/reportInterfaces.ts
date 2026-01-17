@@ -31,6 +31,8 @@ export interface PdfReport {
   gapValidationStatus?: string | null;
   gapValidationPdfHash?: string | null;
   hasGapValidationPdf?: boolean;
+  /** True se esiste un PDF di escalation precedente (per mostrare 2 bottoni download) */
+  hadEscalation?: boolean;
 }
 
 // ✅ Interface per il controllo pre-download

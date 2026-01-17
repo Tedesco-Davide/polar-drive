@@ -131,4 +131,35 @@ public class GapAnalysisFactors
     /// Bonus di confidenza applicato (0, 25, o 40)
     /// </summary>
     public double OutageBonusApplied { get; set; }
+
+    // ===== ADAPTIVE_PROFILE Fields =====
+
+    /// <summary>
+    /// Il gap si e verificato durante una sessione di profilazione ADAPTIVE_PROFILE attiva?
+    /// Se true, indica anomalia grave (qualcuno stava usando il veicolo ma non ci sono dati)
+    /// </summary>
+    public bool WasProfiledDuringGap { get; set; }
+
+    /// <summary>
+    /// Nome utente profilato (se WasProfiledDuringGap = true).
+    /// Cifrato per GDPR compliance.
+    /// </summary>
+    public string? ProfiledUserName { get; set; }
+
+    /// <summary>
+    /// Inizio sessione profilazione attiva durante il gap
+    /// </summary>
+    public DateTime? ProfileSessionStart { get; set; }
+
+    /// <summary>
+    /// Fine sessione profilazione attiva durante il gap
+    /// </summary>
+    public DateTime? ProfileSessionEnd { get; set; }
+
+    /// <summary>
+    /// Impatto sul calcolo confidenza (bonus/malus applicato).
+    /// Positivo (+15) se gap durante periodo NON profilato.
+    /// Negativo (-30) se gap durante periodo profilato.
+    /// </summary>
+    public double AdaptiveProfileImpact { get; set; }
 }

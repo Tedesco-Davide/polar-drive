@@ -417,6 +417,86 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     }
   };
 
+  // Download Gap Escalation PDF (quando esiste un PDF di escalation precedente)
+  const handleDownloadEscalation = async (reportId: number) => {
+    setDownloadingCertId(reportId);
+    try {
+      const response = await fetch(
+        `/api/pdfreports/${reportId}/download-gap-escalation`
+      );
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      const blob = await response.blob();
+      const fileName = `PolarDrive_GapEscalation_${reportId}_${new Date().toISOString().split("T")[0]}.pdf`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      logFrontendEvent(
+        "AdminPdfReports",
+        "INFO",
+        "Gap escalation PDF downloaded",
+        `ReportId: ${reportId}`
+      );
+    } catch (error) {
+      alert(t("admin.gapValidation.downloadError", { error: String(error) }));
+      logFrontendEvent(
+        "AdminPdfReports",
+        "ERROR",
+        "Gap escalation download failed",
+        String(error)
+      );
+    } finally {
+      setDownloadingCertId(null);
+    }
+  };
+
+  // Download Gap Contract Breach PDF
+  const handleDownloadContractBreach = async (reportId: number) => {
+    setDownloadingCertId(reportId);
+    try {
+      const response = await fetch(
+        `/api/pdfreports/${reportId}/download-gap-contract-breach`
+      );
+      if (!response.ok) throw new Error("HTTP " + response.status);
+
+      const blob = await response.blob();
+      const fileName = `PolarDrive_GapContractBreach_${reportId}_${new Date().toISOString().split("T")[0]}.pdf`;
+
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      logFrontendEvent(
+        "AdminPdfReports",
+        "INFO",
+        "Gap contract breach PDF downloaded",
+        `ReportId: ${reportId}`
+      );
+    } catch (error) {
+      alert(t("admin.gapValidation.downloadError", { error: String(error) }));
+      logFrontendEvent(
+        "AdminPdfReports",
+        "ERROR",
+        "Gap contract breach download failed",
+        String(error)
+      );
+    } finally {
+      setDownloadingCertId(null);
+    }
+  };
+
   // Gestione completamento certificazione - aggiorna stato immediatamente poi refresh
   const handleValidationComplete = (reportId: number) => {
     // 1. Immediatamente aggiorna lo stato locale per disabilitare altri bottoni
@@ -527,21 +607,9 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                   </button>
 
                   {!isRegeneratable && report.pdfHash && report.hasPdfFile && (
-                    <>
-                      {report.hasGapValidationPdf && report.gapValidationStatus === "COMPLETED" ? (
-                        <button
-                          className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:opacity-50"
-                          disabled={downloadingCertId === report.id}
-                          onClick={() => handleDownloadValidation(report.id)}
-                          title={t("admin.gapValidation.downloadCertification")}
-                        >
-                          {downloadingCertId === report.id ? (
-                            <AdminLoader inline />
-                          ) : (
-                            <FileBadge size={16} />
-                          )}
-                        </button>
-                      ) : report.gapValidationStatus === "PROCESSING" ? (
+                    <span>
+                      {/* PROCESSING: Loader animato */}
+                      {report.gapValidationStatus === "PROCESSING" && (
                         <button
                           className="p-2 bg-purple-500 text-softWhite rounded animate-pulse"
                           disabled
@@ -549,7 +617,97 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                         >
                           <AdminLoader inline />
                         </button>
-                      ) : (
+                      )}
+
+                      {/* ESCALATED: FileBadge arancione (download ESCALATION) + ShieldCheck (modale) */}
+                      {report.gapValidationStatus === "ESCALATED" && (
+                        <>
+                          <button
+                            className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
+                            disabled={downloadingCertId === report.id}
+                            onClick={() => handleDownloadEscalation(report.id)}
+                            title="Download PDF Escalation"
+                          >
+                            {downloadingCertId === report.id ? (
+                              <AdminLoader inline />
+                            ) : (
+                              <FileBadge size={16} />
+                            )}
+                          </button>
+                          <button
+                            className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
+                            disabled={
+                              gapCertProcessing?.hasProcessing ||
+                              downloadingId === report.id
+                            }
+                            onClick={() => setSelectedReportForValidation(report.id)}
+                            title="Apri modale (Certifica o Contract Breach)"
+                          >
+                            <ShieldCheck size={16} />
+                          </button>
+                        </>
+                      )}
+
+                      {/* COMPLETED: FileBadge viola (download) - stato finale */}
+                      {/* Se hadEscalation = true, mostra anche FileBadge arancione per escalation */}
+                      {report.hasGapValidationPdf && report.gapValidationStatus === "COMPLETED" && (
+                        <>
+                          {report.hadEscalation && (
+                            <button
+                              className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
+                              disabled={downloadingCertId === report.id}
+                              onClick={() => handleDownloadEscalation(report.id)}
+                              title="Download PDF Escalation precedente"
+                            >
+                              <FileBadge size={16} />
+                            </button>
+                          )}
+                          <button
+                            className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:opacity-50"
+                            disabled={downloadingCertId === report.id}
+                            onClick={() => handleDownloadValidation(report.id)}
+                            title={t("admin.gapValidation.downloadCertification")}
+                          >
+                            {downloadingCertId === report.id ? (
+                              <AdminLoader inline />
+                            ) : (
+                              <FileBadge size={16} />
+                            )}
+                          </button>
+                        </>
+                      )}
+
+                      {/* CONTRACT_BREACH: FileBadge rosso (download) - stato finale */}
+                      {/* Se hadEscalation = true, mostra anche FileBadge arancione per escalation */}
+                      {report.gapValidationStatus === "CONTRACT_BREACH" && (
+                        <>
+                          {report.hadEscalation && (
+                            <button
+                              className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
+                              disabled={downloadingCertId === report.id}
+                              onClick={() => handleDownloadEscalation(report.id)}
+                              title="Download PDF Escalation precedente"
+                            >
+                              <FileBadge size={16} />
+                            </button>
+                          )}
+                          <button
+                            className="p-2 bg-red-500 text-softWhite rounded hover:bg-red-600 disabled:opacity-50"
+                            disabled={downloadingCertId === report.id}
+                            onClick={() => handleDownloadContractBreach(report.id)}
+                            title="Download PDF Contract Breach"
+                          >
+                            {downloadingCertId === report.id ? (
+                              <AdminLoader inline />
+                            ) : (
+                              <FileBadge size={16} />
+                            )}
+                          </button>
+                        </>
+                      )}
+
+                      {/* null/undefined: ShieldCheck per aprire modale con 3 bottoni */}
+                      {!report.gapValidationStatus && (
                         <button
                           className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
                           disabled={
@@ -573,7 +731,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                           <ShieldCheck size={16} />
                         </button>
                       )}
-                    </>
+                    </span>
                   )}
 
                   {isRegeneratable && (
@@ -702,6 +860,9 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           onClose={() => setSelectedReportForValidation(null)}
           onValidationComplete={handleValidationComplete}
           t={t}
+          gapValidationStatus={
+            localReports.find(r => r.id === selectedReportForValidation)?.gapValidationStatus
+          }
         />
       )}
     </div>

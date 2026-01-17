@@ -75,6 +75,22 @@
       "validateMinutes": 5,
       "statusMinutes": 2,
       "downloadMinutes": 5
+    },
+    "thresholds": {
+      "minConfidencePercent": 70,
+      "maxGapPercentOfPeriod": 15,
+      "maxConsecutiveGapHours": 4,
+      "maxMonthlyDowntimePercent": 20,
+      "profiledPeriodMinConfidencePercent": 85
+    },
+    "adaptiveProfile": {
+      "notProfiledBonusPercent": 15,
+      "profiledMalusPercent": -30
+    },
+    "monitoring": {
+      "checkIntervalMinutes": 60,
+      "initialDelayMinutes": 5,
+      "lookbackDays": 7
     }
   },
 

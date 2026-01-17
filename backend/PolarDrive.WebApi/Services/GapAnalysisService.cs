@@ -195,7 +195,10 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
             // Carica outages rilevanti per il veicolo nel periodo
             var outageLookup = await LoadRelevantOutagesAsync(vehicleId, startTime, endTime);
 
-            // PASSO 5: Analizza ogni gap
+            // PASSO 5.1: Carica sessioni ADAPTIVE_PROFILE attive nel periodo
+            var profileSessions = await LoadActiveProfileSessionsAsync(vehicleId, startTime, endTime);
+
+            // PASSO 6: Analizza ogni gap
             foreach (var gapTime in gapTimestamps)
             {
                 var gapResult = AnalyzeSingleGap(
@@ -207,12 +210,16 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
                     outageLookup
                 );
 
+                // PASSO 6.1: Applica bonus/malus ADAPTIVE_PROFILE
+                ApplyAdaptiveProfileImpact(gapResult, gapTime, profileSessions);
+
                 results.Add(gapResult);
             }
 
             var gapsWithOutage = results.Count(r => r.Factors.OutageId.HasValue);
+            var gapsProfiled = results.Count(r => r.Factors.WasProfiledDuringGap);
             await _logger.Info(source, $"Found {results.Count} gaps for vehicle {vehicleId} in period {startTime:dd/MM/yyyy} - {endTime:dd/MM/yyyy}",
-                $"Loaded JSON for {recordsWithJson.Count} records (optimized from {existingTimestamps.Count} total). Outages applied: {gapsWithOutage}");
+                $"Loaded JSON for {recordsWithJson.Count} records (optimized from {existingTimestamps.Count} total). Outages applied: {gapsWithOutage}. Profiled anomalies: {gapsProfiled}");
 
             return results;
         }
@@ -686,13 +693,98 @@ public class GapAnalysisService(PolarDriveDbContext dbContext)
     }
 
     /// <summary>
+    /// Carica sessioni ADAPTIVE_PROFILE attive nel periodo per un veicolo.
+    /// Una sessione è attiva durante il gap se è iniziata prima del gap e non è ancora terminata
+    /// (o termina dopo il gap).
+    /// </summary>
+    private async Task<List<SmsAdaptiveProfile>> LoadActiveProfileSessionsAsync(
+        int vehicleId, DateTime startTime, DateTime endTime)
+    {
+        const string source = "GapAnalysisService.LoadActiveProfileSessions";
+
+        try
+        {
+            // Cerca sessioni ADAPTIVE_PROFILE_ON che si sovrappongono al periodo
+            var sessions = await _db.SmsAdaptiveProfile
+                .Where(p =>
+                    p.VehicleId == vehicleId &&
+                    p.ParsedCommand == "ADAPTIVE_PROFILE_ON" &&
+                    p.ReceivedAt <= endTime &&
+                    (p.ExpiresAt == null || p.ExpiresAt >= startTime))
+                .ToListAsync();
+
+            await _logger.Info(source,
+                $"Loaded {sessions.Count} ADAPTIVE_PROFILE sessions for vehicle {vehicleId}");
+
+            return sessions;
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error loading profile sessions for vehicle {vehicleId}", ex.ToString());
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Applica bonus/malus ADAPTIVE_PROFILE al risultato dell'analisi di un gap.
+    /// - Gap durante periodo profilato → malus (anomalia grave, qualcuno stava usando il veicolo)
+    /// - Gap durante periodo NON profilato → bonus (nessuno stava usando il veicolo)
+    /// </summary>
+    private static void ApplyAdaptiveProfileImpact(
+        GapAnalysisResult gapResult,
+        DateTime gapTime,
+        List<SmsAdaptiveProfile> profileSessions)
+    {
+        // Cerca se c'era una sessione ADAPTIVE_PROFILE attiva durante questo gap
+        var activeSession = profileSessions.FirstOrDefault(p =>
+            p.ReceivedAt <= gapTime &&
+            (p.ExpiresAt == null || p.ExpiresAt >= gapTime));
+
+        if (activeSession != null)
+        {
+            // Gap durante profilazione attiva = ANOMALIA GRAVE
+            // Qualcuno stava usando il veicolo ma non abbiamo dati
+            gapResult.Factors.WasProfiledDuringGap = true;
+            gapResult.Factors.ProfiledUserName = activeSession.AdaptiveSurnameName; // Già cifrato GDPR
+            gapResult.Factors.ProfileSessionStart = activeSession.ReceivedAt;
+            gapResult.Factors.ProfileSessionEnd = activeSession.ExpiresAt;
+            gapResult.Factors.AdaptiveProfileImpact = AppConfig.GAP_ADAPTIVE_PROFILED_MALUS;
+
+            // Applica malus alla confidenza (valore negativo, riduce la confidenza)
+            gapResult.ConfidencePercentage = Math.Max(0,
+                gapResult.ConfidencePercentage + AppConfig.GAP_ADAPTIVE_PROFILED_MALUS);
+        }
+        else
+        {
+            // Gap durante periodo NON profilato = bonus
+            // Nessuno stava usando il veicolo, gap più giustificabile
+            gapResult.Factors.WasProfiledDuringGap = false;
+            gapResult.Factors.AdaptiveProfileImpact = AppConfig.GAP_ADAPTIVE_NOT_PROFILED_BONUS;
+
+            // Applica bonus alla confidenza (valore positivo, aumenta la confidenza)
+            gapResult.ConfidencePercentage = Math.Min(100,
+                gapResult.ConfidencePercentage + AppConfig.GAP_ADAPTIVE_NOT_PROFILED_BONUS);
+        }
+    }
+
+    /// <summary>
     /// Genera una giustificazione testuale per il gap
     /// </summary>
     private static string GenerateJustification(GapAnalysisFactors factors)
     {
         var parts = new List<string>();
 
-        // PRIORITÀ MASSIMA: Outage documentato
+        // PRIORITÀ MASSIMA: ADAPTIVE_PROFILE anomalia (gap durante utilizzo attivo)
+        if (factors.WasProfiledDuringGap)
+        {
+            parts.Add($"⛔ ANOMALIA: gap durante sessione ADAPTIVE_PROFILE attiva - confidenza ridotta di {Math.Abs(factors.AdaptiveProfileImpact)}%");
+        }
+        else if (factors.AdaptiveProfileImpact > 0)
+        {
+            parts.Add($"✓ nessuna sessione ADAPTIVE_PROFILE attiva - confidenza aumentata di {factors.AdaptiveProfileImpact}%");
+        }
+
+        // Outage documentato
         if (factors.OutageId.HasValue && !string.IsNullOrEmpty(factors.OutageType))
         {
             var outageDesc = factors.OutageType == OutageConstants.OUTAGE_FLEET_API

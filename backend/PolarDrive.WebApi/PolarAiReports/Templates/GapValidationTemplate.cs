@@ -1,12 +1,13 @@
 namespace PolarDrive.WebApi.PolarAiReports.Templates;
 
 /// <summary>
-/// Template CSS per il PDF di validazione probabilistica dei gap
+/// Template CSS per i PDF di validazione Gap.
+/// Supporta 3 tipi: CERTIFICATION (viola), ESCALATION (arancione), CONTRACT_BREACH (rosso)
 /// </summary>
 public static class GapValidationTemplate
 {
     /// <summary>
-    /// Restituisce gli stili coerenti con gli stili di stampa PDF attuali
+    /// Restituisce gli stili font Satoshi
     /// </summary>
     public static string GetFontStyles()
     {
@@ -43,14 +44,28 @@ public static class GapValidationTemplate
     }
 
     /// <summary>
-    /// Restituisce il CSS per il documento di validazione (include font Satoshi)
+    /// CSS per documento CERTIFICATION (viola/blu - tono positivo)
     /// </summary>
-    public static string GetCss() => GetFontStyles() + BaseCss;
+    public static string GetCertificationCss() => GetFontStyles() + CertificationBaseCss;
 
     /// <summary>
-    /// CSS base per il documento di validazione
+    /// CSS per documento ESCALATION (arancione - tono attenzione)
     /// </summary>
-    private const string BaseCss = @"
+    public static string GetEscalationCss() => GetFontStyles() + EscalationBaseCss;
+
+    /// <summary>
+    /// CSS per documento CONTRACT_BREACH (rosso - tono critico/legale)
+    /// </summary>
+    public static string GetContractBreachCss() => GetFontStyles() + ContractBreachBaseCss;
+
+    /// <summary>
+    /// Mantiene retrocompatibilita col metodo esistente (usa CERTIFICATION)
+    /// </summary>
+    public static string GetCss() => GetCertificationCss();
+
+    #region CSS Base Comune
+
+    private const string CommonBaseCss = @"
         html, body {
             font-size: 12px !important;
             font-family: 'Satoshi', 'Noto Color Emoji', 'Apple Color Emoji', sans-serif;
@@ -69,17 +84,6 @@ public static class GapValidationTemplate
             color-adjust: exact;
             print-color-adjust: exact;
             box-sizing: border-box;
-        }
-
-        /* HEADER */
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 25px 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            page-break-inside: avoid;
         }
 
         .logo-section h1 {
@@ -110,31 +114,11 @@ public static class GapValidationTemplate
             color: rgba(255, 255, 255, 0.9);
         }
 
-        /* INFO SECTION */
-        .info-section {
-            display: flex;
-            gap: 20px;
-            padding: 25px 30px;
-            background: linear-gradient(135deg, rgba(139, 159, 242, 0.05) 0%, rgba(156, 130, 199, 0.05) 100%);
-            page-break-inside: avoid;
-        }
-
         .info-box {
             flex: 1;
             background: white;
             padding: 20px;
             border-radius: 10px;
-            border: 1px solid rgba(139, 159, 242, 0.2);
-            box-shadow: 0 2px 8px rgba(139, 159, 242, 0.1);
-        }
-
-        .info-box h3 {
-            margin: 0 0 15px 0;
-            font-size: 14px;
-            color: #8b9ff2;
-            font-weight: 600;
-            border-bottom: 2px solid rgba(139, 159, 242, 0.3);
-            padding-bottom: 8px;
         }
 
         .info-box p {
@@ -147,11 +131,9 @@ public static class GapValidationTemplate
             color: #2d3748;
         }
 
-        /* PERIOD SECTION */
         .period-section {
             padding: 20px 30px;
             background: white;
-            border-bottom: 1px solid rgba(139, 159, 242, 0.1);
             page-break-inside: avoid;
         }
 
@@ -161,16 +143,9 @@ public static class GapValidationTemplate
             color: #4a5568;
         }
 
-        .period-section strong {
-            color: #8b9ff2;
-        }
-
-        /* DISCLAIMER */
         .disclaimer {
             margin: 25px 30px;
             padding: 25px;
-            background: linear-gradient(135deg, rgba(237, 137, 54, 0.08) 0%, rgba(237, 137, 54, 0.03) 100%);
-            border: 2px solid rgba(237, 137, 54, 0.3);
             border-radius: 12px;
             page-break-inside: avoid;
         }
@@ -178,7 +153,6 @@ public static class GapValidationTemplate
         .disclaimer h3 {
             margin: 0 0 15px 0;
             font-size: 15px;
-            color: #c05621;
             font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -187,7 +161,6 @@ public static class GapValidationTemplate
         .disclaimer h4 {
             margin: 20px 0 10px 0;
             font-size: 13px;
-            color: #dd6b20;
             font-weight: 600;
         }
 
@@ -209,17 +182,6 @@ public static class GapValidationTemplate
             color: #4a5568;
         }
 
-        .disclaimer .important {
-            background: linear-gradient(135deg, rgba(229, 62, 62, 0.1) 0%, rgba(229, 62, 62, 0.05) 100%);
-            border: 1px solid rgba(229, 62, 62, 0.3);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
-            color: #c53030;
-            font-weight: 500;
-        }
-
-        /* GAPS TABLE SECTION */
         .gaps-section {
             margin: 25px 30px;
             page-break-inside: avoid;
@@ -230,7 +192,6 @@ public static class GapValidationTemplate
             font-size: 15px;
             color: #2d3748;
             font-weight: 600;
-            border-bottom: 2px solid #8b9ff2;
             padding-bottom: 8px;
         }
 
@@ -240,12 +201,6 @@ public static class GapValidationTemplate
             background: white;
             border-radius: 8px;
             overflow: hidden;
-            box-shadow: 0 4px 12px rgba(139, 159, 242, 0.15);
-            border: 1px solid rgba(139, 159, 242, 0.2);
-        }
-
-        .gaps-table thead {
-            background: linear-gradient(135deg, #8b9ff2 0%, #9c82c7 100%);
         }
 
         .gaps-table th {
@@ -262,23 +217,13 @@ public static class GapValidationTemplate
             page-break-inside: avoid;
         }
 
-        .gaps-table tbody tr:nth-child(even) {
-            background: rgba(139, 159, 242, 0.03);
-        }
-
-        .gaps-table tbody tr:hover {
-            background: rgba(139, 159, 242, 0.08);
-        }
-
         .gaps-table td {
             padding: 12px 16px;
             font-size: 12px;
             color: #4a5568;
-            border-bottom: 1px solid rgba(139, 159, 242, 0.1);
             vertical-align: middle;
         }
 
-        /* CONFIDENCE BADGES */
         .gaps-table td:nth-child(2) {
             text-align: center;
             width: 80px;
@@ -317,7 +262,6 @@ public static class GapValidationTemplate
             max-width: 400px;
         }
 
-        /* SUMMARY SECTION */
         .summary-section {
             margin: 25px 30px;
             page-break-inside: avoid;
@@ -328,7 +272,6 @@ public static class GapValidationTemplate
             font-size: 15px;
             color: #2d3748;
             font-weight: 600;
-            border-bottom: 2px solid #8b9ff2;
             padding-bottom: 8px;
         }
 
@@ -367,17 +310,9 @@ public static class GapValidationTemplate
             margin-bottom: 5px;
         }
 
-        .summary-item.high .value {
-            color: #276749;
-        }
-
-        .summary-item.medium .value {
-            color: #c05621;
-        }
-
-        .summary-item.low .value {
-            color: #c53030;
-        }
+        .summary-item.high .value { color: #276749; }
+        .summary-item.medium .value { color: #c05621; }
+        .summary-item.low .value { color: #c53030; }
 
         .summary-item .label {
             display: block;
@@ -386,9 +321,7 @@ public static class GapValidationTemplate
             font-weight: 500;
         }
 
-        /* FOOTER */
         .footer {
-            background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
             color: white;
             padding: 30px;
             margin-top: 30px;
@@ -418,33 +351,41 @@ public static class GapValidationTemplate
             margin: 10px 0;
         }
 
-        /* PRINT OPTIMIZATIONS */
-        @media print {
-            body {
-                padding: 0;
-            }
-
-            .header, .info-section, .period-section, .disclaimer,
-            .gaps-section, .summary-section, .footer {
-                margin-left: 0;
-                margin-right: 0;
-            }
-
-            .gaps-table {
-                page-break-inside: auto;
-            }
-
-            .gaps-table tbody tr {
-                page-break-inside: avoid;
-                page-break-after: auto;
-            }
-
-            .disclaimer, .summary-section {
-                page-break-before: auto;
-            }
+        .signature-section .footer-type {
+            font-size: 13px;
+            font-weight: 700;
+            color: white;
+            margin: 15px 0;
+            padding: 8px 20px;
+            border-radius: 6px;
+            display: inline-block;
         }
 
-        /* OUTAGE SUMMARY SECTION */
+        /* Notes Section */
+        .notes-section {
+            margin: 25px 30px;
+            padding: 20px;
+            border-radius: 12px;
+            page-break-inside: avoid;
+        }
+
+        .notes-section h3 {
+            margin: 0 0 15px 0;
+            font-size: 15px;
+            font-weight: 700;
+        }
+
+        .notes-section .notes-content {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #4a5568;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        /* Outage Section */
         .outage-summary-section {
             margin: 25px 30px;
             padding: 25px;
@@ -538,7 +479,6 @@ public static class GapValidationTemplate
             border: 1px solid rgba(237, 137, 54, 0.4);
         }
 
-        /* GAPS TABLE - Outage Column */
         .gaps-table .outage-cell {
             text-align: center;
             width: 100px;
@@ -577,9 +517,424 @@ public static class GapValidationTemplate
             font-size: 12px;
         }
 
+        @media print {
+            body { padding: 0; }
+            .header, .info-section, .period-section, .disclaimer,
+            .gaps-section, .summary-section, .footer, .notes-section {
+                margin-left: 0;
+                margin-right: 0;
+            }
+            .gaps-table { page-break-inside: auto; }
+            .gaps-table tbody tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            .disclaimer, .summary-section { page-break-before: auto; }
+        }
+
         @page {
             margin: 15mm;
             size: A4;
         }
     ";
+
+    #endregion
+
+    #region CERTIFICATION CSS (Viola/Blu)
+
+    private const string CertificationBaseCss = CommonBaseCss + @"
+        /* CERTIFICATION - Colori Viola/Blu */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            page-break-inside: avoid;
+        }
+
+        .info-section {
+            display: flex;
+            gap: 20px;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+            page-break-inside: avoid;
+        }
+
+        .info-box {
+            border: 1px solid rgba(102, 126, 234, 0.2);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.1);
+        }
+
+        .info-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(102, 126, 234, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .period-section {
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .period-section strong {
+            color: #667eea;
+        }
+
+        .disclaimer {
+            background: linear-gradient(135deg, rgba(72, 187, 120, 0.08) 0%, rgba(72, 187, 120, 0.03) 100%);
+            border: 2px solid rgba(72, 187, 120, 0.3);
+        }
+
+        .disclaimer h3 {
+            color: #276749;
+        }
+
+        .disclaimer h4 {
+            color: #38a169;
+        }
+
+        .disclaimer .important {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(102, 126, 234, 0.05) 100%);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .gaps-section h3 {
+            border-bottom: 2px solid #667eea;
+        }
+
+        .gaps-table {
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+            border: 1px solid rgba(102, 126, 234, 0.2);
+        }
+
+        .gaps-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .gaps-table tbody tr:nth-child(even) {
+            background: rgba(102, 126, 234, 0.03);
+        }
+
+        .gaps-table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.08);
+        }
+
+        .gaps-table td {
+            border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .summary-section h3 {
+            border-bottom: 2px solid #667eea;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Badge Certificazione */
+        .certification-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+    ";
+
+    #endregion
+
+    #region ESCALATION CSS (Arancione)
+
+    private const string EscalationBaseCss = CommonBaseCss + @"
+        /* ESCALATION - Colori Arancione */
+        .header {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            page-break-inside: avoid;
+        }
+
+        .info-section {
+            display: flex;
+            gap: 20px;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, rgba(237, 137, 54, 0.05) 0%, rgba(221, 107, 32, 0.05) 100%);
+            page-break-inside: avoid;
+        }
+
+        .info-box {
+            border: 1px solid rgba(237, 137, 54, 0.2);
+            box-shadow: 0 2px 8px rgba(237, 137, 54, 0.1);
+        }
+
+        .info-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            color: #ed8936;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(237, 137, 54, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .period-section {
+            border-bottom: 1px solid rgba(237, 137, 54, 0.1);
+        }
+
+        .period-section strong {
+            color: #ed8936;
+        }
+
+        .disclaimer {
+            background: linear-gradient(135deg, rgba(237, 137, 54, 0.08) 0%, rgba(237, 137, 54, 0.03) 100%);
+            border: 2px solid rgba(237, 137, 54, 0.3);
+        }
+
+        .disclaimer h3 {
+            color: #c05621;
+        }
+
+        .disclaimer h4 {
+            color: #dd6b20;
+        }
+
+        .disclaimer .important {
+            background: linear-gradient(135deg, rgba(237, 137, 54, 0.1) 0%, rgba(237, 137, 54, 0.05) 100%);
+            border: 1px solid rgba(237, 137, 54, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #c05621;
+            font-weight: 500;
+        }
+
+        .gaps-section h3 {
+            border-bottom: 2px solid #ed8936;
+        }
+
+        .gaps-table {
+            box-shadow: 0 4px 12px rgba(237, 137, 54, 0.15);
+            border: 1px solid rgba(237, 137, 54, 0.2);
+        }
+
+        .gaps-table thead {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        .gaps-table tbody tr:nth-child(even) {
+            background: rgba(237, 137, 54, 0.03);
+        }
+
+        .gaps-table tbody tr:hover {
+            background: rgba(237, 137, 54, 0.08);
+        }
+
+        .gaps-table td {
+            border-bottom: 1px solid rgba(237, 137, 54, 0.1);
+        }
+
+        .summary-section h3 {
+            border-bottom: 2px solid #ed8936;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+        }
+
+        /* Notes Section - Escalation */
+        .notes-section {
+            background: linear-gradient(135deg, rgba(237, 137, 54, 0.08) 0%, rgba(237, 137, 54, 0.03) 100%);
+            border: 2px solid rgba(237, 137, 54, 0.3);
+        }
+
+        .notes-section h3 {
+            color: #c05621;
+        }
+
+        .notes-section .notes-content {
+            border: 1px solid rgba(237, 137, 54, 0.2);
+        }
+
+        /* Badge Escalation */
+        .escalation-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ed8936 0%, #dd6b20 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+    ";
+
+    #endregion
+
+    #region CONTRACT_BREACH CSS (Rosso)
+
+    private const string ContractBreachBaseCss = CommonBaseCss + @"
+        /* CONTRACT_BREACH - Colori Rosso */
+        .header {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: white;
+            padding: 25px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            page-break-inside: avoid;
+        }
+
+        .info-section {
+            display: flex;
+            gap: 20px;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, rgba(229, 62, 62, 0.05) 0%, rgba(197, 48, 48, 0.05) 100%);
+            page-break-inside: avoid;
+        }
+
+        .info-box {
+            border: 1px solid rgba(229, 62, 62, 0.2);
+            box-shadow: 0 2px 8px rgba(229, 62, 62, 0.1);
+        }
+
+        .info-box h3 {
+            margin: 0 0 15px 0;
+            font-size: 14px;
+            color: #e53e3e;
+            font-weight: 600;
+            border-bottom: 2px solid rgba(229, 62, 62, 0.3);
+            padding-bottom: 8px;
+        }
+
+        .period-section {
+            border-bottom: 1px solid rgba(229, 62, 62, 0.1);
+        }
+
+        .period-section strong {
+            color: #e53e3e;
+        }
+
+        .disclaimer {
+            background: linear-gradient(135deg, rgba(229, 62, 62, 0.08) 0%, rgba(229, 62, 62, 0.03) 100%);
+            border: 2px solid rgba(229, 62, 62, 0.3);
+        }
+
+        .disclaimer h3 {
+            color: #c53030;
+        }
+
+        .disclaimer h4 {
+            color: #e53e3e;
+        }
+
+        .disclaimer .important {
+            background: linear-gradient(135deg, rgba(229, 62, 62, 0.1) 0%, rgba(229, 62, 62, 0.05) 100%);
+            border: 1px solid rgba(229, 62, 62, 0.3);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            color: #c53030;
+            font-weight: 500;
+        }
+
+        .gaps-section h3 {
+            border-bottom: 2px solid #e53e3e;
+        }
+
+        .gaps-table {
+            box-shadow: 0 4px 12px rgba(229, 62, 62, 0.15);
+            border: 1px solid rgba(229, 62, 62, 0.2);
+        }
+
+        .gaps-table thead {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+
+        .gaps-table tbody tr:nth-child(even) {
+            background: rgba(229, 62, 62, 0.03);
+        }
+
+        .gaps-table tbody tr:hover {
+            background: rgba(229, 62, 62, 0.08);
+        }
+
+        .gaps-table td {
+            border-bottom: 1px solid rgba(229, 62, 62, 0.1);
+        }
+
+        .summary-section h3 {
+            border-bottom: 2px solid #e53e3e;
+        }
+
+        .footer {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+        }
+
+        /* Notes Section - Contract Breach */
+        .notes-section {
+            background: linear-gradient(135deg, rgba(229, 62, 62, 0.08) 0%, rgba(229, 62, 62, 0.03) 100%);
+            border: 2px solid rgba(229, 62, 62, 0.3);
+        }
+
+        .notes-section h3 {
+            color: #c53030;
+        }
+
+        .notes-section .notes-content {
+            border: 1px solid rgba(229, 62, 62, 0.2);
+        }
+
+        /* Badge Contract Breach */
+        .breach-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        /* Legal Warning Box */
+        .legal-warning {
+            margin: 25px 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(229, 62, 62, 0.15) 0%, rgba(229, 62, 62, 0.08) 100%);
+            border: 3px solid #c53030;
+            border-radius: 12px;
+            page-break-inside: avoid;
+        }
+
+        .legal-warning h3 {
+            margin: 0 0 15px 0;
+            font-size: 16px;
+            color: #c53030;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .legal-warning p {
+            margin: 10px 0;
+            font-size: 12px;
+            color: #742a2a;
+            line-height: 1.7;
+        }
+    ";
+
+    #endregion
 }

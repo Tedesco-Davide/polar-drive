@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using PolarDrive.Data.DbContexts;
 using PolarDrive.Data.DTOs;
 using PolarDrive.Data.Constants;
+using PolarDrive.Data.Entities;
 using PolarDrive.WebApi.PolarAiReports;
 using PolarDrive.WebApi.Services;
 using PolarDrive.WebApi.Services.Gdpr;
@@ -74,17 +75,38 @@ public class PdfReportsController(
                 .Select(r => r.Id)
                 .ToListAsync();
 
-            // Query separata per le validazioni gap
-            var gapValidations = await db.GapValidationPdfs
+            // Query separata per le validazioni gap - ottieni tutte le validazioni per ogni report
+            var allGapValidations = await db.GapValidationPdfs
                 .Where(c => reportIds.Contains(c.PdfReportId))
                 .Select(c => new
                 {
                     c.PdfReportId,
                     c.Status,
                     c.PdfHash,
+                    c.DocumentType,
                     HasPdf = c.PdfContent != null
                 })
-                .ToDictionaryAsync(c => c.PdfReportId);
+                .ToListAsync();
+
+            // Raggruppa per report: prendi lo status più recente e verifica se c'è stata escalation
+            var gapValidations = allGapValidations
+                .GroupBy(c => c.PdfReportId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        // Lo status attuale è quello del record finale (COMPLETED, CONTRACT_BREACH, ESCALATED o PROCESSING)
+                        Status = g.OrderByDescending(x => x.Status == "COMPLETED" || x.Status == "CONTRACT_BREACH" ? 1 : 0)
+                                  .ThenByDescending(x => x.Status == "ESCALATED" ? 1 : 0)
+                                  .First().Status,
+                        PdfHash = g.OrderByDescending(x => x.Status == "COMPLETED" || x.Status == "CONTRACT_BREACH" ? 1 : 0)
+                                   .ThenByDescending(x => x.Status == "ESCALATED" ? 1 : 0)
+                                   .First().PdfHash,
+                        HasPdf = g.Any(x => x.HasPdf),
+                        // True se esiste un record con DocumentType = ESCALATION
+                        HadEscalation = g.Any(x => x.DocumentType == "ESCALATION")
+                    }
+                );
 
             var reports = await baseQuery
                 .OrderByDescending(r => r.Id)
@@ -140,7 +162,8 @@ public class PdfReportsController(
                     // Gap Validation info
                     GapValidationStatus = gapCert?.Status,
                     GapValidationPdfHash = gapCert?.PdfHash,
-                    HasGapValidationPdf = gapCert?.HasPdf ?? false
+                    HasGapValidationPdf = gapCert?.HasPdf ?? false,
+                    HadEscalation = gapCert?.HadEscalation ?? false
                 };
             }).ToList();
 
@@ -794,7 +817,7 @@ public class PdfReportsController(
     }
 
     /// <summary>
-    /// Download del PDF di Validazione Probabilistica Gap dal database.
+    /// Download del PDF di Validazione Probabilistica Gap (CERTIFICATION) dal database.
     /// Il PDF è immutabile e salvato nella tabella GapValidationPdfs.
     /// </summary>
     [HttpGet("{id}/download-gap-validation")]
@@ -811,9 +834,9 @@ public class PdfReportsController(
             if (report == null)
                 return NotFound("Report non trovato");
 
-            // Recupera la certificazione PDF dal database
+            // Recupera la certificazione PDF dal database cercando per DocumentType
             var certPdf = await db.GapValidationPdfs
-                .FirstOrDefaultAsync(c => c.PdfReportId == id && c.Status == ReportStatus.COMPLETED);
+                .FirstOrDefaultAsync(c => c.PdfReportId == id && c.DocumentType == GapValidationDocumentTypes.CERTIFICATION);
 
             if (certPdf == null)
             {
@@ -825,14 +848,14 @@ public class PdfReportsController(
                 return NotFound("PDF di certificazione non disponibile");
             }
 
-            var fileName = $"PolarDrive_GapValidation_{id}_{report.ClientVehicle?.Vin}_{certPdf.GeneratedAt:yyyyMMdd}.pdf";
+            var fileName = $"PolarDrive_GapCertification_{id}_{report.ClientVehicle?.Vin}_{certPdf.GeneratedAt:yyyyMMdd}.pdf";
 
             Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
             Response.Headers.Pragma = "no-cache";
             if (!string.IsNullOrWhiteSpace(certPdf.PdfHash))
                 Response.Headers.ETag = $"W/\"{certPdf.PdfHash}\"";
 
-            await _logger.Info(source, $"Download Validazione Probabilistica Gap per report {id}",
+            await _logger.Info(source, $"Download PDF Certification per report {id}",
                 $"Hash: {certPdf.PdfHash}, Size: {certPdf.PdfContent.Length} bytes");
 
             return File(certPdf.PdfContent, "application/pdf", fileName);
@@ -841,6 +864,108 @@ public class PdfReportsController(
         {
             await _logger.Error(source, $"Error downloading gap certification for report {id}", ex.ToString());
             return StatusCode(500, "Errore durante il download della certificazione");
+        }
+    }
+
+    /// <summary>
+    /// Download del PDF di Escalation dal database.
+    /// Usato quando un report è passato da ESCALATED a COMPLETED/CONTRACT_BREACH.
+    /// </summary>
+    [HttpGet("{id}/download-gap-escalation")]
+    public async Task<IActionResult> DownloadGapEscalation(int id)
+    {
+        const string source = "PdfReportsController.DownloadGapEscalation";
+
+        try
+        {
+            var report = await db.PdfReports
+                .Include(r => r.ClientVehicle)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (report == null)
+                return NotFound("Report non trovato");
+
+            // Recupera il PDF di escalation dal database
+            var escalationPdf = await db.GapValidationPdfs
+                .FirstOrDefaultAsync(c => c.PdfReportId == id && c.DocumentType == GapValidationDocumentTypes.ESCALATION);
+
+            if (escalationPdf == null)
+            {
+                return NotFound("PDF Escalation non trovato per questo report");
+            }
+
+            if (escalationPdf.PdfContent == null || escalationPdf.PdfContent.Length == 0)
+            {
+                return NotFound("PDF di escalation non disponibile");
+            }
+
+            var fileName = $"PolarDrive_GapEscalation_{id}_{report.ClientVehicle?.Vin}_{escalationPdf.GeneratedAt:yyyyMMdd}.pdf";
+
+            Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            Response.Headers.Pragma = "no-cache";
+            if (!string.IsNullOrWhiteSpace(escalationPdf.PdfHash))
+                Response.Headers.ETag = $"W/\"{escalationPdf.PdfHash}\"";
+
+            await _logger.Info(source, $"Download PDF Escalation per report {id}",
+                $"Hash: {escalationPdf.PdfHash}, Size: {escalationPdf.PdfContent.Length} bytes");
+
+            return File(escalationPdf.PdfContent, "application/pdf", fileName);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error downloading escalation PDF for report {id}", ex.ToString());
+            return StatusCode(500, "Errore durante il download del PDF escalation");
+        }
+    }
+
+    /// <summary>
+    /// Download del PDF di Contract Breach dal database.
+    /// Stato finale che indica violazione contrattuale.
+    /// </summary>
+    [HttpGet("{id}/download-gap-contract-breach")]
+    public async Task<IActionResult> DownloadGapContractBreach(int id)
+    {
+        const string source = "PdfReportsController.DownloadGapContractBreach";
+
+        try
+        {
+            var report = await db.PdfReports
+                .Include(r => r.ClientVehicle)
+                .FirstOrDefaultAsync(r => r.Id == id);
+
+            if (report == null)
+                return NotFound("Report non trovato");
+
+            // Recupera il PDF di contract breach dal database
+            var breachPdf = await db.GapValidationPdfs
+                .FirstOrDefaultAsync(c => c.PdfReportId == id && c.DocumentType == GapValidationDocumentTypes.CONTRACT_BREACH);
+
+            if (breachPdf == null)
+            {
+                return NotFound("PDF Contract Breach non trovato per questo report");
+            }
+
+            if (breachPdf.PdfContent == null || breachPdf.PdfContent.Length == 0)
+            {
+                return NotFound("PDF di contract breach non disponibile");
+            }
+
+            var fileName = $"PolarDrive_GapContractBreach_{id}_{report.ClientVehicle?.Vin}_{breachPdf.GeneratedAt:yyyyMMdd}.pdf";
+
+            Response.Headers.CacheControl = "no-store, no-cache, must-revalidate";
+            Response.Headers.Pragma = "no-cache";
+            if (!string.IsNullOrWhiteSpace(breachPdf.PdfHash))
+                Response.Headers.ETag = $"W/\"{breachPdf.PdfHash}\"";
+
+            await _logger.Info(source, $"Download PDF Contract Breach per report {id}",
+                $"Hash: {breachPdf.PdfHash}, Size: {breachPdf.PdfContent.Length} bytes");
+
+            return File(breachPdf.PdfContent, "application/pdf", fileName);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error(source, $"Error downloading contract breach PDF for report {id}", ex.ToString());
+            return StatusCode(500, "Errore durante il download del PDF contract breach");
         }
     }
 

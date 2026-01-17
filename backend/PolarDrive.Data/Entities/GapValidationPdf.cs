@@ -85,6 +85,32 @@ public class GapValidationPdf
     /// </summary>
     public string? TsaError { get; set; }
 
-    // Navigation property
+    // ===== Document Type Fields =====
+
+    /// <summary>
+    /// Tipo documento: CERTIFICATION, ESCALATION, CONTRACT_BREACH
+    /// - CERTIFICATION: Certificazione gap (default, esistente)
+    /// - ESCALATION: PDF di escalation (stato intermedio)
+    /// - CONTRACT_BREACH: PDF contract breach (stato finale grave)
+    /// </summary>
+    public string DocumentType { get; set; } = GapValidationDocumentTypes.CERTIFICATION;
+
+    /// <summary>
+    /// Alert correlato (opzionale) - per tracciare da quale alert e stato generato
+    /// </summary>
+    public int? GapAlertId { get; set; }
+
+    // Navigation properties
     public PdfReport? PdfReport { get; set; }
+    public GapAlert? GapAlert { get; set; }
+}
+
+/// <summary>
+/// Costanti per i tipi di documento GapValidationPdf
+/// </summary>
+public static class GapValidationDocumentTypes
+{
+    public const string CERTIFICATION = "CERTIFICATION";
+    public const string ESCALATION = "ESCALATION";
+    public const string CONTRACT_BREACH = "CONTRACT_BREACH";
 }

@@ -7,6 +7,7 @@ import { logFrontendEvent } from "@/utils/logger";
 import AdminClientVehiclesTable from "@/components/adminClientVehiclesTable";
 import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
 import AdminMainWorkflow from "@/components/adminMainWorkflow";
+import AdminGapAlertsDashboard from "@/components/adminGapAlertsDashboard";
 import AdminClientConsents from "@/components/adminClientConsentsTable";
 import AdminOutagePeriodsTable from "@/components/adminOutagePeriodsTable";
 import AdminFileManagerTable from "@/components/adminFileManager";
@@ -20,7 +21,7 @@ export default function AdminDashboard() {
 
   type AdminTab = "PolarDrive" | "ComingSoon";
   const [activeTab, setActiveTab] = useState<AdminTab>("PolarDrive");
-  const [mounted, setMounted] = useState(false); // Rimuovi il loading state globale
+  const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
   const { t } = useTranslation("common");
 
@@ -35,7 +36,7 @@ export default function AdminDashboard() {
     logFrontendEvent(
       "AdminDashboard",
       "INFO",
-      "Admin dashboard mounted and visible"
+      "Admin dashboard mounted and visible",
     );
   }, []);
 
@@ -55,7 +56,7 @@ export default function AdminDashboard() {
                   {
                     "bg-products-grid-light": theme === "light",
                     "dark:bg-products-grid": theme === "dark",
-                  }
+                  },
                 )}
               />
             )}
@@ -68,20 +69,6 @@ export default function AdminDashboard() {
               </div>
               <div className="mb-12 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 rounded">
                 <button
-                  className={classNames(
-                    "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
-                    {
-                      "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
-                        activeTab === "PolarDrive",
-                      "border-transparent text-gray-500 hover:text-primary":
-                        activeTab !== "PolarDrive",
-                    }
-                  )}
-                  onClick={() => setActiveTab("PolarDrive")}
-                >
-                  PolarDrive ❄️🐻‍❄️🚗
-                </button>
-                <button
                   disabled={true}
                   className={classNames(
                     "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
@@ -90,17 +77,32 @@ export default function AdminDashboard() {
                         activeTab === "ComingSoon",
                       "border-transparent text-gray-500 hover:text-primary":
                         activeTab !== "ComingSoon",
-                    }
+                    },
                   )}
                   onClick={() => setActiveTab("ComingSoon")}
                 >
-                  Coming Soon 😎
+                  {t("admin.tabDashboard")}
+                </button>
+                <button
+                  className={classNames(
+                    "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
+                    {
+                      "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
+                        activeTab === "PolarDrive",
+                      "border-transparent text-gray-500 hover:text-primary":
+                        activeTab !== "PolarDrive",
+                    },
+                  )}
+                  onClick={() => setActiveTab("PolarDrive")}
+                >
+                  {t("admin.tabWorkflow")}
                 </button>
               </div>
 
               {activeTab === "PolarDrive" && (
                 <div className="overflow-x-auto">
                   <div className="mx-auto space-y-12 lg:min-w-fit mb-12">
+                    <AdminGapAlertsDashboard t={t} />
                     <AdminMainWorkflow />
                     <AdminClientCompaniesTable t={t} />
                     <AdminClientVehiclesTable t={t} />
@@ -113,7 +115,7 @@ export default function AdminDashboard() {
               )}
 
               {activeTab === "ComingSoon" && (
-                <div className="pointer-events-none">
+                <div>
                   <p className="text-xl text-gray-600 dark:text-softWhite">
                     Stay tuned!
                   </p>

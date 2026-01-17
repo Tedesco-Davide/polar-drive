@@ -26,4 +26,9 @@ public class PdfReportDTO
     public string? GapValidationStatus { get; set; }
     public string? GapValidationPdfHash { get; set; }
     public bool HasGapValidationPdf { get; set; }
+    /// <summary>
+    /// True se esiste un PDF di escalation precedente (DocumentType = ESCALATION).
+    /// Usato per mostrare 2 bottoni download quando status è COMPLETED o CONTRACT_BREACH.
+    /// </summary>
+    public bool HadEscalation { get; set; }
 }

@@ -140,6 +140,10 @@ builder.Services.AddHostedService<ReportRegenerationService>();
 builder.Services.AddScoped<IOutageDetectionService, OutageDetectionService>();
 builder.Services.AddHostedService<OutageDetectionBackgroundService>();
 
+// SERVIZI GAP MONITORING (Monitoraggio Proattivo Anomalie Gap)
+builder.Services.AddScoped<IGapMonitoringService, GapMonitoringService>();
+builder.Services.AddHostedService<GapMonitoringBackgroundService>();
+
 // SERVIZI SMS
 builder.Services.AddScoped<ISmsConfigurationService, SmsService>();
 builder.Services.AddScoped<SmsController>();

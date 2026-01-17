@@ -5,7 +5,9 @@
       "Bash(docker ps:*)",
       "Bash(npx tsc:*)",
       "Bash(dotnet build:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(findstr:*)",
+      "Bash(ls:*)"
     ]
   }
 }
