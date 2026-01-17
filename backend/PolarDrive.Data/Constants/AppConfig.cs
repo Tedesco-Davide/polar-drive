@@ -46,6 +46,9 @@ public class SchedulerDevConfig
     
     // Frequenza di check e retry generazione report falliti spostati in stato ERROR
     public int RetryFailedPdfRepeatMinutes { get; set; }
+
+    // Intervallo di esecuzione del background service OutageDetection in development
+    public int OutageCheckIntervalMinutes { get; set; }
 }
 
 public class SchedulerProdConfig
@@ -73,6 +76,9 @@ public class SchedulerProdConfig
 
     // Frequenza di check e retry generazione report falliti spostati in stato ERROR
     public int RetryFailedPdfRepeatHours { get; set; }
+
+    // Intervallo di esecuzione del background service OutageDetection in production
+    public int OutageCheckIntervalMinutes { get; set; }
 
     // Orario di esecuzione report mensili in produzione
     public MonthlyExecutionTime MonthlyExecutionTime { get; set; } = new();
@@ -346,6 +352,12 @@ public static class AppConfig
 
     // Frequenza di check e retry generazione report falliti spostati in stato ERROR
     public static int PROD_RETRY_FAILED_PDF_REPEAT_HOURS => Config.Scheduler.Production.RetryFailedPdfRepeatHours;
+
+    // Intervallo di esecuzione del background service OutageDetection in development (minuti)
+    public static int DEV_OUTAGE_CHECK_INTERVAL_MINUTES => Config.Scheduler.Development.OutageCheckIntervalMinutes;
+
+    // Intervallo di esecuzione del background service OutageDetection in production (minuti)
+    public static int PROD_OUTAGE_CHECK_INTERVAL_MINUTES => Config.Scheduler.Production.OutageCheckIntervalMinutes;
 
     // Orario di esecuzione report mensili in produzione (5:00 AM)
     public static int PROD_MONTHLY_EXECUTION_HOUR => Config.Scheduler.Production.MonthlyExecutionTime.Hour;

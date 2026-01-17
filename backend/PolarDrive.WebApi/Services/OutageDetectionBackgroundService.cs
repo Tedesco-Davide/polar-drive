@@ -1,3 +1,4 @@
+using PolarDrive.Data.Constants;
 using PolarDrive.Data.DbContexts;
 
 namespace PolarDrive.WebApi.Services;
@@ -7,13 +8,17 @@ namespace PolarDrive.WebApi.Services;
 /// </summary>
 public class OutageDetectionBackgroundService(
     IServiceProvider serviceProvider,
+    IWebHostEnvironment env,
     PolarDriveLogger logger) : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly IWebHostEnvironment _env = env;
     private readonly PolarDriveLogger _logger = logger;
 
-    // Configurazione timing
-    private readonly TimeSpan _checkInterval = TimeSpan.FromMinutes(1);
+    // Configurazione timing - DEV: 1 minuto, PROD: 5 minuti (da app-config.json)
+    private TimeSpan CheckInterval => _env.IsDevelopment()
+        ? TimeSpan.FromMinutes(AppConfig.DEV_OUTAGE_CHECK_INTERVAL_MINUTES)
+        : TimeSpan.FromMinutes(AppConfig.PROD_OUTAGE_CHECK_INTERVAL_MINUTES);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -54,7 +59,7 @@ public class OutageDetectionBackgroundService(
             }
 
             // Aspetta prima del prossimo ciclo
-            await Task.Delay(_checkInterval, stoppingToken);
+            await Task.Delay(CheckInterval, stoppingToken);
         }
 
         _ = _logger.Info(

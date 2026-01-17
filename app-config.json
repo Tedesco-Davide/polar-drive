@@ -13,7 +13,8 @@
       "gracePeriodMinutes": 5,
       "gracePeriodInactivityThresholdMinutes": 10,
       "retryOrphanPdfRepeatMinutes": 2,
-      "retryFailedPdfRepeatMinutes": 2
+      "retryFailedPdfRepeatMinutes": 2,
+      "outageCheckIntervalMinutes": 1
     },
     "production": {
       "monthlyRepeatDays": 30,
@@ -24,6 +25,7 @@
       "gracePeriodInactivityThresholdHours": 6,
       "retryOrphanPdfRepeatHours": 1,
       "retryFailedPdfRepeatHours": 1,
+      "outageCheckIntervalMinutes": 5,
       "monthlyExecutionTime": {
         "hour": 5,
         "minute": 0,
