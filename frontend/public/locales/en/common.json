@@ -217,7 +217,7 @@
   "admin.outagePeriods.tableRefreshSuccess": "Outages refresh completed successfully",
   "admin.outagePeriods.tableRefreshFail": "Outages refresh failed",
 
-  "admin.vehicleReports.tableHeader": "PDF Reports",
+  "admin.vehicleReports.tableHeader": "PolarReports",
   "admin.vehicleReports.tableHeaderTotals": "totals",
   "admin.vehicleReports.tableHeaderRegenerating": "regenerating",
   "admin.vehicleReports.tableHeaderProcessing": "processing",
@@ -489,7 +489,7 @@
   "admin.gapValidation.escalateBtn": "⚠️ Escalate",
   "admin.gapValidation.processingBtn": "Processing...",
   "admin.gapValidation.breachBtn": "⛔ Contract Breach",
-  "admin.pdfReports.downloadReportButton": "Download report",
+  "admin.pdfReports.downloadReportButton": "Download PolarReport in PDF format",
   "admin.pdfReports.reportNotAvailable": "Report not available for download",
   "admin.pdfReports.editNotesButton": "Edit notes",
   "admin.pdfReports.reportImmutable": "Certified report - immutable",
