@@ -496,7 +496,6 @@
   "admin.pdfReports.regenerateReportButton": "Rigenera report (Stato: {{status}})",
 
   "admin.gapAlerts.dashboardTitle": "Alert Gap",
-  "admin.gapAlerts.openCount": "{{count}} aperti",
   "admin.gapAlerts.stats.total": "Totali",
   "admin.gapAlerts.stats.open": "Aperti",
   "admin.gapAlerts.stats.escalated": "Escalati",
@@ -505,6 +504,7 @@
   "admin.gapAlerts.stats.critical": "Critici",
   "admin.gapAlerts.stats.warning": "Avvisi",
   "admin.gapAlerts.stats.info": "Info",
+  "admin.gapAlerts.filters.label": "Filtri:",
   "admin.gapAlerts.filters.allStatus": "Tutti gli status",
   "admin.gapAlerts.filters.allSeverity": "Tutte le severity",
   "admin.gapAlerts.table.severity": "Gravità",
