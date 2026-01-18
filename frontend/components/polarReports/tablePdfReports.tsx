@@ -3,7 +3,8 @@ import { PdfReport } from "@/types/reportInterfaces";
 import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
 import { usePreventUnload } from "@/hooks/usePreventUnload";
-import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download, FileLock, FileText } from "lucide-react";
+import { motion } from "framer-motion";
+import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, FileText, FileStack } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
 import Chip from "@/components/generic/chip";
 import Loader from "@/components/generic/loader";
@@ -204,11 +205,11 @@ export default function TablePdfReports({ t }: { t: TFunction }) {
   };
 
   const handleRegenerate = async (report: PdfReport) => {
-    // 🔒 Check se esiste un report in PROCESSING prima di mostrare l'alert
+    // Check se esiste un report in PROCESSING prima di mostrare l'alert
     try {
-      const checkRes = await fetch("/api/pdfreports/has-processing");      
+      const checkRes = await fetch("/api/pdfreports/has-processing");
       const checkData = await checkRes.json();
-      
+
       if (checkData.hasProcessing) {
         alert(
           t("admin.vehicleReports.regenerationBlockedTitle") +
@@ -374,9 +375,6 @@ export default function TablePdfReports({ t }: { t: TFunction }) {
     return report.status === "ERROR";
   };
 
-  // Nota: Il check per gap viene fatto SOLO quando si apre la modale di validazione
-  // Non facciamo più fetch preventivo per evitare overhead al caricamento
-
   // Download Gap Validation in PDF
   const handleDownloadValidation = async (reportId: number) => {
     setDownloadingCertId(reportId);
@@ -516,329 +514,349 @@ export default function TablePdfReports({ t }: { t: TFunction }) {
   };
 
   return (
-    <div className="relative">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+      className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+    >
       {(loading || isRefreshing) && <Loader local />}
 
-      <div className="flex items-center mb-12 space-x-3">
-        <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.vehicleReports.tableHeader")} ➜ {totalCount}{" "}
-          {t("admin.vehicleReports.tableHeaderTotals")}
-          {gapCertProcessing?.hasProcessing && (
-            <span className="ml-2 text-purple-600 dark:text-purple-400 animate-pulse">
-             ➜ {t("admin.gapValidation.processingInProgress", { id: gapCertProcessing.reportId })}
-            </span>
-          )}
-        </h1>
-      </div>
-
-      <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
-        <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
-          <tr>
-            <th className="p-4">
+      {/* Header con gradiente */}
+      <div className="bg-gradient-to-r from-coldIndigo/10 via-purple-500/5 to-glacierBlue/10 dark:from-coldIndigo/20 dark:via-purple-900/10 dark:to-glacierBlue/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+                className="p-3 bg-coldIndigo hover:bg-coldIndigo/90 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 flex items-center gap-2"
               >
-                <span className="uppercase text-xs tracking-widest">
-                  {t("admin.tableRefreshButton")}
-                </span>
+                {t("admin.tableRefreshButton")}
               </button>
-            </th>
-            <th className="p-4">{t("admin.generatedInfo")}</th>
-            <th className="p-4">{t("admin.vehicleReports.fileInfo")}</th>
-            <th className="p-4">{t("admin.vehicleReports.reportPeriod")}</th>
-            <th className="p-4">
-              {t("admin.vehicleReports.clientCompanyVATName")}
-            </th>
-            <th className="p-4">
-              {t("admin.vehicleReports.vehicleVinDisplay")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {localReports.map((report) => {
-            const isDownloadable = report.hasPdfFile || report.hasHtmlFile;
-            const fileSize = report.hasPdfFile
-              ? report.pdfFileSize
-              : report.htmlFileSize;
-            const isRegeneratable = canRegenerate(report);
-            const isCurrentlyRegenerating = regeneratingId === report.id;
+            </div>
+            <div className="p-3 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-md">
+              <FileStack size={21} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-polarNight dark:text-softWhite">
+                {t("admin.vehicleReports.tableHeader")}
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {totalCount} {t("admin.vehicleReports.tableHeaderTotals")}
+                {gapCertProcessing?.hasProcessing && (
+                  <span className="ml-2 text-purple-600 dark:text-purple-400 animate-pulse">
+                    - {t("admin.gapValidation.processingInProgress", { id: gapCertProcessing.reportId })}
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-            return (
-              <tr
-                key={report.id}
-                className="border-b border-gray-300 dark:border-gray-600"
-              >
-                <td className="p-4 space-x-2">
-                  <button
-                    className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
-                    disabled={
-                      !isDownloadable ||
-                      downloadingId === report.id ||
-                      report.status === "PROCESSING" ||
-                      report.status === "REGENERATING"
-                    }
-                    onClick={() => handleDownload(report)}
-                    title={
-                      isDownloadable
-                        ? t("admin.pdfReports.downloadReportButton")
-                        : t("admin.pdfReports.reportNotAvailable")
-                    }
-                  >
-                    {downloadingId === report.id ? (
-                      <Loader inline />
-                    ) : (
-                      <FileText size={16} />
-                    )}
-                  </button>
+      {/* Table Content */}
+      <div className="p-6 overflow-x-auto">
+        <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
+          <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
+            <tr>
+              <th className="p-4">{t("admin.actions")}</th>
+              <th className="p-4">{t("admin.generatedInfo")}</th>
+              <th className="p-4">{t("admin.vehicleReports.fileInfo")}</th>
+              <th className="p-4">{t("admin.vehicleReports.reportPeriod")}</th>
+              <th className="p-4">
+                {t("admin.vehicleReports.clientCompanyVATName")}
+              </th>
+              <th className="p-4">
+                {t("admin.vehicleReports.vehicleVinDisplay")}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {localReports.map((report) => {
+              const isDownloadable = report.hasPdfFile || report.hasHtmlFile;
+              const fileSize = report.hasPdfFile
+                ? report.pdfFileSize
+                : report.htmlFileSize;
+              const isRegeneratable = canRegenerate(report);
+              const isCurrentlyRegenerating = regeneratingId === report.id;
 
-                  <button
-                    className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
-                    disabled={
-                      downloadingId === report.id ||
-                      report.status === "PROCESSING" ||
-                      report.status === "REGENERATING"
-                    }
-                    onClick={() => setSelectedReportForNotes(report)}
-                    title={t("admin.pdfReports.editNotesButton")}
-                  >
-                    <NotebookPen size={16} />
-                  </button>
-
-                  {!isRegeneratable && report.pdfHash && report.hasPdfFile && (
-                    <span>
-                      {/* PROCESSING: Loader animato */}
-                      {report.gapValidationStatus === "PROCESSING" && (
-                        <button
-                          className="p-2 bg-purple-500 text-softWhite rounded animate-pulse"
-                          disabled
-                          title={t("admin.gapValidation.certificationInProgress")}
-                        >
-                          <Loader inline />
-                        </button>
+              return (
+                <tr
+                  key={report.id}
+                  className="border-b border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                >
+                  <td className="p-4 space-x-2">
+                    <button
+                      className="p-2 text-softWhite rounded bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed"
+                      disabled={
+                        !isDownloadable ||
+                        downloadingId === report.id ||
+                        report.status === "PROCESSING" ||
+                        report.status === "REGENERATING"
+                      }
+                      onClick={() => handleDownload(report)}
+                      title={
+                        isDownloadable
+                          ? t("admin.pdfReports.downloadReportButton")
+                          : t("admin.pdfReports.reportNotAvailable")
+                      }
+                    >
+                      {downloadingId === report.id ? (
+                        <Loader inline />
+                      ) : (
+                        <FileText size={16} />
                       )}
+                    </button>
 
-                      {/* ESCALATED: FileBadge arancione (download ESCALATION) + ShieldCheck (modale) */}
-                      {report.gapValidationStatus === "ESCALATED" && (
-                        <>
+                    <button
+                      className="p-2 bg-blue-500 text-softWhite rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:opacity-20"
+                      disabled={
+                        downloadingId === report.id ||
+                        report.status === "PROCESSING" ||
+                        report.status === "REGENERATING"
+                      }
+                      onClick={() => setSelectedReportForNotes(report)}
+                      title={t("admin.pdfReports.editNotesButton")}
+                    >
+                      <NotebookPen size={16} />
+                    </button>
+
+                    {!isRegeneratable && report.pdfHash && report.hasPdfFile && (
+                      <span>
+                        {/* PROCESSING: Loader animato */}
+                        {report.gapValidationStatus === "PROCESSING" && (
                           <button
-                            className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
-                            disabled={downloadingCertId === report.id}
-                            onClick={() => handleDownloadEscalation(report.id)}
-                            title="Download PDF Escalation"
+                            className="p-2 bg-purple-500 text-softWhite rounded animate-pulse"
+                            disabled
+                            title={t("admin.gapValidation.certificationInProgress")}
                           >
-                            {downloadingCertId === report.id ? (
-                              <Loader inline />
-                            ) : (
-                              <FileBadge size={16} />
-                            )}
+                            <Loader inline />
                           </button>
+                        )}
+
+                        {/* ESCALATED: FileBadge arancione (download ESCALATION) + ShieldCheck (modale) */}
+                        {report.gapValidationStatus === "ESCALATED" && (
+                          <>
+                            <button
+                              className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
+                              disabled={downloadingCertId === report.id}
+                              onClick={() => handleDownloadEscalation(report.id)}
+                              title="Download PDF Escalation"
+                            >
+                              {downloadingCertId === report.id ? (
+                                <Loader inline />
+                              ) : (
+                                <FileBadge size={16} />
+                              )}
+                            </button>
+                            <button
+                              className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
+                              disabled={
+                                gapCertProcessing?.hasProcessing ||
+                                downloadingId === report.id
+                              }
+                              onClick={() => setSelectedReportForValidation(report.id)}
+                              title="Apri modale (Certifica o Contract Breach)"
+                            >
+                              <ShieldCheck size={16} />
+                            </button>
+                          </>
+                        )}
+
+                        {/* COMPLETED: FileBadge viola (download) - stato finale */}
+                        {/* Se hadEscalation = true, mostra anche FileBadge arancione per escalation */}
+                        {report.hasGapValidationPdf && report.gapValidationStatus === "COMPLETED" && (
+                          <>
+                            {report.hadEscalation && (
+                              <button
+                                className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
+                                disabled={downloadingCertId === report.id}
+                                onClick={() => handleDownloadEscalation(report.id)}
+                                title="Download PDF Escalation precedente"
+                              >
+                                <FileBadge size={16} />
+                              </button>
+                            )}
+                            <button
+                              className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:opacity-50"
+                              disabled={downloadingCertId === report.id}
+                              onClick={() => handleDownloadValidation(report.id)}
+                              title={t("admin.gapValidation.downloadCertification")}
+                            >
+                              {downloadingCertId === report.id ? (
+                                <Loader inline />
+                              ) : (
+                                <FileBadge size={16} />
+                              )}
+                            </button>
+                          </>
+                        )}
+
+                        {/* CONTRACT_BREACH: FileBadge rosso (download) - stato finale */}
+                        {/* Se hadEscalation = true, mostra anche FileBadge arancione per escalation */}
+                        {report.gapValidationStatus === "CONTRACT_BREACH" && (
+                          <>
+                            {report.hadEscalation && (
+                              <button
+                                className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
+                                disabled={downloadingCertId === report.id}
+                                onClick={() => handleDownloadEscalation(report.id)}
+                                title="Download PDF Escalation precedente"
+                              >
+                                <FileBadge size={16} />
+                              </button>
+                            )}
+                            <button
+                              className="p-2 bg-red-500 text-softWhite rounded hover:bg-red-600 disabled:opacity-50"
+                              disabled={downloadingCertId === report.id}
+                              onClick={() => handleDownloadContractBreach(report.id)}
+                              title="Download PDF Contract Breach"
+                            >
+                              {downloadingCertId === report.id ? (
+                                <Loader inline />
+                              ) : (
+                                <FileBadge size={16} />
+                              )}
+                            </button>
+                          </>
+                        )}
+
+                        {/* null/undefined: ShieldCheck per aprire modale con 3 bottoni */}
+                        {!report.gapValidationStatus && (
                           <button
                             className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
                             disabled={
                               gapCertProcessing?.hasProcessing ||
-                              downloadingId === report.id
+                              downloadingId === report.id ||
+                              report.status === "PROCESSING" ||
+                              report.status === "REGENERATING"
                             }
-                            onClick={() => setSelectedReportForValidation(report.id)}
-                            title="Apri modale (Certifica o Contract Breach)"
+                            onClick={() => {
+                              const confirmMessage = t("admin.gapValidation.openModalConfirmation");
+                              if (confirm(confirmMessage)) {
+                                setSelectedReportForValidation(report.id);
+                              }
+                            }}
+                            title={
+                              gapCertProcessing?.hasProcessing
+                                ? t("admin.gapValidation.anotherInProgress", { id: gapCertProcessing.reportId })
+                                : t("admin.gapValidation.openCertificationModal")
+                            }
                           >
                             <ShieldCheck size={16} />
                           </button>
-                        </>
-                      )}
-
-                      {/* COMPLETED: FileBadge viola (download) - stato finale */}
-                      {/* Se hadEscalation = true, mostra anche FileBadge arancione per escalation */}
-                      {report.hasGapValidationPdf && report.gapValidationStatus === "COMPLETED" && (
-                        <>
-                          {report.hadEscalation && (
-                            <button
-                              className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
-                              disabled={downloadingCertId === report.id}
-                              onClick={() => handleDownloadEscalation(report.id)}
-                              title="Download PDF Escalation precedente"
-                            >
-                              <FileBadge size={16} />
-                            </button>
-                          )}
-                          <button
-                            className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:opacity-50"
-                            disabled={downloadingCertId === report.id}
-                            onClick={() => handleDownloadValidation(report.id)}
-                            title={t("admin.gapValidation.downloadCertification")}
-                          >
-                            {downloadingCertId === report.id ? (
-                              <Loader inline />
-                            ) : (
-                              <FileBadge size={16} />
-                            )}
-                          </button>
-                        </>
-                      )}
-
-                      {/* CONTRACT_BREACH: FileBadge rosso (download) - stato finale */}
-                      {/* Se hadEscalation = true, mostra anche FileBadge arancione per escalation */}
-                      {report.gapValidationStatus === "CONTRACT_BREACH" && (
-                        <>
-                          {report.hadEscalation && (
-                            <button
-                              className="p-2 bg-orange-500 text-softWhite rounded hover:bg-orange-600 disabled:opacity-50"
-                              disabled={downloadingCertId === report.id}
-                              onClick={() => handleDownloadEscalation(report.id)}
-                              title="Download PDF Escalation precedente"
-                            >
-                              <FileBadge size={16} />
-                            </button>
-                          )}
-                          <button
-                            className="p-2 bg-red-500 text-softWhite rounded hover:bg-red-600 disabled:opacity-50"
-                            disabled={downloadingCertId === report.id}
-                            onClick={() => handleDownloadContractBreach(report.id)}
-                            title="Download PDF Contract Breach"
-                          >
-                            {downloadingCertId === report.id ? (
-                              <Loader inline />
-                            ) : (
-                              <FileBadge size={16} />
-                            )}
-                          </button>
-                        </>
-                      )}
-
-                      {/* null/undefined: ShieldCheck per aprire modale con 3 bottoni */}
-                      {!report.gapValidationStatus && (
-                        <button
-                          className="p-2 bg-purple-500 text-softWhite rounded hover:bg-purple-600 disabled:bg-gray-400 disabled:opacity-20"
-                          disabled={
-                            gapCertProcessing?.hasProcessing ||
-                            downloadingId === report.id ||
-                            report.status === "PROCESSING" ||
-                            report.status === "REGENERATING"
-                          }
-                          onClick={() => {
-                            const confirmMessage = t("admin.gapValidation.openModalConfirmation");
-                            if (confirm(confirmMessage)) {
-                              setSelectedReportForValidation(report.id);
-                            }
-                          }}
-                          title={
-                            gapCertProcessing?.hasProcessing
-                              ? t("admin.gapValidation.anotherInProgress", { id: gapCertProcessing.reportId })
-                              : t("admin.gapValidation.openCertificationModal")
-                          }
-                        >
-                          <ShieldCheck size={16} />
-                        </button>
-                      )}
-                    </span>
-                  )}
-
-                  {isRegeneratable && (
-                    <button
-                      className={`p-2 rounded transition-all ${
-                        isCurrentlyRegenerating
-                          ? "bg-orange-500 animate-pulse"
-                          : "bg-orange-500 hover:bg-orange-600"
-                      } text-softWhite disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed`}
-                      disabled={
-                        isCurrentlyRegenerating ||
-                        downloadingId === report.id ||
-                        report.status === "REGENERATING"
-                      }
-                      onClick={() => handleRegenerate(report)}
-                      title={
-                        report.pdfHash
-                          ? t("admin.pdfReports.reportImmutable")
-                          : t("admin.pdfReports.regenerateReportButton", { status: report.status })
-                      }
-                    >
-                      {isCurrentlyRegenerating ||
-                      report.status === "REGENERATING" ? (
-                        <Loader inline />
-                      ) : (
-                        <RefreshCw size={16} />
-                      )}
-                    </button>
-                  )}
-                </td>
-                <td className="p-4">
-                {report.generatedAt
-                    ? formatDateToDisplay(report.generatedAt)
-                    : "-"}
-                <div className="text-xs text-gray-400 mt-1">
-                    ID {report.id}
-                </div>
-                </td>
-                <td className="p-4">
-                  <div className="space-y-1 flex flex-col w-[150px]">
-                    <Chip className={getStatusColor(report.status)}>
-                      {report.status}
-                    </Chip>
-                    {fileSize > 0 && (
-                      <div className="text-xs text-gray-400 flex gap-1 items-center">
-                        {report.pdfHash && (
-                          <span
-                            className="text-xs bg-gray-400 text-gray-200 font-mono cursor-pointer px-1 rounded"
-                            title={`${t("admin.vehicleReports.fullHash")}: ${
-                              report.pdfHash
-                            }\n${t("admin.clickToCopy")}`}
-                            onClick={() => {
-                              navigator.clipboard.writeText(report.pdfHash!);
-                              alert(t("admin.vehicleReports.hashCopied"));
-                            }}
-                          >
-                            HASH
-                          </span>
                         )}
-                        → {(fileSize / (1024 * 1024)).toFixed(2)} MB
-                      </div>
+                      </span>
                     )}
+
+                    {isRegeneratable && (
+                      <button
+                        className={`p-2 rounded transition-all ${
+                          isCurrentlyRegenerating
+                            ? "bg-orange-500 animate-pulse"
+                            : "bg-orange-500 hover:bg-orange-600"
+                        } text-softWhite disabled:bg-gray-400 disabled:opacity-20 disabled:cursor-not-allowed`}
+                        disabled={
+                          isCurrentlyRegenerating ||
+                          downloadingId === report.id ||
+                          report.status === "REGENERATING"
+                        }
+                        onClick={() => handleRegenerate(report)}
+                        title={
+                          report.pdfHash
+                            ? t("admin.pdfReports.reportImmutable")
+                            : t("admin.pdfReports.regenerateReportButton", { status: report.status })
+                        }
+                      >
+                        {isCurrentlyRegenerating ||
+                        report.status === "REGENERATING" ? (
+                          <Loader inline />
+                        ) : (
+                          <RefreshCw size={16} />
+                        )}
+                      </button>
+                    )}
+                  </td>
+                  <td className="p-4">
+                  {report.generatedAt
+                      ? formatDateToDisplay(report.generatedAt)
+                      : "-"}
+                  <div className="text-xs text-gray-400 mt-1">
+                      ID {report.id}
                   </div>
-                </td>
-                <td className="p-4">
-                  <div>
-                    {formatDateToDisplay(report.reportPeriodStart)} -{" "}
-                    {formatDateToDisplay(report.reportPeriodEnd)}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <div>
-                    {report.companyVatNumber} - {report.companyName}
-                  </div>
-                </td>
-                <td className="p-4">
-                  <div>
-                    {report.vehicleVin && <span>{report.vehicleVin}</span>}
-                    <div className="text-xs text-gray-400">
-                      {report.vehicleBrand && (
-                        <span>{report.vehicleBrand}</span>
+                  </td>
+                  <td className="p-4">
+                    <div className="space-y-1 flex flex-col w-[150px]">
+                      <Chip className={getStatusColor(report.status)}>
+                        {report.status}
+                      </Chip>
+                      {fileSize > 0 && (
+                        <div className="text-xs text-gray-400 flex gap-1 items-center">
+                          {report.pdfHash && (
+                            <span
+                              className="text-xs bg-gray-400 text-gray-200 font-mono cursor-pointer px-1 rounded"
+                              title={`${t("admin.vehicleReports.fullHash")}: ${
+                                report.pdfHash
+                              }\n${t("admin.clickToCopy")}`}
+                              onClick={() => {
+                                navigator.clipboard.writeText(report.pdfHash!);
+                                alert(t("admin.vehicleReports.hashCopied"));
+                              }}
+                            >
+                              HASH
+                            </span>
+                          )}
+                          → {(fileSize / (1024 * 1024)).toFixed(2)} MB
+                        </div>
                       )}
                     </div>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  </td>
+                  <td className="p-4">
+                    <div>
+                      {formatDateToDisplay(report.reportPeriodStart)} -{" "}
+                      {formatDateToDisplay(report.reportPeriodEnd)}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div>
+                      {report.companyVatNumber} - {report.companyName}
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div>
+                      {report.vehicleVin && <span>{report.vehicleVin}</span>}
+                      <div className="text-xs text-gray-400">
+                        {report.vehicleBrand && (
+                          <span>{report.vehicleBrand}</span>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
 
-      <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        />
-        <SearchBar
-          query={query}
-          setQuery={setQuery}
-          resetPage={() => setCurrentPage(1)}
-          onSearch={handleSearch}
-          searchMode="id-or-status"
-          showVinFilter={true}
-          vinPlaceholder={t("admin.vehicles.searchVinPlaceholder")}
-        />
+        {/* Pagination and Search */}
+        <div className="flex flex-wrap items-center gap-4 mt-4">
+          <PaginationControls
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+          />
+          <SearchBar
+            query={query}
+            setQuery={setQuery}
+            resetPage={() => setCurrentPage(1)}
+            onSearch={handleSearch}
+            searchMode="id-or-status"
+            showVinFilter={true}
+            vinPlaceholder={t("admin.vehicles.searchVinPlaceholder")}
+          />
+        </div>
       </div>
 
       {selectedReportForNotes && (
@@ -865,6 +883,6 @@ export default function TablePdfReports({ t }: { t: TFunction }) {
           }
         />
       )}
-    </div>
+    </motion.div>
   );
 }

@@ -11,7 +11,6 @@ import TabPolarReports from "@/components/polarReports/tabPolarReports";
 import AdminTableClientConsents from "@/components/adminTableClientConsents";
 import AdminTableOutagePeriods from "@/components/adminTableOutagePeriods";
 import AdminTableFileManager from "@/components/adminTableFileManager";
-import AdminPdfReportsTable from "@/components/polarReports/tablePdfReports";
 import Head from "next/head";
 import classNames from "classnames";
 import LayoutMainHeader from "@/components/generic/layoutMainHeader";
@@ -119,7 +118,6 @@ export default function AdminDashboard() {
                     <AdminTableClientVehicles t={t} />
                     <AdminTableClientConsents t={t} />
                     <AdminTableOutagePeriods t={t} />
-                    <AdminPdfReportsTable t={t} />
                     <AdminTableFileManager t={t} />
                   </div>
                 </div>
