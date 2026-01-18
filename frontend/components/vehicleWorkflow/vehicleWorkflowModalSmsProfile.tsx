@@ -35,7 +35,7 @@ interface AdaptiveProfileSession {
   consentAccepted: boolean;
 }
 
-interface AdminVehicleWorkflowModalSmsProfileProps {
+interface VehicleWorkflowModalSmsProfileProps {
   isOpen: boolean;
   onClose: () => void;
   vehicleId: number;
@@ -45,7 +45,7 @@ interface AdminVehicleWorkflowModalSmsProfileProps {
   isVehicleActive: boolean;
 }
 
-export default function AdminVehicleWorkflowModalSmsProfile({
+export default function VehicleWorkflowModalSmsProfile({
   isOpen,
   onClose,
   vehicleId,
@@ -53,7 +53,7 @@ export default function AdminVehicleWorkflowModalSmsProfile({
   vehicleBrand,
   companyName,
   isVehicleActive,
-}: AdminVehicleWorkflowModalSmsProfileProps) {
+}: VehicleWorkflowModalSmsProfileProps) {
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
   const [auditLogs, setAuditLogs] = useState<SmsAuditLog[]>([]);
@@ -87,14 +87,14 @@ export default function AdminVehicleWorkflowModalSmsProfile({
         }
 
         logFrontendEvent(
-            "AdminVehicleWorkflowModalSmsProfile",
+            "VehicleWorkflowModalSmsProfile",
             "INFO",
             "SMS data loaded successfully",
             "VehicleId: " + vehicleId + ", Sessions: " + sessions.length + ", Logs: " + vehicleLogs.length
         );
     } catch (error) {
         logFrontendEvent(
-            "AdminVehicleWorkflowModalSmsProfile",
+            "VehicleWorkflowModalSmsProfile",
             "ERROR",
             "Failed to load SMS data",
             error instanceof Error ? error.message : String(error)
@@ -534,7 +534,7 @@ export default function AdminVehicleWorkflowModalSmsProfile({
           <button
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {
-              logFrontendEvent("AdminVehicleWorkflowModalSmsProfile", "INFO", "SMS Profile modal closed");
+              logFrontendEvent("VehicleWorkflowModalSmsProfile", "INFO", "SMS Profile modal closed");
               onClose();
             }}
           >

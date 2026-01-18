@@ -13,13 +13,13 @@ import Loader from "@/components/generic/loader";
 import SearchBar from "@/components/generic/searchBar";
 import AdminAddFormVehicleWorkflow from "@/components/adminAddFormVehicleWorkflow";
 import PaginationControls from "@/components/generic/paginationControls";
-import AdminVehicleWorkflowStatusToggle from "./adminVehicleWorkflowStatusToggle";
-import Chip from "./generic/chip";
-import AdminVehicleWorkflowModalSmsProfile from "./adminVehicleWorkflowModalSmsProfile";
-import AdminVehicleWorkflowModalSmsGdpr from "./adminVehicleWorkflowModalSmsGdpr";
-import AdminVehicleWorkflowModalSmsAudit from "./adminVehicleWorkflowModalSmsAudit";
+import Chip from "../generic/chip";
+import VehicleWorkflowModalSmsProfile from "./vehicleWorkflowModalSmsProfile";
+import VehicleWorkflowModalSmsGdpr from "./vehicleWorkflowModalSmsGdpr";
+import VehicleWorkflowModalSmsAudit from "./vehicleWorkflowModalSmsAudit";
+import VehicleWorkflowStatusToggle from "./vehicleWorkflowStatusToggle";
 
-export default function AdminTabVehicleWorkflow() {
+export default function TabVehicleWorkflow() {
   const { t } = useTranslation("");
   const [workflowData, setWorkflowData] = useState<WorkflowRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -138,14 +138,14 @@ export default function AdminTabVehicleWorkflow() {
       setCurrentPage(response.page);
 
       logFrontendEvent(
-        "AdminVehicleWorkflow",
+        "TabVehicleWorkflow",
         "INFO",
         "Workflow data loaded",
         `Page: ${response.page}, Total: ${response.totalCount}`
       );
     } catch (err) {
       logFrontendEvent(
-        "AdminVehicleWorkflow",
+        "TabVehicleWorkflow",
         "ERROR",
         "Failed to load workflow data",
         String(err)
@@ -169,7 +169,7 @@ export default function AdminTabVehicleWorkflow() {
   };
 
   const handleSubmit = async () => {
-    logFrontendEvent("AdminVehicleWorkflow", "INFO", "Form submission triggered");
+    logFrontendEvent("TabVehicleWorkflow", "INFO", "Form submission triggered");
 
     const requiredFields: (keyof adminWorkflowTypesInputForm)[] = [
       "companyVatNumber",
@@ -623,7 +623,7 @@ export default function AdminTabVehicleWorkflow() {
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 text-center">
                     Veicolo Attivo
                   </span>
-                  <AdminVehicleWorkflowStatusToggle
+                  <VehicleWorkflowStatusToggle
                     id={entry.id}
                     isActive={entry.isVehicleActive}
                     isFetching={entry.isVehicleFetchingData}
@@ -652,7 +652,7 @@ export default function AdminTabVehicleWorkflow() {
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 text-center">
                     Fetch Dati
                   </span>
-                  <AdminVehicleWorkflowStatusToggle
+                  <VehicleWorkflowStatusToggle
                     id={entry.id}
                     isActive={entry.isVehicleActive}
                     isFetching={entry.isVehicleFetchingData}
@@ -953,7 +953,7 @@ export default function AdminTabVehicleWorkflow() {
                 </Chip>
               </td>
               <td className="p-4 align-middle">
-                <AdminVehicleWorkflowStatusToggle
+                <VehicleWorkflowStatusToggle
                   id={entry.id}
                   isActive={entry.isVehicleActive}
                   isFetching={entry.isVehicleFetchingData}
@@ -979,7 +979,7 @@ export default function AdminTabVehicleWorkflow() {
                 />
               </td>
               <td className="p-4 align-middle">
-                <AdminVehicleWorkflowStatusToggle
+                <VehicleWorkflowStatusToggle
                   id={entry.id}
                   isActive={entry.isVehicleActive}
                   isFetching={entry.isVehicleFetchingData}
@@ -1042,7 +1042,7 @@ export default function AdminTabVehicleWorkflow() {
       </div>
 
       {selectedVehicleForSms && (
-        <AdminVehicleWorkflowModalSmsProfile
+        <VehicleWorkflowModalSmsProfile
           isOpen={smsModalOpen}
           onClose={() => {
             setSmsModalOpen(false);
@@ -1056,12 +1056,12 @@ export default function AdminTabVehicleWorkflow() {
         />
       )}
 
-      <AdminVehicleWorkflowModalSmsGdpr
+      <VehicleWorkflowModalSmsGdpr
         isOpen={smsGdprModalOpen}
         onClose={() => setSmsGdprModalOpen(false)}
       />
 
-      <AdminVehicleWorkflowModalSmsAudit
+      <VehicleWorkflowModalSmsAudit
         isOpen={smsAuditModalOpen}
         onClose={() => setSmsAuditModalOpen(false)}
       />

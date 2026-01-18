@@ -4,7 +4,7 @@ import { logFrontendEvent } from "@/utils/logger";
 import { CircleCheck, CircleX } from "lucide-react";
 import axios from "axios";
 
-type AdminVehicleWorkflowStatusToggleProps = {
+type VehicleWorkflowStatusToggleProps = {
   id: number;
   isActive: boolean;
   isFetching: boolean;
@@ -15,7 +15,7 @@ type AdminVehicleWorkflowStatusToggleProps = {
   refreshWorkflowData: () => Promise<void>;
 };
 
-export default function AdminVehicleWorkflowStatusToggle({
+export default function VehicleWorkflowStatusToggle({
   id,
   isActive,
   isFetching,
@@ -24,7 +24,7 @@ export default function AdminVehicleWorkflowStatusToggle({
   onStatusChange,
   setLoading,
   refreshWorkflowData,
-}: AdminVehicleWorkflowStatusToggleProps) {
+}: VehicleWorkflowStatusToggleProps) {
   const { t } = useTranslation("");
 
   const toggleStatus = async () => {
@@ -38,7 +38,7 @@ export default function AdminVehicleWorkflowStatusToggle({
         );
         if (!confirm) return;
         logFrontendEvent(
-          "AdminVehicleWorkflowStatusToggle",
+          "VehicleWorkflowStatusToggle",
           "INFO",
           "User cancelled toggle operation",
           "Field: " + field + ", From: isActive=" + isActive + ", isFetching=" + isFetching
@@ -88,7 +88,7 @@ export default function AdminVehicleWorkflowStatusToggle({
       });
       onStatusChange(newIsActive, newIsFetching);
       logFrontendEvent(
-        "AdminVehicleWorkflowStatusToggle",
+        "VehicleWorkflowStatusToggle",
         "INFO",
         "Vehicle status successfully updated",
         "Vehicle ID: " + id + ", isActive: " + newIsActive + ", isFetching: " + newIsFetching
@@ -97,7 +97,7 @@ export default function AdminVehicleWorkflowStatusToggle({
     } catch (err) {
       console.error(t("admin.vehicleStatusToggle.confirmAction.error"), err);
       logFrontendEvent(
-        "AdminVehicleWorkflowStatusToggle",
+        "VehicleWorkflowStatusToggle",
         "ERROR",
         "Failed to update vehicle status",
         err instanceof Error ? err.message : String(err)

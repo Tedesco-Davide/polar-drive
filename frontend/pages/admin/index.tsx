@@ -6,7 +6,7 @@ import { useTranslation } from "next-i18next";
 import { logFrontendEvent } from "@/utils/logger";
 import AdminTableClientVehicles from "@/components/adminTableClientVehicles";
 import AdminTableClientCompanies from "@/components/adminTableClientCompanies";
-import AdminTabVehicleWorkflow from "@/components/adminTabVehicleWorkflow";
+import TabVehicleWorkflow from "@/components/vehicleWorkflow/tabVehicleWorkflow";
 import TabPolarReports from "@/components/polarReports/tabPolarReports";
 import AdminTableClientConsents from "@/components/adminTableClientConsents";
 import AdminTableOutagePeriods from "@/components/adminTableOutagePeriods";
@@ -114,7 +114,7 @@ export default function AdminDashboard() {
               {activeTab === "PolarDrive" && (
                 <div className="overflow-x-auto">
                   <div className="mx-auto space-y-12 lg:min-w-fit mb-12">
-                    <AdminTabVehicleWorkflow />
+                    <TabVehicleWorkflow />
                     <AdminTableClientCompanies t={t} />
                     <AdminTableClientVehicles t={t} />
                     <AdminTableClientConsents t={t} />
