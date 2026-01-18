@@ -3,7 +3,7 @@ import { Trash2, PlusIcon } from "lucide-react";
 import { TFunction } from "i18next";
 import { logFrontendEvent } from "@/utils/logger";
 
-type Props<T> = {
+type AdminGenericModalEditNotesProps<T> = {
   entity: T;
   isOpen: boolean;
   title: string;
@@ -21,7 +21,7 @@ export default function AdminGenericModalEditNotes<T>({
   onSave,
   onClose,
   t,
-}: Props<T>) {
+}: AdminGenericModalEditNotesProps<T>) {
   const [notes, setNotes] = useState<string[]>(() => {
     const raw = entity[notesField] as unknown as string;
 

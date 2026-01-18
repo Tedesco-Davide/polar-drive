@@ -4,7 +4,7 @@ import { logFrontendEvent } from "@/utils/logger";
 import { CircleCheck, CircleX } from "lucide-react";
 import axios from "axios";
 
-type Props = {
+type AdminVehicleWorkflowStatusToggleProps = {
   id: number;
   isActive: boolean;
   isFetching: boolean;
@@ -15,7 +15,7 @@ type Props = {
   refreshWorkflowData: () => Promise<void>;
 };
 
-export default function VehicleStatusToggle({
+export default function AdminVehicleWorkflowStatusToggle({
   id,
   isActive,
   isFetching,
@@ -24,7 +24,7 @@ export default function VehicleStatusToggle({
   onStatusChange,
   setLoading,
   refreshWorkflowData,
-}: Props) {
+}: AdminVehicleWorkflowStatusToggleProps) {
   const { t } = useTranslation("");
 
   const toggleStatus = async () => {
@@ -38,7 +38,7 @@ export default function VehicleStatusToggle({
         );
         if (!confirm) return;
         logFrontendEvent(
-          "VehicleStatusToggle",
+          "AdminVehicleWorkflowStatusToggle",
           "INFO",
           "User cancelled toggle operation",
           "Field: " + field + ", From: isActive=" + isActive + ", isFetching=" + isFetching
@@ -88,7 +88,7 @@ export default function VehicleStatusToggle({
       });
       onStatusChange(newIsActive, newIsFetching);
       logFrontendEvent(
-        "VehicleStatusToggle",
+        "AdminVehicleWorkflowStatusToggle",
         "INFO",
         "Vehicle status successfully updated",
         "Vehicle ID: " + id + ", isActive: " + newIsActive + ", isFetching: " + newIsFetching
@@ -97,7 +97,7 @@ export default function VehicleStatusToggle({
     } catch (err) {
       console.error(t("admin.vehicleStatusToggle.confirmAction.error"), err);
       logFrontendEvent(
-        "VehicleStatusToggle",
+        "AdminVehicleWorkflowStatusToggle",
         "ERROR",
         "Failed to update vehicle status",
         err instanceof Error ? err.message : String(err)

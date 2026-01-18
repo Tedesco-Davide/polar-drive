@@ -7,7 +7,7 @@ import { OutageFormData } from "@/types/outagePeriodTypes";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 
-interface Props {
+interface AdminAddFormOutagePeriodsProps {
   t: TFunction;
   onSubmitSuccess: () => void;
   refreshOutagePeriods: () => Promise<void>;
@@ -20,7 +20,7 @@ export default function AdminAddFormOutagePeriods({
   t,
   onSubmitSuccess,
   refreshOutagePeriods,
-}: Props) {
+}: AdminAddFormOutagePeriodsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<OutageFormData>({
     outageType: "",

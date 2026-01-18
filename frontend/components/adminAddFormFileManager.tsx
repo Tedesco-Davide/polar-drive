@@ -6,14 +6,14 @@ import { isAfter, isValid, parseISO } from "date-fns";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-interface AdminModalFileManagerProps {
+interface AdminAddFormFileManagerProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
   t: TFunction;
 }
 
-interface AdminModalFileManagerRequest {
+interface AdminAddFormFileManagerRequest {
   periodStart: string;
   periodEnd: string;
   companies: string[];
@@ -22,12 +22,12 @@ interface AdminModalFileManagerRequest {
   requestedBy: string;
 }
 
-export default function AdminModalFileManager({
+export default function AdminAddFormFileManager({
   isOpen,
   onSuccess,
   t,
-}: AdminModalFileManagerProps) {
-  const [formData, setFormData] = useState<AdminModalFileManagerRequest>({
+}: AdminAddFormFileManagerProps) {
+  const [formData, setFormData] = useState<AdminAddFormFileManagerRequest>({
     periodStart: "",
     periodEnd: "",
     companies: [],
@@ -71,7 +71,7 @@ export default function AdminModalFileManager({
       setAvailableBrands(brands);
     } catch (error) {
       logFrontendEvent(
-        "AdminModalFileManager",
+        "AdminAddFormFileManager",
         "ERROR",
         "Failed to load available filters",
         String(error)
@@ -143,7 +143,7 @@ export default function AdminModalFileManager({
 
     try {
       await logFrontendEvent(
-        "AdminModalFileManager",
+        "AdminAddFormFileManager",
         "INFO",
         "Attempting to create PDF download request",
         "Period: " + formData.periodStart + " to " + formData.periodEnd + ", RequestedBy: " + formData.requestedBy
@@ -175,7 +175,7 @@ export default function AdminModalFileManager({
       }
 
       logFrontendEvent(
-        "AdminModalFileManager",
+        "AdminAddFormFileManager",
         "INFO",
         "PDF download request created successfully",
         "Period: " + formData.periodStart + " to " + formData.periodEnd
@@ -190,7 +190,7 @@ export default function AdminModalFileManager({
         error instanceof Error ? error.message : String(error);
 
       logFrontendEvent(
-        "AdminModalFileManager",
+        "AdminAddFormFileManager",
         "ERROR",
         "Failed to create PDF download request",
         errorMessage

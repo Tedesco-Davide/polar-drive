@@ -6,7 +6,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useState, useEffect, useRef } from "react";
 
-type Props = {
+type AdminAddFormClientConsentProps = {
   t: TFunction;
   onSubmitSuccess: () => void;
   refreshClientConsents: () => Promise<void>;
@@ -22,7 +22,7 @@ export default function AdminAddFormClientConsent({
   t,
   onSubmitSuccess,
   refreshClientConsents,
-}: Props) {
+}: AdminAddFormClientConsentProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<{
     consentType: string;

@@ -8,7 +8,7 @@ import { logFrontendEvent } from "@/utils/logger";
 import AdminGenericChip from "@/components/adminGenericChip";
 import AdminGenericLoader from "@/components/adminGenericLoader";
 import AdminGenericModalEditNotes from "@/components/adminGenericModalEditNotes";
-import AdminGapValidationModal from "@/components/adminModalGapValidation";
+import AdminGapValidationModal from "@/components/adminTablePdfReportsModalGapValidation";
 import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
 import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
 

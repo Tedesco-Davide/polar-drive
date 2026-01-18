@@ -1,14 +1,14 @@
 import { useEffect, ReactNode } from "react";
 import { logFrontendEvent } from "@/utils/logger";
 
-type Props = {
+type AdminGenericModalEditProps = {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
 };
 
-export default function AdminGenericModalEdit({ isOpen, title, children }: Props) {
+export default function AdminGenericModalEdit({ isOpen, title, children }: AdminGenericModalEditProps) {
   useEffect(() => {
     try {
       if (isOpen) {

@@ -3,7 +3,7 @@ import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { TFunction } from "i18next";
 import { logFrontendEvent } from "@/utils/logger";
 
-type Props = {
+type AdminEditFormClientCompanyProps = {
   client: ClientCompany;
   onClose: () => void;
   onSave: (updatedClient: ClientCompany) => void;
@@ -17,7 +17,7 @@ export default function AdminEditFormClientCompany({
   onSave,
   refreshWorkflowData,
   t,
-}: Props) {
+}: AdminEditFormClientCompanyProps) {
   const [formData, setFormData] = useState<ClientCompany>({
     ...client,
     address: client.address ?? "",

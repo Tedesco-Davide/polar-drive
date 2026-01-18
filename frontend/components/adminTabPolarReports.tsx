@@ -17,7 +17,7 @@ import { format } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
 import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
 import AdminGenericLoader from "./adminGenericLoader";
-import AdminGapValidationModal from "./adminModalGapValidation";
+import AdminGapValidationModal from "./adminTablePdfReportsModalGapValidation";
 
 interface GapAlert {
   id: number;

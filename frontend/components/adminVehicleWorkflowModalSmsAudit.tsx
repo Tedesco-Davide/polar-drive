@@ -17,15 +17,15 @@ interface SmsAuditLog {
   responseSent: string | null;
 }
 
-interface AdminSmsAuditModalProps {
+interface AdminVehicleWorkflowModalSmsAuditProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function AdminSmsAuditModal({
+export default function AdminVehicleWorkflowModalSmsAudit({
   isOpen,
   onClose,
-}: AdminSmsAuditModalProps) {
+}: AdminVehicleWorkflowModalSmsAuditProps) {
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
   const [auditLogs, setAuditLogs] = useState<SmsAuditLog[]>([]);
@@ -46,14 +46,14 @@ export default function AdminSmsAuditModal({
       }
 
       logFrontendEvent(
-        "AdminSmsAuditModal",
+        "AdminVehicleWorkflowModalSmsAudit",
         "INFO",
         "SMS Audit logs loaded successfully",
         `Page: ${page}, Logs: ${auditLogs.length}`
       );
     } catch (error) {
       logFrontendEvent(
-        "AdminSmsAuditModal",
+        "AdminVehicleWorkflowModalSmsAudit",
         "ERROR",
         "Failed to load SMS audit logs",
         error instanceof Error ? error.message : String(error)
@@ -286,7 +286,7 @@ export default function AdminSmsAuditModal({
           <button
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {
-              logFrontendEvent("SmsAuditModal", "INFO", "SMS Audit modal closed");
+              logFrontendEvent("AdminVehicleWorkflowModalSmsAudit", "INFO", "SMS Audit modal closed");
               onClose();
             }}
           >

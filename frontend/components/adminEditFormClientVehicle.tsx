@@ -7,7 +7,7 @@ import { fuelTypeOptions } from "@/types/fuelTypes";
 import { logFrontendEvent } from "@/utils/logger";
 import { CircleCheck, CircleX } from "lucide-react";
 
-type Props = {
+type AdminEditFormClientVehicleProps = {
   vehicle: ClientVehicle;
   onClose: () => void;
   onSave: (updatedVehicle: ClientVehicle) => void;
@@ -21,7 +21,7 @@ export default function AdminEditFormClientVehicle({
   onSave,
   t,
   refreshWorkflowData,
-}: Props) {
+}: AdminEditFormClientVehicleProps) {
   const { options: vehicleOptions, loading: loadingOptions } = useVehicleOptions();
   
   const [formData, setFormData] = useState<ClientVehicle>({

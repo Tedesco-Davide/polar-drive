@@ -13,11 +13,11 @@ import AdminGenericLoader from "@/components/adminGenericLoader";
 import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
 import AdminAddFormVehicleWorkflow from "@/components/adminAddFormVehicleWorkflow";
 import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
-import VehicleStatusToggle from "./vehicleStatusToggle";
+import AdminVehicleWorkflowStatusToggle from "./adminVehicleWorkflowStatusToggle";
 import AdminGenericChip from "./adminGenericChip";
-import AdminSmsProfileModal from "./adminSmsProfileModal";
-import AdminSmsGdprModal from "./adminSmsGdprModal";
-import AdminSmsAuditModal from "./adminSmsAuditModal";
+import AdminVehicleWorkflowModalSmsProfile from "./adminVehicleWorkflowModalSmsProfile";
+import AdminVehicleWorkflowModalSmsGdpr from "./adminVehicleWorkflowModalSmsGdpr";
+import AdminVehicleWorkflowModalSmsAudit from "./adminVehicleWorkflowModalSmsAudit";
 
 export default function AdminTabVehicleWorkflow() {
   const { t } = useTranslation("");
@@ -623,7 +623,7 @@ export default function AdminTabVehicleWorkflow() {
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 text-center">
                     Veicolo Attivo
                   </span>
-                  <VehicleStatusToggle
+                  <AdminVehicleWorkflowStatusToggle
                     id={entry.id}
                     isActive={entry.isVehicleActive}
                     isFetching={entry.isVehicleFetchingData}
@@ -652,7 +652,7 @@ export default function AdminTabVehicleWorkflow() {
                   <span className="text-[10px] text-gray-500 dark:text-gray-400 mb-1 text-center">
                     Fetch Dati
                   </span>
-                  <VehicleStatusToggle
+                  <AdminVehicleWorkflowStatusToggle
                     id={entry.id}
                     isActive={entry.isVehicleActive}
                     isFetching={entry.isVehicleFetchingData}
@@ -953,7 +953,7 @@ export default function AdminTabVehicleWorkflow() {
                 </AdminGenericChip>
               </td>
               <td className="p-4 align-middle">
-                <VehicleStatusToggle
+                <AdminVehicleWorkflowStatusToggle
                   id={entry.id}
                   isActive={entry.isVehicleActive}
                   isFetching={entry.isVehicleFetchingData}
@@ -979,7 +979,7 @@ export default function AdminTabVehicleWorkflow() {
                 />
               </td>
               <td className="p-4 align-middle">
-                <VehicleStatusToggle
+                <AdminVehicleWorkflowStatusToggle
                   id={entry.id}
                   isActive={entry.isVehicleActive}
                   isFetching={entry.isVehicleFetchingData}
@@ -1042,7 +1042,7 @@ export default function AdminTabVehicleWorkflow() {
       </div>
 
       {selectedVehicleForSms && (
-        <AdminSmsProfileModal
+        <AdminVehicleWorkflowModalSmsProfile
           isOpen={smsModalOpen}
           onClose={() => {
             setSmsModalOpen(false);
@@ -1056,12 +1056,12 @@ export default function AdminTabVehicleWorkflow() {
         />
       )}
 
-      <AdminSmsGdprModal
+      <AdminVehicleWorkflowModalSmsGdpr
         isOpen={smsGdprModalOpen}
         onClose={() => setSmsGdprModalOpen(false)}
       />
 
-      <AdminSmsAuditModal
+      <AdminVehicleWorkflowModalSmsAudit
         isOpen={smsAuditModalOpen}
         onClose={() => setSmsAuditModalOpen(false)}
       />

@@ -5,7 +5,7 @@ import { formatDateToDisplay } from "@/utils/date";
 import { GapAnalysisResponse } from "@/types/gapInterfaces";
 import AdminGenericLoader from "@/components/adminGenericLoader";
 
-type Props = {
+type AdminTablePdfReportsModalGapValidationProps = {
   reportId: number;
   isOpen: boolean;
   onClose: () => void;
@@ -14,14 +14,14 @@ type Props = {
   gapValidationStatus?: string | null; // null = nessun PDF, ESCALATED = già escalato
 };
 
-export default function AdminModalGapValidation({
+export default function AdminTablePdfReportsModalGapValidation({
   reportId,
   isOpen,
   onClose,
   onValidationComplete,
   t,
   gapValidationStatus,
-}: Props) {
+}: AdminTablePdfReportsModalGapValidationProps) {
   const [loading, setLoading] = useState(true);
   const [certifying, setCertifying] = useState(false);
   const [escalating, setEscalating] = useState(false);
@@ -89,7 +89,7 @@ export default function AdminModalGapValidation({
       }
       setAnalysisData(data);
       logFrontendEvent(
-        "AdminModalGapValidation",
+        "AdminTablePdfReportsModalGapValidation",
         "INFO",
         "Gap analysis loaded",
         `ReportId: ${reportId}, TotalGaps: ${data.totalGaps}`
@@ -98,7 +98,7 @@ export default function AdminModalGapValidation({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "AdminModalGapValidation",
+        "AdminTablePdfReportsModalGapValidation",
         "ERROR",
         "Failed to load gap analysis",
         errorMessage
@@ -132,7 +132,7 @@ export default function AdminModalGapValidation({
       // 202 Accepted = certificazione avviata in background
       if (res.status === 202) {
         logFrontendEvent(
-          "AdminModalGapValidation",
+          "AdminTablePdfReportsModalGapValidation",
           "INFO",
           "Gap certification started in background",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -148,7 +148,7 @@ export default function AdminModalGapValidation({
 
       // Fallback per risposta 200 (non dovrebbe più accadere)
       logFrontendEvent(
-        "AdminModalGapValidation",
+        "AdminTablePdfReportsModalGapValidation",
         "INFO",
         "Gap certification completed",
         `ReportId: ${reportId}, GapsCertified: ${data.gapsCertified}`
@@ -159,7 +159,7 @@ export default function AdminModalGapValidation({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "AdminModalGapValidation",
+        "AdminTablePdfReportsModalGapValidation",
         "ERROR",
         "Certification failed",
         errorMessage
@@ -192,7 +192,7 @@ export default function AdminModalGapValidation({
 
       if (res.status === 202 || res.ok) {
         logFrontendEvent(
-          "AdminModalGapValidation",
+          "AdminTablePdfReportsModalGapValidation",
           "INFO",
           "Gap escalation started",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -206,7 +206,7 @@ export default function AdminModalGapValidation({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "AdminModalGapValidation",
+        "AdminTablePdfReportsModalGapValidation",
         "ERROR",
         "Escalation failed",
         errorMessage
@@ -243,7 +243,7 @@ export default function AdminModalGapValidation({
 
       if (res.status === 202 || res.ok) {
         logFrontendEvent(
-          "AdminModalGapValidation",
+          "AdminTablePdfReportsModalGapValidation",
           "INFO",
           "Contract breach recorded",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -257,7 +257,7 @@ export default function AdminModalGapValidation({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "AdminModalGapValidation",
+        "AdminTablePdfReportsModalGapValidation",
         "ERROR",
         "Contract breach failed",
         errorMessage

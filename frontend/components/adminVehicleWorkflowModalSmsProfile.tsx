@@ -35,7 +35,7 @@ interface AdaptiveProfileSession {
   consentAccepted: boolean;
 }
 
-interface AdminSmsProfileModalProps {
+interface AdminVehicleWorkflowModalSmsProfileProps {
   isOpen: boolean;
   onClose: () => void;
   vehicleId: number;
@@ -45,7 +45,7 @@ interface AdminSmsProfileModalProps {
   isVehicleActive: boolean;
 }
 
-export default function AdminSmsProfileModal({
+export default function AdminVehicleWorkflowModalSmsProfile({
   isOpen,
   onClose,
   vehicleId,
@@ -53,7 +53,7 @@ export default function AdminSmsProfileModal({
   vehicleBrand,
   companyName,
   isVehicleActive,
-}: AdminSmsProfileModalProps) {
+}: AdminVehicleWorkflowModalSmsProfileProps) {
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
   const [auditLogs, setAuditLogs] = useState<SmsAuditLog[]>([]);
@@ -87,14 +87,14 @@ export default function AdminSmsProfileModal({
         }
 
         logFrontendEvent(
-            "AdminSmsProfile",
+            "AdminVehicleWorkflowModalSmsProfile",
             "INFO",
             "SMS data loaded successfully",
             "VehicleId: " + vehicleId + ", Sessions: " + sessions.length + ", Logs: " + vehicleLogs.length
         );
     } catch (error) {
         logFrontendEvent(
-            "AdminSmsProfile",
+            "AdminVehicleWorkflowModalSmsProfile",
             "ERROR",
             "Failed to load SMS data",
             error instanceof Error ? error.message : String(error)
@@ -534,7 +534,7 @@ export default function AdminSmsProfileModal({
           <button
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {
-              logFrontendEvent("SmsProfileModal", "INFO", "SMS Profile modal closed");
+              logFrontendEvent("AdminVehicleWorkflowModalSmsProfile", "INFO", "SMS Profile modal closed");
               onClose();
             }}
           >

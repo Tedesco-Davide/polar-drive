@@ -7,7 +7,7 @@ import { logFrontendEvent } from "@/utils/logger";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-type Props = {
+type AdminAddFormVehicleWorkflowProps = {
   formData: adminWorkflowTypesInputForm;
   setFormData: React.Dispatch<
     React.SetStateAction<adminWorkflowTypesInputForm>
@@ -23,7 +23,7 @@ export default function AdminAddFormVehicleWorkflow({
   onSubmit,
   t,
   isSubmitting = false,
-}: Props) {
+}: AdminAddFormVehicleWorkflowProps) {
   const { options: vehicleOptions, loading: loadingOptions } = useVehicleOptions();
   const brandOptions = Object.keys(vehicleOptions);
   

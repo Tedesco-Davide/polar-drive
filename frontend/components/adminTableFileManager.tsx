@@ -9,7 +9,7 @@ import AdminGenericPaginationControls from "@/components/adminGenericPaginationC
 import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
 import AdminGenericChip from "@/components/adminGenericChip";
 import AdminGenericModalEditNotes from "./adminGenericModalEditNotes";
-import AdminModalFileManager from "./adminModalFileManager";
+import AdminAddFormFileManager from "./adminAddFormFileManager";
 import AdminGenericLoader from "./adminGenericLoader";
 
 const PDF_JOB_STATUS = {
@@ -246,7 +246,7 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
       </div>
 
       {showCreateModal && (
-        <AdminModalFileManager
+        <AdminAddFormFileManager
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSuccess={handleCreateSuccess}

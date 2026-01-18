@@ -14,15 +14,15 @@ interface GdprConsent {
   consentAccepted: boolean;
 }
 
-interface AdminSmsGdprModalProps {
+interface AdminVehicleWorkflowModalSmsGdprProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function AdminSmsGdprModal({
+export default function AdminVehicleWorkflowModalSmsGdpr({
   isOpen,
   onClose,
-}: AdminSmsGdprModalProps) {
+}: AdminVehicleWorkflowModalSmsGdprProps) {
   const { t } = useTranslation("");
   const [loading, setLoading] = useState(false);
   const [gdprConsents, setGdprConsents] = useState<GdprConsent[]>([]);
@@ -48,7 +48,7 @@ export default function AdminSmsGdprModal({
       }
     } catch (error) {
       logFrontendEvent(
-        "AdminSmsGdprModal",
+        "AdminVehicleWorkflowModalSmsGdpr",
         "ERROR",
         "Failed to load available brands",
         error instanceof Error ? error.message : String(error)
@@ -71,14 +71,14 @@ export default function AdminSmsGdprModal({
       }
 
       logFrontendEvent(
-        "AdminSmsGdprModal",
+        "AdminVehicleWorkflowModalSmsGdpr",
         "INFO",
         "GDPR consents loaded successfully",
         "Brand: " + selectedBrand + ", Consents: " + gdprConsents.length
       );
     } catch (error) {
       logFrontendEvent(
-        "AdminSmsGdprModal",
+        "AdminVehicleWorkflowModalSmsGdpr",
         "ERROR",
         "Failed to load GDPR consents",
         error instanceof Error ? error.message : String(error)
@@ -296,7 +296,7 @@ export default function AdminSmsGdprModal({
           <button
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {
-              logFrontendEvent("SmsGdprModal", "INFO", "SMS GDPR modal closed");
+              logFrontendEvent("AdminVehicleWorkflowModalSmsGdpr", "INFO", "SMS GDPR modal closed");
               onClose();
             }}
           >
