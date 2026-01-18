@@ -6,7 +6,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useState, useEffect, useRef } from "react";
 
-type AdminAddFormClientConsentProps = {
+type AddFormClientConsentProps = {
   t: TFunction;
   onSubmitSuccess: () => void;
   refreshClientConsents: () => Promise<void>;
@@ -18,11 +18,11 @@ const VALID_CONSENT_TYPES = [
   "Consent Reactivation",
 ];
 
-export default function AdminAddFormClientConsent({
+export default function AddFormClientConsent({
   t,
   onSubmitSuccess,
   refreshClientConsents,
-}: AdminAddFormClientConsentProps) {
+}: AddFormClientConsentProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<{
     consentType: string;
@@ -169,7 +169,7 @@ export default function AdminAddFormClientConsent({
         setIsSubmitting(true);
 
         await logFrontendEvent(
-        "AdminClientConsentAddForm",
+        "ClientConsentAddForm",
         "INFO",
         "Attempting to submit new consent"
         );
@@ -198,7 +198,7 @@ export default function AdminAddFormClientConsent({
         const newConsent = await response.json();
 
         await logFrontendEvent(
-        "AdminClientConsentAddForm",
+        "ClientConsentAddForm",
         "INFO",
         "Consent successfully created",
         "Consent ID: " + newConsent.id
@@ -226,7 +226,7 @@ export default function AdminAddFormClientConsent({
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
         await logFrontendEvent(
-        "AdminClientConsentAddForm",
+        "ClientConsentAddForm",
         "ERROR",
         "Failed to create consent",
         errorMessage
@@ -242,7 +242,7 @@ export default function AdminAddFormClientConsent({
     };
 
   return (
-    <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
+    <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Consent Type */}
         <label className="flex flex-col">
@@ -374,7 +374,7 @@ export default function AdminAddFormClientConsent({
 
       {/* Confirm Button */}
       <button
-        className={`mt-6 px-6 py-2 rounded font-medium transition-colors ${
+        className={`mt-6 px-6 py-2 rounded font-medium transition-colors text-sm ${
           isSubmitting
             ? "bg-gray-400 cursor-not-allowed text-white opacity-20"
             : "bg-green-700 hover:bg-green-600 text-softWhite"

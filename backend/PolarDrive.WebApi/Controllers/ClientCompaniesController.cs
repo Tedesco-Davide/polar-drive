@@ -114,6 +114,54 @@ public class ClientCompaniesController(PolarDriveDbContext db) : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = entity.Id }, entity.Id);
     }
 
+    [HttpGet("stats")]
+    public async Task<ActionResult<object>> GetStats()
+    {
+        try
+        {
+            await _logger.Info("ClientCompaniesController.GetStats", "Requested dashboard stats");
+
+            // Query aggregate SQL - singola query per tutte le statistiche
+            var totalCompanies = await db.ClientCompanies.CountAsync();
+            var totalVehicles = await db.ClientVehicles.CountAsync();
+            var activeVehicles = await db.ClientVehicles.CountAsync(v => v.IsActiveFlag);
+            var totalConsents = await db.ClientConsents.CountAsync();
+
+            // Conteggio consensi per tipo con singola query GROUP BY
+            var consentsByType = await db.ClientConsents
+                .GroupBy(c => c.ConsentType)
+                .Select(g => new { Type = g.Key, Count = g.Count() })
+                .ToListAsync();
+
+            var activationConsents = consentsByType.FirstOrDefault(c => c.Type == "Consent Activation")?.Count ?? 0;
+            var deactivationConsents = consentsByType.FirstOrDefault(c => c.Type == "Consent Deactivation")?.Count ?? 0;
+            var stopDataConsents = consentsByType.FirstOrDefault(c => c.Type == "Consent Stop Data Fetching")?.Count ?? 0;
+            var reactivationConsents = consentsByType.FirstOrDefault(c => c.Type == "Consent Reactivation")?.Count ?? 0;
+
+            var stats = new
+            {
+                totalCompanies,
+                totalVehicles,
+                activeVehicles,
+                totalConsents,
+                activationConsents,
+                deactivationConsents,
+                stopDataConsents,
+                reactivationConsents
+            };
+
+            await _logger.Info("ClientCompaniesController.GetStats", "Stats returned successfully",
+                $"Companies: {totalCompanies}, Vehicles: {totalVehicles}, Consents: {totalConsents}");
+
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("ClientCompaniesController.GetStats", "Error retrieving stats", ex.ToString());
+            return StatusCode(500, new { error = "Errore interno server", details = ex.Message });
+        }
+    }
+
     [HttpPut("{id}")]
     public async Task<IActionResult> Put(int id, [FromBody] ClientCompanyDTO updated)
     {

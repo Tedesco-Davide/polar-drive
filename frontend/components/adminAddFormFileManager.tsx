@@ -283,7 +283,7 @@ export default function AdminAddFormFileManager({
   if (!isOpen) return null;
 
   return (
-    <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
+    <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Grid principale per i campi del form */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

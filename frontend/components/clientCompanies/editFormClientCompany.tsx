@@ -3,7 +3,7 @@ import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { TFunction } from "i18next";
 import { logFrontendEvent } from "@/utils/logger";
 
-type AdminEditFormClientCompanyProps = {
+type EditFormClientCompanyProps = {
   client: ClientCompany;
   onClose: () => void;
   onSave: (updatedClient: ClientCompany) => void;
@@ -11,24 +11,22 @@ type AdminEditFormClientCompanyProps = {
   t: TFunction;
 };
 
-export default function AdminEditFormClientCompany({
+export default function EditFormClientCompany({
   client,
   onClose,
   onSave,
   refreshWorkflowData,
   t,
-}: AdminEditFormClientCompanyProps) {
+}: EditFormClientCompanyProps) {
   const [formData, setFormData] = useState<ClientCompany>({
     ...client,
     address: client.address ?? "",
     email: client.email ?? "",
     pecAddress: client.pecAddress ?? "",
     landlineNumber: client.landlineNumber ?? "",
-    // MAPPA i display fields ai campi che il form usa
     referentName: client.displayReferentName ?? "",
     vehicleMobileNumber: client.displayVehicleMobileNumber ?? "",
     referentEmail: client.displayReferentEmail ?? "",
-    // AGGIUNGI anche il correspondingVehicleId
     correspondingVehicleId: client.correspondingVehicleId,
   });
 
@@ -103,7 +101,7 @@ export default function AdminEditFormClientCompany({
 
     try {
       await logFrontendEvent(
-        "AdminEditFormClientCompany",
+        "EditFormClientCompany",
         "INFO",
         "Attempting to update client company and referent data",
         JSON.stringify(formData)
@@ -221,7 +219,7 @@ export default function AdminEditFormClientCompany({
       const errorDetails = err instanceof Error ? err.message : String(err);
 
       await logFrontendEvent(
-        "AdminEditFormClientCompany",
+        "EditFormClientCompany",
         "ERROR",
         "Exception thrown during client update",
         errorDetails

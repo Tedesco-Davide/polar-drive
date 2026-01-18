@@ -496,7 +496,7 @@ export default function AddFormOutagePeriods({
         )}
 
       <button
-        className={`mt-6 px-6 py-2 rounded font-medium transition-colors ${
+        className={`mt-6 px-6 py-2 rounded font-medium transition-colors text-sm ${
           isSubmitting
             ? "bg-gray-400 cursor-not-allowed text-white"
             : "bg-green-700 hover:bg-green-600 text-softWhite"
