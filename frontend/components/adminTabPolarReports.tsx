@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
-import AdminGenericLoader from "./adminGenericLoader";
+import Loader from "./generic/loader";
 import AdminGapValidationModal from "./adminTablePdfReportsModalGapValidation";
+import PaginationControls from "./generic/paginationControls";
 
 interface GapAlert {
   id: number;
@@ -234,7 +234,7 @@ export default function AdminTabPolarReports({ t }: { t: TFunction }) {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
     >
-      {(loading || isRefreshing) && <AdminGenericLoader local />}
+      {(loading || isRefreshing) && <Loader local />}
 
       <div className="bg-gradient-to-r from-coldIndigo/10 via-purple-500/5 to-glacierBlue/10 dark:from-coldIndigo/20 dark:via-purple-900/10 dark:to-glacierBlue/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -566,7 +566,7 @@ export default function AdminTabPolarReports({ t }: { t: TFunction }) {
 
         {/* Pagination */}
         <div className="mt-4">
-          <AdminGenericPaginationControls
+          <PaginationControls
             currentPage={currentPage}
             totalPages={totalPages}
             onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}

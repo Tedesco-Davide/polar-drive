@@ -9,12 +9,12 @@ import {
 } from "@/types/adminWorkflowTypes";
 import { parseISO, isAfter, isValid } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminGenericLoader from "@/components/adminGenericLoader";
-import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
+import Loader from "@/components/generic/loader";
+import SearchBar from "@/components/generic/searchBar";
 import AdminAddFormVehicleWorkflow from "@/components/adminAddFormVehicleWorkflow";
-import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
+import PaginationControls from "@/components/generic/paginationControls";
 import AdminVehicleWorkflowStatusToggle from "./adminVehicleWorkflowStatusToggle";
-import AdminGenericChip from "./adminGenericChip";
+import Chip from "./generic/chip";
 import AdminVehicleWorkflowModalSmsProfile from "./adminVehicleWorkflowModalSmsProfile";
 import AdminVehicleWorkflowModalSmsGdpr from "./adminVehicleWorkflowModalSmsGdpr";
 import AdminVehicleWorkflowModalSmsAudit from "./adminVehicleWorkflowModalSmsAudit";
@@ -505,7 +505,7 @@ export default function AdminTabVehicleWorkflow() {
   return (
     <div className="relative">
       {(loading || isRefreshing || isStatusChanging || isSubmitting || generatingProfileId !== null) && (
-        <AdminGenericLoader local />
+        <Loader local />
       )}
 
       {/* Header responsive */}
@@ -575,7 +575,7 @@ export default function AdminTabVehicleWorkflow() {
                 <span className="font-bold text-base text-polarNight dark:text-softWhite">
                   {entry.brand} {entry.model}
                 </span>
-                <AdminGenericChip
+                <Chip
                   className={`text-[10px] whitespace-nowrap px-2 py-1 ${
                     entry.clientOAuthAuthorized
                       ? "bg-green-100 text-green-700 border-green-500"
@@ -583,7 +583,7 @@ export default function AdminTabVehicleWorkflow() {
                   }`}
                 >
                   {entry.clientOAuthAuthorized ? "✓ Auth" : "⏳ Pending"}
-                </AdminGenericChip>
+                </Chip>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
                 VIN: {entry.vehicleVIN}
@@ -761,7 +761,7 @@ export default function AdminTabVehicleWorkflow() {
                   }
                 >
                   {generatingProfileId === entry.companyId ? (
-                    <AdminGenericLoader inline />
+                    <Loader inline />
                   ) : (
                     <>
                       <UserSearch size={16} />
@@ -933,14 +933,14 @@ export default function AdminTabVehicleWorkflow() {
                   }
                 >
                   {generatingProfileId === entry.companyId ? (
-                    <AdminGenericLoader inline />
+                    <Loader inline />
                   ) : (
                     <UserSearch size={16} />
                   )}
                 </button>
               </td>
               <td className="p-4">
-                <AdminGenericChip
+                <Chip
                   className={`w-[155px] ${
                     entry.clientOAuthAuthorized
                       ? "bg-green-100 text-green-700 border-green-500"
@@ -950,7 +950,7 @@ export default function AdminTabVehicleWorkflow() {
                   {entry.clientOAuthAuthorized
                     ? t("admin.authorized")
                     : t("admin.pendingAuthorization")}
-                </AdminGenericChip>
+                </Chip>
               </td>
               <td className="p-4 align-middle">
                 <AdminVehicleWorkflowStatusToggle
@@ -1016,7 +1016,7 @@ export default function AdminTabVehicleWorkflow() {
       {/* Controlli Paginazione e Ricerca - Full width su desktop */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4 mt-6 w-full">
         <div className="order-2 lg:order-1 shrink-0">
-          <AdminGenericPaginationControls
+          <PaginationControls
             currentPage={currentPage}
             totalPages={totalPages}
             onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -1024,7 +1024,7 @@ export default function AdminTabVehicleWorkflow() {
           />
         </div>
         <div className="order-1 lg:order-2 flex-1 min-w-0">
-          <AdminGenericSearchBar
+          <SearchBar
             query={query}
             setQuery={setQuery}
             resetPage={() => setCurrentPage(1)}

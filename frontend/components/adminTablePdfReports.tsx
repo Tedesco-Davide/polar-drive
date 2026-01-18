@@ -5,12 +5,12 @@ import { useState, useEffect } from "react";
 import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download, FileLock, FileText } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminGenericChip from "@/components/adminGenericChip";
-import AdminGenericLoader from "@/components/adminGenericLoader";
-import AdminGenericModalEditNotes from "@/components/adminGenericModalEditNotes";
+import Chip from "@/components/generic/chip";
+import Loader from "@/components/generic/loader";
+import ModalEditNotes from "@/components/generic/modalEditNotes";
 import AdminGapValidationModal from "@/components/adminTablePdfReportsModalGapValidation";
-import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
-import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
+import PaginationControls from "@/components/generic/paginationControls";
+import SearchBar from "@/components/generic/searchBar";
 
 export default function AdminTablePdfReports({ t }: { t: TFunction }) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
@@ -517,7 +517,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing) && <AdminGenericLoader local />}
+      {(loading || isRefreshing) && <Loader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -587,7 +587,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
                     }
                   >
                     {downloadingId === report.id ? (
-                      <AdminGenericLoader inline />
+                      <Loader inline />
                     ) : (
                       <FileText size={16} />
                     )}
@@ -615,7 +615,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
                           disabled
                           title={t("admin.gapValidation.certificationInProgress")}
                         >
-                          <AdminGenericLoader inline />
+                          <Loader inline />
                         </button>
                       )}
 
@@ -629,7 +629,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
                             title="Download PDF Escalation"
                           >
                             {downloadingCertId === report.id ? (
-                              <AdminGenericLoader inline />
+                              <Loader inline />
                             ) : (
                               <FileBadge size={16} />
                             )}
@@ -669,7 +669,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
                             title={t("admin.gapValidation.downloadCertification")}
                           >
                             {downloadingCertId === report.id ? (
-                              <AdminGenericLoader inline />
+                              <Loader inline />
                             ) : (
                               <FileBadge size={16} />
                             )}
@@ -698,7 +698,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
                             title="Download PDF Contract Breach"
                           >
                             {downloadingCertId === report.id ? (
-                              <AdminGenericLoader inline />
+                              <Loader inline />
                             ) : (
                               <FileBadge size={16} />
                             )}
@@ -755,7 +755,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
                     >
                       {isCurrentlyRegenerating ||
                       report.status === "REGENERATING" ? (
-                        <AdminGenericLoader inline />
+                        <Loader inline />
                       ) : (
                         <RefreshCw size={16} />
                       )}
@@ -772,9 +772,9 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
                 </td>
                 <td className="p-4">
                   <div className="space-y-1 flex flex-col w-[150px]">
-                    <AdminGenericChip className={getStatusColor(report.status)}>
+                    <Chip className={getStatusColor(report.status)}>
                       {report.status}
-                    </AdminGenericChip>
+                    </Chip>
                     {fileSize > 0 && (
                       <div className="text-xs text-gray-400 flex gap-1 items-center">
                         {report.pdfHash && (
@@ -824,13 +824,13 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <AdminGenericPaginationControls
+        <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <AdminGenericSearchBar
+        <SearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -842,7 +842,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
       </div>
 
       {selectedReportForNotes && (
-        <AdminGenericModalEditNotes
+        <ModalEditNotes
           entity={selectedReportForNotes}
           isOpen={!!selectedReportForNotes}
           title={t("admin.vehicleReports.notesModalTitle")}

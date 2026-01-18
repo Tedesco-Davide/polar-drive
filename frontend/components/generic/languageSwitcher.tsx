@@ -5,7 +5,7 @@ import { logFrontendEvent } from "@/utils/logger";
 import { useState } from "react";
 import { ScrollTrigger } from "gsap/dist/ScrollTrigger";
 
-export default function AdminGenericLanguageSwitcher() {
+export default function LanguageSwitcher() {
   const router = useRouter();
   const [isChanging, setIsChanging] = useState(false);
 
@@ -16,7 +16,7 @@ export default function AdminGenericLanguageSwitcher() {
     setIsChanging(true);
 
     logFrontendEvent(
-      "AdminGenericLanguageSwitcher",
+      "LanguageSwitcher",
       "INFO",
       "Language switched to " + lng,
       "Current path: " + router.asPath

@@ -12,12 +12,12 @@ import {
 import { format } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
-import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
-import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
-import AdminGenericChip from "@/components/adminGenericChip";
-import AdminGenericModalEditNotes from "./adminGenericModalEditNotes";
+import PaginationControls from "@/components/generic/paginationControls";
+import SearchBar from "@/components/generic/searchBar";
+import Chip from "@/components/generic/chip";
+import ModalEditNotes from "./generic/modalEditNotes";
 import AdminAddFormOutagePeriods from "./adminAddFormOutagePeriods";
-import AdminGenericLoader from "./adminGenericLoader";
+import Loader from "./generic/loader";
 
 const formatDateTime = (dateTime: string): string => {
   const date = new Date(dateTime.replace("Z", ""));
@@ -253,7 +253,7 @@ export default function AdminTableOutagePeriods({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing || uploadingZip.size > 0 || downloadingZipId !== null) && <AdminGenericLoader local />}
+      {(loading || isRefreshing || uploadingZip.size > 0 || downloadingZipId !== null) && <Loader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -382,9 +382,9 @@ export default function AdminTableOutagePeriods({ t }: { t: TFunction }) {
                 </div>
               </td>
               <td className="px-4 py-3">
-                <AdminGenericChip className={getStatusColor(outage.status)}>
+                <Chip className={getStatusColor(outage.status)}>
                   {outage.status}
-                </AdminGenericChip>
+                </Chip>
               </td>
               <td className="px-4 py-3">{outage.outageType}</td>
               <td className="px-4 py-3">{outage.outageBrand}</td>
@@ -396,9 +396,9 @@ export default function AdminTableOutagePeriods({ t }: { t: TFunction }) {
                     {outage.outageEnd ? (
                       formatDateTime(outage.outageEnd)
                     ) : (
-                      <AdminGenericChip className="bg-red-100 text-red-700 border-red-500 text-xs">
+                      <Chip className="bg-red-100 text-red-700 border-red-500 text-xs">
                         ONGOING
-                      </AdminGenericChip>
+                      </Chip>
                     )}
                   </div>
                 </div>
@@ -407,9 +407,9 @@ export default function AdminTableOutagePeriods({ t }: { t: TFunction }) {
                 {outage.outageEnd ? (
                   <span>{formatDuration(outage.durationMinutes)}</span>
                 ) : (
-                  <AdminGenericChip className="bg-red-100 text-red-700 border-red-500">
+                  <Chip className="bg-red-100 text-red-700 border-red-500">
                     ONGOING
-                  </AdminGenericChip>
+                  </Chip>
                 )}
               </td>
               <td className="px-4 py-3">
@@ -429,13 +429,13 @@ export default function AdminTableOutagePeriods({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <AdminGenericPaginationControls
+        <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <AdminGenericSearchBar
+        <SearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -449,7 +449,7 @@ export default function AdminTableOutagePeriods({ t }: { t: TFunction }) {
       </div>
 
       {selectedOutageForNotes && (
-        <AdminGenericModalEditNotes
+        <ModalEditNotes
           entity={selectedOutageForNotes}
           isOpen={!!selectedOutageForNotes}
           title={t("admin.outagePeriods.notes.modalTitle")}

@@ -3,7 +3,7 @@ import { TFunction } from "i18next";
 import { logFrontendEvent } from "@/utils/logger";
 import { formatDateToDisplay } from "@/utils/date";
 import { GapAnalysisResponse } from "@/types/gapInterfaces";
-import AdminGenericLoader from "@/components/adminGenericLoader";
+import Loader from "@/components/generic/loader";
 
 type AdminTablePdfReportsModalGapValidationProps = {
   reportId: number;
@@ -305,7 +305,7 @@ export default function AdminTablePdfReportsModalGapValidation({
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <AdminGenericLoader />
+              <Loader />
             </div>
           ) : error ? (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -549,7 +549,7 @@ export default function AdminTablePdfReportsModalGapValidation({
               >
                 {certifying ? (
                   <>
-                    <AdminGenericLoader inline />
+                    <Loader inline />
                     {t("admin.gapValidation.certifying")}
                   </>
                 ) : (
@@ -567,7 +567,7 @@ export default function AdminTablePdfReportsModalGapValidation({
               >
                 {escalating ? (
                   <>
-                    <AdminGenericLoader inline />
+                    <Loader inline />
                     {t("admin.gapValidation.escalatingBtn")}
                   </>
                 ) : (
@@ -585,7 +585,7 @@ export default function AdminTablePdfReportsModalGapValidation({
               >
                 {breaching ? (
                   <>
-                    <AdminGenericLoader inline />
+                    <Loader inline />
                     {t("admin.gapValidation.processingBtn")}
                   </>
                 ) : (

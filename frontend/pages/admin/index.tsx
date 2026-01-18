@@ -13,8 +13,8 @@ import AdminTableOutagePeriods from "@/components/adminTableOutagePeriods";
 import AdminTableFileManager from "@/components/adminTableFileManager";
 import AdminPdfReportsTable from "@/components/adminTablePdfReports";
 import Head from "next/head";
-import AdminGenericLayoutMainHeader from "@/components/adminGenericLayoutMainHeader";
 import classNames from "classnames";
+import LayoutMainHeader from "@/components/generic/layoutMainHeader";
 
 export default function AdminDashboard() {
   const FAKE_AUTH = true;
@@ -58,7 +58,7 @@ export default function AdminDashboard() {
         <title>{t("admin.title")}</title>
       </Head>
       <>
-        <AdminGenericLayoutMainHeader />
+        <LayoutMainHeader />
         <section className="relative w-full h-screen pt-[64px] overflow-hidden">
           <div className="h-full overflow-y-auto px-6">
             {mounted && (

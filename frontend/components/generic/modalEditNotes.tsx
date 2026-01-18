@@ -3,7 +3,7 @@ import { Trash2, PlusIcon } from "lucide-react";
 import { TFunction } from "i18next";
 import { logFrontendEvent } from "@/utils/logger";
 
-type AdminGenericModalEditNotesProps<T> = {
+type ModalEditNotesProps<T> = {
   entity: T;
   isOpen: boolean;
   title: string;
@@ -13,7 +13,7 @@ type AdminGenericModalEditNotesProps<T> = {
   t: TFunction;
 };
 
-export default function AdminGenericModalEditNotes<T>({
+export default function ModalEditNotes<T>({
   entity,
   isOpen,
   title,
@@ -21,7 +21,7 @@ export default function AdminGenericModalEditNotes<T>({
   onSave,
   onClose,
   t,
-}: AdminGenericModalEditNotesProps<T>) {
+}: ModalEditNotesProps<T>) {
   const [notes, setNotes] = useState<string[]>(() => {
     const raw = entity[notesField] as unknown as string;
 
@@ -55,7 +55,7 @@ export default function AdminGenericModalEditNotes<T>({
   const handleAddNote = () => {
     if (!newNote.trim()) return;
     setNotes((prev) => [...prev, newNote.trim()]);
-    logFrontendEvent("AdminGenericModalEditNotes", "INFO", "Note added", newNote);
+    logFrontendEvent("ModalEditNotes", "INFO", "Note added", newNote);
     setNewNote("");
   };
 
@@ -63,18 +63,18 @@ export default function AdminGenericModalEditNotes<T>({
     const updated = [...notes];
     updated[index] = value;
     setNotes(updated);
-    logFrontendEvent("AdminGenericModalEditNotes", "INFO", "Note edited", "Index: " + index);
+    logFrontendEvent("ModalEditNotes", "INFO", "Note edited", "Index: " + index);
   };
 
   const handleDeleteNote = (index: number) => {
     setNotes(notes.filter((_, i) => i !== index));
-    logFrontendEvent("AdminGenericModalEditNotes", "INFO", "Note deleted", "Index: " + index);
+    logFrontendEvent("ModalEditNotes", "INFO", "Note deleted", "Index: " + index);
   };
 
   // ✅ Modifica anche handleSave per gestire array vuoto
   const handleSave = () => {
     logFrontendEvent(
-      "AdminGenericModalEditNotes",
+      "ModalEditNotes",
       "INFO",
       "Notes saved",
       `Total notes: ${notes.length}`
@@ -143,7 +143,7 @@ export default function AdminGenericModalEditNotes<T>({
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {
               logFrontendEvent(
-                "AdminGenericModalEditNotes",
+                "ModalEditNotes",
                 "INFO",
                 "Notes modal closed without saving"
               );

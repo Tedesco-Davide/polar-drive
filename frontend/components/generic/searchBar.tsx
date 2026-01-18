@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useTranslation } from "next-i18next";
 import { Search, X } from "lucide-react";
 
-type AdminGenericSearchBarProps = {
+type SearchBarProps = {
   query: string;
   setQuery: (value: string) => void;
   resetPage: () => void;
@@ -25,7 +25,7 @@ type AdminGenericSearchBarProps = {
   vinFilterLabel?: string;
 };
 
-export default function AdminGenericSearchBar({
+export default function SearchBar({
   query,
   setQuery,
   resetPage,
@@ -46,7 +46,7 @@ export default function AdminGenericSearchBar({
   availableOutageTypes,
   showVinFilter = false,
   vinFilterLabel,
-}: AdminGenericSearchBarProps) {
+}: SearchBarProps) {
   const { t } = useTranslation();
   const [localValue, setLocalValue] = useState(query);
   const [searchType, setSearchType] = useState<

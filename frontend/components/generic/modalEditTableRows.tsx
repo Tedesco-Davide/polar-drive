@@ -1,27 +1,27 @@
 import { useEffect, ReactNode } from "react";
 import { logFrontendEvent } from "@/utils/logger";
 
-type AdminGenericModalEditProps = {
+type ModalEditTableRowsProps = {
   isOpen: boolean;
   onClose: () => void;
   title: string;
   children: ReactNode;
 };
 
-export default function AdminGenericModalEdit({ isOpen, title, children }: AdminGenericModalEditProps) {
+export default function ModalEditTableRows({ isOpen, title, children }: ModalEditTableRowsProps) {
   useEffect(() => {
     try {
       if (isOpen) {
         document.body.classList.add("overflow-hidden");
         logFrontendEvent(
-          "AdminGenericModalEdit",
+          "ModalEditTableRows",
           "INFO",
           "Modal opened and body scroll disabled"
         );
       } else {
         document.body.classList.remove("overflow-hidden");
         logFrontendEvent(
-          "AdminGenericModalEdit",
+          "ModalEditTableRows",
           "INFO",
           "Modal closed and body scroll restored"
         );
@@ -29,7 +29,7 @@ export default function AdminGenericModalEdit({ isOpen, title, children }: Admin
     } catch (err) {
       const errDetails = err instanceof Error ? err.message : String(err);
       logFrontendEvent(
-        "AdminGenericModalEdit",
+        "ModalEditTableRows",
         "ERROR",
         "Error occurred while toggling modal scroll behavior",
         errDetails
@@ -40,7 +40,7 @@ export default function AdminGenericModalEdit({ isOpen, title, children }: Admin
       try {
         document.body.classList.remove("overflow-hidden");
         logFrontendEvent(
-          "AdminGenericModalEdit",
+          "ModalEditTableRows",
           "INFO",
           "Modal cleanup triggered and body scroll restored"
         );
@@ -48,7 +48,7 @@ export default function AdminGenericModalEdit({ isOpen, title, children }: Admin
         const errDetails =
           cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr);
         logFrontendEvent(
-          "AdminGenericModalEdit",
+          "ModalEditTableRows",
           "ERROR",
           "Error occurred during modal cleanup",
           errDetails

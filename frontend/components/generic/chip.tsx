@@ -1,13 +1,13 @@
 import { useRef } from "react";
 import classNames from "classnames";
 
-interface AdminGenericChipProps {
+interface ChipProps {
   children: React.ReactNode;
   onClick?: () => void;
   className?: string;
 }
 
-export default function AdminGenericChip({ children, onClick, className }: AdminGenericChipProps) {
+export default function Chip({ children, onClick, className }: ChipProps) {
   const chipRef = useRef<HTMLButtonElement>(null);
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {

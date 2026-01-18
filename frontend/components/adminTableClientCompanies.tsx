@@ -3,11 +3,11 @@ import { Pencil } from "lucide-react";
 import { TFunction } from "i18next";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
-import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
-import AdminGenericModalEdit from "@/components/adminGenericModalEdit";
+import PaginationControls from "@/components/generic/paginationControls";
+import SearchBar from "@/components/generic/searchBar";
+import ModalEditTableRows from "@/components/generic/modalEditTableRows";
 import AdminEditFormClientCompany from "@/components/adminEditFormClientCompany";
-import AdminGenericLoader from "@/components/adminGenericLoader";
+import Loader from "@/components/generic/loader";
 
 export default function AdminTableClientCompanies({ t }: { t: TFunction }) {
   const [clientData, setClientData] = useState<ClientCompany[]>([]);
@@ -101,7 +101,7 @@ export default function AdminTableClientCompanies({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing) && <AdminGenericLoader local />}
+      {(loading || isRefreshing) && <Loader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -168,13 +168,13 @@ export default function AdminTableClientCompanies({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <AdminGenericPaginationControls
+        <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <AdminGenericSearchBar
+        <SearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -193,7 +193,7 @@ export default function AdminTableClientCompanies({ t }: { t: TFunction }) {
       </div>
 
       {showEditModal && selectedClient && (
-        <AdminGenericModalEdit
+        <ModalEditTableRows
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           title={t("admin.clientCompany.editModal")}
@@ -207,7 +207,7 @@ export default function AdminTableClientCompanies({ t }: { t: TFunction }) {
             }
             t={t}
           />
-        </AdminGenericModalEdit>
+        </ModalEditTableRows>
       )}
     </div>
   );

@@ -5,12 +5,12 @@ import { useEffect, useState } from "react";
 import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { FileArchive, NotebookPen, Download, Trash2 } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
-import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
-import AdminGenericChip from "@/components/adminGenericChip";
-import AdminGenericModalEditNotes from "./adminGenericModalEditNotes";
+import PaginationControls from "@/components/generic/paginationControls";
+import SearchBar from "@/components/generic/searchBar";
+import Chip from "@/components/generic/chip";
+import ModalEditNotes from "./generic/modalEditNotes";
 import AdminAddFormFileManager from "./adminAddFormFileManager";
-import AdminGenericLoader from "./adminGenericLoader";
+import Loader from "./generic/loader";
 
 const PDF_JOB_STATUS = {
   PENDING: "PENDING",
@@ -225,7 +225,7 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing || downloadingJobId !== null) && <AdminGenericLoader local />}
+      {(loading || isRefreshing || downloadingJobId !== null) && <Loader local />}
 
       <div className="flex items-center mb-6 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -323,9 +323,9 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
                   </div>
                 </td>
                 <td className="p-4">
-                  <AdminGenericChip className={getStatusColor(job.status)}>
+                  <Chip className={getStatusColor(job.status)}>
                     {job.status}
-                  </AdminGenericChip>
+                  </Chip>
                 </td>
                 <td className="p-4">
                   <div className="text-xs">
@@ -359,45 +359,45 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
                   <div className="flex flex-wrap gap-2">
                     {job.companyList && job.companyList.length > 0 ? (
                       job.companyList.slice(0, 2).map((company, idx) => (
-                        <AdminGenericChip
+                        <Chip
                           key={idx}
                           className="bg-blue-100 text-blue-700 border-blue-300"
                         >
                           {company}
-                        </AdminGenericChip>
+                        </Chip>
                       ))
                     ) : (
-                      <AdminGenericChip className="bg-blue-100 text-blue-700 border-blue-300">
+                      <Chip className="bg-blue-100 text-blue-700 border-blue-300">
                         ALL-COMPANIES
-                      </AdminGenericChip>
+                      </Chip>
                     )}
                     {job.brandList && job.brandList.length > 0 ? (
                       job.brandList.slice(0, 2).map((brand, idx) => (
-                        <AdminGenericChip
+                        <Chip
                           key={idx}
                           className="bg-purple-100 text-purple-700 border-purple-300"
                         >
                           {brand}
-                        </AdminGenericChip>
+                        </Chip>
                       ))
                     ) : (
-                      <AdminGenericChip className="bg-purple-100 text-purple-700 border-purple-300">
+                      <Chip className="bg-purple-100 text-purple-700 border-purple-300">
                         ALL-BRAND
-                      </AdminGenericChip>
+                      </Chip>
                     )}
                     {job.vinList && job.vinList.length > 0 ? (
                       job.vinList.map((vin, idx) => (
-                        <AdminGenericChip
+                        <Chip
                           key={idx}
                           className="bg-orange-100 text-orange-700 border-orange-300"
                         >
                           {vin}
-                        </AdminGenericChip>
+                        </Chip>
                       ))
                     ) : (
-                      <AdminGenericChip className="bg-orange-100 text-orange-700 border-orange-300">
+                      <Chip className="bg-orange-100 text-orange-700 border-orange-300">
                         ALL-VIN
-                      </AdminGenericChip>
+                      </Chip>
                     )}
                   </div>
                 </td>
@@ -408,13 +408,13 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <AdminGenericPaginationControls
+        <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <AdminGenericSearchBar
+        <SearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -430,7 +430,7 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
       </div>
 
       {selectedJobForNotes && (
-        <AdminGenericModalEditNotes
+        <ModalEditNotes
           entity={selectedJobForNotes}
           isOpen={!!selectedJobForNotes}
           title={t("admin.filemanager.notes.modalTitle")}

@@ -5,12 +5,12 @@ import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
 import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminGenericModalEditNotes from "@/components/adminGenericModalEditNotes";
-import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
-import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
-import AdminGenericChip from "@/components/adminGenericChip";
+import ModalEditNotes from "@/components/generic/modalEditNotes";
+import SearchBar from "@/components/generic/searchBar";
+import Chip from "@/components/generic/chip";
 import AdminAddFormClientConsent from "./adminAddFormClientConsent";
-import AdminGenericLoader from "./adminGenericLoader";
+import Loader from "./generic/loader";
+import PaginationControls from "@/components/generic/paginationControls";
 
 const getConsentTypeColor = (type: string) => {
   switch (type) {
@@ -159,7 +159,7 @@ export default function AdminTableClientConsents({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing || downloadingZipId !== null) && <AdminGenericLoader local />}
+      {(loading || isRefreshing || downloadingZipId !== null) && <Loader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -240,9 +240,9 @@ export default function AdminTableClientConsents({ t }: { t: TFunction }) {
                 </div>
               </td>
               <td className="p-4">
-                <AdminGenericChip className={getConsentTypeColor(consent.consentType)}>
+                <Chip className={getConsentTypeColor(consent.consentType)}>
                   {consent.consentType}
-                </AdminGenericChip>
+                </Chip>
               </td>
               <td className="p-4">
                 {formatDateToDisplay(consent.uploadDate)}
@@ -264,13 +264,13 @@ export default function AdminTableClientConsents({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <AdminGenericPaginationControls
+        <PaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <AdminGenericSearchBar
+        <SearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -293,7 +293,7 @@ export default function AdminTableClientConsents({ t }: { t: TFunction }) {
       </div>
 
       {selectedConsentForNotes && (
-        <AdminGenericModalEditNotes
+        <ModalEditNotes
           entity={selectedConsentForNotes}
           isOpen={!!selectedConsentForNotes}
           title={t("admin.clientConsents.notes.modalTitle")}
