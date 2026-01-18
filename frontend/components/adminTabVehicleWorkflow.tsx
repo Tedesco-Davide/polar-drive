@@ -9,17 +9,17 @@ import {
 } from "@/types/adminWorkflowTypes";
 import { parseISO, isAfter, isValid } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminLoader from "@/components/adminLoader";
-import SearchBar from "@/components/searchBar";
-import AdminMainWorkflowInputForm from "@/components/adminMainWorkflowAddForm";
-import PaginationControls from "@/components/paginationControls";
+import AdminGenericLoader from "@/components/adminGenericLoader";
+import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
+import AdminAddFormVehicleWorkflow from "@/components/adminAddFormVehicleWorkflow";
+import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
 import VehicleStatusToggle from "./vehicleStatusToggle";
-import Chip from "./chip";
+import AdminGenericChip from "./adminGenericChip";
 import AdminSmsProfileModal from "./adminSmsProfileModal";
 import AdminSmsGdprModal from "./adminSmsGdprModal";
 import AdminSmsAuditModal from "./adminSmsAuditModal";
 
-export default function AdminMainWorkflow() {
+export default function AdminTabVehicleWorkflow() {
   const { t } = useTranslation("");
   const [workflowData, setWorkflowData] = useState<WorkflowRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -138,14 +138,14 @@ export default function AdminMainWorkflow() {
       setCurrentPage(response.page);
 
       logFrontendEvent(
-        "AdminMainWorkflow",
+        "AdminVehicleWorkflow",
         "INFO",
         "Workflow data loaded",
         `Page: ${response.page}, Total: ${response.totalCount}`
       );
     } catch (err) {
       logFrontendEvent(
-        "AdminMainWorkflow",
+        "AdminVehicleWorkflow",
         "ERROR",
         "Failed to load workflow data",
         String(err)
@@ -169,7 +169,7 @@ export default function AdminMainWorkflow() {
   };
 
   const handleSubmit = async () => {
-    logFrontendEvent("AdminMainWorkflow", "INFO", "Form submission triggered");
+    logFrontendEvent("AdminVehicleWorkflow", "INFO", "Form submission triggered");
 
     const requiredFields: (keyof adminWorkflowTypesInputForm)[] = [
       "companyVatNumber",
@@ -277,7 +277,7 @@ export default function AdminMainWorkflow() {
         let errorCode = "";
         const responseText = await response.text();
         console.error(
-          `[AdminMainWorkflow] HTTP ${response.status}: ${responseText}`
+          `[AdminVehicleWorkflow] HTTP ${response.status}: ${responseText}`
         );
         try {
           const json = JSON.parse(responseText);
@@ -505,7 +505,7 @@ export default function AdminMainWorkflow() {
   return (
     <div className="relative">
       {(loading || isRefreshing || isStatusChanging || isSubmitting || generatingProfileId !== null) && (
-        <AdminLoader local />
+        <AdminGenericLoader local />
       )}
 
       {/* Header responsive */}
@@ -528,7 +528,7 @@ export default function AdminMainWorkflow() {
       </div>
 
       {showForm && (
-        <AdminMainWorkflowInputForm
+        <AdminAddFormVehicleWorkflow
           formData={formData}
           setFormData={setFormData}
           onSubmit={handleSubmit}
@@ -575,7 +575,7 @@ export default function AdminMainWorkflow() {
                 <span className="font-bold text-base text-polarNight dark:text-softWhite">
                   {entry.brand} {entry.model}
                 </span>
-                <Chip
+                <AdminGenericChip
                   className={`text-[10px] whitespace-nowrap px-2 py-1 ${
                     entry.clientOAuthAuthorized
                       ? "bg-green-100 text-green-700 border-green-500"
@@ -583,7 +583,7 @@ export default function AdminMainWorkflow() {
                   }`}
                 >
                   {entry.clientOAuthAuthorized ? "✓ Auth" : "⏳ Pending"}
-                </Chip>
+                </AdminGenericChip>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 font-mono break-all">
                 VIN: {entry.vehicleVIN}
@@ -761,7 +761,7 @@ export default function AdminMainWorkflow() {
                   }
                 >
                   {generatingProfileId === entry.companyId ? (
-                    <AdminLoader inline />
+                    <AdminGenericLoader inline />
                   ) : (
                     <>
                       <UserSearch size={16} />
@@ -933,14 +933,14 @@ export default function AdminMainWorkflow() {
                   }
                 >
                   {generatingProfileId === entry.companyId ? (
-                    <AdminLoader inline />
+                    <AdminGenericLoader inline />
                   ) : (
                     <UserSearch size={16} />
                   )}
                 </button>
               </td>
               <td className="p-4">
-                <Chip
+                <AdminGenericChip
                   className={`w-[155px] ${
                     entry.clientOAuthAuthorized
                       ? "bg-green-100 text-green-700 border-green-500"
@@ -950,7 +950,7 @@ export default function AdminMainWorkflow() {
                   {entry.clientOAuthAuthorized
                     ? t("admin.authorized")
                     : t("admin.pendingAuthorization")}
-                </Chip>
+                </AdminGenericChip>
               </td>
               <td className="p-4 align-middle">
                 <VehicleStatusToggle
@@ -1016,7 +1016,7 @@ export default function AdminMainWorkflow() {
       {/* Controlli Paginazione e Ricerca - Full width su desktop */}
       <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 lg:gap-4 mt-6 w-full">
         <div className="order-2 lg:order-1 shrink-0">
-          <PaginationControls
+          <AdminGenericPaginationControls
             currentPage={currentPage}
             totalPages={totalPages}
             onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -1024,7 +1024,7 @@ export default function AdminMainWorkflow() {
           />
         </div>
         <div className="order-1 lg:order-2 flex-1 min-w-0">
-          <SearchBar
+          <AdminGenericSearchBar
             query={query}
             setQuery={setQuery}
             resetPage={() => setCurrentPage(1)}

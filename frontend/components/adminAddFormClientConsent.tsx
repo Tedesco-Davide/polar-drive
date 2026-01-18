@@ -18,7 +18,7 @@ const VALID_CONSENT_TYPES = [
   "Consent Reactivation",
 ];
 
-export default function AdminClientConsentAddForm({
+export default function AdminAddFormClientConsent({
   t,
   onSubmitSuccess,
   refreshClientConsents,

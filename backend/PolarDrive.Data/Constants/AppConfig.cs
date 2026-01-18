@@ -240,7 +240,7 @@ public class GapAnalysisMonitoring
     /// <summary>
     /// Intervallo tra cicli di monitoraggio (minuti).
     /// Default: 60 minuti (1 ora).
-    /// Usato sia da BackgroundService che da Dashboard auto-refresh.
+    /// Usato sia da BackgroundService che da Alert Gap Dashboard auto-refresh.
     /// </summary>
     public int CheckIntervalMinutes { get; set; } = 60;
 
@@ -590,7 +590,7 @@ public static class AppConfig
 
     /// <summary>
     /// Intervallo tra cicli di monitoraggio (minuti).
-    /// Usato sia da BackgroundService che da Dashboard auto-refresh.
+    /// Usato sia da BackgroundService che da Alert Gap Dashboard auto-refresh.
     /// </summary>
     public static int GAP_MONITORING_CHECK_INTERVAL_MINUTES => Config.GapAnalysis.Monitoring.CheckIntervalMinutes;
 

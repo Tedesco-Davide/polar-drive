@@ -1,6 +1,6 @@
 {
   "admin.title": "PolarDrive ❄️🐻‍❄️🚗",
-  "admin.tabDashboard": "Dashboard",
+  "admin.tabPolarReports": "PolarReports",
   "admin.tabWorkflow": "Workflow Veicoli",
   "admin.missingFields": "Per favore compila i seguenti campi obbligatori",
   "admin.loading": "Caricamento in corso...",
@@ -217,7 +217,7 @@
   "admin.outagePeriods.tableRefreshSuccess": "Outages refresh completato con successo",
   "admin.outagePeriods.tableRefreshFail": "Outages refresh fallito",
 
-  "admin.vehicleReports.tableHeader": "PolarReports",
+  "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totali",
   "admin.vehicleReports.tableHeaderRegenerating": "in rigenerazione",
   "admin.vehicleReports.tableHeaderProcessing": "in processing",
@@ -495,10 +495,10 @@
   "admin.pdfReports.reportImmutable": "Report certificato - immutabile",
   "admin.pdfReports.regenerateReportButton": "Rigenera report (Stato: {{status}})",
 
-  "admin.gapAlerts.dashboardTitle": "Alert Gap",
+  "admin.gapAlerts.dashboardCardTitle": "Alert Gap Dashboard",
   "admin.gapAlerts.stats.total": "Totali",
   "admin.gapAlerts.stats.open": "Aperti",
-  "admin.gapAlerts.stats.escalated": "Escalati",
+  "admin.gapAlerts.stats.escalated": "Escalated",
   "admin.gapAlerts.stats.completed": "Completati",
   "admin.gapAlerts.stats.breach": "Violazioni",
   "admin.gapAlerts.stats.critical": "Critici",

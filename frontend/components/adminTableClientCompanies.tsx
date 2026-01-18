@@ -3,13 +3,13 @@ import { Pencil } from "lucide-react";
 import { TFunction } from "i18next";
 import { ClientCompany } from "@/types/clientCompanyInterfaces";
 import { logFrontendEvent } from "@/utils/logger";
-import PaginationControls from "@/components/paginationControls";
-import SearchBar from "@/components/searchBar";
-import EditModal from "@/components/adminEditModal";
-import AdminClientCompanyEditForm from "@/components/adminClientCompanyEditForm";
-import AdminLoader from "@/components/adminLoader";
+import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
+import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
+import AdminGenericModalEdit from "@/components/adminGenericModalEdit";
+import AdminEditFormClientCompany from "@/components/adminEditFormClientCompany";
+import AdminGenericLoader from "@/components/adminGenericLoader";
 
-export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
+export default function AdminTableClientCompanies({ t }: { t: TFunction }) {
   const [clientData, setClientData] = useState<ClientCompany[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -48,14 +48,14 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
       setCurrentPage(data.page);
 
       logFrontendEvent(
-        "AdminClientCompaniesTable",
+        "AdminTableClientCompanies",
         "INFO",
         "Clients loaded",
         `Page: ${data.page}, Total: ${data.totalCount}`
       );
     } catch (err) {
       logFrontendEvent(
-        "AdminClientCompaniesTable",
+        "AdminTableClientCompanies",
         "ERROR",
         "Failed to load clients",
         String(err)
@@ -79,7 +79,7 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
     setSelectedClient(client);
     setShowEditModal(true);
     logFrontendEvent(
-      "AdminClientCompaniesTable",
+      "AdminTableClientCompanies",
       "INFO",
       "Edit modal opened for client",
       `ClientId: ${client.id}, VAT: ${client.vatNumber}`
@@ -101,7 +101,7 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing) && <AdminLoader local />}
+      {(loading || isRefreshing) && <AdminGenericLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -168,13 +168,13 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
+        <AdminGenericPaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <SearchBar
+        <AdminGenericSearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -193,12 +193,12 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
       </div>
 
       {showEditModal && selectedClient && (
-        <EditModal
+        <AdminGenericModalEdit
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           title={t("admin.clientCompany.editModal")}
         >
-          <AdminClientCompanyEditForm
+          <AdminEditFormClientCompany
             client={selectedClient}
             onClose={() => setShowEditModal(false)}
             onSave={handleSave}
@@ -207,7 +207,7 @@ export default function AdminClientCompaniesTable({ t }: { t: TFunction }) {
             }
             t={t}
           />
-        </EditModal>
+        </AdminGenericModalEdit>
       )}
     </div>
   );

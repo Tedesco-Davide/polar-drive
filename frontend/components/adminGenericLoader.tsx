@@ -1,6 +1,6 @@
 import { useTranslation } from "next-i18next";
 
-export default function AdminLoader({ 
+export default function AdminGenericLoader({ 
   inline = false, 
   local = false 
 }: { 

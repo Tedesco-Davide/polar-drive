@@ -17,7 +17,7 @@ type Props = {
   isSubmitting?: boolean;
 };
 
-export default function AdminMainWorkflowInputForm({
+export default function AdminAddFormVehicleWorkflow({
   formData,
   setFormData,
   onSubmit,

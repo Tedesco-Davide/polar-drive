@@ -1,19 +1,19 @@
 import React from "react";
 import { useTranslation } from "next-i18next";
 
-type PaginationProps = {
+type AdminGenericPaginationProps = {
   currentPage: number;
   totalPages: number;
   onPrev: () => void;
   onNext: () => void;
 };
 
-export default function PaginationControls({
+export default function AdminGenericPaginationControls({
   currentPage,
   totalPages,
   onPrev,
   onNext,
-}: PaginationProps) {
+}: AdminGenericPaginationProps) {
   const { t } = useTranslation();
 
   return (

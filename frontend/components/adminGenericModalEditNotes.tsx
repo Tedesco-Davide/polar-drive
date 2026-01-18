@@ -13,7 +13,7 @@ type Props<T> = {
   t: TFunction;
 };
 
-export default function NotesModal<T>({
+export default function AdminGenericModalEditNotes<T>({
   entity,
   isOpen,
   title,
@@ -55,7 +55,7 @@ export default function NotesModal<T>({
   const handleAddNote = () => {
     if (!newNote.trim()) return;
     setNotes((prev) => [...prev, newNote.trim()]);
-    logFrontendEvent("NotesModal", "INFO", "Note added", newNote);
+    logFrontendEvent("AdminGenericModalEditNotes", "INFO", "Note added", newNote);
     setNewNote("");
   };
 
@@ -63,18 +63,18 @@ export default function NotesModal<T>({
     const updated = [...notes];
     updated[index] = value;
     setNotes(updated);
-    logFrontendEvent("NotesModal", "INFO", "Note edited", "Index: " + index);
+    logFrontendEvent("AdminGenericModalEditNotes", "INFO", "Note edited", "Index: " + index);
   };
 
   const handleDeleteNote = (index: number) => {
     setNotes(notes.filter((_, i) => i !== index));
-    logFrontendEvent("NotesModal", "INFO", "Note deleted", "Index: " + index);
+    logFrontendEvent("AdminGenericModalEditNotes", "INFO", "Note deleted", "Index: " + index);
   };
 
   // ✅ Modifica anche handleSave per gestire array vuoto
   const handleSave = () => {
     logFrontendEvent(
-      "NotesModal",
+      "AdminGenericModalEditNotes",
       "INFO",
       "Notes saved",
       `Total notes: ${notes.length}`
@@ -143,7 +143,7 @@ export default function NotesModal<T>({
             className="bg-gray-400 text-white px-6 py-2 rounded hover:bg-gray-500"
             onClick={() => {
               logFrontendEvent(
-                "NotesModal",
+                "AdminGenericModalEditNotes",
                 "INFO",
                 "Notes modal closed without saving"
               );

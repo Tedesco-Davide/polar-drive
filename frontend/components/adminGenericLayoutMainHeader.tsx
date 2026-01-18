@@ -8,9 +8,9 @@ import { useRouter } from "next/router";
 import { gsap } from "gsap";
 import Link from "next/link";
 import Image from "next/image";
-import LanguageSwitcher from "./languageSwitcher";
+import AdminGenericLanguageSwitcher from "./adminGenericLanguageSwitcher";
 
-export default function Header() {
+export default function AdminGenericLayoutMainHeader() {
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -84,7 +84,7 @@ export default function Header() {
                 : "opacity-0"
             }
           >
-            <LanguageSwitcher />
+            <AdminGenericLanguageSwitcher />
           </div>
 
           {mounted && (

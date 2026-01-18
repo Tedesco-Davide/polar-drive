@@ -3,7 +3,7 @@ import { TFunction } from "i18next";
 import { logFrontendEvent } from "@/utils/logger";
 import { formatDateToDisplay } from "@/utils/date";
 import { GapAnalysisResponse } from "@/types/gapInterfaces";
-import AdminLoader from "@/components/adminLoader";
+import AdminGenericLoader from "@/components/adminGenericLoader";
 
 type Props = {
   reportId: number;
@@ -14,7 +14,7 @@ type Props = {
   gapValidationStatus?: string | null; // null = nessun PDF, ESCALATED = già escalato
 };
 
-export default function GapValidationModal({
+export default function AdminModalGapValidation({
   reportId,
   isOpen,
   onClose,
@@ -89,7 +89,7 @@ export default function GapValidationModal({
       }
       setAnalysisData(data);
       logFrontendEvent(
-        "GapValidationModal",
+        "AdminModalGapValidation",
         "INFO",
         "Gap analysis loaded",
         `ReportId: ${reportId}, TotalGaps: ${data.totalGaps}`
@@ -98,7 +98,7 @@ export default function GapValidationModal({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "GapValidationModal",
+        "AdminModalGapValidation",
         "ERROR",
         "Failed to load gap analysis",
         errorMessage
@@ -132,7 +132,7 @@ export default function GapValidationModal({
       // 202 Accepted = certificazione avviata in background
       if (res.status === 202) {
         logFrontendEvent(
-          "GapValidationModal",
+          "AdminModalGapValidation",
           "INFO",
           "Gap certification started in background",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -148,7 +148,7 @@ export default function GapValidationModal({
 
       // Fallback per risposta 200 (non dovrebbe più accadere)
       logFrontendEvent(
-        "GapValidationModal",
+        "AdminModalGapValidation",
         "INFO",
         "Gap certification completed",
         `ReportId: ${reportId}, GapsCertified: ${data.gapsCertified}`
@@ -159,7 +159,7 @@ export default function GapValidationModal({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "GapValidationModal",
+        "AdminModalGapValidation",
         "ERROR",
         "Certification failed",
         errorMessage
@@ -192,7 +192,7 @@ export default function GapValidationModal({
 
       if (res.status === 202 || res.ok) {
         logFrontendEvent(
-          "GapValidationModal",
+          "AdminModalGapValidation",
           "INFO",
           "Gap escalation started",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -206,7 +206,7 @@ export default function GapValidationModal({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "GapValidationModal",
+        "AdminModalGapValidation",
         "ERROR",
         "Escalation failed",
         errorMessage
@@ -243,7 +243,7 @@ export default function GapValidationModal({
 
       if (res.status === 202 || res.ok) {
         logFrontendEvent(
-          "GapValidationModal",
+          "AdminModalGapValidation",
           "INFO",
           "Contract breach recorded",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -257,7 +257,7 @@ export default function GapValidationModal({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "GapValidationModal",
+        "AdminModalGapValidation",
         "ERROR",
         "Contract breach failed",
         errorMessage
@@ -305,7 +305,7 @@ export default function GapValidationModal({
         <div className="flex-1 overflow-y-auto p-6">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <AdminLoader />
+              <AdminGenericLoader />
             </div>
           ) : error ? (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
@@ -549,7 +549,7 @@ export default function GapValidationModal({
               >
                 {certifying ? (
                   <>
-                    <AdminLoader inline />
+                    <AdminGenericLoader inline />
                     {t("admin.gapValidation.certifying")}
                   </>
                 ) : (
@@ -567,7 +567,7 @@ export default function GapValidationModal({
               >
                 {escalating ? (
                   <>
-                    <AdminLoader inline />
+                    <AdminGenericLoader inline />
                     {t("admin.gapValidation.escalatingBtn")}
                   </>
                 ) : (
@@ -585,7 +585,7 @@ export default function GapValidationModal({
               >
                 {breaching ? (
                   <>
-                    <AdminLoader inline />
+                    <AdminGenericLoader inline />
                     {t("admin.gapValidation.processingBtn")}
                   </>
                 ) : (

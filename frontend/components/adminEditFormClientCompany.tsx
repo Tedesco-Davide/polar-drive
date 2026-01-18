@@ -11,7 +11,7 @@ type Props = {
   t: TFunction;
 };
 
-export default function AdminClientCompanyEditForm({
+export default function AdminEditFormClientCompany({
   client,
   onClose,
   onSave,
@@ -103,7 +103,7 @@ export default function AdminClientCompanyEditForm({
 
     try {
       await logFrontendEvent(
-        "AdminClientCompanyEditForm",
+        "AdminEditFormClientCompany",
         "INFO",
         "Attempting to update client company and referent data",
         JSON.stringify(formData)
@@ -221,7 +221,7 @@ export default function AdminClientCompanyEditForm({
       const errorDetails = err instanceof Error ? err.message : String(err);
 
       await logFrontendEvent(
-        "AdminClientCompanyEditForm",
+        "AdminEditFormClientCompany",
         "ERROR",
         "Exception thrown during client update",
         errorDetails

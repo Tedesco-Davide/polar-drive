@@ -4,13 +4,13 @@ import { ClientVehicle } from "@/types/vehicleInterfaces";
 import { useEffect, useState } from "react";
 import { formatDateToDisplay } from "@/utils/date";
 import { logFrontendEvent } from "@/utils/logger";
-import PaginationControls from "@/components/paginationControls";
-import SearchBar from "@/components/searchBar";
-import EditModal from "@/components/adminEditModal";
-import AdminClientVehicleEditForm from "@/components/adminClientVehicleEditForm";
-import AdminLoader from "@/components/adminLoader";
+import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
+import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
+import AdminGenericModalEdit from "@/components/adminGenericModalEdit";
+import AdminEditFormClientVehicle from "@/components/adminEditFormClientVehicle";
+import AdminGenericLoader from "@/components/adminGenericLoader";
 
-export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
+export default function AdminTableClientVehicles({ t }: { t: TFunction }) {
   const [vehicleData, setVehicleData] = useState<ClientVehicle[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -49,14 +49,14 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
       setCurrentPage(data.page);
 
       logFrontendEvent(
-        "AdminClientVehiclesTable",
+        "AdminTableClientVehicles",
         "INFO",
         "Vehicles loaded",
         `Page: ${data.page}, Total: ${data.totalCount}`
       );
     } catch (err) {
       logFrontendEvent(
-        "AdminClientVehiclesTable",
+        "AdminTableClientVehicles",
         "ERROR",
         "Failed to load vehicles",
         String(err)
@@ -80,7 +80,7 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
     setSelectedVehicle(vehicle);
     setShowEditModal(true);
     logFrontendEvent(
-      "AdminClientVehiclesTable",
+      "AdminTableClientVehicles",
       "INFO",
       "Edit modal opened for vehicle",
       `Vehicle VIN: ${vehicle.vin}`
@@ -95,7 +95,7 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
       await fetchVehicles(currentPage, query);
       setShowEditModal(false);
       logFrontendEvent(
-        "AdminClientVehiclesTable",
+        "AdminTableClientVehicles",
         "INFO",
         "Vehicle updated successfully",
         `Vehicle VIN: ${updatedVehicle.vin}`
@@ -103,7 +103,7 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
     } catch (err) {
       const details = err instanceof Error ? err.message : String(err);
       logFrontendEvent(
-        "AdminClientVehiclesTable",
+        "AdminTableClientVehicles",
         "ERROR",
         "Error while saving vehicle update",
         details
@@ -113,7 +113,7 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing) && <AdminLoader local />}
+      {(loading || isRefreshing) && <AdminGenericLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -210,13 +210,13 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
+        <AdminGenericPaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <SearchBar
+        <AdminGenericSearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -233,12 +233,12 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
       </div>
 
       {showEditModal && selectedVehicle && (
-        <EditModal
+        <AdminGenericModalEdit
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           title={t("admin.clientVehicle.editModal")}
         >
-          <AdminClientVehicleEditForm
+          <AdminEditFormClientVehicle
             vehicle={selectedVehicle}
             onClose={() => setShowEditModal(false)}
             onSave={handleSave}
@@ -247,7 +247,7 @@ export default function AdminClientVehiclesTable({ t }: { t: TFunction }) {
             }
             t={t}
           />
-        </EditModal>
+        </AdminGenericModalEdit>
       )}
     </div>
   );

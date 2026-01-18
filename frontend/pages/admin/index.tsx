@@ -4,23 +4,31 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTheme } from "next-themes";
 import { useTranslation } from "next-i18next";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminClientVehiclesTable from "@/components/adminClientVehiclesTable";
-import AdminClientCompaniesTable from "@/components/adminClientCompaniesTable";
-import AdminMainWorkflow from "@/components/adminMainWorkflow";
-import AdminGapAlertsDashboard from "@/components/adminGapAlertsDashboard";
-import AdminClientConsents from "@/components/adminClientConsentsTable";
-import AdminOutagePeriodsTable from "@/components/adminOutagePeriodsTable";
-import AdminFileManagerTable from "@/components/adminFileManager";
-import AdminPdfReports from "@/components/adminPdfReports";
+import AdminTableClientVehicles from "@/components/adminTableClientVehicles";
+import AdminTableClientCompanies from "@/components/adminTableClientCompanies";
+import AdminTabVehicleWorkflow from "@/components/adminTabVehicleWorkflow";
+import AdminTabPolarReports from "@/components/adminTabPolarReports";
+import AdminTableClientConsents from "@/components/adminTableClientConsents";
+import AdminTableOutagePeriods from "@/components/adminTableOutagePeriods";
+import AdminTableFileManager from "@/components/adminTableFileManager";
+import AdminPdfReportsTable from "@/components/adminTablePdfReports";
 import Head from "next/head";
-import Header from "@/components/header";
+import AdminGenericLayoutMainHeader from "@/components/adminGenericLayoutMainHeader";
 import classNames from "classnames";
 
 export default function AdminDashboard() {
   const FAKE_AUTH = true;
 
   type AdminTab = "PolarDrive" | "ComingSoon";
-  const [activeTab, setActiveTab] = useState<AdminTab>("ComingSoon");
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("adminActiveTab");
+      if (saved === "PolarDrive" || saved === "ComingSoon") {
+        return saved;
+      }
+    }
+    return "PolarDrive";
+  });
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
   const { t } = useTranslation("common");
@@ -40,13 +48,17 @@ export default function AdminDashboard() {
     );
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem("adminActiveTab", activeTab);
+  }, [activeTab]);
+
   return (
     <>
       <Head>
         <title>{t("admin.title")}</title>
       </Head>
       <>
-        <Header />
+        <AdminGenericLayoutMainHeader />
         <section className="relative w-full h-screen pt-[64px] overflow-hidden">
           <div className="h-full overflow-y-auto px-6">
             {mounted && (
@@ -69,21 +81,6 @@ export default function AdminDashboard() {
               </div>
               <div className="mb-12 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 rounded">
                 <button
-                  disabled={false}
-                  className={classNames(
-                    "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
-                    {
-                      "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
-                        activeTab === "ComingSoon",
-                      "border-transparent text-gray-500 hover:text-primary":
-                        activeTab !== "ComingSoon",
-                    },
-                  )}
-                  onClick={() => setActiveTab("ComingSoon")}
-                >
-                  {t("admin.tabDashboard")}
-                </button>
-                <button
                   className={classNames(
                     "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
                     {
@@ -97,18 +94,33 @@ export default function AdminDashboard() {
                 >
                   {t("admin.tabWorkflow")}
                 </button>
+                <button
+                  disabled={false}
+                  className={classNames(
+                    "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
+                    {
+                      "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
+                        activeTab === "ComingSoon",
+                      "border-transparent text-gray-500 hover:text-primary":
+                        activeTab !== "ComingSoon",
+                    },
+                  )}
+                  onClick={() => setActiveTab("ComingSoon")}
+                >
+                  {t("admin.tabPolarReports")}
+                </button>
               </div>
 
               {activeTab === "PolarDrive" && (
                 <div className="overflow-x-auto">
                   <div className="mx-auto space-y-12 lg:min-w-fit mb-12">
-                    <AdminMainWorkflow />
-                    <AdminClientCompaniesTable t={t} />
-                    <AdminClientVehiclesTable t={t} />
-                    <AdminClientConsents t={t} />
-                    <AdminOutagePeriodsTable t={t} />
-                    <AdminPdfReports t={t} />
-                    <AdminFileManagerTable t={t} />
+                    <AdminTabVehicleWorkflow />
+                    <AdminTableClientCompanies t={t} />
+                    <AdminTableClientVehicles t={t} />
+                    <AdminTableClientConsents t={t} />
+                    <AdminTableOutagePeriods t={t} />
+                    <AdminPdfReportsTable t={t} />
+                    <AdminTableFileManager t={t} />
                   </div>
                 </div>
               )}
@@ -117,7 +129,7 @@ export default function AdminDashboard() {
                 <div className="overflow-x-auto">
                   <div className="mx-auto lg:min-w-fit mb-12">
                     <div className="grid grid-cols-1 gap-6">
-                      <AdminGapAlertsDashboard t={t} />
+                      <AdminTabPolarReports t={t} />
                       {/* Predisposto per future card dashboard */}
                     </div>
                   </div>

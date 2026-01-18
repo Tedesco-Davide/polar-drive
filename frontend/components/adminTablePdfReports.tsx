@@ -5,14 +5,14 @@ import { useState, useEffect } from "react";
 import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { NotebookPen, FileBadge, RefreshCw, ShieldCheck, Download, FileLock, FileText } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
-import Chip from "@/components/chip";
-import AdminLoader from "@/components/adminLoader";
-import NotesModal from "@/components/notesModal";
-import GapValidationModal from "@/components/gapValidationModal";
-import PaginationControls from "@/components/paginationControls";
-import SearchBar from "@/components/searchBar";
+import AdminGenericChip from "@/components/adminGenericChip";
+import AdminGenericLoader from "@/components/adminGenericLoader";
+import AdminGenericModalEditNotes from "@/components/adminGenericModalEditNotes";
+import AdminGapValidationModal from "@/components/adminModalGapValidation";
+import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
+import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
 
-export default function AdminPdfReports({ t }: { t: TFunction }) {
+export default function AdminTablePdfReports({ t }: { t: TFunction }) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
@@ -67,14 +67,14 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       setCurrentPage(data.page);
 
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "INFO",
         "Reports loaded",
         `Page: ${data.page}, Total: ${data.totalCount}`
       );
     } catch (err) {
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "ERROR",
         "Failed to load reports",
         String(err)
@@ -93,7 +93,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       setGapCertProcessing(data);
     } catch (err) {
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "ERROR",
         "Failed to fetch gap cert status",
         String(err)
@@ -220,7 +220,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
             })
         );
         logFrontendEvent(
-          "AdminPdfReports",
+          "AdminTablePdfReports",
           "WARNING",
           "Regeneration blocked - another report is PROCESSING",
           "ProcessingReportId: ${checkData.processingReportId}, RequestedReportId: ${report.id}"
@@ -229,7 +229,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       }
     } catch (checkError) {
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "ERROR",
         "Failed to check processing status",
         String(checkError)
@@ -257,7 +257,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
 
     try {
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "INFO",
         "Starting report Regeneration",
         `ReportId: ${report.id}`
@@ -282,7 +282,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         );
 
         logFrontendEvent(
-          "AdminPdfReports",
+          "AdminTablePdfReports",
           "WARNING",
           "Regeneration blocked - report already exists",
           `ReportId: ${report.id}, ErrorCode: ${data.errorCode}, PdfHash: ${data.pdfHash}`
@@ -298,7 +298,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         );
 
         logFrontendEvent(
-          "AdminPdfReports",
+          "AdminTablePdfReports",
           "WARNING",
           "Regeneration not allowed",
           `ReportId: ${report.id}, ErrorCode: ${data.errorCode}, Status: ${data.status}`
@@ -312,7 +312,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
         );
 
         logFrontendEvent(
-          "AdminPdfReports",
+          "AdminTablePdfReports",
           "INFO",
           "Regeneration started successfully",
           `ReportId: ${report.id}, Status: ${data.status}`
@@ -353,7 +353,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
           })
       );
 
-      logFrontendEvent("AdminPdfReports", "ERROR", "Regeneration error");
+      logFrontendEvent("AdminTablePdfReports", "ERROR", "Regeneration error");
     } finally {
       setRegeneratingId(null);
     }
@@ -399,7 +399,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       window.URL.revokeObjectURL(url);
 
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "INFO",
         "Gap certification downloaded",
         `ReportId: ${reportId}`
@@ -407,7 +407,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     } catch (error) {
       alert(t("admin.gapValidation.downloadError", { error: String(error) }));
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "ERROR",
         "Gap certification download failed",
         String(error)
@@ -439,7 +439,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       window.URL.revokeObjectURL(url);
 
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "INFO",
         "Gap escalation PDF downloaded",
         `ReportId: ${reportId}`
@@ -447,7 +447,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     } catch (error) {
       alert(t("admin.gapValidation.downloadError", { error: String(error) }));
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "ERROR",
         "Gap escalation download failed",
         String(error)
@@ -479,7 +479,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       window.URL.revokeObjectURL(url);
 
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "INFO",
         "Gap contract breach PDF downloaded",
         `ReportId: ${reportId}`
@@ -487,7 +487,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
     } catch (error) {
       alert(t("admin.gapValidation.downloadError", { error: String(error) }));
       logFrontendEvent(
-        "AdminPdfReports",
+        "AdminTablePdfReports",
         "ERROR",
         "Gap contract breach download failed",
         String(error)
@@ -517,7 +517,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing) && <AdminLoader local />}
+      {(loading || isRefreshing) && <AdminGenericLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -587,7 +587,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     }
                   >
                     {downloadingId === report.id ? (
-                      <AdminLoader inline />
+                      <AdminGenericLoader inline />
                     ) : (
                       <FileText size={16} />
                     )}
@@ -615,7 +615,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                           disabled
                           title={t("admin.gapValidation.certificationInProgress")}
                         >
-                          <AdminLoader inline />
+                          <AdminGenericLoader inline />
                         </button>
                       )}
 
@@ -629,7 +629,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                             title="Download PDF Escalation"
                           >
                             {downloadingCertId === report.id ? (
-                              <AdminLoader inline />
+                              <AdminGenericLoader inline />
                             ) : (
                               <FileBadge size={16} />
                             )}
@@ -669,7 +669,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                             title={t("admin.gapValidation.downloadCertification")}
                           >
                             {downloadingCertId === report.id ? (
-                              <AdminLoader inline />
+                              <AdminGenericLoader inline />
                             ) : (
                               <FileBadge size={16} />
                             )}
@@ -698,7 +698,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                             title="Download PDF Contract Breach"
                           >
                             {downloadingCertId === report.id ? (
-                              <AdminLoader inline />
+                              <AdminGenericLoader inline />
                             ) : (
                               <FileBadge size={16} />
                             )}
@@ -755,7 +755,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                     >
                       {isCurrentlyRegenerating ||
                       report.status === "REGENERATING" ? (
-                        <AdminLoader inline />
+                        <AdminGenericLoader inline />
                       ) : (
                         <RefreshCw size={16} />
                       )}
@@ -772,9 +772,9 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
                 </td>
                 <td className="p-4">
                   <div className="space-y-1 flex flex-col w-[150px]">
-                    <Chip className={getStatusColor(report.status)}>
+                    <AdminGenericChip className={getStatusColor(report.status)}>
                       {report.status}
-                    </Chip>
+                    </AdminGenericChip>
                     {fileSize > 0 && (
                       <div className="text-xs text-gray-400 flex gap-1 items-center">
                         {report.pdfHash && (
@@ -824,13 +824,13 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
+        <AdminGenericPaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <SearchBar
+        <AdminGenericSearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -842,7 +842,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       </div>
 
       {selectedReportForNotes && (
-        <NotesModal
+        <AdminGenericModalEditNotes
           entity={selectedReportForNotes}
           isOpen={!!selectedReportForNotes}
           title={t("admin.vehicleReports.notesModalTitle")}
@@ -854,7 +854,7 @@ export default function AdminPdfReports({ t }: { t: TFunction }) {
       )}
 
       {selectedReportForValidation && (
-        <GapValidationModal
+        <AdminGapValidationModal
           reportId={selectedReportForValidation}
           isOpen={!!selectedReportForValidation}
           onClose={() => setSelectedReportForValidation(null)}

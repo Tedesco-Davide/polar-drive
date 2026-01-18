@@ -16,7 +16,7 @@ interface Props {
 const OUTAGE_TYPES = ["Outage Vehicle", "Outage Fleet Api"];
 const VALID_BRANDS = ["Tesla"];
 
-export default function AdminOutagePeriodsAddForm({
+export default function AdminAddFormOutagePeriods({
   t,
   onSubmitSuccess,
   refreshOutagePeriods,
@@ -200,7 +200,7 @@ export default function AdminOutagePeriodsAddForm({
       setIsSubmitting(true);
 
       await logFrontendEvent(
-        "AdminOutagePeriodsAddForm",
+        "AdminAddFormOutagePeriods",
         "INFO",
         "Attempting to submit new outage period"
       );
@@ -256,7 +256,7 @@ export default function AdminOutagePeriodsAddForm({
       const newOutage = await response.json();
 
       await logFrontendEvent(
-        "AdminOutagePeriodsAddForm",
+        "AdminAddFormOutagePeriods",
         "INFO",
         "Outage period successfully created",
         "Outage ID: " + newOutage.id
@@ -292,7 +292,7 @@ export default function AdminOutagePeriodsAddForm({
         }
       }
       await logFrontendEvent(
-        "AdminOutagePeriodsAddForm",
+        "AdminAddFormOutagePeriods",
         "ERROR",
         "Failed to create outage",
         errorMessage

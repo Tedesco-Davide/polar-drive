@@ -12,12 +12,12 @@ import {
 import { format } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
 import { OutagePeriod } from "@/types/outagePeriodInterfaces";
-import PaginationControls from "@/components/paginationControls";
-import SearchBar from "@/components/searchBar";
-import Chip from "@/components/chip";
-import NotesModal from "./notesModal";
-import AdminOutagePeriodsAddForm from "./adminOutagePeriodsAddForm";
-import AdminLoader from "./adminLoader";
+import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
+import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
+import AdminGenericChip from "@/components/adminGenericChip";
+import AdminGenericModalEditNotes from "./adminGenericModalEditNotes";
+import AdminAddFormOutagePeriods from "./adminAddFormOutagePeriods";
+import AdminGenericLoader from "./adminGenericLoader";
 
 const formatDateTime = (dateTime: string): string => {
   const date = new Date(dateTime.replace("Z", ""));
@@ -41,7 +41,7 @@ const getStatusColor = (status: string): string => {
     : "bg-green-100 text-green-700 border-green-500";
 };
 
-export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
+export default function AdminTableOutagePeriods({ t }: { t: TFunction }) {
   const [outages, setOutages] = useState<OutagePeriod[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -85,14 +85,14 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
       setCurrentPage(data.page);
 
       logFrontendEvent(
-        "AdminOutagePeriodsTable",
+        "AdminTableOutagePeriods",
         "INFO",
         "Outages loaded",
         `Page: ${data.page}, Total: ${data.totalCount}`
       );
     } catch (err) {
       logFrontendEvent(
-        "AdminOutagePeriodsTable",
+        "AdminTableOutagePeriods",
         "ERROR",
         "Failed to load outages",
         String(err)
@@ -253,7 +253,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing || uploadingZip.size > 0 || downloadingZipId !== null) && <AdminLoader local />}
+      {(loading || isRefreshing || uploadingZip.size > 0 || downloadingZipId !== null) && <AdminGenericLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -274,7 +274,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
       </div>
 
       {showAddForm && (
-        <AdminOutagePeriodsAddForm
+        <AdminAddFormOutagePeriods
           t={t}
           onSubmitSuccess={() => setShowAddForm(false)}
           refreshOutagePeriods={async () =>
@@ -382,9 +382,9 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
                 </div>
               </td>
               <td className="px-4 py-3">
-                <Chip className={getStatusColor(outage.status)}>
+                <AdminGenericChip className={getStatusColor(outage.status)}>
                   {outage.status}
-                </Chip>
+                </AdminGenericChip>
               </td>
               <td className="px-4 py-3">{outage.outageType}</td>
               <td className="px-4 py-3">{outage.outageBrand}</td>
@@ -396,9 +396,9 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
                     {outage.outageEnd ? (
                       formatDateTime(outage.outageEnd)
                     ) : (
-                      <Chip className="bg-red-100 text-red-700 border-red-500 text-xs">
+                      <AdminGenericChip className="bg-red-100 text-red-700 border-red-500 text-xs">
                         ONGOING
-                      </Chip>
+                      </AdminGenericChip>
                     )}
                   </div>
                 </div>
@@ -407,9 +407,9 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
                 {outage.outageEnd ? (
                   <span>{formatDuration(outage.durationMinutes)}</span>
                 ) : (
-                  <Chip className="bg-red-100 text-red-700 border-red-500">
+                  <AdminGenericChip className="bg-red-100 text-red-700 border-red-500">
                     ONGOING
-                  </Chip>
+                  </AdminGenericChip>
                 )}
               </td>
               <td className="px-4 py-3">
@@ -429,13 +429,13 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
+        <AdminGenericPaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <SearchBar
+        <AdminGenericSearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -449,7 +449,7 @@ export default function AdminOutagePeriodsTable({ t }: { t: TFunction }) {
       </div>
 
       {selectedOutageForNotes && (
-        <NotesModal
+        <AdminGenericModalEditNotes
           entity={selectedOutageForNotes}
           isOpen={!!selectedOutageForNotes}
           title={t("admin.outagePeriods.notes.modalTitle")}

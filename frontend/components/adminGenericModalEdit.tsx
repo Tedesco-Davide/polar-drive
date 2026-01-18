@@ -8,20 +8,20 @@ type Props = {
   children: ReactNode;
 };
 
-export default function EditModal({ isOpen, title, children }: Props) {
+export default function AdminGenericModalEdit({ isOpen, title, children }: Props) {
   useEffect(() => {
     try {
       if (isOpen) {
         document.body.classList.add("overflow-hidden");
         logFrontendEvent(
-          "AdminEditModal",
+          "AdminGenericModalEdit",
           "INFO",
           "Modal opened and body scroll disabled"
         );
       } else {
         document.body.classList.remove("overflow-hidden");
         logFrontendEvent(
-          "AdminEditModal",
+          "AdminGenericModalEdit",
           "INFO",
           "Modal closed and body scroll restored"
         );
@@ -29,7 +29,7 @@ export default function EditModal({ isOpen, title, children }: Props) {
     } catch (err) {
       const errDetails = err instanceof Error ? err.message : String(err);
       logFrontendEvent(
-        "AdminEditModal",
+        "AdminGenericModalEdit",
         "ERROR",
         "Error occurred while toggling modal scroll behavior",
         errDetails
@@ -40,7 +40,7 @@ export default function EditModal({ isOpen, title, children }: Props) {
       try {
         document.body.classList.remove("overflow-hidden");
         logFrontendEvent(
-          "AdminEditModal",
+          "AdminGenericModalEdit",
           "INFO",
           "Modal cleanup triggered and body scroll restored"
         );
@@ -48,7 +48,7 @@ export default function EditModal({ isOpen, title, children }: Props) {
         const errDetails =
           cleanupErr instanceof Error ? cleanupErr.message : String(cleanupErr);
         logFrontendEvent(
-          "AdminEditModal",
+          "AdminGenericModalEdit",
           "ERROR",
           "Error occurred during modal cleanup",
           errDetails

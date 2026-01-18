@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
-import PaginationControls from "@/components/paginationControls";
-import AdminLoader from "./adminLoader";
-import GapValidationModal from "./gapValidationModal";
+import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
+import AdminGenericLoader from "./adminGenericLoader";
+import AdminGapValidationModal from "./adminModalGapValidation";
 
 interface GapAlert {
   id: number;
@@ -97,7 +97,7 @@ const getAlertTypeLabel = (alertType: string, t: TFunction): string => {
   }
 };
 
-export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
+export default function AdminTabPolarReports({ t }: { t: TFunction }) {
   const [alerts, setAlerts] = useState<GapAlert[]>([]);
   const [stats, setStats] = useState<GapAlertStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -112,7 +112,7 @@ export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
   const [totalCount, setTotalCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [severityFilter, setSeverityFilter] = useState<string>("");
-  const pageSize = 10;
+  const pageSize = 5;
 
   const fetchAlerts = useCallback(
     async (page: number) => {
@@ -135,14 +135,14 @@ export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
         setCurrentPage(data.page);
 
         logFrontendEvent(
-          "AdminGapAlertsDashboard",
+          "AdminTabPolarReports",
           "INFO",
           "Alerts loaded",
           `Page: ${data.page}, Total: ${data.totalCount}`,
         );
       } catch (err) {
         logFrontendEvent(
-          "AdminGapAlertsDashboard",
+          "AdminTabPolarReports",
           "ERROR",
           "Failed to load alerts",
           String(err),
@@ -162,7 +162,7 @@ export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
       setStats(data);
     } catch (err) {
       logFrontendEvent(
-        "AdminGapAlertsDashboard",
+        "AdminTabPolarReports",
         "ERROR",
         "Failed to load stats",
         String(err),
@@ -175,7 +175,7 @@ export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
       const res = await fetch("/api/gapalerts/monitoring-interval");
       if (!res.ok) throw new Error("HTTP " + res.status);
       const data = await res.json();
-      setRefreshInterval(data.checkIntervalMinutes || 60);
+      setRefreshInterval(data.checkIntervalMinutes);
     } catch {
       // Use default
     }
@@ -234,9 +234,8 @@ export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
       transition={{ duration: 0.4, ease: "easeOut" }}
       className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
     >
-      {(loading || isRefreshing) && <AdminLoader local />}
+      {(loading || isRefreshing) && <AdminGenericLoader local />}
 
-      {/* Modern Header with Gradient */}
       <div className="bg-gradient-to-r from-coldIndigo/10 via-purple-500/5 to-glacierBlue/10 dark:from-coldIndigo/20 dark:via-purple-900/10 dark:to-glacierBlue/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center space-x-4">
@@ -250,11 +249,11 @@ export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
               </button>
             </div>{" "}
             <div className="p-3 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl shadow-md">
-              <FileWarning size={24} className="text-white" />
+              <FileWarning size={21} className="text-white" />
             </div>
             <div>
               <h1 className="text-xl sm:text-2xl font-bold text-polarNight dark:text-softWhite">
-                {t("admin.gapAlerts.dashboardTitle")}
+                {t("admin.gapAlerts.dashboardCardTitle")}
               </h1>
               {stats && (
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -567,7 +566,7 @@ export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
 
         {/* Pagination */}
         <div className="mt-4">
-          <PaginationControls
+          <AdminGenericPaginationControls
             currentPage={currentPage}
             totalPages={totalPages}
             onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
@@ -578,7 +577,7 @@ export default function AdminGapAlertsDashboard({ t }: { t: TFunction }) {
 
       {/* Modale Validazione Gap */}
       {selectedAlert && selectedAlert.pdfReportId && (
-        <GapValidationModal
+        <AdminGapValidationModal
           reportId={selectedAlert.pdfReportId}
           isOpen={true}
           onClose={() => setSelectedAlert(null)}

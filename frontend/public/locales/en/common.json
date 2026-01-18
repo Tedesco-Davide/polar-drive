@@ -1,6 +1,6 @@
 {
   "admin.title": "PolarDrive ❄️🐻‍❄️🚗",
-  "admin.tabDashboard": "Dashboard",
+  "admin.tabPolarReports": "PolarReports",
   "admin.tabWorkflow": "Vehicle Workflow",
   "admin.missingFields": "Please fill in the following required fields",
   "admin.loading": "Loading...",
@@ -217,7 +217,7 @@
   "admin.outagePeriods.tableRefreshSuccess": "Outages refresh completed successfully",
   "admin.outagePeriods.tableRefreshFail": "Outages refresh failed",
 
-  "admin.vehicleReports.tableHeader": "PolarReports",
+  "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderTotals": "totals",
   "admin.vehicleReports.tableHeaderRegenerating": "regenerating",
   "admin.vehicleReports.tableHeaderProcessing": "processing",
@@ -495,7 +495,7 @@
   "admin.pdfReports.reportImmutable": "Certified report - immutable",
   "admin.pdfReports.regenerateReportButton": "Regenerate report (Status: {{status}})",
 
-  "admin.gapAlerts.dashboardTitle": "Gap Alerts",
+  "admin.gapAlerts.dashboardCardTitle": "Gap Alerts Dashboard",
   "admin.gapAlerts.stats.total": "Total",
   "admin.gapAlerts.stats.open": "Open",
   "admin.gapAlerts.stats.escalated": "Escalated",

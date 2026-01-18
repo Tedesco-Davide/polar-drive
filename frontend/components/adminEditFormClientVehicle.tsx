@@ -5,7 +5,6 @@ import { formatDateToDisplay } from "@/utils/date";
 import { useVehicleOptions } from "@/utils/useVehicleOptions";
 import { fuelTypeOptions } from "@/types/fuelTypes";
 import { logFrontendEvent } from "@/utils/logger";
-import axios from "axios";
 import { CircleCheck, CircleX } from "lucide-react";
 
 type Props = {
@@ -16,7 +15,7 @@ type Props = {
   refreshWorkflowData: () => Promise<void>;
 };
 
-export default function AdminClientVehicleEditForm({
+export default function AdminEditFormClientVehicle({
   vehicle,
   onClose,
   onSave,
@@ -112,7 +111,7 @@ export default function AdminClientVehicleEditForm({
 
     try {
       await logFrontendEvent(
-        "AdminClientVehicleEditForm",
+        "AdminEditFormClientVehicle",
         "INFO",
         "Attempting to update client vehicle",
         JSON.stringify(formData)
@@ -160,7 +159,7 @@ export default function AdminClientVehicleEditForm({
       }
 
       await logFrontendEvent(
-        "AdminClientVehicleEditForm",
+        "AdminEditFormClientVehicle",
         "INFO",
         "Client vehicle updated successfully",
         "VehicleId=" + formData.id + ", VIN=" + formData.vin
@@ -176,7 +175,7 @@ export default function AdminClientVehicleEditForm({
       const errDetails = err instanceof Error ? err.message : String(err);
 
       await logFrontendEvent(
-        "AdminClientVehicleEditForm",
+        "AdminEditFormClientVehicle",
         "ERROR",
         "Exception thrown during vehicle update",
         errDetails

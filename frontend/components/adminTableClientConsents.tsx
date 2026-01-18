@@ -5,12 +5,12 @@ import { formatDateToDisplay } from "@/utils/date";
 import { useState, useEffect } from "react";
 import { usePreventUnload } from "@/hooks/usePreventUnload";
 import { logFrontendEvent } from "@/utils/logger";
-import NotesModal from "@/components/notesModal";
-import PaginationControls from "@/components/paginationControls";
-import SearchBar from "@/components/searchBar";
-import Chip from "@/components/chip";
-import AdminClientConsentAddForm from "./adminClientConsentAddForm";
-import AdminLoader from "./adminLoader";
+import AdminGenericModalEditNotes from "@/components/adminGenericModalEditNotes";
+import AdminGenericPaginationControls from "@/components/adminGenericPaginationControls";
+import AdminGenericSearchBar from "@/components/adminGenericSearchBar";
+import AdminGenericChip from "@/components/adminGenericChip";
+import AdminAddFormClientConsent from "./adminAddFormClientConsent";
+import AdminGenericLoader from "./adminGenericLoader";
 
 const getConsentTypeColor = (type: string) => {
   switch (type) {
@@ -27,7 +27,7 @@ const getConsentTypeColor = (type: string) => {
   }
 };
 
-export default function AdminClientConsents({ t }: { t: TFunction }) {
+export default function AdminTableClientConsents({ t }: { t: TFunction }) {
   const [consents, setConsents] = useState<ClientConsent[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -159,7 +159,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
 
   return (
     <div className="relative">
-      {(loading || isRefreshing || downloadingZipId !== null) && <AdminLoader local />}
+      {(loading || isRefreshing || downloadingZipId !== null) && <AdminGenericLoader local />}
 
       <div className="flex items-center mb-12 space-x-3">
         <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
@@ -180,7 +180,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       </div>
 
       {showForm && (
-        <AdminClientConsentAddForm
+        <AdminAddFormClientConsent
           t={t}
           onSubmitSuccess={() => setShowForm(false)}
           refreshClientConsents={async () =>
@@ -240,9 +240,9 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
                 </div>
               </td>
               <td className="p-4">
-                <Chip className={getConsentTypeColor(consent.consentType)}>
+                <AdminGenericChip className={getConsentTypeColor(consent.consentType)}>
                   {consent.consentType}
-                </Chip>
+                </AdminGenericChip>
               </td>
               <td className="p-4">
                 {formatDateToDisplay(consent.uploadDate)}
@@ -264,13 +264,13 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       </table>
 
       <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
+        <AdminGenericPaginationControls
           currentPage={currentPage}
           totalPages={totalPages}
           onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
           onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
         />
-        <SearchBar
+        <AdminGenericSearchBar
           query={query}
           setQuery={setQuery}
           resetPage={() => setCurrentPage(1)}
@@ -293,7 +293,7 @@ export default function AdminClientConsents({ t }: { t: TFunction }) {
       </div>
 
       {selectedConsentForNotes && (
-        <NotesModal
+        <AdminGenericModalEditNotes
           entity={selectedConsentForNotes}
           isOpen={!!selectedConsentForNotes}
           title={t("admin.clientConsents.notes.modalTitle")}
