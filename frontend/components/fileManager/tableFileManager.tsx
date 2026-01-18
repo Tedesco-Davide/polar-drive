@@ -3,14 +3,14 @@ import { TFunction } from "i18next";
 import { formatDateToDisplay } from "@/utils/date";
 import { useEffect, useState } from "react";
 import { usePreventUnload } from "@/hooks/usePreventUnload";
-import { FileArchive, NotebookPen, Download, Trash2 } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { FileArchive, NotebookPen, Download, Trash2, FolderArchive, ChevronUp, ChevronDown } from "lucide-react";
 import { logFrontendEvent } from "@/utils/logger";
-import PaginationControls from "@/components/generic/paginationControls";
 import SearchBar from "@/components/generic/searchBar";
 import Chip from "@/components/generic/chip";
-import ModalEditNotes from "./generic/modalEditNotes";
-import AdminAddFormFileManager from "./adminAddFormFileManager";
-import Loader from "./generic/loader";
+import ModalEditNotes from "../generic/modalEditNotes";
+import AddFormFileManager from "./addFormFileManager";
+import Loader from "../generic/loader";
 
 const PDF_JOB_STATUS = {
   PENDING: "PENDING",
@@ -71,7 +71,7 @@ const formatFileSize = (sizeMB: number): string => {
   return `${sizeMB.toFixed(1)} MB`;
 };
 
-export default function AdminTableFileManager({ t }: { t: TFunction }) {
+export default function TableFileManager({ t }: { t: TFunction }) {
   const [localJobs, setLocalJobs] = useState<FileManager[]>([]);
   const [loading, setLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -83,12 +83,8 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
   // Previene refresh pagina durante download
   usePreventUnload(downloadingJobId !== null);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [query, setQuery] = useState("");
   const [searchType, setSearchType] = useState<"id" | "status">("id");
-  const pageSize = 10;
   const fileManagerStatuses = [
     "PENDING",
     "PROCESSING",
@@ -98,37 +94,32 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
     "UPLOADING",
   ];
 
-  const fetchJobs = async (page: number, searchQuery: string = "") => {
+  const fetchJobs = async (searchQuery: string = "") => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({
-        page: page.toString(),
-        pageSize: pageSize.toString(),
-      });
+      const params = new URLSearchParams();
       if (searchQuery) {
         params.append("search", searchQuery);
         const type = searchType === "id" ? "id" : "status";
         params.append("searchType", type);
       }
 
-      const res = await fetch(`/api/filemanager?${params}`);
+      const url = params.toString() ? `/api/filemanager?${params}` : "/api/filemanager";
+      const res = await fetch(url);
       if (!res.ok) throw new Error("HTTP " + res.status);
 
       const data = await res.json();
       setLocalJobs(data.data);
-      setTotalCount(data.totalCount);
-      setTotalPages(data.totalPages);
-      setCurrentPage(data.page);
 
       logFrontendEvent(
-        "AdminTableFileManager",
+        "TableFileManager",
         "INFO",
         "Jobs loaded",
-        `Page: ${data.page}, Total: ${data.totalCount}`
+        `Total: ${data.data.length}`
       );
     } catch (err) {
       logFrontendEvent(
-        "AdminTableFileManager",
+        "TableFileManager",
         "ERROR",
         "Failed to load jobs",
         String(err)
@@ -139,8 +130,8 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
   };
 
   useEffect(() => {
-    fetchJobs(currentPage, query);
-  }, [currentPage, query]);
+    fetchJobs(query);
+  }, [query]);
 
   useEffect(() => {
     const hasActiveJobs = localJobs.some(
@@ -153,15 +144,15 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
     if (!hasActiveJobs) return;
 
     const interval = setInterval(() => {
-      fetchJobs(currentPage, query);
+      fetchJobs(query);
     }, 60000);
 
     return () => clearInterval(interval);
-  }, [localJobs, currentPage, query]);
+  }, [localJobs, query]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await fetchJobs(currentPage, query);
+    await fetchJobs(query);
     setIsRefreshing(false);
   };
 
@@ -212,7 +203,7 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
       if (!response.ok) throw new Error("Delete failed");
 
       setLocalJobs((prev) => prev.filter((j) => j.id !== job.id));
-      setTimeout(() => fetchJobs(currentPage, query), 200);
+      setTimeout(() => fetchJobs(query), 200);
     } catch {
       alert(t("admin.filemanager.error.deleteJobFailed"));
     }
@@ -220,55 +211,94 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
 
   const handleCreateSuccess = async () => {
     setShowCreateModal(false);
-    await fetchJobs(currentPage, query);
+    await fetchJobs(query);
   };
 
   return (
-    <div className="relative">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
+      className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden"
+    >
       {(loading || isRefreshing || downloadingJobId !== null) && <Loader local />}
 
-      <div className="flex items-center mb-6 space-x-3">
-        <h1 className="text-2xl font-bold text-polarNight dark:text-softWhite">
-          {t("admin.filemanager.tableHeader")} ➜ {totalCount}
-        </h1>
-        <button
-          className={`${
-            showCreateModal
-              ? "bg-red-500 hover:bg-red-600"
-              : "bg-blue-500 hover:bg-blue-600"
-          } text-white px-6 py-2 rounded`}
-          onClick={() => setShowCreateModal(!showCreateModal)}
-        >
-          {showCreateModal
-            ? t("admin.filemanager.modal.undoDownloadModal")
-            : t("admin.filemanager.modal.createDownloadModal")}
-        </button>
+      {/* Header con gradiente */}
+      <div className="bg-gradient-to-r from-coldIndigo/10 via-purple-500/5 to-glacierBlue/10 dark:from-coldIndigo/20 dark:via-purple-900/10 dark:to-glacierBlue/20 px-6 py-5 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
+              >
+                {t("admin.tableRefreshButton")}
+              </button>
+              <button
+                onClick={() => setShowCreateModal(!showCreateModal)}
+                className={`p-3 ${
+                  showCreateModal
+                    ? "bg-red-500 hover:bg-red-600"
+                    : "bg-blue-500 hover:bg-blue-600"
+                } text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2`}
+              >
+                {showCreateModal ? (
+                  <>
+                    <ChevronUp size={18} />
+                    {t("admin.filemanager.modal.undoDownloadModal")}
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown size={18} />
+                    {t("admin.filemanager.modal.createDownloadModal")}
+                  </>
+                )}
+              </button>
+            </div>
+            <div className="p-3 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-md">
+              <FolderArchive size={21} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-polarNight dark:text-softWhite">
+                {t("admin.filemanager.tableHeader")}
+              </h1>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                {localJobs.length} {t("admin.totals")}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {showCreateModal && (
-        <AdminAddFormFileManager
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSuccess={handleCreateSuccess}
-          t={t}
-        />
-      )}
+      {/* Form aggiunta (collapsabile) */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden border-b border-gray-200 dark:border-gray-700"
+          >
+            <div className="p-6 bg-gray-50 dark:bg-gray-800/50">
+              <AddFormFileManager
+                isOpen={showCreateModal}
+                onClose={() => setShowCreateModal(false)}
+                onSuccess={handleCreateSuccess}
+                t={t}
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      <div className="bg-softWhite dark:bg-polarNight rounded-lg overflow-hidden shadow-lg">
-        <table className="w-full text-sm">
+      {/* Table Content */}
+      <div className="p-6 overflow-x-auto">
+        <table className="w-full bg-softWhite dark:bg-polarNight text-sm rounded-lg overflow-hidden whitespace-nowrap">
           <thead className="bg-gray-200 dark:bg-gray-700 text-left border-b-2 border-polarNight dark:border-softWhite">
             <tr>
-              <th className="p-4">
-                <button
-                  onClick={handleRefresh}
-                  disabled={isRefreshing}
-                  className="px-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 disabled:opacity-50"
-                >
-                  <span className="uppercase text-xs tracking-widest">
-                    {t("admin.tableRefreshButton")}
-                  </span>
-                </button>
-              </th>
+              <th className="p-4">{t("admin.actions")}</th>
               <th className="p-4">{t("admin.generatedInfo")}</th>
               <th className="p-4">{t("admin.filemanager.status")}</th>
               <th className="p-4">{t("admin.filemanager.period")}</th>
@@ -281,7 +311,7 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
             {localJobs.map((job) => (
               <tr
                 key={job.id}
-                className="border-b border-gray-300 dark:border-gray-600"
+                className="border-b border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
               >
                 <td className="p-4 space-x-2">
                   {job.status === "COMPLETED" &&
@@ -405,28 +435,22 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
             ))}
           </tbody>
         </table>
-      </div>
 
-      <div className="flex flex-wrap items-center gap-4 mt-4">
-        <PaginationControls
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPrev={() => setCurrentPage((p) => Math.max(1, p - 1))}
-          onNext={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-        />
-        <SearchBar
-          query={query}
-          setQuery={setQuery}
-          resetPage={() => setCurrentPage(1)}
-          searchMode="id-or-status"
-          externalSearchType={searchType}
-          onSearchTypeChange={(type) => {
-            if (type === "id" || type === "status") {
-              setSearchType(type);
-            }
-          }}
-          availableStatuses={fileManagerStatuses}
-        />
+        <div className="flex flex-wrap items-center gap-4 mt-4">
+          <SearchBar
+            query={query}
+            setQuery={setQuery}
+            resetPage={() => {}}
+            searchMode="id-or-status"
+            externalSearchType={searchType}
+            onSearchTypeChange={(type) => {
+              if (type === "id" || type === "status") {
+                setSearchType(type);
+              }
+            }}
+            availableStatuses={fileManagerStatuses}
+          />
+        </div>
       </div>
 
       {selectedJobForNotes && (
@@ -448,7 +472,7 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
                 )
               );
               setSelectedJobForNotes(null);
-              setTimeout(() => fetchJobs(currentPage, query), 200);
+              setTimeout(() => fetchJobs(query), 200);
             } catch {
               alert(t("admin.filemanager.notes.modalErrorUpdate"));
             }
@@ -457,6 +481,6 @@ export default function AdminTableFileManager({ t }: { t: TFunction }) {
           t={t}
         />
       )}
-    </div>
+    </motion.div>
   );
 }

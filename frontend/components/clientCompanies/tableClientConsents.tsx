@@ -196,7 +196,7 @@ export default function TableClientConsents({ t }: { t: TFunction }) {
                 </>
               )}
             </button>
-            <div className="p-3 bg-gradient-to-br from-purple-400 to-violet-500 rounded-xl shadow-md">
+            <div className="p-3 bg-gradient-to-br from-blue-400 to-indigo-500 rounded-xl shadow-md">
               <FileSignature size={21} className="text-white" />
             </div>
             <div>

@@ -6,7 +6,7 @@ import { isAfter, isValid, parseISO } from "date-fns";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-interface AdminAddFormFileManagerProps {
+interface AddFormFileManagerProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -22,11 +22,11 @@ interface AdminAddFormFileManagerRequest {
   requestedBy: string;
 }
 
-export default function AdminAddFormFileManager({
+export default function AddFormFileManager({
   isOpen,
   onSuccess,
   t,
-}: AdminAddFormFileManagerProps) {
+}: AddFormFileManagerProps) {
   const [formData, setFormData] = useState<AdminAddFormFileManagerRequest>({
     periodStart: "",
     periodEnd: "",
@@ -71,7 +71,7 @@ export default function AdminAddFormFileManager({
       setAvailableBrands(brands);
     } catch (error) {
       logFrontendEvent(
-        "AdminAddFormFileManager",
+        "AddFormFileManager",
         "ERROR",
         "Failed to load available filters",
         String(error)
@@ -143,7 +143,7 @@ export default function AdminAddFormFileManager({
 
     try {
       await logFrontendEvent(
-        "AdminAddFormFileManager",
+        "AddFormFileManager",
         "INFO",
         "Attempting to create PDF download request",
         "Period: " + formData.periodStart + " to " + formData.periodEnd + ", RequestedBy: " + formData.requestedBy
@@ -175,7 +175,7 @@ export default function AdminAddFormFileManager({
       }
 
       logFrontendEvent(
-        "AdminAddFormFileManager",
+        "AddFormFileManager",
         "INFO",
         "PDF download request created successfully",
         "Period: " + formData.periodStart + " to " + formData.periodEnd
@@ -190,7 +190,7 @@ export default function AdminAddFormFileManager({
         error instanceof Error ? error.message : String(error);
 
       logFrontendEvent(
-        "AdminAddFormFileManager",
+        "AddFormFileManager",
         "ERROR",
         "Failed to create PDF download request",
         errorMessage

@@ -9,7 +9,7 @@ import TabVehicleWorkflow from "@/components/vehicleWorkflow/tabVehicleWorkflow"
 import TabPolarReports from "@/components/polarReports/tabPolarReports";
 import TabOutages from "@/components/outages/tabOutages";
 import TabClientCompanies from "@/components/clientCompanies/tabClientCompanies";
-import AdminTableFileManager from "@/components/adminTableFileManager";
+import TabFileManager from "@/components/fileManager/tabFileManager";
 import Head from "next/head";
 import classNames from "classnames";
 import LayoutMainHeader from "@/components/generic/layoutMainHeader";
@@ -17,7 +17,7 @@ import LayoutMainHeader from "@/components/generic/layoutMainHeader";
 export default function AdminDashboard() {
   const FAKE_AUTH = true;
 
-  type AdminTab = "TabVehicleWorkflow" | "TabPolarReports" | "TabOutages" | "TabClientCompanies";
+  type AdminTab = "TabVehicleWorkflow" | "TabPolarReports" | "TabOutages" | "TabClientCompanies" | "TabFileManager";
   const [activeTab, setActiveTab] = useState<AdminTab>("TabVehicleWorkflow");
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
@@ -38,7 +38,7 @@ export default function AdminDashboard() {
     );
     // Load saved tab from localStorage after mount to avoid hydration mismatch
     const saved = localStorage.getItem("adminActiveTab");
-    if (saved === "TabVehicleWorkflow" || saved === "TabPolarReports" || saved === "TabOutages" || saved === "TabClientCompanies") {
+    if (saved === "TabVehicleWorkflow" || saved === "TabPolarReports" || saved === "TabOutages" || saved === "TabClientCompanies" || saved === "TabFileManager") {
       setActiveTab(saved);
     }
   }, []);
@@ -136,6 +136,21 @@ export default function AdminDashboard() {
                 >
                   {t("admin.tabClientCompanies")}
                 </button>
+                <button
+                  disabled={false}
+                  className={classNames(
+                    "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
+                    {
+                      "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
+                        activeTab === "TabFileManager",
+                      "border-transparent text-gray-500 hover:text-primary":
+                        activeTab !== "TabFileManager",
+                    },
+                  )}
+                  onClick={() => setActiveTab("TabFileManager")}
+                >
+                  {t("admin.tabFileManager")}
+                </button>
               </div>
 
               {activeTab === "TabVehicleWorkflow" && (
@@ -143,7 +158,6 @@ export default function AdminDashboard() {
                   <div className="mx-auto space-y-12 lg:min-w-fit mb-12">
                     <TabVehicleWorkflow />
                     <AdminTableClientVehicles t={t} />
-                    <AdminTableFileManager t={t} />
                   </div>
                 </div>
               )}
@@ -173,6 +187,16 @@ export default function AdminDashboard() {
                   <div className="mx-auto lg:min-w-fit mb-12">
                     <div className="grid grid-cols-1 gap-6">
                       <TabClientCompanies t={t} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "TabFileManager" && (
+                <div className="overflow-x-auto">
+                  <div className="mx-auto lg:min-w-fit mb-12">
+                    <div className="grid grid-cols-1 gap-6">
+                      <TabFileManager t={t} />
                     </div>
                   </div>
                 </div>
