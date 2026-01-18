@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { TFunction } from "i18next";
 import { usePreventUnload } from "@/hooks/usePreventUnload";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   NotebookPen,
   Upload,
@@ -10,6 +10,8 @@ import {
   CircleX,
   CircleCheck,
   AlertTriangle,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { format } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
@@ -284,16 +286,24 @@ export default function TableOutagePeriods({ t }: { t: TFunction }) {
               </button>
             </div>
             <button
-              className={`p-3 rounded-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md text-sm ${
+              onClick={() => setShowAddForm(!showAddForm)}
+              className={`p-3 ${
                 showAddForm
                   ? "bg-red-500 hover:bg-red-600"
                   : "bg-blue-500 hover:bg-blue-600"
-              } text-white`}
-              onClick={() => setShowAddForm(!showAddForm)}
+              } text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-2`}
             >
-              {showAddForm
-                ? t("admin.outagePeriods.undoAddNewOutage")
-                : t("admin.outagePeriods.addNewOutage")}
+              {showAddForm ? (
+                <>
+                  <ChevronUp size={18} />
+                  {t("admin.outagePeriods.undoAddNewOutage")}
+                </>
+              ) : (
+                <>
+                  <ChevronDown size={18} />
+                  {t("admin.outagePeriods.addNewOutage")}
+                </>
+              )}
             </button>
             <div className="p-3 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl shadow-md">
               <AlertTriangle size={21} className="text-white" />
@@ -311,17 +321,27 @@ export default function TableOutagePeriods({ t }: { t: TFunction }) {
       </div>
 
       {/* Form aggiunta (collapsabile) */}
-      {showAddForm && (
-        <div className="p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-          <AddFormOutagePeriods
-            t={t}
-            onSubmitSuccess={() => setShowAddForm(false)}
-            refreshOutagePeriods={async () =>
-              await fetchOutages(currentPage, query)
-            }
-          />
-        </div>
-      )}
+      <AnimatePresence>
+        {showAddForm && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="overflow-hidden border-b border-gray-200 dark:border-gray-700"
+          >
+            <div className="p-6 bg-gray-50 dark:bg-gray-800/50">
+              <AddFormOutagePeriods
+                t={t}
+                onSubmitSuccess={() => setShowAddForm(false)}
+                refreshOutagePeriods={async () =>
+                  await fetchOutages(currentPage, query)
+                }
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Table Content */}
       <div className="p-6 overflow-x-auto">
