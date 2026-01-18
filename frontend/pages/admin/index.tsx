@@ -19,15 +19,7 @@ export default function AdminDashboard() {
   const FAKE_AUTH = true;
 
   type AdminTab = "TabVehicleWorkflow" | "TabPolarReports" | "TabOutages";
-  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("adminActiveTab");
-      if (saved === "TabVehicleWorkflow" || saved === "TabPolarReports" || saved === "TabOutages") {
-        return saved;
-      }
-    }
-    return "TabVehicleWorkflow";
-  });
+  const [activeTab, setActiveTab] = useState<AdminTab>("TabVehicleWorkflow");
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
   const { t } = useTranslation("common");
@@ -45,6 +37,11 @@ export default function AdminDashboard() {
       "INFO",
       "Admin dashboard mounted and visible",
     );
+    // Load saved tab from localStorage after mount to avoid hydration mismatch
+    const saved = localStorage.getItem("adminActiveTab");
+    if (saved === "TabVehicleWorkflow" || saved === "TabPolarReports" || saved === "TabOutages") {
+      setActiveTab(saved);
+    }
   }, []);
 
   useEffect(() => {
@@ -60,17 +57,19 @@ export default function AdminDashboard() {
         <LayoutMainHeader />
         <section className="relative w-full h-screen pt-[64px] overflow-hidden">
           <div className="h-full overflow-y-auto px-6">
-            {mounted && (
-              <div
-                className={classNames(
-                  "absolute inset-0 z-0 bg-background bg-[length:40px_40px] pointer-events-none",
-                  {
-                    "bg-products-grid-light": theme === "light",
-                    "dark:bg-products-grid": theme === "dark",
-                  },
-                )}
-              />
-            )}
+            <div suppressHydrationWarning>
+              {mounted && (
+                <div
+                  className={classNames(
+                    "absolute inset-0 z-0 bg-background bg-[length:40px_40px] pointer-events-none",
+                    {
+                      "bg-products-grid-light": theme === "light",
+                      "dark:bg-products-grid": theme === "dark",
+                    },
+                  )}
+                />
+              )}
+            </div>
 
             <div className="relative z-20 mx-auto">
               <div className="relative z-20 mx-auto border-y-8 border-gray-300 dark:border-gray-600 py-3 my-6">

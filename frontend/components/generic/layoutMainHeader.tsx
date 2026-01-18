@@ -76,7 +76,7 @@ export default function LayoutMainHeader() {
         </Link>
 
         {/* Right section */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3" suppressHydrationWarning>
           <div
             className={
               mounted
