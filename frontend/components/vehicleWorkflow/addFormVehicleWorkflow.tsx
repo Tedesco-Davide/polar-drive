@@ -7,7 +7,7 @@ import { logFrontendEvent } from "@/utils/logger";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-type AdminAddFormVehicleWorkflowProps = {
+type AddFormVehicleWorkflowProps = {
   formData: adminWorkflowTypesInputForm;
   setFormData: React.Dispatch<
     React.SetStateAction<adminWorkflowTypesInputForm>
@@ -17,13 +17,13 @@ type AdminAddFormVehicleWorkflowProps = {
   isSubmitting?: boolean;
 };
 
-export default function AdminAddFormVehicleWorkflow({
+export default function AddFormVehicleWorkflow({
   formData,
   setFormData,
   onSubmit,
   t,
   isSubmitting = false,
-}: AdminAddFormVehicleWorkflowProps) {
+}: AddFormVehicleWorkflowProps) {
   const { options: vehicleOptions, loading: loadingOptions } = useVehicleOptions();
   const brandOptions = Object.keys(vehicleOptions);
   
@@ -95,7 +95,7 @@ export default function AdminAddFormVehicleWorkflow({
     if (!file.name.toLowerCase().endsWith(".zip")) {
       alert(t("admin.validation.invalidZipType"));
       await logFrontendEvent(
-        "AdminMainWorkflowInputForm",
+        "AddFormVehicleWorkflow",
         "WARNING",
         "ZIP file upload rejected: invalid extension",
         file.name
@@ -106,7 +106,7 @@ export default function AdminAddFormVehicleWorkflow({
     try {
       // ✅ All OK
       await logFrontendEvent(
-        "AdminMainWorkflowInputForm",
+        "AddFormVehicleWorkflow",
         "INFO",
         "ZIP file validated and accepted",
         file.name
@@ -121,7 +121,7 @@ export default function AdminAddFormVehicleWorkflow({
       console.error("ZIP read error:", err);
 
       await logFrontendEvent(
-        "AdminMainWorkflowInputForm",
+        "AddFormVehicleWorkflow",
         "ERROR",
         "Error while reading uploaded ZIP file",
         errorDetails
@@ -137,7 +137,7 @@ export default function AdminAddFormVehicleWorkflow({
       : [];
 
   return (
-    <div className="bg-softWhite dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg mb-8 sm:mb-12 border border-gray-300 dark:border-gray-600">
+    <div className="bg-softWhite dark:bg-gray-800 p-4 sm:p-6 rounded-lg shadow-lg mb-8 border border-gray-300 dark:border-gray-600">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* P.IVA */}
         <label className="flex flex-col">

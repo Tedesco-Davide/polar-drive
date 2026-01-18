@@ -145,7 +145,7 @@ _(Tasto destro sulla cartella `backend` → Open in integrated Terminal)_
 
     - `dotnet run --project PolarDrive.WebApi` → Avvia la WebAPI principale in modalità sviluppo
 
-    > Espone l'endpoint `http://localhost:3000/admin` per Piattaforma Admin Backend
+    > Espone l'endpoint `http://localhost:3000/admin` per Piattaforma Backend
 
 - Extra comandi da lancaire nel caso di problemi di connessione al backend
 

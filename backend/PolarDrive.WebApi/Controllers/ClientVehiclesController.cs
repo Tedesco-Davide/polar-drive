@@ -100,6 +100,72 @@ public class ClientVehiclesController(PolarDriveDbContext db, IGdprEncryptionSer
         }
     }
 
+    [HttpGet("stats")]
+    public async Task<ActionResult<object>> GetStats()
+    {
+        try
+        {
+            await _logger.Info("ClientVehiclesController.GetStats", "Requested dashboard stats");
+
+            // Query SQL aggregate - NO elaborazione in memoria
+            var totalVehicles = await db.ClientVehicles.CountAsync();
+
+            if (totalVehicles == 0)
+            {
+                return Ok(new
+                {
+                    totalVehicles = 0,
+                    activeVehicles = 0,
+                    fetchingVehicles = 0,
+                    authorizedVehicles = 0,
+                    pendingAuthVehicles = 0,
+                    totalCompaniesWithVehicles = 0,
+                    vehiclesByBrand = new List<object>()
+                });
+            }
+
+            var activeVehicles = await db.ClientVehicles.CountAsync(v => v.IsActiveFlag);
+            var fetchingVehicles = await db.ClientVehicles.CountAsync(v => v.IsFetchingDataFlag);
+            var authorizedVehicles = await db.ClientVehicles.CountAsync(v => v.ClientOAuthAuthorized);
+            var pendingAuthVehicles = await db.ClientVehicles.CountAsync(v => !v.ClientOAuthAuthorized);
+
+            // Conteggio aziende distinte con almeno un veicolo
+            var totalCompaniesWithVehicles = await db.ClientVehicles
+                .Select(v => v.ClientCompanyId)
+                .Distinct()
+                .CountAsync();
+
+            // Distribuzione per brand - GROUP BY SQL (top 5)
+            var vehiclesByBrand = await db.ClientVehicles
+                .GroupBy(v => v.Brand)
+                .Select(g => new { brand = g.Key, count = g.Count() })
+                .OrderByDescending(x => x.count)
+                .Take(5)
+                .ToListAsync();
+
+            var stats = new
+            {
+                totalVehicles,
+                activeVehicles,
+                fetchingVehicles,
+                authorizedVehicles,
+                pendingAuthVehicles,
+                totalCompaniesWithVehicles,
+                vehiclesByBrand
+            };
+
+            await _logger.Info("ClientVehiclesController.GetStats", "Stats returned successfully",
+                $"Total: {totalVehicles}, Active: {activeVehicles}, Authorized: {authorizedVehicles}");
+
+            return Ok(stats);
+        }
+        catch (Exception ex)
+        {
+            await _logger.Error("ClientVehiclesController.GetStats", "Error retrieving stats", ex.ToString());
+            return StatusCode(500, new { error = "Errore interno server", details = ex.Message });
+        }
+    }
+
     [HttpGet("{id}")]
     public async Task<ActionResult<AdminWorkflowExtendedDTO>> GetById(int id)
     {

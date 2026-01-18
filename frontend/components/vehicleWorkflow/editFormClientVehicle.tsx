@@ -7,7 +7,7 @@ import { fuelTypeOptions } from "@/types/fuelTypes";
 import { logFrontendEvent } from "@/utils/logger";
 import { CircleCheck, CircleX } from "lucide-react";
 
-type AdminEditFormClientVehicleProps = {
+type EditFormClientVehicleProps = {
   vehicle: ClientVehicle;
   onClose: () => void;
   onSave: (updatedVehicle: ClientVehicle) => void;
@@ -15,13 +15,13 @@ type AdminEditFormClientVehicleProps = {
   refreshWorkflowData: () => Promise<void>;
 };
 
-export default function AdminEditFormClientVehicle({
+export default function EditFormClientVehicle({
   vehicle,
   onClose,
   onSave,
   t,
   refreshWorkflowData,
-}: AdminEditFormClientVehicleProps) {
+}: EditFormClientVehicleProps) {
   const { options: vehicleOptions, loading: loadingOptions } = useVehicleOptions();
   
   const [formData, setFormData] = useState<ClientVehicle>({
@@ -111,7 +111,7 @@ export default function AdminEditFormClientVehicle({
 
     try {
       await logFrontendEvent(
-        "AdminEditFormClientVehicle",
+        "EditFormClientVehicle",
         "INFO",
         "Attempting to update client vehicle",
         JSON.stringify(formData)
@@ -159,7 +159,7 @@ export default function AdminEditFormClientVehicle({
       }
 
       await logFrontendEvent(
-        "AdminEditFormClientVehicle",
+        "EditFormClientVehicle",
         "INFO",
         "Client vehicle updated successfully",
         "VehicleId=" + formData.id + ", VIN=" + formData.vin
@@ -175,7 +175,7 @@ export default function AdminEditFormClientVehicle({
       const errDetails = err instanceof Error ? err.message : String(err);
 
       await logFrontendEvent(
-        "AdminEditFormClientVehicle",
+        "EditFormClientVehicle",
         "ERROR",
         "Exception thrown during vehicle update",
         errDetails

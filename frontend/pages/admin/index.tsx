@@ -4,7 +4,6 @@ import { serverSideTranslations } from "next-i18next/serverSideTranslations";
 import { useTheme } from "next-themes";
 import { useTranslation } from "next-i18next";
 import { logFrontendEvent } from "@/utils/logger";
-import AdminTableClientVehicles from "@/components/adminTableClientVehicles";
 import TabVehicleWorkflow from "@/components/vehicleWorkflow/tabVehicleWorkflow";
 import TabPolarReports from "@/components/polarReports/tabPolarReports";
 import TabOutages from "@/components/outages/tabOutages";
@@ -155,9 +154,10 @@ export default function AdminDashboard() {
 
               {activeTab === "TabVehicleWorkflow" && (
                 <div className="overflow-x-auto">
-                  <div className="mx-auto space-y-12 lg:min-w-fit mb-12">
-                    <TabVehicleWorkflow />
-                    <AdminTableClientVehicles t={t} />
+                  <div className="mx-auto lg:min-w-fit mb-12">
+                    <div className="grid grid-cols-1 gap-6">
+                      <TabVehicleWorkflow t={t} />
+                    </div>
                   </div>
                 </div>
               )}
