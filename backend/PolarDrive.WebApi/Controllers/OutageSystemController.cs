@@ -25,11 +25,12 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
     {
         try
         {
-            await _logger.Debug("OutageSystemController", "Fetching outage system statistics");
+            await _logger.Debug("OutageSystemController", "Fetching outage system statistics (optimized)");
 
-            var outages = await _db.OutagePeriods.ToListAsync();
+            // Query aggregate SQL - molto più veloce di ToListAsync()
+            var totalOutages = await _db.OutagePeriods.CountAsync();
 
-            if (!outages.Any())
+            if (totalOutages == 0)
             {
                 return Ok(new
                 {
@@ -47,20 +48,25 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                 });
             }
 
-            // Calcola statistiche base
-            var ongoingOutages = outages.Where(o => o.OutageEnd == null).ToList();
-            var resolvedOutages = outages.Where(o => o.OutageEnd != null).ToList();
+            // Conteggi aggregati via SQL (sequenziali - DbContext non supporta query parallele)
+            var ongoingCount = await _db.OutagePeriods.CountAsync(o => o.OutageEnd == null);
+            var resolvedCount = await _db.OutagePeriods.CountAsync(o => o.OutageEnd != null);
+            var autoDetectedCount = await _db.OutagePeriods.CountAsync(o => o.AutoDetected);
+            var manualCount = await _db.OutagePeriods.CountAsync(o => !o.AutoDetected);
+            var vehicleOutages = await _db.OutagePeriods.CountAsync(o => o.OutageType == OutageConstants.OUTAGE_VEHICLE);
+            var fleetApiOutages = await _db.OutagePeriods.CountAsync(o => o.OutageType == OutageConstants.OUTAGE_FLEET_API);
 
-            // Calcola durate per outages risolti
-            var resolvedDurations = resolvedOutages
-                .Select(o => (o.OutageEnd!.Value - o.OutageStart).TotalMinutes)
-                .ToList();
+            // Statistiche durata - query aggregata
+            var durationStats = await _db.OutagePeriods
+                .Where(o => o.OutageEnd != null)
+                .Select(o => EF.Functions.DateDiffMinute(o.OutageStart, o.OutageEnd!.Value))
+                .ToListAsync();
 
-            var avgDuration = resolvedDurations.Any() ? resolvedDurations.Average() : 0.0;
-            var totalDowntime = resolvedDurations.Sum();
+            var avgDuration = durationStats.Any() ? durationStats.Average() : 0.0;
+            var totalDowntime = durationStats.Any() ? durationStats.Sum() : 0.0;
 
-            // Statistiche per brand
-            var brandStats = outages
+            // Statistiche per brand - query aggregata SQL
+            var brandStats = await _db.OutagePeriods
                 .GroupBy(o => o.OutageBrand)
                 .Select(g => new
                 {
@@ -70,10 +76,11 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                     Resolved = g.Count(o => o.OutageEnd != null)
                 })
                 .OrderByDescending(x => x.Count)
-                .ToList();
+                .ToListAsync();
 
-            // Outages recenti (ultimi 10) - FIX UTC per DurationMinutes
-            var recentOutages = outages
+            // Solo ultimi 10 outages (query leggera)
+            var recentOutages = await _db.OutagePeriods
+                .AsNoTracking()
                 .OrderByDescending(o => o.CreatedAt)
                 .Take(10)
                 .Select(o => new
@@ -82,25 +89,37 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                     o.OutageType,
                     o.OutageBrand,
                     o.AutoDetected,
-                    Status = o.OutageEnd == null ? OutageConstants.STATUS_ONGOING : OutageConstants.STATUS_RESOLVED,
-                    CreatedAt = o.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
-                    DurationMinutes = o.OutageEnd != null
-                        ? (int)(o.OutageEnd.Value - o.OutageStart).TotalMinutes
-                        : (int)(DateTime.Now - o.OutageStart).TotalMinutes // usa DateTime.Now
+                    o.OutageStart,
+                    o.OutageEnd,
+                    o.CreatedAt
                 })
-                .ToList();
+                .ToListAsync();
+
+            // Proiezione finale in memoria (solo 10 record)
+            var recentOutagesFormatted = recentOutages.Select(o => new
+            {
+                o.Id,
+                o.OutageType,
+                o.OutageBrand,
+                o.AutoDetected,
+                Status = o.OutageEnd == null ? OutageConstants.STATUS_ONGOING : OutageConstants.STATUS_RESOLVED,
+                CreatedAt = o.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
+                DurationMinutes = o.OutageEnd != null
+                    ? (int)(o.OutageEnd.Value - o.OutageStart).TotalMinutes
+                    : (int)(DateTime.Now - o.OutageStart).TotalMinutes
+            }).ToList();
 
             var stats = new
             {
-                TotalOutages = outages.Count,
-                OngoingOutages = ongoingOutages.Count,
-                ResolvedOutages = resolvedOutages.Count,
-                AutoDetectedCount = outages.Count(o => o.AutoDetected),
-                ManualCount = outages.Count(o => !o.AutoDetected),
-                VehicleOutages = outages.Count(o => o.OutageType == OutageConstants.OUTAGE_VEHICLE),
-                FleetApiOutages = outages.Count(o => o.OutageType == OutageConstants.OUTAGE_FLEET_API),
+                TotalOutages = totalOutages,
+                OngoingOutages = ongoingCount,
+                ResolvedOutages = resolvedCount,
+                AutoDetectedCount = autoDetectedCount,
+                ManualCount = manualCount,
+                VehicleOutages = vehicleOutages,
+                FleetApiOutages = fleetApiOutages,
                 OutagesByBrand = brandStats,
-                RecentOutages = recentOutages,
+                RecentOutages = recentOutagesFormatted,
                 AvgOutageDurationMinutes = Math.Round(avgDuration, 2),
                 TotalDowntimeMinutes = Math.Round(totalDowntime, 2)
             };
@@ -130,13 +149,16 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
             var endDate = to ?? DateTime.Now;
 
             await _logger.Debug("OutageSystemController",
-                $"Fetching period stats from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+                $"Fetching period stats from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd} (optimized)");
 
-            var outages = await _db.OutagePeriods
-                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate)
-                .ToListAsync();
+            // Query base filtrata per periodo
+            var baseQuery = _db.OutagePeriods
+                .Where(o => o.CreatedAt >= startDate && o.CreatedAt <= endDate);
 
-            if (!outages.Any())
+            // Conteggio totale via SQL
+            var totalCount = await baseQuery.CountAsync();
+
+            if (totalCount == 0)
             {
                 return Ok(new
                 {
@@ -148,21 +170,19 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                 });
             }
 
-            // Outages per giorno
-            var outagesByDay = outages
+            var outagesByDayRaw = await baseQuery
                 .GroupBy(o => o.CreatedAt.Date)
                 .Select(g => new
                 {
-                    Date = g.Key.ToString("yyyy-MM-dd"),
+                    Date = g.Key,
                     Count = g.Count(),
                     VehicleOutages = g.Count(o => o.OutageType == OutageConstants.OUTAGE_VEHICLE),
                     FleetApiOutages = g.Count(o => o.OutageType == OutageConstants.OUTAGE_FLEET_API)
                 })
                 .OrderBy(x => x.Date)
-                .ToList();
+                .ToListAsync();
 
-            // Outages per tipo
-            var outagesByType = outages
+            var outagesByType = await baseQuery
                 .GroupBy(o => o.OutageType)
                 .Select(g => new
                 {
@@ -171,10 +191,9 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                     AutoDetected = g.Count(o => o.AutoDetected),
                     Manual = g.Count(o => !o.AutoDetected)
                 })
-                .ToList();
+                .ToListAsync();
 
-            // Outages per brand
-            var outagesByBrand = outages
+            var outagesByBrand = await baseQuery
                 .GroupBy(o => o.OutageBrand)
                 .Select(g => new
                 {
@@ -184,12 +203,20 @@ public class OutageSystemController(PolarDriveDbContext db) : ControllerBase
                     FleetApiOutages = g.Count(o => o.OutageType == OutageConstants.OUTAGE_FLEET_API)
                 })
                 .OrderByDescending(x => x.Count)
-                .ToList();
+                .ToListAsync();
+
+            var outagesByDay = outagesByDayRaw.Select(x => new
+            {
+                Date = x.Date.ToString("yyyy-MM-dd"),
+                x.Count,
+                x.VehicleOutages,
+                x.FleetApiOutages
+            }).ToList();
 
             var periodStats = new
             {
                 Period = new { From = startDate.ToString("yyyy-MM-dd"), To = endDate.ToString("yyyy-MM-dd") },
-                TotalOutages = outages.Count,
+                TotalOutages = totalCount,
                 OutagesByDay = outagesByDay,
                 OutagesByType = outagesByType,
                 OutagesByBrand = outagesByBrand

@@ -219,6 +219,17 @@
   "admin.outagePeriods.tableRefreshSuccess": "Outages refresh completed successfully",
   "admin.outagePeriods.tableRefreshFail": "Outages refresh failed",
 
+  "admin.outageDashboard.title": "Outage Dashboard",
+  "admin.outageDashboard.autoRefresh": "Auto-refresh every {{seconds}} seconds",
+  "admin.outageDashboard.stats.total": "Total",
+  "admin.outageDashboard.stats.ongoing": "Ongoing",
+  "admin.outageDashboard.stats.resolved": "Resolved",
+  "admin.outageDashboard.stats.autoDetected": "Auto-Detected",
+  "admin.outageDashboard.stats.manual": "Manual",
+  "admin.outageDashboard.stats.vehicle": "Vehicle",
+  "admin.outageDashboard.stats.fleetApi": "Fleet API",
+  "admin.outageDashboard.stats.avgDuration": "Avg Duration",
+
   "admin.vehicleReports.tableHeader": "PDF Reports",
   "admin.vehicleReports.tableHeaderRegenerating": "regenerating",
   "admin.vehicleReports.tableHeaderProcessing": "processing",
