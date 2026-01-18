@@ -308,7 +308,7 @@ export default function AddFormOutagePeriods({
   };
 
   return (
-    <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg mb-12 border border-gray-300 dark:border-gray-600">
+    <div className="bg-softWhite dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-300 dark:border-gray-600">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <label className="flex flex-col">
           <span className="text-sm text-gray-600 dark:text-gray-300 mb-1">
