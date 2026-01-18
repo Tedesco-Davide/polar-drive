@@ -19,15 +19,15 @@ import LayoutMainHeader from "@/components/generic/layoutMainHeader";
 export default function AdminDashboard() {
   const FAKE_AUTH = true;
 
-  type AdminTab = "PolarDrive" | "ComingSoon";
+  type AdminTab = "TabVehicleWorkflow" | "TabPolarReports";
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("adminActiveTab");
-      if (saved === "PolarDrive" || saved === "ComingSoon") {
+      if (saved === "TabVehicleWorkflow" || saved === "TabPolarReports") {
         return saved;
       }
     }
-    return "PolarDrive";
+    return "TabVehicleWorkflow";
   });
   const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
@@ -85,12 +85,12 @@ export default function AdminDashboard() {
                     "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
                     {
                       "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
-                        activeTab === "PolarDrive",
+                        activeTab === "TabVehicleWorkflow",
                       "border-transparent text-gray-500 hover:text-primary":
-                        activeTab !== "PolarDrive",
+                        activeTab !== "TabVehicleWorkflow",
                     },
                   )}
-                  onClick={() => setActiveTab("PolarDrive")}
+                  onClick={() => setActiveTab("TabVehicleWorkflow")}
                 >
                   {t("admin.tabWorkflow")}
                 </button>
@@ -100,18 +100,18 @@ export default function AdminDashboard() {
                     "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
                     {
                       "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
-                        activeTab === "ComingSoon",
+                        activeTab === "TabPolarReports",
                       "border-transparent text-gray-500 hover:text-primary":
-                        activeTab !== "ComingSoon",
+                        activeTab !== "TabPolarReports",
                     },
                   )}
-                  onClick={() => setActiveTab("ComingSoon")}
+                  onClick={() => setActiveTab("TabPolarReports")}
                 >
                   {t("admin.tabPolarReports")}
                 </button>
               </div>
 
-              {activeTab === "PolarDrive" && (
+              {activeTab === "TabVehicleWorkflow" && (
                 <div className="overflow-x-auto">
                   <div className="mx-auto space-y-12 lg:min-w-fit mb-12">
                     <TabVehicleWorkflow />
@@ -125,12 +125,11 @@ export default function AdminDashboard() {
                 </div>
               )}
 
-              {activeTab === "ComingSoon" && (
+              {activeTab === "TabPolarReports" && (
                 <div className="overflow-x-auto">
                   <div className="mx-auto lg:min-w-fit mb-12">
                     <div className="grid grid-cols-1 gap-6">
                       <TabPolarReports t={t} />
-                      {/* Predisposto per future card dashboard */}
                     </div>
                   </div>
                 </div>
