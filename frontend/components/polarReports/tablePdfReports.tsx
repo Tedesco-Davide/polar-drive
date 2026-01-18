@@ -530,7 +530,7 @@ export default function TablePdfReports({ t }: { t: TFunction }) {
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="p-3 bg-coldIndigo hover:bg-coldIndigo/90 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 flex items-center gap-2"
+                className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 {t("admin.tableRefreshButton")}
               </button>
@@ -543,7 +543,7 @@ export default function TablePdfReports({ t }: { t: TFunction }) {
                 {t("admin.vehicleReports.tableHeader")}
               </h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {totalCount} {t("admin.vehicleReports.tableHeaderTotals")}
+                {totalCount} {t("admin.totals")}
                 {gapCertProcessing?.hasProcessing && (
                   <span className="ml-2 text-purple-600 dark:text-purple-400 animate-pulse">
                     - {t("admin.gapValidation.processingInProgress", { id: gapCertProcessing.reportId })}

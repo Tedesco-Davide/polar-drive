@@ -243,7 +243,7 @@ export default function DashboardGapValidation({ t }: { t: TFunction }) {
               <button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="p-3 bg-coldIndigo hover:bg-coldIndigo/90 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 flex items-center gap-2"
+                className="p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 {t("admin.tableRefreshButton")}
               </button>

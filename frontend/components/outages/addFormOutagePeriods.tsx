@@ -7,7 +7,7 @@ import { OutageFormData } from "@/types/outagePeriodTypes";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 
-interface AdminAddFormOutagePeriodsProps {
+interface AddFormOutagePeriodsProps {
   t: TFunction;
   onSubmitSuccess: () => void;
   refreshOutagePeriods: () => Promise<void>;
@@ -16,11 +16,11 @@ interface AdminAddFormOutagePeriodsProps {
 const OUTAGE_TYPES = ["Outage Vehicle", "Outage Fleet Api"];
 const VALID_BRANDS = ["Tesla"];
 
-export default function AdminAddFormOutagePeriods({
+export default function AddFormOutagePeriods({
   t,
   onSubmitSuccess,
   refreshOutagePeriods,
-}: AdminAddFormOutagePeriodsProps) {
+}: AddFormOutagePeriodsProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState<OutageFormData>({
     outageType: "",
@@ -200,7 +200,7 @@ export default function AdminAddFormOutagePeriods({
       setIsSubmitting(true);
 
       await logFrontendEvent(
-        "AdminAddFormOutagePeriods",
+        "AddFormOutagePeriods",
         "INFO",
         "Attempting to submit new outage period"
       );
@@ -256,7 +256,7 @@ export default function AdminAddFormOutagePeriods({
       const newOutage = await response.json();
 
       await logFrontendEvent(
-        "AdminAddFormOutagePeriods",
+        "AddFormOutagePeriods",
         "INFO",
         "Outage period successfully created",
         "Outage ID: " + newOutage.id
@@ -292,7 +292,7 @@ export default function AdminAddFormOutagePeriods({
         }
       }
       await logFrontendEvent(
-        "AdminAddFormOutagePeriods",
+        "AddFormOutagePeriods",
         "ERROR",
         "Failed to create outage",
         errorMessage

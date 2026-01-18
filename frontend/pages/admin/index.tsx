@@ -9,7 +9,7 @@ import AdminTableClientCompanies from "@/components/adminTableClientCompanies";
 import TabVehicleWorkflow from "@/components/vehicleWorkflow/tabVehicleWorkflow";
 import TabPolarReports from "@/components/polarReports/tabPolarReports";
 import AdminTableClientConsents from "@/components/adminTableClientConsents";
-import AdminTableOutagePeriods from "@/components/adminTableOutagePeriods";
+import TabOutages from "@/components/outages/tabOutages";
 import AdminTableFileManager from "@/components/adminTableFileManager";
 import Head from "next/head";
 import classNames from "classnames";
@@ -18,11 +18,11 @@ import LayoutMainHeader from "@/components/generic/layoutMainHeader";
 export default function AdminDashboard() {
   const FAKE_AUTH = true;
 
-  type AdminTab = "TabVehicleWorkflow" | "TabPolarReports";
+  type AdminTab = "TabVehicleWorkflow" | "TabPolarReports" | "TabOutages";
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("adminActiveTab");
-      if (saved === "TabVehicleWorkflow" || saved === "TabPolarReports") {
+      if (saved === "TabVehicleWorkflow" || saved === "TabPolarReports" || saved === "TabOutages") {
         return saved;
       }
     }
@@ -108,6 +108,21 @@ export default function AdminDashboard() {
                 >
                   {t("admin.tabPolarReports")}
                 </button>
+                <button
+                  disabled={false}
+                  className={classNames(
+                    "px-4 py-2 text-2xl font-semibold rounded-t border-b-2 transition-colors duration-200 w-full md:w-fit",
+                    {
+                      "border-polarNight text-polarNight bg-gray-200 dark:bg-white/10 dark:text-softWhite dark:border-softWhite":
+                        activeTab === "TabOutages",
+                      "border-transparent text-gray-500 hover:text-primary":
+                        activeTab !== "TabOutages",
+                    },
+                  )}
+                  onClick={() => setActiveTab("TabOutages")}
+                >
+                  {t("admin.tabOutages")}
+                </button>
               </div>
 
               {activeTab === "TabVehicleWorkflow" && (
@@ -117,7 +132,6 @@ export default function AdminDashboard() {
                     <AdminTableClientCompanies t={t} />
                     <AdminTableClientVehicles t={t} />
                     <AdminTableClientConsents t={t} />
-                    <AdminTableOutagePeriods t={t} />
                     <AdminTableFileManager t={t} />
                   </div>
                 </div>
@@ -128,6 +142,16 @@ export default function AdminDashboard() {
                   <div className="mx-auto lg:min-w-fit mb-12">
                     <div className="grid grid-cols-1 gap-6">
                       <TabPolarReports t={t} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "TabOutages" && (
+                <div className="overflow-x-auto">
+                  <div className="mx-auto lg:min-w-fit mb-12">
+                    <div className="grid grid-cols-1 gap-6">
+                      <TabOutages t={t} />
                     </div>
                   </div>
                 </div>
