@@ -8,11 +8,11 @@ import { logFrontendEvent } from "@/utils/logger";
 import Chip from "@/components/generic/chip";
 import Loader from "@/components/generic/loader";
 import ModalEditNotes from "@/components/generic/modalEditNotes";
-import AdminGapValidationModal from "@/components/adminTablePdfReportsModalGapValidation";
+import AdminGapValidationModal from "@/components/polarReports/tablePdfReportsModalGapValidation";
 import PaginationControls from "@/components/generic/paginationControls";
 import SearchBar from "@/components/generic/searchBar";
 
-export default function AdminTablePdfReports({ t }: { t: TFunction }) {
+export default function TablePdfReports({ t }: { t: TFunction }) {
   const [localReports, setLocalReports] = useState<PdfReport[]>([]);
   const [selectedReportForNotes, setSelectedReportForNotes] =
     useState<PdfReport | null>(null);
@@ -67,14 +67,14 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
       setCurrentPage(data.page);
 
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "INFO",
         "Reports loaded",
         `Page: ${data.page}, Total: ${data.totalCount}`
       );
     } catch (err) {
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "ERROR",
         "Failed to load reports",
         String(err)
@@ -93,7 +93,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
       setGapCertProcessing(data);
     } catch (err) {
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "ERROR",
         "Failed to fetch gap cert status",
         String(err)
@@ -220,7 +220,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
             })
         );
         logFrontendEvent(
-          "AdminTablePdfReports",
+          "TablePdfReports",
           "WARNING",
           "Regeneration blocked - another report is PROCESSING",
           "ProcessingReportId: ${checkData.processingReportId}, RequestedReportId: ${report.id}"
@@ -229,7 +229,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
       }
     } catch (checkError) {
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "ERROR",
         "Failed to check processing status",
         String(checkError)
@@ -257,7 +257,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
 
     try {
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "INFO",
         "Starting report Regeneration",
         `ReportId: ${report.id}`
@@ -282,7 +282,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
         );
 
         logFrontendEvent(
-          "AdminTablePdfReports",
+          "TablePdfReports",
           "WARNING",
           "Regeneration blocked - report already exists",
           `ReportId: ${report.id}, ErrorCode: ${data.errorCode}, PdfHash: ${data.pdfHash}`
@@ -298,7 +298,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
         );
 
         logFrontendEvent(
-          "AdminTablePdfReports",
+          "TablePdfReports",
           "WARNING",
           "Regeneration not allowed",
           `ReportId: ${report.id}, ErrorCode: ${data.errorCode}, Status: ${data.status}`
@@ -312,7 +312,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
         );
 
         logFrontendEvent(
-          "AdminTablePdfReports",
+          "TablePdfReports",
           "INFO",
           "Regeneration started successfully",
           `ReportId: ${report.id}, Status: ${data.status}`
@@ -353,7 +353,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
           })
       );
 
-      logFrontendEvent("AdminTablePdfReports", "ERROR", "Regeneration error");
+      logFrontendEvent("TablePdfReports", "ERROR", "Regeneration error");
     } finally {
       setRegeneratingId(null);
     }
@@ -399,7 +399,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
       window.URL.revokeObjectURL(url);
 
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "INFO",
         "Gap certification downloaded",
         `ReportId: ${reportId}`
@@ -407,7 +407,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
     } catch (error) {
       alert(t("admin.gapValidation.downloadError", { error: String(error) }));
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "ERROR",
         "Gap certification download failed",
         String(error)
@@ -439,7 +439,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
       window.URL.revokeObjectURL(url);
 
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "INFO",
         "Gap escalation PDF downloaded",
         `ReportId: ${reportId}`
@@ -447,7 +447,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
     } catch (error) {
       alert(t("admin.gapValidation.downloadError", { error: String(error) }));
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "ERROR",
         "Gap escalation download failed",
         String(error)
@@ -479,7 +479,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
       window.URL.revokeObjectURL(url);
 
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "INFO",
         "Gap contract breach PDF downloaded",
         `ReportId: ${reportId}`
@@ -487,7 +487,7 @@ export default function AdminTablePdfReports({ t }: { t: TFunction }) {
     } catch (error) {
       alert(t("admin.gapValidation.downloadError", { error: String(error) }));
       logFrontendEvent(
-        "AdminTablePdfReports",
+        "TablePdfReports",
         "ERROR",
         "Gap contract breach download failed",
         String(error)

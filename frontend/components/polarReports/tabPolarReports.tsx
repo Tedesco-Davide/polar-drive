@@ -15,9 +15,9 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { logFrontendEvent } from "@/utils/logger";
-import Loader from "./generic/loader";
-import AdminGapValidationModal from "./adminTablePdfReportsModalGapValidation";
-import PaginationControls from "./generic/paginationControls";
+import Loader from "../generic/loader";
+import AdminGapValidationModal from "./tablePdfReportsModalGapValidation";
+import PaginationControls from "../generic/paginationControls";
 
 interface GapAlert {
   id: number;
@@ -97,7 +97,7 @@ const getAlertTypeLabel = (alertType: string, t: TFunction): string => {
   }
 };
 
-export default function AdminTabPolarReports({ t }: { t: TFunction }) {
+export default function TabPolarReports({ t }: { t: TFunction }) {
   const [alerts, setAlerts] = useState<GapAlert[]>([]);
   const [stats, setStats] = useState<GapAlertStats | null>(null);
   const [loading, setLoading] = useState(false);
@@ -135,14 +135,14 @@ export default function AdminTabPolarReports({ t }: { t: TFunction }) {
         setCurrentPage(data.page);
 
         logFrontendEvent(
-          "AdminTabPolarReports",
+          "TabPolarReports",
           "INFO",
           "Alerts loaded",
           `Page: ${data.page}, Total: ${data.totalCount}`,
         );
       } catch (err) {
         logFrontendEvent(
-          "AdminTabPolarReports",
+          "TabPolarReports",
           "ERROR",
           "Failed to load alerts",
           String(err),
@@ -162,7 +162,7 @@ export default function AdminTabPolarReports({ t }: { t: TFunction }) {
       setStats(data);
     } catch (err) {
       logFrontendEvent(
-        "AdminTabPolarReports",
+        "TabPolarReports",
         "ERROR",
         "Failed to load stats",
         String(err),

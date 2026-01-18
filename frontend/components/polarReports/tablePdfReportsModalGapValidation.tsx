@@ -5,7 +5,7 @@ import { formatDateToDisplay } from "@/utils/date";
 import { GapAnalysisResponse } from "@/types/gapInterfaces";
 import Loader from "@/components/generic/loader";
 
-type AdminTablePdfReportsModalGapValidationProps = {
+type TablePdfReportsModalGapValidationProps = {
   reportId: number;
   isOpen: boolean;
   onClose: () => void;
@@ -14,14 +14,14 @@ type AdminTablePdfReportsModalGapValidationProps = {
   gapValidationStatus?: string | null; // null = nessun PDF, ESCALATED = già escalato
 };
 
-export default function AdminTablePdfReportsModalGapValidation({
+export default function TablePdfReportsModalGapValidation({
   reportId,
   isOpen,
   onClose,
   onValidationComplete,
   t,
   gapValidationStatus,
-}: AdminTablePdfReportsModalGapValidationProps) {
+}: TablePdfReportsModalGapValidationProps) {
   const [loading, setLoading] = useState(true);
   const [certifying, setCertifying] = useState(false);
   const [escalating, setEscalating] = useState(false);
@@ -89,7 +89,7 @@ export default function AdminTablePdfReportsModalGapValidation({
       }
       setAnalysisData(data);
       logFrontendEvent(
-        "AdminTablePdfReportsModalGapValidation",
+        "TablePdfReportsModalGapValidation",
         "INFO",
         "Gap analysis loaded",
         `ReportId: ${reportId}, TotalGaps: ${data.totalGaps}`
@@ -98,7 +98,7 @@ export default function AdminTablePdfReportsModalGapValidation({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "AdminTablePdfReportsModalGapValidation",
+        "TablePdfReportsModalGapValidation",
         "ERROR",
         "Failed to load gap analysis",
         errorMessage
@@ -132,7 +132,7 @@ export default function AdminTablePdfReportsModalGapValidation({
       // 202 Accepted = certificazione avviata in background
       if (res.status === 202) {
         logFrontendEvent(
-          "AdminTablePdfReportsModalGapValidation",
+          "TablePdfReportsModalGapValidation",
           "INFO",
           "Gap certification started in background",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -148,7 +148,7 @@ export default function AdminTablePdfReportsModalGapValidation({
 
       // Fallback per risposta 200 (non dovrebbe più accadere)
       logFrontendEvent(
-        "AdminTablePdfReportsModalGapValidation",
+        "TablePdfReportsModalGapValidation",
         "INFO",
         "Gap certification completed",
         `ReportId: ${reportId}, GapsCertified: ${data.gapsCertified}`
@@ -159,7 +159,7 @@ export default function AdminTablePdfReportsModalGapValidation({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "AdminTablePdfReportsModalGapValidation",
+        "TablePdfReportsModalGapValidation",
         "ERROR",
         "Certification failed",
         errorMessage
@@ -192,7 +192,7 @@ export default function AdminTablePdfReportsModalGapValidation({
 
       if (res.status === 202 || res.ok) {
         logFrontendEvent(
-          "AdminTablePdfReportsModalGapValidation",
+          "TablePdfReportsModalGapValidation",
           "INFO",
           "Gap escalation started",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -206,7 +206,7 @@ export default function AdminTablePdfReportsModalGapValidation({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "AdminTablePdfReportsModalGapValidation",
+        "TablePdfReportsModalGapValidation",
         "ERROR",
         "Escalation failed",
         errorMessage
@@ -243,7 +243,7 @@ export default function AdminTablePdfReportsModalGapValidation({
 
       if (res.status === 202 || res.ok) {
         logFrontendEvent(
-          "AdminTablePdfReportsModalGapValidation",
+          "TablePdfReportsModalGapValidation",
           "INFO",
           "Contract breach recorded",
           `ReportId: ${reportId}, Status: ${data.status}`
@@ -257,7 +257,7 @@ export default function AdminTablePdfReportsModalGapValidation({
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage);
       logFrontendEvent(
-        "AdminTablePdfReportsModalGapValidation",
+        "TablePdfReportsModalGapValidation",
         "ERROR",
         "Contract breach failed",
         errorMessage

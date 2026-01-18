@@ -7,11 +7,11 @@ import { logFrontendEvent } from "@/utils/logger";
 import AdminTableClientVehicles from "@/components/adminTableClientVehicles";
 import AdminTableClientCompanies from "@/components/adminTableClientCompanies";
 import AdminTabVehicleWorkflow from "@/components/adminTabVehicleWorkflow";
-import AdminTabPolarReports from "@/components/adminTabPolarReports";
+import TabPolarReports from "@/components/polarReports/tabPolarReports";
 import AdminTableClientConsents from "@/components/adminTableClientConsents";
 import AdminTableOutagePeriods from "@/components/adminTableOutagePeriods";
 import AdminTableFileManager from "@/components/adminTableFileManager";
-import AdminPdfReportsTable from "@/components/adminTablePdfReports";
+import AdminPdfReportsTable from "@/components/polarReports/tablePdfReports";
 import Head from "next/head";
 import classNames from "classnames";
 import LayoutMainHeader from "@/components/generic/layoutMainHeader";
@@ -129,7 +129,7 @@ export default function AdminDashboard() {
                 <div className="overflow-x-auto">
                   <div className="mx-auto lg:min-w-fit mb-12">
                     <div className="grid grid-cols-1 gap-6">
-                      <AdminTabPolarReports t={t} />
+                      <TabPolarReports t={t} />
                       {/* Predisposto per future card dashboard */}
                     </div>
                   </div>
