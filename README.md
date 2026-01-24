@@ -4,7 +4,7 @@ Repository per il progetto **PolarDrive**.
 
 ---
 
-### 🟠 CLOUDFARED
+### 🟠 CLOUDFLARE
 
 - LE CONFIGURAZIONI PRINCIPALI SONO SOTTO => C:\Users\Tedesco Davide\.cloudflared
 - SE cloudflared tunnel NON SI AVVIA IN MODO AUTOMATICO => CHIAMATE VERSO POLARDRIVE-API RESTITUISCONO ERRORE 502
