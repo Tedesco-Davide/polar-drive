@@ -6,7 +6,7 @@ Repository per il progetto **PolarDrive**.
 
 ### 🟠 CLOUDFLARE
 
-- LE CONFIGURAZIONI PRINCIPALI SONO SOTTO => C:\Users\Tedesco Davide\.cloudflared
+- LE CONFIGURAZIONI PRINCIPALI SONO SOTTO => C:\Users\UserName\.cloudflared
 - SE cloudflared tunnel NON SI AVVIA IN MODO AUTOMATICO => CHIAMATE VERSO POLARDRIVE-API RESTITUISCONO ERRORE 502
 - PROBLEMI DI TUNNEL ( CLAUDFARED NON PRENDE LA CONFIGURAZIONE config.yml PRESENTE SOTTO .cloudflared )=>
     KILLARE SERVIZIO CLOUDFLARED ( WIN+R => SERVICES.MSC )
@@ -16,7 +16,7 @@ Repository per il progetto **PolarDrive**.
     CAMBIARE DA 
     "C:\Program Files (x86)\cloudflared\cloudflared.exe" 
     A 
-    "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel run d439ffff-a779-461e-8600-f547ca1e19f2"
+    "C:\Program Files (x86)\cloudflared\cloudflared.exe" tunnel run ID-TUNNEL"
     STARTARE IL SERVIZIO CON Start-Service cloudflared
 
 ### 📞 VONAGE
